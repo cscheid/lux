@@ -1,0 +1,30 @@
+<html>
+<head><title>NeHe lesson 8 in Facet</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="css/mchighlight-javascript.css"/>
+  <script src="../lib/jquery-1.6.2.min.js"></script>
+  <script src="../facet.js"></script>
+  <script src="js/mclexer.js"></script>
+  <script src="js/mchighlight.js"></script>
+  <script src="js/mchighlight-javascript.js"></script>
+  <script src="lesson8.js"></script>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>Lesson 8</h1>
+<canvas id="webgl" width="720" height="480"></canvas>
+<div style="text-align: right">View the <a href="lesson8.js">full source</a>.</div>
+<button id="linear">Linear filtering</button>
+<button id="nearest">Nearest filtering</button>
+<button id="mipmap">Linear filtering + mipmaps</button>
+<input type="checkbox" id="per_vertex" checked>Per-vertex lighting</input>
+
+<p>Back to the <a href="index.html">index</a>.</p>
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</body>
+</html>
+
