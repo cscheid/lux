@@ -1,3 +1,6 @@
+# Facet's build system is entirely based on Mike Bostock's excellent
+# d3 library.
+
 JS_COMPILER = ./node_modules/uglify-js/bin/uglifyjs
 
 all: facet.js facet.min.js data.js
