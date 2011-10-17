@@ -1,0 +1,1 @@
+Shade.Types = {};

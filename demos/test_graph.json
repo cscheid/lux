@@ -1,0 +1,20 @@
+{
+  "name": "G",
+  "type": "digraph",
+  "nodes": [{ "position": [0,0],
+              "name": "a"
+	    }, { "position": [1,0],
+                 "name": "b"
+	    }, { "position": [0,1],
+                 "name": "c"
+	    }],
+  "edges": [ { "source": "a",
+               "target": "b"
+             },
+	     { "source": "b",
+               "target": "c"
+             },
+	     { "source": "a",
+               "target": "c"
+             } ]
+}

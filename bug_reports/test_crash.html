@@ -1,0 +1,69 @@
+<html>
+<body>
+<div>
+</div>
+<canvas id="foo" width="640" height="400"></canvas>
+<script>
+var canvas = document.getElementById("foo");
+var gl = canvas.getContext("experimental-webgl");
+
+var vshader = gl.createShader(gl.VERTEX_SHADER);
+
+var vp_source =
+    "precision highp float;\n" +
+    "attribute float attr;\n" +
+    "varying vec4 color;\n" +
+    "vec4 lut[4];\n" +
+    "float tv;\n" + 
+    "float t() {\n" +
+    "    return attr;\n" +
+    "}\n" +
+    "void main() {\n" +
+    "    lut[0] = vec4(1,0,0,1);\n" +
+    "    lut[1] = vec4(0,1,0,1);\n" +
+    "    lut[2] = vec4(0,0,1,1);\n" +
+    "    lut[3] = vec4(0,1,1,1);\n" +
+    "    gl_Position = vec4(0,0,0,1);\n" +
+    "    color = mix (lut[int(floor(t()))], lut[int(floor(t())) + 1], fract(t())) ;\n" + // replacing 't()' with 'attr' causes shader validator to (rightfully) complain
+    "    gl_PointSize = 10.0;\n" +
+    "}\n";
+
+gl.shaderSource(vshader, vp_source);
+gl.compileShader(vshader);
+if (!gl.getShaderParameter(vshader, gl.COMPILE_STATUS)) {
+    alert(gl.getShaderInfoLog(vshader));
+}
+
+var fshader = gl.createShader(gl.FRAGMENT_SHADER);
+gl.shaderSource(fshader, "precision highp float;\nvarying vec4 color; void main() { gl_FragColor = color; }");
+gl.compileShader(fshader);
+
+var p = gl.createProgram();
+gl.attachShader(p, vshader);
+gl.attachShader(p, fshader);
+gl.linkProgram(p);
+gl.clearColor(1,0,0,1);
+gl.clearDepth(1.0);
+gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+
+if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    alert("TROUBLE");
+}
+
+gl.useProgram(p);
+
+var attrs = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, attrs);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1.0]), gl.STATIC_DRAW); // setting this to values >= 3.0 accesses the array out of bounds
+var attr = gl.getAttribLocation(p, "attr");
+gl.enableVertexAttribArray(attr);
+gl.vertexAttribPointer(attr, 1, gl.FLOAT, false, 0, 0);
+
+var pts = gl.createBuffer();
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pts);
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0]), gl.STATIC_DRAW);
+gl.drawElements(gl.POINTS, 1, gl.UNSIGNED_SHORT, 0);
+
+</script>
+</body>
+</html>

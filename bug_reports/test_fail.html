@@ -1,0 +1,72 @@
+<html>
+<body>
+<div>
+</div>
+<canvas id="foo" width="640" height="400"></canvas>
+<script>
+var canvas = document.getElementById("foo");
+var gl = canvas.getContext("experimental-webgl");
+
+function test_shader_fail()
+{
+    var vshader = gl.createShader(gl.VERTEX_SHADER);
+
+    var vp_source =
+"precision highp float;\n" +
+"attribute float attr;\n" +
+"vec4 lut[4];\n" +
+"float t;\n" +
+"void main() {\n" +
+"    lut[0] = vec4(1,0,0,1);\n" +
+"    lut[1] = vec4(0,1,0,1);\n" +
+"    lut[2] = vec4(0,0,1,1);\n" +
+"    lut[3] = vec4(0,0,1,1);\n" +
+"    t = clamp(attr, 0.0, 1.0) * 2.0;\n" +
+"    gl_Position = mix(lut[int(floor(t))], lut[int(floor(t)) + 1], fract(t));\n" + 
+"}\n";
+
+    gl.shaderSource(vshader, vp_source);
+    gl.compileShader(vshader);
+    if (!gl.getShaderParameter(vshader, gl.COMPILE_STATUS)) {
+        alert(gl.getShaderInfoLog(vshader));
+    } else {
+        alert("PASSED, didn't expect to!");
+    }
+}
+
+function test_shader_pass()
+{
+    var vshader = gl.createShader(gl.VERTEX_SHADER);
+
+    var vp_source =
+"precision highp float;\n" +
+"attribute float attr;\n" +
+"vec4 lut[4];\n" +
+"float tv;\n" + 
+"float t() {\n" +
+"    return tv;\n" +
+"}\n" +
+"void main() {\n" +
+"    lut[0] = vec4(1,0,0,1);\n" +
+"    lut[1] = vec4(0,1,0,1);\n" +
+"    lut[2] = vec4(0,0,1,1);\n" +
+"    lut[3] = vec4(0,0,1,1);\n" +
+"    tv = clamp(attr, 0.0, 1.0) * 2.0;\n" +
+"    gl_Position = mix (lut[int(floor(t()))], lut[int(floor(t())) + 1], fract(t())) ;\n" +
+"}\n";
+
+    gl.shaderSource(vshader, vp_source);
+    gl.compileShader(vshader);
+    if (!gl.getShaderParameter(vshader, gl.COMPILE_STATUS)) {
+        alert(gl.getShaderInfoLog(vshader));
+    } else {
+        alert("PASSED, didn't expect to!");
+    }
+}
+
+test_shader_fail();
+test_shader_pass();
+
+</script>
+</body>
+</html>

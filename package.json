@@ -1,0 +1,9 @@
+{
+  "name": "facet",
+  "version": "0.0.1",
+  "description": "Facet makes writing WebGL fun",
+  "keywords": [ "webgl", "graphics", "visualization" ],
+  "dependencies": {
+    "uglify-js": "1.0.6"
+  }
+}
