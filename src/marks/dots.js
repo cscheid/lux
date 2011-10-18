@@ -9,8 +9,9 @@ Facet.Marks.dots = function(opts)
         stroke_color: Shade.vec(0,0,0,1),
         point_diameter: 5,
         stroke_width: 2,
+        mode: Facet.DrawingMode.over,
         alpha: true,
-        plain: false,
+        plain: false
     });
 
     function to_opengl(x) { return x.mul(2).sub(1); };
@@ -54,20 +55,22 @@ Facet.Marks.dots = function(opts)
     
     if (opts.plain) {
         var result = Facet.bake(model, {
-            gl_Position: gl_Position,
-            gl_PointSize: point_diameter,
-            gl_FragColor: fill_color
+            position: gl_Position,
+            point_size: point_diameter,
+            color: fill_color,
+            mode: opts.mode
         });
         result.gl_Position = gl_Position;
         return result;
     } else {
         var result = Facet.bake(model, {
-            gl_Position: gl_Position,
-            gl_PointSize: point_diameter,
-            gl_FragColor: S.selection(use_alpha,
-                                      no_alpha.mul(S.vec(1,1,1,S.clamp(distance_to_border, 0, 1))),
-                                      no_alpha)
-                .discard_if(distance_to_center_in_pixels.gt(point_radius))
+            position: gl_Position,
+            point_size: point_diameter,
+            color: S.selection(use_alpha,
+                               no_alpha.mul(S.vec(1,1,1,S.clamp(distance_to_border, 0, 1))),
+                               no_alpha)
+                .discard_if(distance_to_center_in_pixels.gt(point_radius)),
+            mode: opts.mode
         });
         result.gl_Position = gl_Position;
         return result;

@@ -46,6 +46,11 @@ facet.js:					\
 	src/facet/scale/geo/_begin.js		\
 	src/facet/scale/geo/mercator_to_spherical.js	\
 	src/facet/scale/geo/latlong_to_spherical.js	\
+	src/facet/drawing_mode/_begin.js	\
+	src/facet/drawing_mode/additive.js	\
+	src/facet/drawing_mode/no_depth.js	\
+	src/facet/drawing_mode/over.js		\
+	src/facet/drawing_mode/standard.js	\
 	src/shade/_begin.js			\
 	src/shade/unique_name.js		\
 	src/shade/create.js			\
@@ -77,6 +82,7 @@ facet.js:					\
 	src/shade/builtins.js			\
 	src/shade/seq.js			\
 	src/shade/program.js			\
+	src/shade/is_program_parameter.js	\
 	src/shade/utils/_begin.js		\
 	src/shade/utils/lerp.js			\
 	src/shade/utils/choose.js		\

@@ -3,9 +3,15 @@
 var largest_batch_id = 1;
 
 // FIXME: push the primitives weirdness fix down the API
-Facet.bake = function(model, program_exp)
+Facet.bake = function(model, appearance)
 {
     var ctx = Facet.ctx;
+    var program_exp = {};
+    _.each(appearance, function(value, key) {
+        if (Shade.is_program_parameter(key)) {
+            program_exp[key] = value;
+        }
+    });
     var program = Shade.program(program_exp);
     var attribute_arrays = {};
     for (var i=0; i<program.attribute_buffers.length; ++i) {
@@ -42,6 +48,7 @@ Facet.bake = function(model, program_exp)
     var draw_opts = {
         program: program,
         attributes: attribute_arrays,
+        drawing_mode: appearance.mode || Facet.DrawingMode.standard,
         draw_chunk: draw_chunk
     };
 

@@ -16,8 +16,6 @@ function draw_it()
     var proj = Facet.perspective(45, 720/480, 0.1, 100.0);
     var view = mat4.lookAt([current_mouse_x, current_mouse_y, 0], 
                            [0, 0, -3], [0,1,0]);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LESS);
     mvp.set(mat4.product(proj, mat4.product(view, model)));
     cube_drawable.draw();
 }

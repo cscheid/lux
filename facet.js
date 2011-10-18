@@ -2,12 +2,15 @@
  * Facet: An EDSL for WebGL graphics
  * By Carlos Scheidegger, cscheid@research.att.com
  * 
- * Copyright AT&T Labs, 2011
+ * Copyright (c) 2011 AT&T Intellectual Property
  * 
- * Facet is open-source software, released under the Eclipse Public 
- * License. Please see the source distribution for a copy of the license
- * or http://www.eclipse.org/org/documents/epl-v10.html.
- * 
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors: See github logs.
+ *
  */
 
 // Facet depends on the following software libraries:
@@ -3113,9 +3116,15 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
 var largest_batch_id = 1;
 
 // FIXME: push the primitives weirdness fix down the API
-Facet.bake = function(model, program_exp)
+Facet.bake = function(model, appearance)
 {
     var ctx = Facet.ctx;
+    var program_exp = {};
+    _.each(appearance, function(value, key) {
+        if (Shade.is_program_parameter(key)) {
+            program_exp[key] = value;
+        }
+    });
     var program = Shade.program(program_exp);
     var attribute_arrays = {};
     for (var i=0; i<program.attribute_buffers.length; ++i) {
@@ -3152,6 +3161,7 @@ Facet.bake = function(model, program_exp)
     var draw_opts = {
         program: program,
         attributes: attribute_arrays,
+        drawing_mode: appearance.mode || Facet.DrawingMode.standard,
         draw_chunk: draw_chunk
     };
 
@@ -3178,7 +3188,11 @@ Facet.unload_batch = function()
         });
     }
     previous_batch = {};
-}
+
+    // reset opengl capabilities determined by Facet.DrawingMode.*
+    ctx.disable(ctx.DEPTH_TEST);
+    ctx.disable(ctx.BLEND);
+};
 
 // FIXME: This is an ugly call. Don't call this directly; 
 // use Facet.model and Facet.bake instead
@@ -3194,6 +3208,7 @@ Facet.draw = function(batch)
 
         Facet.unload_batch();
         previous_batch = batch;
+        batch.drawing_mode.set_caps();
 
         ctx.useProgram(program);
 
@@ -3782,6 +3797,43 @@ Facet.Scale.Geo.latlong_to_spherical = function(lat, lon)
     return Shade.vec(lon.sin().mul(stretch),
                      lat.sin(),
                      lon.cos().mul(stretch), 1);
+};
+// drawing mode objects can be part of the parameters passed to 
+// Facet.bake, in order for the batch to automatically set the capabilities.
+// This lets us specify blending, depth-testing, etc. at bake time.
+
+Facet.DrawingMode = {};
+Facet.DrawingMode.additive = {
+    set_caps: function()
+    {
+        var ctx = Facet.ctx;
+        ctx.enable(ctx.BLEND);
+        ctx.blendFunc(ctx.SRC_ALPHA, ctx.ONE);
+    }
+};
+// currently no_depth is no-op
+Facet.DrawingMode.no_depth = {
+    set_caps: function()
+    {
+    }
+};
+// over corresponds to the standard porter-duff over operator
+Facet.DrawingMode.over = {
+    set_caps: function()
+    {
+        var ctx = Facet.ctx;
+        ctx.enable(ctx.BLEND);
+        ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
+                              ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
+    }
+};
+Facet.DrawingMode.standard = {
+    set_caps: function()
+    {
+        var ctx = Facet.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+    }
 };
 /*
  * Shade is the javascript DSL for writing GLSL shaders, part of Facet.
@@ -4865,6 +4917,7 @@ Shade.constant = function(v)
                 }
             });
         } else {
+            console.log(t, v);
             throw "type error: constant should be bool, number, vector or matrix";
         }
     }
@@ -6543,6 +6596,11 @@ Shade.program = function(program_obj)
     result.uniforms = _.union(vp_exp.uniforms(), fp_exp.uniforms());
     return result;
 };
+Shade.is_program_parameter = function(key)
+{
+    return ["color", "position", "point_size",
+            "gl_FragColor", "gl_Position", "gl_PointSize"].indexOf(key) != -1;
+};
 Shade.Utils = {};
 // given a list of values, returns a function which, when given a
 // value between 0 and 1, returns the appropriate linearly interpolated
@@ -6995,8 +7053,9 @@ Facet.Marks.dots = function(opts)
         stroke_color: Shade.vec(0,0,0,1),
         point_diameter: 5,
         stroke_width: 2,
+        mode: Facet.DrawingMode.over,
         alpha: true,
-        plain: false,
+        plain: false
     });
 
     function to_opengl(x) { return x.mul(2).sub(1); };
@@ -7040,20 +7099,22 @@ Facet.Marks.dots = function(opts)
     
     if (opts.plain) {
         var result = Facet.bake(model, {
-            gl_Position: gl_Position,
-            gl_PointSize: point_diameter,
-            gl_FragColor: fill_color
+            position: gl_Position,
+            point_size: point_diameter,
+            color: fill_color,
+            mode: opts.mode
         });
         result.gl_Position = gl_Position;
         return result;
     } else {
         var result = Facet.bake(model, {
-            gl_Position: gl_Position,
-            gl_PointSize: point_diameter,
-            gl_FragColor: S.selection(use_alpha,
-                                      no_alpha.mul(S.vec(1,1,1,S.clamp(distance_to_border, 0, 1))),
-                                      no_alpha)
-                .discard_if(distance_to_center_in_pixels.gt(point_radius))
+            position: gl_Position,
+            point_size: point_diameter,
+            color: S.selection(use_alpha,
+                               no_alpha.mul(S.vec(1,1,1,S.clamp(distance_to_border, 0, 1))),
+                               no_alpha)
+                .discard_if(distance_to_center_in_pixels.gt(point_radius)),
+            mode: opts.mode
         });
         result.gl_Position = gl_Position;
         return result;

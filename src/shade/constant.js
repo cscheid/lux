@@ -105,6 +105,7 @@ Shade.constant = function(v)
                 }
             });
         } else {
+            console.log(t, v);
             throw "type error: constant should be bool, number, vector or matrix";
         }
     }

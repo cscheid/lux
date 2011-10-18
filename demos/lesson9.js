@@ -27,7 +27,8 @@ function star_drawable()
         position: proj.mul(mv).mul(Shade.vec(model.vertex, 0, 1)),
         color: Shade.texture2D(Facet.texture_from_image({
             src: "img/star.gif"
-        }), model.uv).mul(Shade.vec(color, 1.0))
+        }), model.uv).mul(Shade.vec(color, 1.0)),
+        mode: Facet.DrawingMode.additive
     });
 }
 
@@ -87,8 +88,6 @@ function init_star_list()
 
 function draw_it()
 {
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // additive blending
     proj.set(Facet.perspective(45, 720/480, 0.1, 100));
     _.each(star_list, function(x) {
         x.draw(tilt, spin, twinkle);

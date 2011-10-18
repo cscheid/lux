@@ -12,7 +12,11 @@ Facet.unload_batch = function()
         });
     }
     previous_batch = {};
-}
+
+    // reset opengl capabilities determined by Facet.DrawingMode.*
+    ctx.disable(ctx.DEPTH_TEST);
+    ctx.disable(ctx.BLEND);
+};
 
 // FIXME: This is an ugly call. Don't call this directly; 
 // use Facet.model and Facet.bake instead
@@ -28,6 +32,7 @@ Facet.draw = function(batch)
 
         Facet.unload_batch();
         previous_batch = batch;
+        batch.drawing_mode.set_caps();
 
         ctx.useProgram(program);
 
