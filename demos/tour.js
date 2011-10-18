@@ -111,7 +111,7 @@ function init_webgl()
                                  S.vec(0,0), 
                                  S.vec(1,1)),
         fill_color: species_color,
-        stroke_color: Shade.color("black"),
+        stroke_color: S.mix(Shade.color("black"), species_color, 0.5),
         stroke_width: stroke_width,
         point_diameter: point_diameter
     });

@@ -23,21 +23,20 @@ function draw_it()
 $().ready(function () {
     var canvas = document.getElementById("webgl");
 
-    gl = Facet.initGL(canvas,
-                      {
-                          clearDepth: 1.0,
-                          clearColor: [0,0,0,1],
-                          display: draw_it,
-                          attributes:
-                          {
-                              alpha: true,
-                              depth: true
-                          },
-                          mousemove: function(event) {
-                              current_mouse_x = (event.offsetX / 720) - 0.5;
-                              current_mouse_y = (event.offsetY / 480) - 0.5;
-                          }
-                      });
+    gl = Facet.initGL(canvas, {
+        clearDepth: 1.0,
+        clearColor: [0,0,0,0.2],
+        display: draw_it,
+        attributes:
+        {
+            alpha: true,
+            depth: true
+        },
+        mousemove: function(event) {
+            current_mouse_x = (event.offsetX / 720) - 0.5;
+            current_mouse_y = (event.offsetY / 480) - 0.5;
+        }
+    });
 
     var flag = Models.mesh(50, 2);
 

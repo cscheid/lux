@@ -26,7 +26,7 @@ $().ready(function () {
     gl = Facet.initGL(canvas,
                       {
                           clearDepth: 1.0,
-                          clearColor: [0,0,0,1],
+                          clearColor: [0,0,0,0.2],
                           display: draw_it,
                           attributes:
                           {

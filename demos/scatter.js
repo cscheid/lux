@@ -12,13 +12,6 @@ var alive = false;
 
 function display()
 {
-    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-    gl.clearDepth(1.0);
-    gl.clearColor(0,0,0,0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    // gl.depthFunc(gl.LESS);
-    gl.enable(gl.BLEND);
-    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
     scatterplot_drawable.draw();
 }
 
@@ -56,9 +49,10 @@ function init_webgl()
         x_scale: S.Utils.fit(data.sepalLength),
         y_scale: S.Utils.fit(data.petalLength),
         fill_color: species_color,
-        stroke_color: S.vec(0, 0, 0, 1),
+        stroke_color: S.mix(species_color, S.color("black"), 0.5), // mul(S.vec(0.5, 0.5, 0.5, 0.5)),
         stroke_width: stroke_width,
-        point_diameter: point_diameter
+        point_diameter: point_diameter,
+        mode: Facet.DrawingMode.over
     });
 }
 
@@ -66,17 +60,17 @@ $().ready(function() {
     function change_pointsize() {
         var new_value = $("#pointsize").slider("value") / 10.0;
         point_diameter.set(new_value);
-        display();
+        gl.display();
     };
     function change_alpha() {
         var new_value = $("#pointalpha").slider("value") / 100.0;
         point_alpha.set(new_value);
-        display();
+        gl.display();
     };
     function change_stroke_width() {
         var new_value = $("#strokewidth").slider("value") / 10.0;
         stroke_width.set(new_value);
-        display();
+        gl.display();
     };
     $("#pointsize").slider({
         min: 0, 
@@ -106,7 +100,9 @@ $().ready(function() {
     gl = Facet.initGL(canvas, { attributes: { alpha: true,
                                               depth: true
                                             },
-                                debugging: true
+                                debugging: true,
+                                display: display,
+                                clearColor: [0, 0, 0, 0.2]
                               });
     init_webgl();
     var start = new Date().getTime();
@@ -114,7 +110,7 @@ $().ready(function() {
         if (alive) {
             window.requestAnimFrame(f, canvas);
         }
-        display();
+        gl.display();
     };
     f();
 });
