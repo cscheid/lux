@@ -8,14 +8,14 @@ span.jscomment {
 }
 
 span.jspunctuation {
-    color: #333333;
+    color: rgb(128, 116, 102);
 }
 
 span.jsidentifier {
 }
 
 span.jsnumber {
- color: steelblue ;
+ color: rgb(102, 147, 180) ;
 }
 
 span.jsstring {

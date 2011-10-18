@@ -3,18 +3,27 @@ body {
   text-rendering: optimizeLegibility;
   margin-top: 1em;
   overflow-y: scroll;
-  color: #333333;
+  color: rgb(255,232,204);
+  background-color: rgb(54, 44, 35); /*rgb(77, 62, 50);*/
+  background-image: url('css/brushed_metal.jpg');
+/* brushed metal textures based on zooboing's brushed metal
+
+   http://www.flickr.com/photos/zooboing/3662888243/sizes/o/in/set-72157620464703577/
+
+ */
 }
 
 .highlight {
     width: 700px;
-    background-color: #eeeeee;
     overflow-x: auto;
     padding: 10px;
+    background-color: rgb(43, 29, 23); /*rgb(51, 41, 33);*/
+    background-image: url('css/brushed_metal_dark.jpg');
+    border-radius: 0.3em;
 }
 
 a {
-  color: brown;
+  color: rgb(242, 184, 121);
   text-decoration: none;
 }
 
