@@ -4,7 +4,7 @@ span.jskeyword {
 
 span.jscomment {
  font-weight: bold ;
- color: brown ;
+ color: #FF5040;
 }
 
 span.jspunctuation {
@@ -15,13 +15,13 @@ span.jsidentifier {
 }
 
 span.jsnumber {
- color: rgb(102, 147, 180) ;
+ color: rgb(152, 197, 240) ;
 }
 
 span.jsstring {
- color: brown ;
+ color: #ff5040;
 }
 
 span.jsregexp {
- color: brown ;
+ color: #ff5040;
 }
