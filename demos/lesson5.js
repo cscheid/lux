@@ -13,8 +13,6 @@ function draw_it()
     var model_pyr  = mat4.product(Facet.translation(-1.5, 0, 0), Facet.rotation(angle, [0,1,0]));
     var view       = Facet.translation( 0, 0, -6);
     
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LESS);
     mvp.set(mat4.product(proj, mat4.product(view, model_cube)));
     cube_drawable.draw();
 

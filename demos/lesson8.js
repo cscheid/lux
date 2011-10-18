@@ -46,7 +46,8 @@ function create_cube_drawable(opts)
     var mvp = proj.mul(mv);
     return Facet.bake(cube_model, {
         position: mvp.mul(Shade.vec(cube_model.vertex, 1)),
-        color: final_color
+        color: final_color,
+        mode: Facet.DrawingMode.additive
     });
 }
 
@@ -55,11 +56,6 @@ function draw_it()
     var model_cube = Facet.rotation(angle, [1,1,1]);
     var view       = Facet.translation(0.0, 0.0, -6.0);
     gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // additive blending
-
-    // gl.enable(gl.DEPTH_TEST);
-    // gl.depthFunc(gl.LESS);
     mv.set(mat4.product(view, model_cube));
     proj.set(Facet.perspective(45, 720/480, 0.1, 100.0));
     cube_drawable.draw();

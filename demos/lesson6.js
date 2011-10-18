@@ -11,8 +11,6 @@ function draw_it()
     var model_cube = Facet.rotation(angle, [1,1,1]);
     var view       = Facet.translation(0.0, 0.0, -6.0);
     
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LESS);
     mvp.set(mat4.product(proj, mat4.product(view, model_cube)));
     cube_drawable.draw();
 }

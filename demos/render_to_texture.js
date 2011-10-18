@@ -28,7 +28,8 @@ function make_scene()
                                0, 1)),
             color: Shade.texture2D(Facet.texture_from_image({
                 src: "img/star.gif"
-            }), model.texCoord).mul(Shade.vec(color, 1.0))
+            }), model.texCoord).mul(Shade.vec(color, 1.0)),
+            mode: Facet.DrawingMode.additive
         });
     }
 
@@ -144,17 +145,12 @@ $().ready(function () {
         clearDepth: 1.0,
         clearColor: [0,0,0,1],
         display: function() {
-            gl.enable(gl.DEPTH_TEST);
             cube.draw();
 
             rb.render_to_buffer(function() {
                 gl.clearColor(0.1,0.2,0.3,1);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                gl.enable(gl.BLEND);
-                gl.disable(gl.DEPTH_TEST);
-                gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // additive blending
                 scene.draw();
-                gl.disable(gl.BLEND);
             });
         },
         attributes:
