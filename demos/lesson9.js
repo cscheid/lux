@@ -27,7 +27,7 @@ function star_drawable()
         position: proj.mul(mv).mul(Shade.vec(model.vertex, 0, 1)),
         color: Shade.texture2D(Facet.texture_from_image({
             src: "img/star.gif"
-        }), model.uv).mul(Shade.vec(color, 1.0)),
+        }), model.uv).swizzle("rgbr").mul(Shade.vec(color, 1.0)),
         mode: Facet.DrawingMode.additive
     });
 }
@@ -99,17 +99,16 @@ var counter = 0;
 $().ready(function () {
     var canvas = document.getElementById("webgl");
 
-    gl = Facet.initGL(canvas,
-                     {
-                         clearDepth: 1.0,
-                         clearColor: [0,0,0,1],
-                         display: draw_it,
-                         attributes:
-                         {
-                             alpha: true,
-                             depth: true
-                         }
-                     });
+    gl = Facet.initGL(canvas, {
+        clearDepth: 1.0,
+        clearColor: [0, 0, 0, 0.2],
+        display: draw_it,
+        attributes:
+        {
+            alpha: true,
+            depth: true
+        }
+    });
     mv = Shade.uniform("mat4");
     proj = Shade.uniform("mat4");
     color = Shade.uniform("vec3");

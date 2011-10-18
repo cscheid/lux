@@ -4,24 +4,24 @@ span.jskeyword {
 
 span.jscomment {
  font-weight: bold ;
- color: brown ;
+ color: #FF5040;
 }
 
 span.jspunctuation {
-    color: #333333;
+    color: rgb(128, 116, 102);
 }
 
 span.jsidentifier {
 }
 
 span.jsnumber {
- color: steelblue ;
+ color: rgb(152, 197, 240);
 }
 
 span.jsstring {
- color: brown ;
+ color: #ff5040;
 }
 
 span.jsregexp {
- color: brown ;
+ color: #ff5040;
 }
