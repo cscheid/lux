@@ -63,7 +63,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
             throw "Bad vec length: " + v.length;    
         }
     }
-    if (typeof(v) === 'matrix')
+    if (t === 'matrix')
         return mat.equal(v, mat[Math.sqrt(v.length)].identity());
     return false;
 };
@@ -82,13 +82,6 @@ Shade.Optimizer.is_plus_zero = function(exp)
          Shade.Optimizer.is_zero(exp.parents[1]));
 };
 
-Shade.Optimizer.is_times_one = function(exp)
-{
-    return exp.expression_type === 'operator*' &&
-        (Shade.Optimizer.is_mul_identity(exp.parents[0]) ||
-         Shade.Optimizer.is_mul_identity(exp.parents[1]));
-};
-
 Shade.Optimizer.replace_with_nonzero = function(exp)
 {
     if (Shade.Optimizer.is_zero(exp.parents[0]))
@@ -98,13 +91,45 @@ Shade.Optimizer.replace_with_nonzero = function(exp)
     throw "no zero value on input to replace_with_nonzero?!";
 };
 
+
+Shade.Optimizer.is_times_one = function(exp)
+{
+    if (exp.expression_type !== 'operator*')
+        return false;
+    var t1 = exp.parents[0].type, t2 = exp.parents[1].type;
+    var ft = Shade.Types.float_t;
+    if (t1.equals(t2)) {
+        return (Shade.Optimizer.is_mul_identity(exp.parents[0]) ||
+                Shade.Optimizer.is_mul_identity(exp.parents[1]));
+    } else if (!t1.equals(ft) && t2.equals(ft)) {
+        return Shade.Optimizer.is_mul_identity(exp.parents[1]);
+    } else if (t1.equals(ft) && !t2.equals(ft)) {
+        return Shade.Optimizer.is_mul_identity(exp.parents[0]);
+    } else if (t1.is_vec() && t2.is_mat()) {
+        return Shade.Optimizer.is_mul_identity(exp.parents[1]);
+    } else if (t1.is_mat() && t2.is_vec()) {
+        return Shade.Optimizer.is_mul_identity(exp.parents[0]);
+    } else {
+        throw "Internal error, never should have gotten here";
+    }
+};
+
 Shade.Optimizer.replace_with_notone = function(exp)
 {
-    if (Shade.Optimizer.is_mul_identity(exp.parents[0])) {
-        return exp.parents[1];
-    }
-    if (Shade.Optimizer.is_mul_identity(exp.parents[1])) {
+    var t1 = exp.parents[0].type, t2 = exp.parents[1].type;
+    var ft = Shade.Types.float_t;
+    if (t1.equals(t2)) {
+        if (Shade.Optimizer.is_mul_identity(exp.parents[0])) {
+            return exp.parents[1];
+        } else if (Shade.Optimizer.is_mul_identity(exp.parents[1])) {
+            return exp.parents[0];
+        } else {
+            throw "Intenal error, never should have gotten here";
+        }
+    } else if (!t1.equals(ft) && t2.equals(ft)) {
         return exp.parents[0];
+    } else if (t1.equals(ft) && !t2.equals(ft)) {
+        return exp.parents[1];
     }
     throw "no is_mul_identity value on input to replace_with_notone?!";
 };

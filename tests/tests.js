@@ -279,4 +279,19 @@ test("Shade optimizer", function() {
 
     exp = Shade.mul(uniform, Shade.vec(0.5, 0.5, 0.5, 1));
     equal(Shade.Optimizer.is_times_one(exp), false, "detect false times one");
+
+    // There's a slight subtlety here in that vec(1,1,1,1) is identity in
+    // vec(1,1,1,1) * vec4(foo), but not in vec(1,1,1,1) * 5.
+    exp = Shade.mul(Shade.vec(1, 1, 1, 1), 0.5);
+    equal(Shade.Optimizer.is_times_one(exp), false, "detect false times one");
+
+    var identity = Shade.mat(Shade.vec(1, 0, 0, 0),
+                             Shade.vec(0, 1, 0, 0),
+                             Shade.vec(0, 0, 1, 0),
+                             Shade.vec(0, 0, 0, 1));
+    equal(Shade.Optimizer.is_mul_identity(identity), true, "detect multiplicative identity");
+
+    exp = Shade.mul(identity,
+                    Shade.vec(1,1,1,1));
+    equal(Shade.Optimizer.is_times_one(exp), true, "detect heterogenous times one");
 });
