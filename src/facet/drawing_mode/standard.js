@@ -1,5 +1,11 @@
 Facet.DrawingMode.standard = {
-    set_caps: function()
+    set_draw_caps: function()
+    {
+        var ctx = Facet.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+    },
+    set_pick_caps: function()
     {
         var ctx = Facet.ctx;
         ctx.enable(ctx.DEPTH_TEST);

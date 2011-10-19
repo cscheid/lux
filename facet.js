@@ -3113,6 +3113,89 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
 };
 (function() {
 
+var previous_batch = {};
+Facet.unload_batch = function()
+{
+    var ctx = Facet.ctx;
+    if (previous_batch.attributes) {
+        for (var key in previous_batch.attributes) {
+            ctx.disableVertexAttribArray(previous_batch.program[key]);
+        }
+        _.each(previous_batch.program.uniforms, function (uniform) {
+            delete uniform._facet_active_uniform;
+        });
+    }
+    previous_batch = {};
+
+    // reset the opengl capabilities which are determined by
+    // Facet.DrawingMode.*
+    ctx.disable(ctx.DEPTH_TEST);
+    ctx.disable(ctx.BLEND);
+    ctx.depthMask(true);
+};
+
+function draw_it(batch)
+{
+    var ctx = Facet.ctx;
+    if (batch.batch_id !== previous_batch.batch_id) {
+        var attributes = batch.attributes || {};
+        var uniforms = batch.uniforms || {};
+        var program = batch.program;
+        var primitives = batch.primitives;
+        var key;
+
+        Facet.unload_batch();
+        previous_batch = batch;
+        batch.drawing_mode.set_draw_caps();
+
+        ctx.useProgram(program);
+
+        for (key in attributes) {
+            var attr = program[key];
+            if (typeof attr !== 'undefined') {
+                ctx.enableVertexAttribArray(attr);
+                attributes[key].bind(attr);
+            }
+        }
+        
+        var currentActiveTexture = 0;
+        _.each(program.uniforms, function(uniform) {
+            var key = uniform.uniform_name;
+            var call = uniform.uniform_call,
+                value = uniform.get();
+            if (typeOf(value) === 'undefined') {
+                throw "uniform " + key + " has not been set.";
+            }
+            var t = constant_type(value);
+            if (t === "other") {
+                uniform._facet_active_uniform = (function(uid, cat) {
+                    return function(v) {
+                        ctx.activeTexture(ctx.TEXTURE0 + cat);
+                        ctx.bindTexture(ctx.TEXTURE_2D, v);
+                        ctx.uniform1i(uid, cat);
+                    };
+                })(program[key], currentActiveTexture);
+                currentActiveTexture++;
+            } else if (t === "number" || t == "vector") {
+                uniform._facet_active_uniform = (function(call, uid) {
+                    return function(v) {
+                        call.call(ctx, uid, v);
+                    };
+                })(ctx[call], program[key]);
+            } else if (t === "matrix") {
+                uniform._facet_active_uniform = (function(call, uid) {
+                    return function(v) {
+                        ctx[call](uid, false, v);
+                    };
+                })(call, program[key]);
+            }
+            uniform._facet_active_uniform(value);
+        });
+    }
+
+    batch.draw_chunk();
+};
+
 var largest_batch_id = 1;
 
 // FIXME: push the primitives weirdness fix down the API
@@ -3131,8 +3214,6 @@ Facet.bake = function(model, appearance)
         var b = program.attribute_buffers[i];
         attribute_arrays[b._shade_name] = b;
     }
-
-    // primitives[model.type] = model.elements;
 
     var primitive_types = {
         points: ctx.POINTS,
@@ -3158,18 +3239,28 @@ Facet.bake = function(model, appearance)
     }
     var primitives = [primitive_types[model.type], model.elements];
 
+    var draw_batch_id = largest_batch_id++;
+    var pick_batch_id = largest_batch_id++;
+
     var draw_opts = {
         program: program,
         attributes: attribute_arrays,
         drawing_mode: appearance.mode || Facet.DrawingMode.standard,
-        draw_chunk: draw_chunk
+        draw_chunk: draw_chunk,
+        batch_id: draw_batch_id
+    };
+
+    var pick_opts = {
+        program: program,
+        attributes: attribute_arrays,
+        drawing_mode: appearance.mode || Facet.DrawingMode.standard,
+        draw_chunk: draw_chunk,
+        batch_id: draw_batch_id
     };
 
     return {
-        batch_id: largest_batch_id++,
         draw: function() {
-            draw_opts.batch_id = this.batch_id;
-            Facet.draw(draw_opts);
+            draw_it(draw_opts);
         }
     };
 };
@@ -3258,88 +3349,6 @@ Facet.Camera.perspective = function(opts)
     };
 };
 (function() {
-var previous_batch = {};
-Facet.unload_batch = function()
-{
-    var ctx = Facet.ctx;
-    if (previous_batch.attributes) {
-        for (var key in previous_batch.attributes) {
-            ctx.disableVertexAttribArray(previous_batch.program[key]);
-        }
-        _.each(previous_batch.program.uniforms, function (uniform) {
-            delete uniform._facet_active_uniform;
-        });
-    }
-    previous_batch = {};
-
-    // reset opengl capabilities determined by Facet.DrawingMode.*
-    ctx.disable(ctx.DEPTH_TEST);
-    ctx.disable(ctx.BLEND);
-};
-
-// FIXME: This is an ugly call. Don't call this directly; 
-// use Facet.model and Facet.bake instead
-Facet.draw = function(batch)
-{
-    var ctx = Facet.ctx;
-    if (batch.batch_id !== previous_batch.batch_id) {
-        var attributes = batch.attributes || {};
-        var uniforms = batch.uniforms || {};
-        var program = batch.program;
-        var primitives = batch.primitives;
-        var key;
-
-        Facet.unload_batch();
-        previous_batch = batch;
-        batch.drawing_mode.set_caps();
-
-        ctx.useProgram(program);
-
-        for (key in attributes) {
-            var attr = program[key];
-            if (typeof attr !== 'undefined') {
-                ctx.enableVertexAttribArray(attr);
-                attributes[key].bind(attr);
-            }
-        }
-        
-        var currentActiveTexture = 0;
-        _.each(program.uniforms, function(uniform) {
-            var key = uniform.uniform_name;
-            var call = uniform.uniform_call,
-                value = uniform.get();
-            if (typeOf(value) === 'undefined') {
-                throw "uniform " + key + " has not been set.";
-            }
-            var t = constant_type(value);
-            if (t === "other") {
-                uniform._facet_active_uniform = (function(uid, cat) {
-                    return function(v) {
-                        ctx.activeTexture(ctx.TEXTURE0 + cat);
-                        ctx.bindTexture(ctx.TEXTURE_2D, v);
-                        ctx.uniform1i(uid, cat);
-                    };
-                })(program[key], currentActiveTexture);
-                currentActiveTexture++;
-            } else if (t === "number" || t == "vector") {
-                uniform._facet_active_uniform = (function(call, uid) {
-                    return function(v) {
-                        call.call(ctx, uid, v);
-                    };
-                })(ctx[call], program[key]);
-            } else if (t === "matrix") {
-                uniform._facet_active_uniform = (function(call, uid) {
-                    return function(v) {
-                        ctx[call](uid, false, v);
-                    };
-                })(call, program[key]);
-            }
-            uniform._facet_active_uniform(value);
-        });
-    }
-
-    batch.draw_chunk();
-};
 
 })();
 Facet.element_buffer = function(vertex_array)
@@ -3887,31 +3896,89 @@ Facet.Scale.Geo.latlong_to_spherical = function(lat, lon)
 
 Facet.DrawingMode = {};
 Facet.DrawingMode.additive = {
-    set_caps: function()
+    set_draw_caps: function()
     {
         var ctx = Facet.ctx;
         ctx.enable(ctx.BLEND);
         ctx.blendFunc(ctx.SRC_ALPHA, ctx.ONE);
-    }
-};
-// currently no_depth is no-op
-Facet.DrawingMode.no_depth = {
-    set_caps: function()
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
+    },
+    set_pick_caps: function()
     {
+        var ctx = Facet.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
     }
 };
-// over corresponds to the standard porter-duff over operator
+// over is the standard porter-duff over operator
+
+// NB: since over is associative but not commutative, we need
+// back-to-front rendering for correct results,
+// and then the depth buffer is not necessary. 
+// 
+// In the case of incorrect behavior (that is, when contents are not
+// rendered back-to-front), it is not clear which of the two incorrect 
+// behaviors are preferable:
+// 
+// 1. that depth buffer writing be enabled, and some things which should
+// be rendered "behind" alpha-blended simply disappear (this gets
+// worse the more transparent objects get)
+//
+// 2. that depth buffer writing be disabled, and some things which would be
+// entirely occluded by others simply appear (this gets worse the more opaque
+// objects get)
+//
+// These two behaviors correspond respectively to 
+// Facet.DrawingMode.over_with_depth and Facet.DrawingMode.over
+
 Facet.DrawingMode.over = {
-    set_caps: function()
+    set_draw_caps: function()
     {
         var ctx = Facet.ctx;
         ctx.enable(ctx.BLEND);
         ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
                               ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
+    },
+    set_pick_caps: function()
+    {
+        var ctx = Facet.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
+    }
+};
+
+Facet.DrawingMode.over_with_depth = {
+    set_draw_caps: function()
+    {
+        var ctx = Facet.ctx;
+        ctx.enable(ctx.BLEND);
+        ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
+                              ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+    },
+    set_pick_caps: function()
+    {
+        var ctx = Facet.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
     }
 };
 Facet.DrawingMode.standard = {
-    set_caps: function()
+    set_draw_caps: function()
+    {
+        var ctx = Facet.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+    },
+    set_pick_caps: function()
     {
         var ctx = Facet.ctx;
         ctx.enable(ctx.DEPTH_TEST);

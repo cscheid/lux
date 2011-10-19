@@ -50,7 +50,6 @@ facet.js:					\
 	src/facet/scale/geo/latlong_to_spherical.js	\
 	src/facet/drawing_mode/_begin.js	\
 	src/facet/drawing_mode/additive.js	\
-	src/facet/drawing_mode/no_depth.js	\
 	src/facet/drawing_mode/over.js		\
 	src/facet/drawing_mode/standard.js	\
 	src/shade/_begin.js			\
