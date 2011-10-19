@@ -3,6 +3,6 @@ Facet.DrawingMode.additive = {
     {
         var ctx = Facet.ctx;
         ctx.enable(ctx.BLEND);
-        ctx.blendFunc(ctx.ONE, ctx.ONE);
+        ctx.blendFunc(ctx.SRC_ALPHA, ctx.ONE);
     }
 };
