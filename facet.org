@@ -133,4 +133,6 @@ stricter type checking.
 ** TODO Code review on FIXMEs
 * Features
 ** Interaction
+** Multiple WebGL canvases in a same page
+This means multiple contexts, and lots of things are going to break.
 * Other
