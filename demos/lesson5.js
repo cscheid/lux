@@ -1,40 +1,42 @@
 var gl;
 var cube_drawable, pyramid_drawable;
-var mvp; // model_view_projection
+var model_mat;
 var angle = 0;
 
 //////////////////////////////////////////////////////////////////////////////
 
 function draw_it()
 {
-    var proj = Facet.perspective(45, 720/480, 0.1, 100.0);
-
     var model_cube = mat4.product(Facet.translation( 1.5, 0, 0), Facet.rotation(angle, [1,1,1]));
     var model_pyr  = mat4.product(Facet.translation(-1.5, 0, 0), Facet.rotation(angle, [0,1,0]));
-    var view       = Facet.translation( 0, 0, -6);
     
-    mvp.set(mat4.product(proj, mat4.product(view, model_cube)));
+    model_mat.set(model_cube);
     cube_drawable.draw();
 
-    mvp.set(mat4.product(proj, mat4.product(view, model_pyr)));
+    model_mat.set(model_pyr);
     pyramid_drawable.draw();
 }
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-
-    gl = Facet.initGL(canvas,
-                      {
-                          clearDepth: 1.0,
-                          clearColor: [0,0,0,0.2],
-                          display: draw_it,
-                          attributes:
-                          {
-                              alpha: true,
-                              depth: true
-                          },
-                          debugging: true
-                      });
+    var camera = Facet.Camera.perspective({
+        look_at: [[0, 0, 6], [0, 0, -1], [0, 1, 0]],
+        field_of_view_y: 45,
+        aspect_ratio: 720/480,
+        near_distance: 0.1,
+        far_distance: 100
+    });
+    model_mat = Shade.uniform("mat4");
+    gl = Facet.initGL(canvas, {
+        clearDepth: 1.0,
+        clearColor: [0,0,0,0.2],
+        display: draw_it,
+        attributes: {
+            alpha: true,
+            depth: true
+        },
+        debugging: true
+    });
 
     var g = Shade.color('green'),
         r = Shade.color('red'),
@@ -83,15 +85,13 @@ $().ready(function () {
         color: [r, g, b, g, b]
     });
 
-    mvp = Shade.uniform("mat4");
-
     cube_drawable = Facet.bake(cube, {
-        position: mvp.mul(Shade.vec(cube.vertex, 1)),
+        position: camera.project(model_mat.mul(Shade.vec(cube.vertex, 1))),
         color: cube.color
     });
 
     pyramid_drawable = Facet.bake(pyramid, {
-        position: mvp.mul(Shade.vec(pyramid.vertex, 1)),
+        position: camera.project(model_mat.mul(Shade.vec(pyramid.vertex, 1))),
         color: pyramid.color
     });
 

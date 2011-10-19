@@ -29,6 +29,8 @@ facet.js:					\
 	src/typeinfo.js				\
 	src/facet/attribute_buffer.js		\
 	src/facet/bake.js			\
+	src/facet/camera/_begin.js		\
+	src/facet/camera/perspective.js		\
 	src/facet/draw.js			\
 	src/facet/element_buffer.js		\
 	src/facet/init.js			\
