@@ -1,6 +1,7 @@
 (function() {
 
 var previous_batch = {};
+
 Facet.unload_batch = function()
 {
     var ctx = Facet._globals.ctx;
@@ -33,7 +34,7 @@ function draw_it(batch)
 
         Facet.unload_batch();
         previous_batch = batch;
-        batch.drawing_mode.set_draw_caps();
+        batch.set_caps();
 
         ctx.useProgram(program);
 
@@ -132,7 +133,8 @@ Facet.bake = function(model, appearance)
     var draw_opts = {
         program: program,
         attributes: attribute_arrays,
-        drawing_mode: appearance.mode || Facet.DrawingMode.standard,
+        set_caps: ((appearance.mode && appearance.mode.set_draw_caps) || 
+                   Facet.DrawingMode.standard.set_draw_caps),
         draw_chunk: draw_chunk,
         batch_id: draw_batch_id
     };
@@ -140,14 +142,18 @@ Facet.bake = function(model, appearance)
     var pick_opts = {
         program: program,
         attributes: attribute_arrays,
-        drawing_mode: appearance.mode || Facet.DrawingMode.standard,
+        set_caps: ((appearance.mode && appearance.mode.set_pick_caps) || 
+                   Facet.DrawingMode.standard.set_pick_caps),
         draw_chunk: draw_chunk,
-        batch_id: draw_batch_id
+        batch_id: pick_batch_id
     };
 
     return {
         draw: function() {
             draw_it(draw_opts);
+        },
+        pick: function() {
+            draw_it(pick_opts);
         }
     };
 };
