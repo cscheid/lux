@@ -19,7 +19,7 @@ function init_webgl()
 {
     Facet.set_context(gl);
 
-    var tex = Facet.texture_from_image({ 
+    var tex = Facet.texture({ 
         src: "image.png",
         onload: function() {
             display();

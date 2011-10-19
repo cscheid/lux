@@ -2,7 +2,7 @@
 // load texture from DOM element or URL. 
 // BEWARE SAME-DOMAIN POLICY!
 
-Facet.texture_from_image = function(opts)
+Facet.texture = function(opts)
 {
     var ctx = Facet.ctx;
     var onload = opts.onload || function() {};

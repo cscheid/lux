@@ -45,7 +45,7 @@ $().ready(function () {
 
     cube_drawable = Facet.bake(flag, {
         position: mvp.mul(Shade.vec(flag.vertex, Shade.sin(flag.uv.at(0).mul(20).add(phase)).mul(0.08), 1)),
-        color: Shade.texture2D(Facet.texture_from_image({ src: "img/sunflower.jpg" }),
+        color: Shade.texture2D(Facet.texture({ src: "img/sunflower.jpg" }),
                                flag.uv)
     });
 

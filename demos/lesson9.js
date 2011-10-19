@@ -25,7 +25,7 @@ function star_drawable()
     var model = square_model();
     return Facet.bake(model, {
         position: proj.mul(mv).mul(Shade.vec(model.vertex, 0, 1)),
-        color: Shade.texture2D(Facet.texture_from_image({
+        color: Shade.texture2D(Facet.texture({
             src: "img/star.gif"
         }), model.uv).swizzle("rgbr").mul(Shade.vec(color, 1.0)),
         mode: Facet.DrawingMode.additive

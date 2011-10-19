@@ -173,7 +173,7 @@ $().ready(function () {
     mv = Shade.uniform("mat4");
     proj = Shade.uniform("mat4");
 
-    texture = Facet.texture_from_image({
+    texture = Facet.texture({
         width: 2048,
         height: 2048,
         TEXTURE_MAG_FILTER: gl.LINEAR,
