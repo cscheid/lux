@@ -1,11 +1,11 @@
 function sphere_mercator_coords(tess)
 {
-    var uv = [];
+    var tex_coord = [];
     var elements = [];
 
     for (var i=0; i<=tess; ++i)
         for (var j=0; j<=tess; ++j)
-            uv.push(i/tess, j/tess);
+            tex_coord.push(i/tess, j/tess);
 
     for (i=0; i<tess; ++i)
         for (var j=0; j<tess; ++j) {
@@ -15,10 +15,10 @@ function sphere_mercator_coords(tess)
 
     return Facet.model({
         type: "triangles",
-        uv: [uv, 2],
+        tex_coord: [tex_coord, 2],
         elements: elements,
         vertex: function() {
-            var xf = this.uv.mul(2*Math.PI).add(Shade.vec(0, -Math.PI));
+            var xf = this.tex_coord.mul(2*Math.PI).add(Shade.vec(0, -Math.PI));
             var lat = xf.at(1).sinh().atan();
             var lon = xf.at(0);
             var stretch = lat.cos();
@@ -90,7 +90,7 @@ $().ready(function () {
 
     var sphere_drawable = Facet.bake(sphere, {
         position: proj.mul(mv).mul(sphere.vertex()),
-        color: Shade.texture2D(texture, sphere.uv)
+        color: Shade.texture2D(texture, sphere.tex_coord)
     });
     gl.display();
 });

@@ -28,7 +28,7 @@ function make_scene()
                                0, 1)),
             color: Shade.texture2D(Facet.texture({
                 src: "img/star.gif"
-            }), model.texCoord).mul(Shade.vec(color, 1.0)),
+            }), model.tex_coord).mul(Shade.vec(color, 1.0)),
             mode: Facet.DrawingMode.additive
         });
     }
@@ -116,7 +116,7 @@ function create_cube_drawable(texture, mv, proj)
     var background_color = Shade.vec(0.5, 0.5, 0.5, 1);
 
     var cube_model = Models.flat_cube();
-    var material_color = Shade.texture2D(texture, cube_model.uv);
+    var material_color = Shade.texture2D(texture, cube_model.tex_coord);
 
     var final_color;
     var mat3 = Shade.mat3(mv);
