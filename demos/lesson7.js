@@ -17,7 +17,7 @@ var mat_ambient = Shade.vec(0.2, 0.2, 0.2, 1);
 
 function create_cube_drawable(opts)
 {
-    var material_color = Shade.texture2D(sampler, cube_model.uv);
+    var material_color = Shade.texture2D(sampler, cube_model.tex_coord);
     var final_color;
     opts = opts || {};
 
@@ -89,33 +89,7 @@ $().ready(function () {
     // only 8 vertices in a cube, we end up with 24 of them, since we
     // need three different texture coordinates per corner.
 
-    cube_model = Facet.model({
-        type: "triangles",
-        elements: [0,  1,  2,  0,  2,  3,
-                   4,  5,  6,  4,  6,  7,
-                   8,  9,  10, 8,  10, 11,
-                   12, 13, 14, 12, 14, 15,
-                   16, 17, 18, 16, 18, 19,
-                   20, 21, 22, 20, 22, 23],
-        vertex: [[ 1, 1,-1, -1, 1,-1, -1, 1, 1,  1, 1, 1,
-                   1,-1, 1, -1,-1, 1, -1,-1,-1,  1,-1,-1,
-                   1, 1, 1, -1, 1, 1, -1,-1, 1,  1,-1, 1,
-                   1,-1,-1, -1,-1,-1, -1, 1,-1,  1, 1,-1,
-                  -1, 1, 1, -1, 1,-1, -1,-1,-1, -1,-1, 1,
-                   1, 1,-1,  1, 1, 1,  1,-1, 1,  1,-1,-1], 3],
-        normal: [[ 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
-                   0,-1, 0, 0,-1, 0, 0,-1, 0, 0,-1, 0,
-                   0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
-                   0, 0,-1, 0, 0,-1, 0, 0,-1, 0, 0,-1,
-                  -1, 0, 0,-1, 0, 0,-1, 0, 0,-1, 0, 0,
-                   1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0], 3],
-        uv: [[0,0, 1,0, 1,1, 0,1,
-              0,0, 1,0, 1,1, 0,1,
-              0,0, 1,0, 1,1, 0,1,
-              0,0, 1,0, 1,1, 0,1,
-              0,0, 1,0, 1,1, 0,1,
-              0,0, 1,0, 1,1, 0,1], 2]
-    });
+    cube_model = Facet.flat_cube();
 
     mv = Shade.uniform("mat4");
     proj = Shade.uniform("mat4");
