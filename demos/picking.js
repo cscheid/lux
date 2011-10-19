@@ -11,10 +11,10 @@ function draw_it()
     var model_pyr  = mat4.product(Facet.translation(-1.5, 0, 0), Facet.rotation(angle, [0,1,0]));
     
     model_mat.set(model_cube);
-    cube_drawable._draw();
+    cube_drawable.draw();
 
-//     model_mat.set(model_pyr);
-//     pyramid_drawable.draw();
+    model_mat.set(model_pyr);
+    pyramid_drawable.draw();
 }
 
 $().ready(function () {
@@ -27,6 +27,11 @@ $().ready(function () {
         far_distance: 100
     });
     model_mat = Shade.uniform("mat4");
+    var strings = ["Nothing",
+                   "Green Face", "Orange Face",
+                   "Red Face", "Yellow Face",
+                   "Blue Face", "Violet Face",
+                   "Pyramid"];
     gl = Facet.initGL(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
@@ -39,8 +44,8 @@ $().ready(function () {
         debugging: true,
         mousedown: function(event) {
             Facet.Picker.draw_pick_scene();
-            var r = Facet.Picker.pick(event.offsetX, event.offsetY);
-            console.log(r);
+            var r = Facet.Picker.pick(event.offsetX, gl.viewportHeight - event.offsetY);
+            console.log(strings[r]);
         }
     });
 
@@ -91,18 +96,21 @@ $().ready(function () {
         color: [r, g, b, g, b]
     });
 
+    // one id per face of the cube
+    var ids = Facet.id_buffer([1,1,1,1,2,2,2,2,3,3,3,3,
+                               4,4,4,4,5,5,5,5,6,6,6,6]);
     Shade.debug = true;
     cube_drawable = Facet.bake(cube, {
         position: camera.project(model_mat.mul(Shade.vec(cube.vertex, 1))),
         color: cube.color,
-        pick_id: Facet.id_buffer(1,1,1,1,2,2,2,2,3,3,3,3,
-                                 4,4,4,4,5,5,5,5,6,6,6,6)
+        pick_id: ids
     });
 
-//     pyramid_drawable = Facet.bake(pyramid, {
-//         position: camera.project(model_mat.mul(Shade.vec(pyramid.vertex, 1))),
-//         color: pyramid.color
-//     });
+    pyramid_drawable = Facet.bake(pyramid, {
+        position: camera.project(model_mat.mul(Shade.vec(pyramid.vertex, 1))),
+        color: pyramid.color,
+        pick_id: Shade.id(7)
+    });
 
     var start = new Date().getTime();
     var f = function() {

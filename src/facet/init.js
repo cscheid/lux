@@ -65,8 +65,6 @@ Facet.initGL = function(canvas, opts)
         alert("Could not initialise WebGL, sorry :-(");
     }
 
-    console.log(gl.getExtension("OES_texture_float"));
-
     gl.display = function() {
         this.viewport(0, 0, this.viewportWidth, this.viewportHeight);
         this.clearDepth(clearDepth);

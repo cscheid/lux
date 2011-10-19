@@ -1,6 +1,9 @@
-Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
+Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
 {
     var ctx = Facet._globals.ctx;
+    if (normalized === undefined) {
+        normalized = false;
+    }
     var gl_enum_typed_array_map = {
         'float': [ctx.FLOAT, Float32Array],
         'short': [ctx.SHORT, Int16Array],
@@ -23,7 +26,7 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
     result.bind = function(type) {
         return function(attribute) {
             ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-            ctx.vertexAttribPointer(attribute, this.itemSize, type, false, 0, 0);
+            ctx.vertexAttribPointer(attribute, this.itemSize, type, normalized, 0, 0);
         };
     }(itemType[0]);
     result.draw = function(primitive) {

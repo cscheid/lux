@@ -3092,9 +3092,12 @@ function typeOf(value)
     }
     return s;
 }
-Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
+Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
 {
     var ctx = Facet._globals.ctx;
+    if (normalized === undefined) {
+        normalized = false;
+    }
     var gl_enum_typed_array_map = {
         'float': [ctx.FLOAT, Float32Array],
         'short': [ctx.SHORT, Int16Array],
@@ -3117,7 +3120,7 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
     result.bind = function(type) {
         return function(attribute) {
             ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-            ctx.vertexAttribPointer(attribute, this.itemSize, type, false, 0, 0);
+            ctx.vertexAttribPointer(attribute, this.itemSize, type, normalized, 0, 0);
         };
     }(itemType[0]);
     result.draw = function(primitive) {
@@ -3435,8 +3438,11 @@ Facet.element_buffer = function(vertex_array)
 };
 Facet.id_buffer = function(vertex_array)
 {
+    if (typeOf(vertex_array) !== 'array')
+        throw "id_buffer expects array of integers";
     var typedArray = new Int32Array(vertex_array);
-    return Facet.attribute_buffer(typedArray, 4, 'ubyte');
+    var byteArray = new Uint8Array(typedArray.buffer);
+    return Facet.attribute_buffer(byteArray, 4, 'ubyte', true);
 };
 Facet.initGL = function(canvas, opts)
 {
@@ -3504,8 +3510,6 @@ Facet.initGL = function(canvas, opts)
     if (!gl) {
         alert("Could not initialise WebGL, sorry :-(");
     }
-
-    console.log(gl.getExtension("OES_texture_float"));
 
     gl.display = function() {
         this.viewport(0, 0, this.viewportWidth, this.viewportHeight);
@@ -3739,7 +3743,6 @@ Facet.Picker = {
         var ctx = Facet._globals.ctx;
         var buf = new ArrayBuffer(4);
         var result_bytes = new Uint8Array(4);
-        console.log(x, y);
         ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                        result_bytes);
         rb.render_to_buffer(function() {
@@ -5176,7 +5179,6 @@ Shade.constant = function(v)
                 }
             });
         } else {
-            console.log(t, v);
             throw "type error: constant should be bool, number, vector or matrix";
         }
     }
