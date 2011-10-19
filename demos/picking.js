@@ -41,11 +41,11 @@ $().ready(function () {
             depth: true,
             preserveDrawingBuffer: true
         },
-        debugging: true,
         mousedown: function(event) {
             Facet.Picker.draw_pick_scene();
             var r = Facet.Picker.pick(event.offsetX, gl.viewportHeight - event.offsetY);
-            console.log(strings[r]);
+            $("#pickresult").html(strings[r]);
+            // console.log(strings[r]);
         }
     });
 
@@ -99,7 +99,6 @@ $().ready(function () {
     // one id per face of the cube
     var ids = Facet.id_buffer([1,1,1,1,2,2,2,2,3,3,3,3,
                                4,4,4,4,5,5,5,5,6,6,6,6]);
-    Shade.debug = true;
     cube_drawable = Facet.bake(cube, {
         position: camera.project(model_mat.mul(Shade.vec(cube.vertex, 1))),
         color: cube.color,
