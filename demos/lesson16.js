@@ -57,7 +57,7 @@ function create_cube_drawable(opts)
         TEXTURE_MAG_FILTER: gl.LINEAR,
         TEXTURE_MIN_FILTER: gl.LINEAR_MIPMAP_NEAREST,
         mipmaps: true
-    }), cube_model.uv);
+    }), cube_model.tex_coord);
 
     opts = _.defaults(opts, { 
         lighting: false,

@@ -37,7 +37,7 @@ $().ready(function () {
     cube_drawable = Facet.bake(cube, {
         position: mvp.mul(Shade.vec(cube.vertex, 1)),
         color: Shade.texture2D(Facet.texture_from_image({ src: "img/nehe.jpg" }),
-                               cube.uv)
+                               cube.tex_coord)
     });
 
     var start = new Date().getTime();

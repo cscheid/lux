@@ -3808,7 +3808,7 @@ Facet.DrawingMode.additive = {
     {
         var ctx = Facet.ctx;
         ctx.enable(ctx.BLEND);
-        ctx.blendFunc(ctx.ONE, ctx.ONE);
+        ctx.blendFunc(ctx.SRC_ALPHA, ctx.ONE);
     }
 };
 // currently no_depth is no-op
@@ -7368,7 +7368,7 @@ var Models = {
         var cosphi = S.cos(phi);
         return Facet.model({
             type: "triangle_strip",
-            uv: uv_attr,
+            tex_coord: uv_attr,
             vertex: Shade.mul(uv_attr, 2).sub(Shade.vec(1, 1)),
             elements: Facet.element_buffer(elements)
         });
@@ -7420,7 +7420,7 @@ var Models = {
             type: "triangles",
             elements: Facet.element_buffer([0, 1, 2, 1, 3, 2]),
             vertex: uv,
-            texCoord: uv
+            tex_coord: uv
         });
     },
 
@@ -7445,12 +7445,12 @@ var Models = {
                        0, 0,-1, 0, 0,-1, 0, 0,-1, 0, 0,-1,
                        -1, 0, 0,-1, 0, 0,-1, 0, 0,-1, 0, 0,
                        1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0], 3],
-            uv: [[0,0, 1,0, 1,1, 0,1,
-                  0,0, 1,0, 1,1, 0,1,
-                  0,0, 1,0, 1,1, 0,1,
-                  0,0, 1,0, 1,1, 0,1,
-                  0,0, 1,0, 1,1, 0,1,
-                  0,0, 1,0, 1,1, 0,1], 2]
+            tex_coord: [[0,0, 1,0, 1,1, 0,1,
+                         0,0, 1,0, 1,1, 0,1,
+                         0,0, 1,0, 1,1, 0,1,
+                         0,0, 1,0, 1,1, 0,1,
+                         0,0, 1,0, 1,1, 0,1,
+                         0,0, 1,0, 1,1, 0,1], 2]
         });
     }
 };
