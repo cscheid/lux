@@ -957,6 +957,18 @@ window.requestAnimFrame = (function() {
 })();
 
 
+// Some underscore.js extensions
+
+// build objects from key-value pair lists
+_.mixin({
+    build: function(iterable) {
+        var result = {};
+        _.each(iterable, function(v) {
+            result[v[0]] = v[1];
+        });
+        return result;
+    }
+});
 // The linalg module is inspired by glMatrix and Sylvester.
 
 // The goal is to be comparably fast as glMatrix but as close to
@@ -3209,18 +3221,16 @@ var largest_batch_id = 1;
 Facet.bake = function(model, appearance)
 {
     var ctx = Facet._globals.ctx;
-    var program_exp = {};
+    var draw_program_exp = {};
     _.each(appearance, function(value, key) {
         if (Shade.is_program_parameter(key)) {
-            program_exp[key] = value;
+            draw_program_exp[key] = value;
         }
     });
-    var program = Shade.program(program_exp);
-    var attribute_arrays = {};
-    for (var i=0; i<program.attribute_buffers.length; ++i) {
-        var b = program.attribute_buffers[i];
-        attribute_arrays[b._shade_name] = b;
-    }
+    var draw_program = Shade.program(draw_program_exp);
+    var draw_attribute_arrays = _.build(_.map(
+        draw_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
+    ));
 
     var primitive_types = {
         points: ctx.POINTS,
@@ -3247,34 +3257,64 @@ Facet.bake = function(model, appearance)
     var primitives = [primitive_types[model.type], model.elements];
 
     var draw_batch_id = largest_batch_id++;
-    var pick_batch_id = largest_batch_id++;
 
     var draw_opts = {
-        program: program,
-        attributes: attribute_arrays,
+        program: draw_program,
+        attributes: draw_attribute_arrays,
         set_caps: ((appearance.mode && appearance.mode.set_draw_caps) || 
                    Facet.DrawingMode.standard.set_draw_caps),
         draw_chunk: draw_chunk,
         batch_id: draw_batch_id
     };
 
+    // if no picking is defined, pick to -1, so we at least occlude
+    // what was in the background.
+    var pick_id = Shade.make(appearance.pick_id || Shade.id(-1));
+
+    var pick_program_exp = {};
+    _.each(appearance, function(value, key) {
+        if (Shade.is_program_parameter(key)) {
+            if (key === 'color' || key === 'gl_FragColor') {
+                var pick_if = (appearance.pick_if ||
+                               Shade.make(value).swizzle("a").gt(0));
+                pick_program_exp[key] = pick_id
+                    .discard_if(Shade.logical_not(pick_if));
+            } else {
+                pick_program_exp[key] = value;
+            }
+        }
+    });
+    var pick_program = Shade.program(pick_program_exp);
+    var pick_attribute_arrays = _.build(_.map(
+        pick_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
+    ));
+        
+    var pick_batch_id = largest_batch_id++;
     var pick_opts = {
-        program: program,
-        attributes: attribute_arrays,
+        program: pick_program,
+        attributes: pick_attribute_arrays,
         set_caps: ((appearance.mode && appearance.mode.set_pick_caps) || 
                    Facet.DrawingMode.standard.set_pick_caps),
         draw_chunk: draw_chunk,
         batch_id: pick_batch_id
     };
 
-    return {
+    var which_opts = [ draw_opts, pick_opts ];
+
+    var result = {
         draw: function() {
+            draw_it(which_opts[Facet.Picker.picking_mode]);
+        },
+        // in case you want to force the behavior, or that
+        // single array lookup is too slow for you.
+        _draw: function() {
             draw_it(draw_opts);
         },
-        pick: function() {
+        _pick: function() {
             draw_it(pick_opts);
         }
     };
+    return result;
 };
 })();
 Facet.Camera = {};
@@ -3392,6 +3432,11 @@ Facet.element_buffer = function(vertex_array)
         this.draw(primitive);
     };
     return result;
+};
+Facet.id_buffer = function(vertex_array)
+{
+    var typedArray = new Int32Array(vertex_array);
+    return Facet.attribute_buffer(typedArray, 4, 'ubyte');
 };
 Facet.initGL = function(canvas, opts)
 {
@@ -3661,6 +3706,52 @@ Facet.model = function(input)
     }
     return result;
 };
+(function() {
+
+var rb;
+
+Facet.Picker = {
+    picking_mode: 0,
+    draw_pick_scene: function(callback) {
+        var ctx = Facet._globals.ctx;
+        if (!rb) {
+            rb = Facet.render_buffer({
+                width: ctx.viewportWidth,
+                height: ctx.viewportHeight,
+                TEXTURE_MAG_FILTER: ctx.NEAREST,
+                TEXTURE_MIN_FILTER: ctx.NEAREST
+            });
+        }
+
+        callback = callback || Facet._globals.display_callback;
+        this.picking_mode = 1;
+        try {
+            rb.render_to_buffer(function() {
+                ctx.clearColor(0,0,0,0);
+                ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+                callback();
+            });
+        } finally {
+            this.picking_mode = 0;
+        }
+    },
+    pick: function(x, y) {
+        var ctx = Facet._globals.ctx;
+        var buf = new ArrayBuffer(4);
+        var result_bytes = new Uint8Array(4);
+        console.log(x, y);
+        ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
+                       result_bytes);
+        rb.render_to_buffer(function() {
+            ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
+                           result_bytes);
+        });
+        var result_words = new Uint32Array(result_bytes.buffer);
+        return result_words[0];
+    }
+};
+
+})();
 Facet.profile = function(name, seconds, onstart, onend) {
     if (onstart) onstart();
     console.profile(name);
@@ -7230,6 +7321,17 @@ Shade.discard_if = function(exp, condition)
         }
     });
     return result;
+};
+// converts a 32-bit integer into an 8-bit RGBA value.
+// as the name implies, this is most useful for picking.
+Shade.id = function(id_value)
+{
+    var r = id_value & 255;
+    var g = (id_value >> 8) & 255;
+    var b = (id_value >> 16) & 255;
+    var a = (id_value >> 24) & 255;
+    
+    return Shade.vec(r / 255, g / 255, b / 255, a / 255);
 };
 
 return Shade;

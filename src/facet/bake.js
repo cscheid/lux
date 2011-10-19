@@ -90,18 +90,16 @@ var largest_batch_id = 1;
 Facet.bake = function(model, appearance)
 {
     var ctx = Facet._globals.ctx;
-    var program_exp = {};
+    var draw_program_exp = {};
     _.each(appearance, function(value, key) {
         if (Shade.is_program_parameter(key)) {
-            program_exp[key] = value;
+            draw_program_exp[key] = value;
         }
     });
-    var program = Shade.program(program_exp);
-    var attribute_arrays = {};
-    for (var i=0; i<program.attribute_buffers.length; ++i) {
-        var b = program.attribute_buffers[i];
-        attribute_arrays[b._shade_name] = b;
-    }
+    var draw_program = Shade.program(draw_program_exp);
+    var draw_attribute_arrays = _.build(_.map(
+        draw_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
+    ));
 
     var primitive_types = {
         points: ctx.POINTS,
@@ -128,33 +126,63 @@ Facet.bake = function(model, appearance)
     var primitives = [primitive_types[model.type], model.elements];
 
     var draw_batch_id = largest_batch_id++;
-    var pick_batch_id = largest_batch_id++;
 
     var draw_opts = {
-        program: program,
-        attributes: attribute_arrays,
+        program: draw_program,
+        attributes: draw_attribute_arrays,
         set_caps: ((appearance.mode && appearance.mode.set_draw_caps) || 
                    Facet.DrawingMode.standard.set_draw_caps),
         draw_chunk: draw_chunk,
         batch_id: draw_batch_id
     };
 
+    // if no picking is defined, pick to -1, so we at least occlude
+    // what was in the background.
+    var pick_id = Shade.make(appearance.pick_id || Shade.id(-1));
+
+    var pick_program_exp = {};
+    _.each(appearance, function(value, key) {
+        if (Shade.is_program_parameter(key)) {
+            if (key === 'color' || key === 'gl_FragColor') {
+                var pick_if = (appearance.pick_if ||
+                               Shade.make(value).swizzle("a").gt(0));
+                pick_program_exp[key] = pick_id
+                    .discard_if(Shade.logical_not(pick_if));
+            } else {
+                pick_program_exp[key] = value;
+            }
+        }
+    });
+    var pick_program = Shade.program(pick_program_exp);
+    var pick_attribute_arrays = _.build(_.map(
+        pick_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
+    ));
+        
+    var pick_batch_id = largest_batch_id++;
     var pick_opts = {
-        program: program,
-        attributes: attribute_arrays,
+        program: pick_program,
+        attributes: pick_attribute_arrays,
         set_caps: ((appearance.mode && appearance.mode.set_pick_caps) || 
                    Facet.DrawingMode.standard.set_pick_caps),
         draw_chunk: draw_chunk,
         batch_id: pick_batch_id
     };
 
-    return {
+    var which_opts = [ draw_opts, pick_opts ];
+
+    var result = {
         draw: function() {
+            draw_it(which_opts[Facet.Picker.picking_mode]);
+        },
+        // in case you want to force the behavior, or that
+        // single array lookup is too slow for you.
+        _draw: function() {
             draw_it(draw_opts);
         },
-        pick: function() {
+        _pick: function() {
             draw_it(pick_opts);
         }
     };
+    return result;
 };
 })();

@@ -75,7 +75,7 @@ $().ready(function () {
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LESS);
     var sphere = sphere_mercator_coords(20);
-    var texture = Facet.texture_from_image({ width: 2048, height: 2048 });
+    var texture = Facet.texture({ width: 2048, height: 2048 });
 
     for (var i=0; i<8; ++i)
     for (var j=0; j<8; ++j)

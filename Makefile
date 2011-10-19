@@ -35,10 +35,12 @@ facet.js:					\
 	src/facet/camera/perspective.js		\
 	src/facet/draw.js			\
 	src/facet/element_buffer.js		\
+	src/facet/id_buffer.js			\
 	src/facet/init.js			\
 	src/facet/load_image_into_texture.js	\
 	src/facet/matrix.js			\
 	src/facet/model.js			\
+	src/facet/picker.js			\
 	src/facet/profile.js			\
 	src/facet/program.js			\
 	src/facet/render_buffer.js		\
@@ -101,6 +103,7 @@ facet.js:					\
 	src/shade/translation.js		\
 	src/shade/look_at.js			\
 	src/shade/discard.js			\
+	src/shade/id.js				\
 	src/shade/_end.js			\
 	src/marks/_begin.js			\
 	src/marks/dots.js			\
