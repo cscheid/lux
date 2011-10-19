@@ -1,6 +1,6 @@
 Facet.element_buffer = function(vertex_array)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var result = ctx.createBuffer();
     ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, result);
     var typedArray = new Uint16Array(vertex_array);

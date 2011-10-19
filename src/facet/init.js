@@ -29,7 +29,7 @@ Facet.initGL = function(canvas, opts)
     } else
         clearDepth = opts.clearDepth;
 
-    var display = (opts.display || function() {});
+    Facet._globals.display_callback = (opts.display || function() {});
 
     if (typeof opts === "undefined")
         opts = {};
@@ -72,7 +72,7 @@ Facet.initGL = function(canvas, opts)
         this.clearDepth(clearDepth);
         this.clearColor.apply(gl, clearColor);
         this.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        display();
+        Facet._globals.display_callback();
     };
     Facet.set_context(gl);
 

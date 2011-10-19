@@ -1,6 +1,6 @@
 Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var gl_enum_typed_array_map = {
         'float': [ctx.FLOAT, Float32Array],
         'short': [ctx.SHORT, Int16Array],

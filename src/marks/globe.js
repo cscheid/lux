@@ -41,7 +41,7 @@ Facet.Marks.globe = function(opts)
         zoom: 3
     });
 
-    var gl = Facet.ctx;
+    var gl = Facet._globals.ctx;
 
     var zooming = false, panning = false;
     var prev;

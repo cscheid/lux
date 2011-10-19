@@ -13,6 +13,7 @@ data.js:					\
 facet.js:					\
 	src/copyright-notice.js			\
 	src/facet/_begin.js			\
+	src/facet/_globals.js			\
 	lib/underscore-min.js			\
 	lib/webgl-debug.js			\
 	lib/webgl-utils.js			\

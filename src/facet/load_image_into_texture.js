@@ -10,7 +10,7 @@ Facet.load_image_into_texture = function(opts)
     var onload = opts.onload;
     var x_offset = opts.x_offset;
     var y_offset = opts.y_offset;
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
 
     function image_handler(image) {
         ctx.bindTexture(ctx.TEXTURE_2D, texture);

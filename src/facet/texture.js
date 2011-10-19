@@ -4,7 +4,7 @@
 
 Facet.texture = function(opts)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var onload = opts.onload || function() {};
     var mipmaps = opts.mipmaps || false;
     var width = opts.width;

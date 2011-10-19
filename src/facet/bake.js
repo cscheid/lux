@@ -3,7 +3,7 @@
 var previous_batch = {};
 Facet.unload_batch = function()
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     if (previous_batch.attributes) {
         for (var key in previous_batch.attributes) {
             ctx.disableVertexAttribArray(previous_batch.program[key]);
@@ -23,7 +23,7 @@ Facet.unload_batch = function()
 
 function draw_it(batch)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     if (batch.batch_id !== previous_batch.batch_id) {
         var attributes = batch.attributes || {};
         var uniforms = batch.uniforms || {};
@@ -88,7 +88,7 @@ var largest_batch_id = 1;
 // FIXME: push the primitives weirdness fix down the API
 Facet.bake = function(model, appearance)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var program_exp = {};
     _.each(appearance, function(value, key) {
         if (Shade.is_program_parameter(key)) {

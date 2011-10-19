@@ -84,6 +84,12 @@
  */
 
 Facet = {};
+// yucky globals used throughout Facet. I guess this means I lost.
+
+Facet._globals = {
+    ctx: undefined, // stores the active webgl context
+    display_callback: undefined
+};
 // Underscore.js 1.1.7
 // (c) 2011 Jeremy Ashkenas, DocumentCloud Inc.
 // Underscore is freely distributable under the MIT license.
@@ -3076,7 +3082,7 @@ function typeOf(value)
 }
 Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var gl_enum_typed_array_map = {
         'float': [ctx.FLOAT, Float32Array],
         'short': [ctx.SHORT, Int16Array],
@@ -3116,7 +3122,7 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
 var previous_batch = {};
 Facet.unload_batch = function()
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     if (previous_batch.attributes) {
         for (var key in previous_batch.attributes) {
             ctx.disableVertexAttribArray(previous_batch.program[key]);
@@ -3136,7 +3142,7 @@ Facet.unload_batch = function()
 
 function draw_it(batch)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     if (batch.batch_id !== previous_batch.batch_id) {
         var attributes = batch.attributes || {};
         var uniforms = batch.uniforms || {};
@@ -3201,7 +3207,7 @@ var largest_batch_id = 1;
 // FIXME: push the primitives weirdness fix down the API
 Facet.bake = function(model, appearance)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var program_exp = {};
     _.each(appearance, function(value, key) {
         if (Shade.is_program_parameter(key)) {
@@ -3353,7 +3359,7 @@ Facet.Camera.perspective = function(opts)
 })();
 Facet.element_buffer = function(vertex_array)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var result = ctx.createBuffer();
     ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, result);
     var typedArray = new Uint16Array(vertex_array);
@@ -3412,7 +3418,7 @@ Facet.initGL = function(canvas, opts)
     } else
         clearDepth = opts.clearDepth;
 
-    var display = (opts.display || function() {});
+    Facet._globals.display_callback = (opts.display || function() {});
 
     if (typeof opts === "undefined")
         opts = {};
@@ -3455,7 +3461,7 @@ Facet.initGL = function(canvas, opts)
         this.clearDepth(clearDepth);
         this.clearColor.apply(gl, clearColor);
         this.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        display();
+        Facet._globals.display_callback();
     };
     Facet.set_context(gl);
 
@@ -3473,7 +3479,7 @@ Facet.load_image_into_texture = function(opts)
     var onload = opts.onload;
     var x_offset = opts.x_offset;
     var y_offset = opts.y_offset;
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
 
     function image_handler(image) {
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
@@ -3659,7 +3665,7 @@ Facet.profile = function(name, seconds, onstart, onend) {
 };
 Facet.program = function(vs_src, fs_src)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     function getShader(shader_type, str)
     {
         var shader = ctx.createShader(shader_type);
@@ -3705,7 +3711,7 @@ Facet.program = function(vs_src, fs_src)
 };
 Facet.render_buffer = function(opts)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var rttFramebuffer = ctx.createFramebuffer();
     ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
     opts = _.defaults(opts || {}, {
@@ -3768,7 +3774,7 @@ Facet.render_buffer = function(opts)
 };
 Facet.set_context = function(the_ctx)
 {
-    Facet.ctx = the_ctx;
+    Facet._globals.ctx = the_ctx;
     // Shade.set_context(the_ctx);
 };
 //////////////////////////////////////////////////////////////////////////////
@@ -3777,7 +3783,7 @@ Facet.set_context = function(the_ctx)
 
 Facet.texture = function(opts)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var onload = opts.onload || function() {};
     var mipmaps = opts.mipmaps || false;
     var width = opts.width;
@@ -3898,7 +3904,7 @@ Facet.DrawingMode = {};
 Facet.DrawingMode.additive = {
     set_draw_caps: function()
     {
-        var ctx = Facet.ctx;
+        var ctx = Facet._globals.ctx;
         ctx.enable(ctx.BLEND);
         ctx.blendFunc(ctx.SRC_ALPHA, ctx.ONE);
         ctx.enable(ctx.DEPTH_TEST);
@@ -3907,7 +3913,7 @@ Facet.DrawingMode.additive = {
     },
     set_pick_caps: function()
     {
-        var ctx = Facet.ctx;
+        var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
@@ -3937,7 +3943,7 @@ Facet.DrawingMode.additive = {
 Facet.DrawingMode.over = {
     set_draw_caps: function()
     {
-        var ctx = Facet.ctx;
+        var ctx = Facet._globals.ctx;
         ctx.enable(ctx.BLEND);
         ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
                               ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
@@ -3947,7 +3953,7 @@ Facet.DrawingMode.over = {
     },
     set_pick_caps: function()
     {
-        var ctx = Facet.ctx;
+        var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
@@ -3957,7 +3963,7 @@ Facet.DrawingMode.over = {
 Facet.DrawingMode.over_with_depth = {
     set_draw_caps: function()
     {
-        var ctx = Facet.ctx;
+        var ctx = Facet._globals.ctx;
         ctx.enable(ctx.BLEND);
         ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
                               ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
@@ -3966,7 +3972,7 @@ Facet.DrawingMode.over_with_depth = {
     },
     set_pick_caps: function()
     {
-        var ctx = Facet.ctx;
+        var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
     }
@@ -3974,13 +3980,13 @@ Facet.DrawingMode.over_with_depth = {
 Facet.DrawingMode.standard = {
     set_draw_caps: function()
     {
-        var ctx = Facet.ctx;
+        var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
     },
     set_pick_caps: function()
     {
-        var ctx = Facet.ctx;
+        var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
     }
@@ -7338,7 +7344,7 @@ Facet.Marks.globe = function(opts)
         zoom: 3
     });
 
-    var gl = Facet.ctx;
+    var gl = Facet._globals.ctx;
 
     var zooming = false, panning = false;
     var prev;

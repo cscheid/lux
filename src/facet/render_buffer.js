@@ -1,6 +1,6 @@
 Facet.render_buffer = function(opts)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var rttFramebuffer = ctx.createFramebuffer();
     ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
     opts = _.defaults(opts || {}, {

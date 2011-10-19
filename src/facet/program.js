@@ -1,6 +1,6 @@
 Facet.program = function(vs_src, fs_src)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     function getShader(shader_type, str)
     {
         var shader = ctx.createShader(shader_type);
