@@ -17,6 +17,7 @@ facet.js:					\
 	lib/underscore-min.js			\
 	lib/webgl-debug.js			\
 	lib/webgl-utils.js			\
+	src/underscore_mixins.js		\
 	src/linalg/_begin.js			\
 	src/linalg/vec2.js			\
 	src/linalg/vec3.js			\
