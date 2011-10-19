@@ -34,7 +34,7 @@ stricter type checking.
 
 * Documentation
 ** TODO NeHe Lessons
-
+** TODO Change lesson2.html to reflect camera class.
 * Expressions
 ** TODO ternary op performance fixes.
 Right now the algorithm in place is correct, but conservative. Ideally,
