@@ -53,11 +53,17 @@ Facet.render_buffer = function(opts)
     return {
         _shade_type: 'render_buffer',
         texture: rttTexture,
+        width: rttFramebuffer.width,
+        height: rttFramebuffer.height,
+        frame_buffer: rttFramebuffer,
         render_to_buffer: function (render) {
-            ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
-            ctx.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
-            render();
-            ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+            try {
+                ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
+                ctx.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
+                render();
+            } finally {
+                ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+            }
         }
     };
 };
