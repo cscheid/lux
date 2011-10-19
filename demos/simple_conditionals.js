@@ -54,9 +54,9 @@ $().ready(function () {
     proj = Shade.uniform("mat4");
 
     sampler[0] = Shade.uniform(
-        "sampler2D", Facet.texture_from_image({ src: "img/glass.jpg", onload: function() { gl.display(); } }));
+        "sampler2D", Facet.texture({ src: "img/glass.jpg", onload: function() { gl.display(); } }));
     sampler[1] = Shade.uniform(
-        "sampler2D", Facet.texture_from_image({ src: "img/crate.jpg", onload: function() { gl.display(); } }));
+        "sampler2D", Facet.texture({ src: "img/crate.jpg", onload: function() { gl.display(); } }));
 
     cube_drawable = create_cube_drawable();
 
