@@ -44,9 +44,9 @@ $().ready(function () {
     phase = Shade.uniform("float");
 
     cube_drawable = Facet.bake(flag, {
-        position: mvp.mul(Shade.vec(flag.vertex, Shade.sin(flag.uv.at(0).mul(20).add(phase)).mul(0.08), 1)),
+        position: mvp.mul(Shade.vec(flag.vertex, Shade.sin(flag.tex_coord.at(0).mul(20).add(phase)).mul(0.08), 1)),
         color: Shade.texture2D(Facet.texture({ src: "img/sunflower.jpg" }),
-                               flag.uv)
+                               flag.tex_coord)
     });
 
     var start = new Date().getTime();

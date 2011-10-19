@@ -15,9 +15,11 @@ function create_cube_drawable(opts)
     var material_color = t.selection(Shade.texture2D(sampler[0], cube_model.tex_coord),
                                      Shade.texture2D(sampler[1], cube_model.tex_coord));
     var mvp = proj.mul(mv);
+    var brightness = material_color.dot(Shade.vec(1/3,1/3,1/3,0));
+    Shade.debug = true;
     return Facet.bake(cube_model, {
         position: mvp.mul(Shade.vec(cube_model.vertex, 1)),
-        color: material_color
+        color: material_color.discard_if(brightness.gt(0.3))
     });
 }
 

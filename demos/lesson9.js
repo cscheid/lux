@@ -16,7 +16,7 @@ function square_model()
         // type: "points",
         elements: 4,
         vertex: [[-1, -1, 1, -1, -1, 1, 1, 1], 2],
-        uv: [[0, 0, 1, 0, 0, 1, 1, 1], 2]
+        tex_coord: [[0, 0, 1, 0, 0, 1, 1, 1], 2]
     });
 }
 
@@ -27,7 +27,7 @@ function star_drawable()
         position: proj.mul(mv).mul(Shade.vec(model.vertex, 0, 1)),
         color: Shade.texture2D(Facet.texture({
             src: "img/star.gif"
-        }), model.uv).swizzle("rgbr").mul(Shade.vec(color, 1.0)),
+        }), model.tex_coord).swizzle("rgbr").mul(Shade.vec(color, 1.0)),
         mode: Facet.DrawingMode.additive
     });
 }

@@ -84,6 +84,12 @@
  */
 
 Facet = {};
+// yucky globals used throughout Facet. I guess this means I lost.
+
+Facet._globals = {
+    ctx: undefined, // stores the active webgl context
+    display_callback: undefined
+};
 // Underscore.js 1.1.7
 // (c) 2011 Jeremy Ashkenas, DocumentCloud Inc.
 // Underscore is freely distributable under the MIT license.
@@ -951,6 +957,18 @@ window.requestAnimFrame = (function() {
 })();
 
 
+// Some underscore.js extensions
+
+// build objects from key-value pair lists
+_.mixin({
+    build: function(iterable) {
+        var result = {};
+        _.each(iterable, function(v) {
+            result[v[0]] = v[1];
+        });
+        return result;
+    }
+});
 // The linalg module is inspired by glMatrix and Sylvester.
 
 // The goal is to be comparably fast as glMatrix but as close to
@@ -3074,9 +3092,12 @@ function typeOf(value)
     }
     return s;
 }
-Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
+Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
+    if (normalized === undefined) {
+        normalized = false;
+    }
     var gl_enum_typed_array_map = {
         'float': [ctx.FLOAT, Float32Array],
         'short': [ctx.SHORT, Int16Array],
@@ -3099,7 +3120,7 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
     result.bind = function(type) {
         return function(attribute) {
             ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-            ctx.vertexAttribPointer(attribute, this.itemSize, type, false, 0, 0);
+            ctx.vertexAttribPointer(attribute, this.itemSize, type, normalized, 0, 0);
         };
     }(itemType[0]);
     result.draw = function(primitive) {
@@ -3113,26 +3134,106 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType)
 };
 (function() {
 
+var previous_batch = {};
+
+Facet.unload_batch = function()
+{
+    var ctx = Facet._globals.ctx;
+    if (previous_batch.attributes) {
+        for (var key in previous_batch.attributes) {
+            ctx.disableVertexAttribArray(previous_batch.program[key]);
+        }
+        _.each(previous_batch.program.uniforms, function (uniform) {
+            delete uniform._facet_active_uniform;
+        });
+    }
+    previous_batch = {};
+
+    // reset the opengl capabilities which are determined by
+    // Facet.DrawingMode.*
+    ctx.disable(ctx.DEPTH_TEST);
+    ctx.disable(ctx.BLEND);
+    ctx.depthMask(true);
+};
+
+function draw_it(batch)
+{
+    var ctx = Facet._globals.ctx;
+    if (batch.batch_id !== previous_batch.batch_id) {
+        var attributes = batch.attributes || {};
+        var uniforms = batch.uniforms || {};
+        var program = batch.program;
+        var primitives = batch.primitives;
+        var key;
+
+        Facet.unload_batch();
+        previous_batch = batch;
+        batch.set_caps();
+
+        ctx.useProgram(program);
+
+        for (key in attributes) {
+            var attr = program[key];
+            if (typeof attr !== 'undefined') {
+                ctx.enableVertexAttribArray(attr);
+                attributes[key].bind(attr);
+            }
+        }
+        
+        var currentActiveTexture = 0;
+        _.each(program.uniforms, function(uniform) {
+            var key = uniform.uniform_name;
+            var call = uniform.uniform_call,
+                value = uniform.get();
+            if (typeOf(value) === 'undefined') {
+                throw "uniform " + key + " has not been set.";
+            }
+            var t = constant_type(value);
+            if (t === "other") {
+                uniform._facet_active_uniform = (function(uid, cat) {
+                    return function(v) {
+                        ctx.activeTexture(ctx.TEXTURE0 + cat);
+                        ctx.bindTexture(ctx.TEXTURE_2D, v);
+                        ctx.uniform1i(uid, cat);
+                    };
+                })(program[key], currentActiveTexture);
+                currentActiveTexture++;
+            } else if (t === "number" || t == "vector") {
+                uniform._facet_active_uniform = (function(call, uid) {
+                    return function(v) {
+                        call.call(ctx, uid, v);
+                    };
+                })(ctx[call], program[key]);
+            } else if (t === "matrix") {
+                uniform._facet_active_uniform = (function(call, uid) {
+                    return function(v) {
+                        ctx[call](uid, false, v);
+                    };
+                })(call, program[key]);
+            }
+            uniform._facet_active_uniform(value);
+        });
+    }
+
+    batch.draw_chunk();
+};
+
 var largest_batch_id = 1;
 
 // FIXME: push the primitives weirdness fix down the API
 Facet.bake = function(model, appearance)
 {
-    var ctx = Facet.ctx;
-    var program_exp = {};
+    var ctx = Facet._globals.ctx;
+    var draw_program_exp = {};
     _.each(appearance, function(value, key) {
         if (Shade.is_program_parameter(key)) {
-            program_exp[key] = value;
+            draw_program_exp[key] = value;
         }
     });
-    var program = Shade.program(program_exp);
-    var attribute_arrays = {};
-    for (var i=0; i<program.attribute_buffers.length; ++i) {
-        var b = program.attribute_buffers[i];
-        attribute_arrays[b._shade_name] = b;
-    }
-
-    // primitives[model.type] = model.elements;
+    var draw_program = Shade.program(draw_program_exp);
+    var draw_attribute_arrays = _.build(_.map(
+        draw_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
+    ));
 
     var primitive_types = {
         points: ctx.POINTS,
@@ -3158,20 +3259,65 @@ Facet.bake = function(model, appearance)
     }
     var primitives = [primitive_types[model.type], model.elements];
 
+    var draw_batch_id = largest_batch_id++;
+
     var draw_opts = {
-        program: program,
-        attributes: attribute_arrays,
-        drawing_mode: appearance.mode || Facet.DrawingMode.standard,
-        draw_chunk: draw_chunk
+        program: draw_program,
+        attributes: draw_attribute_arrays,
+        set_caps: ((appearance.mode && appearance.mode.set_draw_caps) || 
+                   Facet.DrawingMode.standard.set_draw_caps),
+        draw_chunk: draw_chunk,
+        batch_id: draw_batch_id
     };
 
-    return {
-        batch_id: largest_batch_id++,
+    // if no picking is defined, pick to -1, so we at least occlude
+    // what was in the background.
+    var pick_id = Shade.make(appearance.pick_id || Shade.id(-1));
+
+    var pick_program_exp = {};
+    _.each(appearance, function(value, key) {
+        if (Shade.is_program_parameter(key)) {
+            if (key === 'color' || key === 'gl_FragColor') {
+                var pick_if = (appearance.pick_if ||
+                               Shade.make(value).swizzle("a").gt(0));
+                pick_program_exp[key] = pick_id
+                    .discard_if(Shade.logical_not(pick_if));
+            } else {
+                pick_program_exp[key] = value;
+            }
+        }
+    });
+    var pick_program = Shade.program(pick_program_exp);
+    var pick_attribute_arrays = _.build(_.map(
+        pick_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
+    ));
+        
+    var pick_batch_id = largest_batch_id++;
+    var pick_opts = {
+        program: pick_program,
+        attributes: pick_attribute_arrays,
+        set_caps: ((appearance.mode && appearance.mode.set_pick_caps) || 
+                   Facet.DrawingMode.standard.set_pick_caps),
+        draw_chunk: draw_chunk,
+        batch_id: pick_batch_id
+    };
+
+    var which_opts = [ draw_opts, pick_opts ];
+
+    var result = {
         draw: function() {
-            draw_opts.batch_id = this.batch_id;
-            Facet.draw(draw_opts);
+            draw_it(which_opts[Facet.Picker.picking_mode]);
+        },
+        // in case you want to force the behavior, or that
+        // single array lookup is too slow for you.
+        _draw: function() {
+            draw_it(draw_opts);
+        },
+        _pick: function() {
+            draw_it(pick_opts);
         }
     };
+    return result;
 };
 })();
 Facet.Camera = {};
@@ -3258,93 +3404,11 @@ Facet.Camera.perspective = function(opts)
     };
 };
 (function() {
-var previous_batch = {};
-Facet.unload_batch = function()
-{
-    var ctx = Facet.ctx;
-    if (previous_batch.attributes) {
-        for (var key in previous_batch.attributes) {
-            ctx.disableVertexAttribArray(previous_batch.program[key]);
-        }
-        _.each(previous_batch.program.uniforms, function (uniform) {
-            delete uniform._facet_active_uniform;
-        });
-    }
-    previous_batch = {};
-
-    // reset opengl capabilities determined by Facet.DrawingMode.*
-    ctx.disable(ctx.DEPTH_TEST);
-    ctx.disable(ctx.BLEND);
-};
-
-// FIXME: This is an ugly call. Don't call this directly; 
-// use Facet.model and Facet.bake instead
-Facet.draw = function(batch)
-{
-    var ctx = Facet.ctx;
-    if (batch.batch_id !== previous_batch.batch_id) {
-        var attributes = batch.attributes || {};
-        var uniforms = batch.uniforms || {};
-        var program = batch.program;
-        var primitives = batch.primitives;
-        var key;
-
-        Facet.unload_batch();
-        previous_batch = batch;
-        batch.drawing_mode.set_caps();
-
-        ctx.useProgram(program);
-
-        for (key in attributes) {
-            var attr = program[key];
-            if (typeof attr !== 'undefined') {
-                ctx.enableVertexAttribArray(attr);
-                attributes[key].bind(attr);
-            }
-        }
-        
-        var currentActiveTexture = 0;
-        _.each(program.uniforms, function(uniform) {
-            var key = uniform.uniform_name;
-            var call = uniform.uniform_call,
-                value = uniform.get();
-            if (typeOf(value) === 'undefined') {
-                throw "uniform " + key + " has not been set.";
-            }
-            var t = constant_type(value);
-            if (t === "other") {
-                uniform._facet_active_uniform = (function(uid, cat) {
-                    return function(v) {
-                        ctx.activeTexture(ctx.TEXTURE0 + cat);
-                        ctx.bindTexture(ctx.TEXTURE_2D, v);
-                        ctx.uniform1i(uid, cat);
-                    };
-                })(program[key], currentActiveTexture);
-                currentActiveTexture++;
-            } else if (t === "number" || t == "vector") {
-                uniform._facet_active_uniform = (function(call, uid) {
-                    return function(v) {
-                        call.call(ctx, uid, v);
-                    };
-                })(ctx[call], program[key]);
-            } else if (t === "matrix") {
-                uniform._facet_active_uniform = (function(call, uid) {
-                    return function(v) {
-                        ctx[call](uid, false, v);
-                    };
-                })(call, program[key]);
-            }
-            uniform._facet_active_uniform(value);
-        });
-    }
-
-    batch.draw_chunk();
-};
 
 })();
 Facet.element_buffer = function(vertex_array)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var result = ctx.createBuffer();
     ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, result);
     var typedArray = new Uint16Array(vertex_array);
@@ -3371,6 +3435,14 @@ Facet.element_buffer = function(vertex_array)
         this.draw(primitive);
     };
     return result;
+};
+Facet.id_buffer = function(vertex_array)
+{
+    if (typeOf(vertex_array) !== 'array')
+        throw "id_buffer expects array of integers";
+    var typedArray = new Int32Array(vertex_array);
+    var byteArray = new Uint8Array(typedArray.buffer);
+    return Facet.attribute_buffer(byteArray, 4, 'ubyte', true);
 };
 Facet.initGL = function(canvas, opts)
 {
@@ -3403,7 +3475,7 @@ Facet.initGL = function(canvas, opts)
     } else
         clearDepth = opts.clearDepth;
 
-    var display = (opts.display || function() {});
+    Facet._globals.display_callback = (opts.display || function() {});
 
     if (typeof opts === "undefined")
         opts = {};
@@ -3439,14 +3511,12 @@ Facet.initGL = function(canvas, opts)
         alert("Could not initialise WebGL, sorry :-(");
     }
 
-    console.log(gl.getExtension("OES_texture_float"));
-
     gl.display = function() {
         this.viewport(0, 0, this.viewportWidth, this.viewportHeight);
         this.clearDepth(clearDepth);
         this.clearColor.apply(gl, clearColor);
         this.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        display();
+        Facet._globals.display_callback();
     };
     Facet.set_context(gl);
 
@@ -3464,7 +3534,7 @@ Facet.load_image_into_texture = function(opts)
     var onload = opts.onload;
     var x_offset = opts.x_offset;
     var y_offset = opts.y_offset;
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
 
     function image_handler(image) {
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
@@ -3640,6 +3710,51 @@ Facet.model = function(input)
     }
     return result;
 };
+(function() {
+
+var rb;
+
+Facet.Picker = {
+    picking_mode: 0,
+    draw_pick_scene: function(callback) {
+        var ctx = Facet._globals.ctx;
+        if (!rb) {
+            rb = Facet.render_buffer({
+                width: ctx.viewportWidth,
+                height: ctx.viewportHeight,
+                TEXTURE_MAG_FILTER: ctx.NEAREST,
+                TEXTURE_MIN_FILTER: ctx.NEAREST
+            });
+        }
+
+        callback = callback || Facet._globals.display_callback;
+        this.picking_mode = 1;
+        try {
+            rb.render_to_buffer(function() {
+                ctx.clearColor(0,0,0,0);
+                ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+                callback();
+            });
+        } finally {
+            this.picking_mode = 0;
+        }
+    },
+    pick: function(x, y) {
+        var ctx = Facet._globals.ctx;
+        var buf = new ArrayBuffer(4);
+        var result_bytes = new Uint8Array(4);
+        ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
+                       result_bytes);
+        rb.render_to_buffer(function() {
+            ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
+                           result_bytes);
+        });
+        var result_words = new Uint32Array(result_bytes.buffer);
+        return result_words[0];
+    }
+};
+
+})();
 Facet.profile = function(name, seconds, onstart, onend) {
     if (onstart) onstart();
     console.profile(name);
@@ -3650,7 +3765,7 @@ Facet.profile = function(name, seconds, onstart, onend) {
 };
 Facet.program = function(vs_src, fs_src)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     function getShader(shader_type, str)
     {
         var shader = ctx.createShader(shader_type);
@@ -3696,7 +3811,7 @@ Facet.program = function(vs_src, fs_src)
 };
 Facet.render_buffer = function(opts)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var rttFramebuffer = ctx.createFramebuffer();
     ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
     opts = _.defaults(opts || {}, {
@@ -3749,17 +3864,23 @@ Facet.render_buffer = function(opts)
     return {
         _shade_type: 'render_buffer',
         texture: rttTexture,
+        width: rttFramebuffer.width,
+        height: rttFramebuffer.height,
+        frame_buffer: rttFramebuffer,
         render_to_buffer: function (render) {
-            ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
-            ctx.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
-            render();
-            ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+            try {
+                ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
+                ctx.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
+                render();
+            } finally {
+                ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+            }
         }
     };
 };
 Facet.set_context = function(the_ctx)
 {
-    Facet.ctx = the_ctx;
+    Facet._globals.ctx = the_ctx;
     // Shade.set_context(the_ctx);
 };
 //////////////////////////////////////////////////////////////////////////////
@@ -3768,7 +3889,7 @@ Facet.set_context = function(the_ctx)
 
 Facet.texture = function(opts)
 {
-    var ctx = Facet.ctx;
+    var ctx = Facet._globals.ctx;
     var onload = opts.onload || function() {};
     var mipmaps = opts.mipmaps || false;
     var width = opts.width;
@@ -3887,33 +4008,91 @@ Facet.Scale.Geo.latlong_to_spherical = function(lat, lon)
 
 Facet.DrawingMode = {};
 Facet.DrawingMode.additive = {
-    set_caps: function()
+    set_draw_caps: function()
     {
-        var ctx = Facet.ctx;
+        var ctx = Facet._globals.ctx;
         ctx.enable(ctx.BLEND);
         ctx.blendFunc(ctx.SRC_ALPHA, ctx.ONE);
-    }
-};
-// currently no_depth is no-op
-Facet.DrawingMode.no_depth = {
-    set_caps: function()
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
+    },
+    set_pick_caps: function()
     {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
     }
 };
-// over corresponds to the standard porter-duff over operator
+// over is the standard porter-duff over operator
+
+// NB: since over is associative but not commutative, we need
+// back-to-front rendering for correct results,
+// and then the depth buffer is not necessary. 
+// 
+// In the case of incorrect behavior (that is, when contents are not
+// rendered back-to-front), it is not clear which of the two incorrect 
+// behaviors are preferable:
+// 
+// 1. that depth buffer writing be enabled, and some things which should
+// be rendered "behind" alpha-blended simply disappear (this gets
+// worse the more transparent objects get)
+//
+// 2. that depth buffer writing be disabled, and some things which would be
+// entirely occluded by others simply appear (this gets worse the more opaque
+// objects get)
+//
+// These two behaviors correspond respectively to 
+// Facet.DrawingMode.over_with_depth and Facet.DrawingMode.over
+
 Facet.DrawingMode.over = {
-    set_caps: function()
+    set_draw_caps: function()
     {
-        var ctx = Facet.ctx;
+        var ctx = Facet._globals.ctx;
         ctx.enable(ctx.BLEND);
         ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
                               ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
+    },
+    set_pick_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
+    }
+};
+
+Facet.DrawingMode.over_with_depth = {
+    set_draw_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.BLEND);
+        ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
+                              ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+    },
+    set_pick_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
     }
 };
 Facet.DrawingMode.standard = {
-    set_caps: function()
+    set_draw_caps: function()
     {
-        var ctx = Facet.ctx;
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+    },
+    set_pick_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
     }
@@ -5000,7 +5179,6 @@ Shade.constant = function(v)
                 }
             });
         } else {
-            console.log(t, v);
             throw "type error: constant should be bool, number, vector or matrix";
         }
     }
@@ -7146,6 +7324,17 @@ Shade.discard_if = function(exp, condition)
     });
     return result;
 };
+// converts a 32-bit integer into an 8-bit RGBA value.
+// as the name implies, this is most useful for picking.
+Shade.id = function(id_value)
+{
+    var r = id_value & 255;
+    var g = (id_value >> 8) & 255;
+    var b = (id_value >> 16) & 255;
+    var a = (id_value >> 24) & 255;
+    
+    return Shade.vec(r / 255, g / 255, b / 255, a / 255);
+};
 
 return Shade;
 }());
@@ -7271,7 +7460,7 @@ Facet.Marks.globe = function(opts)
         zoom: 3
     });
 
-    var gl = Facet.ctx;
+    var gl = Facet._globals.ctx;
 
     var zooming = false, panning = false;
     var prev;

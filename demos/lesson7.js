@@ -89,7 +89,7 @@ $().ready(function () {
     // only 8 vertices in a cube, we end up with 24 of them, since we
     // need three different texture coordinates per corner.
 
-    cube_model = Facet.flat_cube();
+    cube_model = Models.flat_cube();
 
     mv = Shade.uniform("mat4");
     proj = Shade.uniform("mat4");

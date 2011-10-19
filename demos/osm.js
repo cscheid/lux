@@ -18,12 +18,12 @@ var mat_ambient = Shade.vec(0.2, 0.2, 0.2, 1);
 
 function spherical_mercator_patch(tess)
 {
-    var uv = [];
+    var tex_coord = [];
     var elements = [];
 
     for (var i=0; i<=tess; ++i)
         for (var j=0; j<=tess; ++j)
-            uv.push(i/tess, j/tess);
+            tex_coord.push(i/tess, j/tess);
 
     for (i=0; i<tess; ++i)
         for (var j=0; j<tess; ++j) {
@@ -33,13 +33,13 @@ function spherical_mercator_patch(tess)
 
     return Facet.model({
         type: "triangles",
-        uv: [uv, 2],
+        tex_coord: [tex_coord, 2],
         elements: elements,
         vertex: function(min, max) {
-            var xf = this.uv.mul(max.sub(min)).add(min);
+            var xf = this.tex_coord.mul(max.sub(min)).add(min);
             return mercator_to_spherical(xf.at(0), xf.at(1));
-        }, transformed_uv: function(min, max) {
-            return Shade.mix(min, max, this.uv).div(Math.PI * 2).add(Shade.vec(0, 0.5));
+        }, transformed_tex_coord: function(min, max) {
+            return Shade.mix(min, max, this.tex_coord).div(Math.PI * 2).add(Shade.vec(0, 0.5));
         }
     });
 }
@@ -203,7 +203,7 @@ $().ready(function () {
 
     sphere_drawable = Facet.bake(sphere, {
         position: proj.mul(mv).mul(sphere.vertex(min, max)),
-        color: Shade.texture2D(sampler, sphere.transformed_uv(min, max))
+        color: Shade.texture2D(sampler, sphere.transformed_tex_coord(min, max))
     });
 
     var start = new Date().getTime();
