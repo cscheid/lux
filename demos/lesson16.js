@@ -52,7 +52,7 @@ function make_fogger(kind)
 
 function create_cube_drawable(opts)
 {
-    var material_color = Shade.texture2D(Facet.texture_from_image({ 
+    var material_color = Shade.texture2D(Facet.texture({ 
         src: "img/crate.jpg",
         TEXTURE_MAG_FILTER: gl.LINEAR,
         TEXTURE_MIN_FILTER: gl.LINEAR_MIPMAP_NEAREST,

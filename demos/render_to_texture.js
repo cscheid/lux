@@ -26,7 +26,7 @@ function make_scene()
                                .mul(2)
                                .sub(Shade.vec(1,1)),
                                0, 1)),
-            color: Shade.texture2D(Facet.texture_from_image({
+            color: Shade.texture2D(Facet.texture({
                 src: "img/star.gif"
             }), model.texCoord).mul(Shade.vec(color, 1.0)),
             mode: Facet.DrawingMode.additive

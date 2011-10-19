@@ -35,7 +35,7 @@ $().ready(function () {
 
     cube_drawable = Facet.bake(cube, {
         position: camera.project(model_mat.mul(Shade.vec(cube.vertex, 1))),
-        color: Shade.texture2D(Facet.texture_from_image({ src: "img/nehe.jpg" }),
+        color: Shade.texture2D(Facet.texture({ src: "img/nehe.jpg" }),
                                cube.tex_coord)
     });
 

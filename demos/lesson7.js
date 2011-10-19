@@ -94,17 +94,17 @@ $().ready(function () {
     mv = Shade.uniform("mat4");
     proj = Shade.uniform("mat4");
 
-    texture[0] = Facet.texture_from_image({ 
+    texture[0] = Facet.texture({ 
         src: "img/crate.jpg",
         TEXTURE_MAG_FILTER: gl.LINEAR,
         TEXTURE_MIN_FILTER: gl.LINEAR
     });
-    texture[1] = Facet.texture_from_image({ 
+    texture[1] = Facet.texture({ 
         src: "img/crate.jpg",
         TEXTURE_MAG_FILTER: gl.NEAREST,
         TEXTURE_MIN_FILTER: gl.NEAREST
     });
-    texture[2] = Facet.texture_from_image({ 
+    texture[2] = Facet.texture({ 
         src: "img/crate.jpg",
         TEXTURE_MAG_FILTER: gl.LINEAR,
         TEXTURE_MIN_FILTER: gl.LINEAR_MIPMAP_NEAREST,
