@@ -16,7 +16,7 @@ Shade.uniform = function(type, v)
     var uniform_name = Shade.unique_name();
     if (typeof type === 'undefined') throw "uniform requires type";
     if (typeof type === 'string') type = Shade.basic(type);
-    var value = v;
+    var value;
     var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
     if (typeof call !== 'undefined') {
         call = call[1];
@@ -53,6 +53,9 @@ Shade.uniform = function(type, v)
         },
         // FIXME: type checking
         set: function(v) {
+            var t = constant_type(v);
+            if (t === "shade_expression")
+                v = v.constant_value();
             value = v;
             if (this._facet_active_uniform) {
                 this._facet_active_uniform(v);
@@ -65,5 +68,6 @@ Shade.uniform = function(type, v)
         uniform_name: uniform_name
     });
     result._uniforms = [result];
+    result.set(v);
     return result;
 };

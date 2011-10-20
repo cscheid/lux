@@ -327,6 +327,7 @@ Shade.Exp = {
         });
     },
     expression_type: "other",
+    _type: "shade_expression",
     _attribute_buffers: [],
     _uniforms: [],
     attribute_buffers: function() {

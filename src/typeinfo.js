@@ -7,8 +7,10 @@ function constant_type(obj)
     var t = typeof obj;
     if (t === "boolean")         return "boolean";
     if (t === "number")          return "number";
-    t = obj._type;
-    if (!t)                      return "other";
+    if (obj) {
+        t = obj._type;
+        if (!t)                      return "other";
+    }
     return t;
 }
 
