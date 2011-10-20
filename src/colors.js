@@ -152,6 +152,7 @@ var css_colors = {
 };
 
 var single_hex_to_float = {};
+var rgb_re = / *rgb *\( *(\d+) *, *(\d+) *, *(\d+) *\) */;
 Shade.color = function(spec, alpha)
 {
     if (typeOf(alpha) === 'undefined')
@@ -167,6 +168,12 @@ Shade.color = function(spec, alpha)
                              parseInt(spec.substr(5,2), 16) / 255, alpha);
         } else
             throw "hex specifier must be either #rgb or #rrggbb";
+    }
+    var m = rgb_re.exec(spec);
+    if (m) {
+        return Shade.vec(parseInt(m[1]) / 255,
+                         parseInt(m[2]) / 255,
+                         parseInt(m[3]) / 255, alpha);
     }
     if (spec in css_colors)
         return Shade.color(css_colors[spec], alpha);
