@@ -52,9 +52,9 @@ test("Shade expressions", function() {
     ok(Shade.add(4, 5), "type-promotion on operations");
     ok(Shade.sub(4, 5), "type-promotion on operations");
 
-    ok(Shade.logical_or(true, false), "boolean expressions");
-    ok(Shade.logical_or(false, true).logical_not(), "boolean expressions");
-    ok(Shade.logical_xor(true, false).logical_and(true), "boolean expressions");
+    ok(Shade.or(true, false), "boolean expressions");
+    ok(Shade.or(false, true).not(), "boolean expressions");
+    ok(Shade.xor(true, false).and(true), "boolean expressions");
 
     ok(Shade.greaterThan(Shade.vec(1,2,3),
                          Shade.vec(0,2,3)), "relational ops");

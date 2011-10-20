@@ -161,7 +161,7 @@ Facet.bake = function(model, appearance)
                 var pick_if = (appearance.pick_if ||
                                Shade.make(value).swizzle("a").gt(0));
                 pick_program_exp[key] = pick_id
-                    .discard_if(Shade.logical_not(pick_if));
+                    .discard_if(Shade.not(pick_if));
             } else {
                 pick_program_exp[key] = value;
             }

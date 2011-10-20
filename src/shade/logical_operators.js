@@ -54,38 +54,38 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
     };
 };
 
-Shade.logical_or = logical_operator_exp(
+Shade.or = logical_operator_exp(
     "||", lift_binfun_to_evaluator(function(a, b) { return a || b; }),
     function(i) { return i == 0; }
 );
 
-Shade.Exp.logical_or = function(other)
+Shade.Exp.or = function(other)
 {
-    return Shade.logical_or(this, other);
+    return Shade.or(this, other);
 };
 
-Shade.logical_and = logical_operator_exp(
+Shade.and = logical_operator_exp(
     "&&", lift_binfun_to_evaluator(function(a, b) { return a && b; }),
     function(i) { return i == 0; }
 );
 
-Shade.Exp.logical_and = function(other)
+Shade.Exp.and = function(other)
 {
-    return Shade.logical_and(this, other);
+    return Shade.and(this, other);
 };
 
-Shade.logical_xor = logical_operator_exp(
+Shade.xor = logical_operator_exp(
     "^^", lift_binfun_to_evaluator(function(a, b) { return ~~(a ^ b); }));
-Shade.Exp.logical_xor = function(other)
+Shade.Exp.xor = function(other)
 {
-    return Shade.logical_xor(this, other);
+    return Shade.xor(this, other);
 };
 
-Shade.logical_not = function(exp)
+Shade.not = function(exp)
 {
     exp = Shade.make(exp);
     if (!exp.type.equals(Shade.Types.bool_t)) {
-        throw "Logical_not requires bool expression";
+        throw "logical_not requires bool expression";
     }
     return Shade._create_concrete_value_exp({
         parents: [exp],
@@ -100,7 +100,7 @@ Shade.logical_not = function(exp)
     });
 };
 
-Shade.Exp.logical_not = function() { return Shade.logical_not(this); };
+Shade.Exp.not = function() { return Shade.not(this); };
 
 var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator)
 {
