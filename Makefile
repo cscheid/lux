@@ -35,6 +35,7 @@ facet.js:					\
 	src/facet/camera/perspective.js		\
 	src/facet/draw.js			\
 	src/facet/element_buffer.js		\
+	src/facet/fresh_pick_id.js		\
 	src/facet/id_buffer.js			\
 	src/facet/init.js			\
 	src/facet/load_image_into_texture.js	\
