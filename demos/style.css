@@ -2,6 +2,8 @@ body {
   font: 14px "Helvetica Neue", sans-serif;
   text-rendering: optimizeLegibility;
   margin-top: 1em;
+  font-weight: 200;
+  font-size: 1em;
   overflow-y: scroll;
   color: rgb(255,232,204);
   background-color: rgb(54, 44, 35); /*rgb(77, 62, 50);*/
@@ -17,6 +19,7 @@ body {
     width: 700px;
     overflow-x: auto;
     padding: 10px;
+    line-height: 100%;
     background-color: rgb(43, 29, 23); /*rgb(51, 41, 33);*/
     background-image: url('css/brushed_metal_dark.jpg');
     border-radius: 0.3em;
@@ -57,9 +60,13 @@ a:hover {
 h1 {
   font-size: 36px;
   font-weight: 300;
-  margin-bottom: .3em;
+  padding-bottom: .3em;
 }
 
+b {
+    font-weight: 700;
+    color: rgb(255, 160, 100);
+}
 .sidebar {
   color: #666;
 }
@@ -69,7 +76,9 @@ ul {
 }
 
 .keyword {
-    font-weight: bold;
+    font-size: 1.1em;
+    font-weight: 300;
+/*     color: rgb(255, 160, 100); */
     font-family: monospace;
     padding-right: .1em;
     padding-left: .1em;
