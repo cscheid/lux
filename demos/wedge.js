@@ -12,7 +12,26 @@ var wedge_color;
 
 function draw_it()
 {
-    square_drawable.draw();
+    var states = [ [ [angle_min, -Math.PI/3],
+                     [angle_max,  Math.PI/3],
+                     [pick_id, Shade.id(pick_id_val)],
+                     [wedge_color, Shade.color('red')] ],
+                   [ [angle_min, Math.PI/3],
+                     [angle_max, Math.PI/2],
+                     [pick_id, Shade.id(pick_id_val+1)],
+                     [wedge_color, Shade.color('blue')] ],
+                   [ [angle_min,   Math.PI/2],
+                     [angle_max, 5*Math.PI/3],
+                     [pick_id, Shade.id(pick_id_val+2)],
+                     [wedge_color, Shade.color('green') ] ] ];
+    _.each(states, function(lst) {
+        _.each(lst, function(pair) {
+            var uniform = pair[0],
+                value = pair[1];
+            uniform.set(value);
+        });
+        square_drawable.draw();
+    });
 }
 
 $().ready(function () {
@@ -55,18 +74,24 @@ $().ready(function () {
     var angle = Shade.selection(distance_from_origin.eq(0), 
                                 0, Shade.atan(square.vertex.at(1), 
                                               square.vertex.at(0)));
-    var pick_id_val = Facet.fresh_pick_id(3);
-    var angle_min = Shade.uniform("float", -Math.PI/3);
-    var angle_max = Shade.uniform("float", Math.PI/3);
-    var pick_id = Shade.uniform("vec4", Shade.id(pick_id_val));
-    var wedge_color = Shade.uniform("vec4", Shade.color('rgb(255, 232, 204)'));
+    pick_id_val = Facet.fresh_pick_id(3);
+    angle_min = Shade.uniform("float");
+    angle_max = Shade.uniform("float");
+    pick_id = Shade.uniform("vec4");
+    wedge_color = Shade.uniform("vec4");
 
+    var angle_p1 = angle.add(Math.PI * 2);
+    var angle_m1 = angle.sub(Math.PI * 2);
+
+    function inside(ang) {
+        return Shade.and(ang.ge(angle_min), ang.lt(angle_max));
+    };
+ 
+    var hit = inside(angle).or(inside(angle_p1)).or(inside(angle_m1));
     square_drawable = Facet.bake(square, {
         position: camera.project(model_mat.mul(Shade.vec(square.vertex, 0, 1))),
         color: wedge_color
-            .discard_if(distance_from_origin.gt(1)
-                        .logical_or(angle.gt(angle_max))
-                        .logical_or(angle.lt(angle_min))),
+            .discard_if(distance_from_origin.gt(1).or(hit.not())),
         pick_id: pick_id
     });
 
