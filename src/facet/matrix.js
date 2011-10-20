@@ -1,3 +1,8 @@
+Facet.identity = function()
+{
+    return mat4.identity();
+};
+
 Facet.translation = function(v)
 {
     function t_3x3(ar) {
