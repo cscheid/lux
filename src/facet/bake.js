@@ -127,6 +127,16 @@ Facet.bake = function(model, appearance)
 
     var draw_batch_id = largest_batch_id++;
 
+    // NB: the batch_id field in the *_opts objects is not
+    // the same as the batch_id in the batch itself. 
+    // 
+    // The former is used to avoid state switching, while the latter is
+    // a generic automatic id which might be used for picking, for
+    // example.
+    // 
+    // This should not lead to any problems right now but might be confusing to
+    // readers.
+
     var draw_opts = {
         program: draw_program,
         attributes: draw_attribute_arrays,
@@ -136,9 +146,13 @@ Facet.bake = function(model, appearance)
         batch_id: draw_batch_id
     };
 
-    // if no picking is defined, pick to -1, so we at least occlude
-    // what was in the background.
-    var pick_id = Shade.make(appearance.pick_id || Shade.id(-1));
+    var batch_id = Facet.fresh_pick_id();
+    var pick_id;
+    if (appearance.pick_id)
+        pick_id = Shade.make(appearance.pick_id);
+    else {
+        pick_id = Shade.make(Shade.id(batch_id));
+    }
 
     var pick_program_exp = {};
     _.each(appearance, function(value, key) {
@@ -171,6 +185,7 @@ Facet.bake = function(model, appearance)
     var which_opts = [ draw_opts, pick_opts ];
 
     var result = {
+        batch_id: batch_id,
         draw: function() {
             draw_it(which_opts[Facet.Picker.picking_mode]);
         },
