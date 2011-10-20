@@ -132,7 +132,11 @@ stricter type checking.
 
 ** TODO Code review on FIXMEs
 * Features
-** Interaction
+** Unprojecting
+Since I can't read from the depth buffer, I need a WebGL unproject by
+rendering the Z value into RGBA and reading back the same way as we do
+picking.
+
 ** Multiple WebGL canvases in a same page
 This means multiple contexts, and lots of things are going to break.
 * Other
