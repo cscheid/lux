@@ -1,4 +1,4 @@
-Shade.constant = function(v, constant_type)
+Shade.constant = function(v, type)
 {
     var constant_tuple_fun = function(type, args)
     {
@@ -108,12 +108,20 @@ Shade.constant = function(v, constant_type)
             throw "type error: constant should be bool, number, vector or matrix";
         }
     }
-    if (t !== 'number' && constant_type)
-        throw "Only numbers can have coerced types";
-    if (t === 'number')
-        return constant_tuple_fun(constant_type || Shade.Types.float_t, [v]);
-    if (t === 'boolean')
+    if (t === 'number') {
+        if (type && !(type.equals(Shade.Types.float_t) ||
+                      type.equals(Shade.Types.int_t))) {
+            throw ("expected specified type for numbers to be float or int," +
+                   " got " + type.repr() + " instead.");
+        }
+        return constant_tuple_fun(type || Shade.Types.float_t, [v]);
+    }
+    if (t === 'boolean') {
+        if (type && !type.equals(Shade.Types.bool_t))
+            throw ("boolean constants cannot be interpreted as " + 
+                   type.repr());
         return constant_tuple_fun(Shade.Types.bool_t, [v]);
+    }
     if (t === 'vector') {
         var d = v.length;
         if (d < 2 && d > 4)
@@ -123,19 +131,38 @@ Shade.constant = function(v, constant_type)
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
             throw "Not all constant params have the same types;";
         }
-        if (el_ts[0] === "number")
-            return constant_tuple_fun(Shade.basic('vec' + d), v);
+        if (el_ts[0] === "number") {
+            var computed_t = Shade.basic('vec' + d);
+            if (type && !computed_t.equals(type)) {
+                throw "passed constant must have type " + computed_t.repr()
+                    + ", but was request to have incompatible type " 
+                    + type.repr();
+            }
+            return constant_tuple_fun(computed_t, v);
+        }
         else
             throw "bad datatype for constant: " + el_ts[0];
     }
     if (t === 'boolean_vector') {
         // FIXME bvecs
         var d = v.length;
-        return constant_tuple_fun(Shade.basic('bvec' + d), v);
+        var computed_t = Shade.basic('bvec' + d);
+        if (type && !computed_t.equals(type)) {
+            throw "passed constant must have type " + computed_t.repr()
+                + ", but was request to have incompatible type " 
+                + type.repr();
+        }
+        return constant_tuple_fun(computed_t, v);
     }
     if (t === 'matrix') {
         var d = Math.sqrt(v.length); // FIXME UGLY
-        return constant_tuple_fun(Shade.basic('mat' + d), v);
+        var computed_t = Shade.basic('mat' + d);
+        if (type && !computed_t.equals(type)) {
+            throw "passed constant must have type " + computed_t.repr()
+                + ", but was request to have incompatible type " 
+                + type.repr();
+        }
+        return constant_tuple_fun(computed_t, v);
     }
     throw "type error: constant_type returned bogus value?";
 };
