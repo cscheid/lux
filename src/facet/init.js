@@ -4,13 +4,13 @@ Facet.initGL = function(canvas, opts)
     canvas.onselectstart = function() { return false; };
     var gl;
     var clearColor, clearDepth;
-    opts = _.defaults(opts, { clearColor: [1,1,1,0],
-                              clearDepth: 1.0,
-                              attributes: {
-                                  alpha: true,
-                                  depth: true
-                              }
-                            });
+    opts = _.defaults(opts || {}, { clearColor: [1,1,1,0],
+                                    clearDepth: 1.0,
+                                    attributes: {
+                                        alpha: true,
+                                        depth: true
+                                    }
+                                  });
     if (opts.clearColor.expression_type) {
         if (!opts.clearColor.is_constant())
             throw "clearColor must be constant expression";
@@ -23,7 +23,7 @@ Facet.initGL = function(canvas, opts)
     if (opts.clearDepth.expression_type) {
         if (!opts.clearDepth.is_constant())
             throw "clearDepth must be constant expression";
-        if (!opts.clearDepth.type.equals(Shade.Types.float))
+        if (!opts.clearDepth.type.equals(Shade.Types.float_t))
             throw "clearDepth must be float";
         clearDepth = opts.clearDepth.constant_value();
     } else
@@ -41,6 +41,8 @@ Facet.initGL = function(canvas, opts)
             gl = WebGLUtils.setupWebGL(canvas, opts.attributes);
         else
             gl = WebGLUtils.setupWebGL(canvas);
+        if (!gl)
+            throw "Failed context creation";
         if (opts.debugging) {
             function throwOnGLError(err, funcName, args) {
                 throw WebGLDebugUtils.glEnumToString(err) + 
