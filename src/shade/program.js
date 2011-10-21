@@ -27,7 +27,7 @@ Shade.Optimizer.is_constant = function(exp)
 Shade.Optimizer.replace_with_constant = function(exp)
 {
     var v = exp.constant_value();
-    var result = Shade.constant(v);
+    var result = Shade.constant(v, exp.type);
     return result;
 };
 
