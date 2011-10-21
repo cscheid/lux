@@ -1,4 +1,4 @@
-Shade.constant = function(v)
+Shade.constant = function(v, constant_type)
 {
     var constant_tuple_fun = function(type, args)
     {
@@ -108,10 +108,12 @@ Shade.constant = function(v)
             throw "type error: constant should be bool, number, vector or matrix";
         }
     }
+    if (t !== 'number' && constant_type)
+        throw "Only numbers can have coerced types";
     if (t === 'number')
-        return constant_tuple_fun(Shade.basic('float'), [v]);
+        return constant_tuple_fun(constant_type || Shade.Types.float_t, [v]);
     if (t === 'boolean')
-        return constant_tuple_fun(Shade.basic('bool'), [v]);
+        return constant_tuple_fun(Shade.Types.bool_t, [v]);
     if (t === 'vector') {
         var d = v.length;
         if (d < 2 && d > 4)
