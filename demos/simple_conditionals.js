@@ -11,7 +11,7 @@ var cube_model;
 function create_cube_drawable(opts)
 {
     var b = cube_model.tex_coord.fract().lessThanEqual(Shade.vec(0.5, 0.5));
-    var t = b.at(0).logical_xor(b.at(1));
+    var t = b.at(0).xor(b.at(1));
     var material_color = t.selection(Shade.texture2D(sampler[0], cube_model.tex_coord),
                                      Shade.texture2D(sampler[1], cube_model.tex_coord));
     var mvp = proj.mul(mv);

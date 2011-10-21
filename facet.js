@@ -3068,8 +3068,10 @@ function constant_type(obj)
     var t = typeof obj;
     if (t === "boolean")         return "boolean";
     if (t === "number")          return "number";
-    t = obj._type;
-    if (!t)                      return "other";
+    if (obj) {
+        t = obj._type;
+        if (!t)                      return "other";
+    }
     return t;
 }
 
@@ -3261,6 +3263,16 @@ Facet.bake = function(model, appearance)
 
     var draw_batch_id = largest_batch_id++;
 
+    // NB: the batch_id field in the *_opts objects is not
+    // the same as the batch_id in the batch itself. 
+    // 
+    // The former is used to avoid state switching, while the latter is
+    // a generic automatic id which might be used for picking, for
+    // example.
+    // 
+    // This should not lead to any problems right now but might be confusing to
+    // readers.
+
     var draw_opts = {
         program: draw_program,
         attributes: draw_attribute_arrays,
@@ -3270,9 +3282,13 @@ Facet.bake = function(model, appearance)
         batch_id: draw_batch_id
     };
 
-    // if no picking is defined, pick to -1, so we at least occlude
-    // what was in the background.
-    var pick_id = Shade.make(appearance.pick_id || Shade.id(-1));
+    var batch_id = Facet.fresh_pick_id();
+    var pick_id;
+    if (appearance.pick_id)
+        pick_id = Shade.make(appearance.pick_id);
+    else {
+        pick_id = Shade.make(Shade.id(batch_id));
+    }
 
     var pick_program_exp = {};
     _.each(appearance, function(value, key) {
@@ -3281,7 +3297,7 @@ Facet.bake = function(model, appearance)
                 var pick_if = (appearance.pick_if ||
                                Shade.make(value).swizzle("a").gt(0));
                 pick_program_exp[key] = pick_id
-                    .discard_if(Shade.logical_not(pick_if));
+                    .discard_if(Shade.not(pick_if));
             } else {
                 pick_program_exp[key] = value;
             }
@@ -3305,6 +3321,7 @@ Facet.bake = function(model, appearance)
     var which_opts = [ draw_opts, pick_opts ];
 
     var result = {
+        batch_id: batch_id,
         draw: function() {
             draw_it(which_opts[Facet.Picker.picking_mode]);
         },
@@ -3436,6 +3453,23 @@ Facet.element_buffer = function(vertex_array)
     };
     return result;
 };
+// Call this to get a guaranteed unique range of picking ids.
+// Useful to avoid name conflicts between automatic ids and
+// user-defined ids.
+
+(function() {
+
+var latest_pick_id = 1;
+
+Facet.fresh_pick_id = function(quantity)
+{
+    quantity = quantity || 1;
+    var result = latest_pick_id;
+    latest_pick_id += quantity;
+    return result;
+};
+
+})();
 Facet.id_buffer = function(vertex_array)
 {
     if (typeOf(vertex_array) !== 'array')
@@ -3577,6 +3611,11 @@ Facet.load_image_into_texture = function(opts)
         buffer_handler();        
     }
 };
+Facet.identity = function()
+{
+    return mat4.identity();
+};
+
 Facet.translation = function(v)
 {
     function t_3x3(ar) {
@@ -4940,6 +4979,7 @@ Shade.Exp = {
         });
     },
     expression_type: "other",
+    _type: "shade_expression",
     _attribute_buffers: [],
     _uniforms: [],
     attribute_buffers: function() {
@@ -5271,7 +5311,7 @@ Shade.uniform = function(type, v)
     var uniform_name = Shade.unique_name();
     if (typeof type === 'undefined') throw "uniform requires type";
     if (typeof type === 'string') type = Shade.basic(type);
-    var value = v;
+    var value;
     var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
     if (typeof call !== 'undefined') {
         call = call[1];
@@ -5308,6 +5348,9 @@ Shade.uniform = function(type, v)
         },
         // FIXME: type checking
         set: function(v) {
+            var t = constant_type(v);
+            if (t === "shade_expression")
+                v = v.constant_value();
             value = v;
             if (this._facet_active_uniform) {
                 this._facet_active_uniform(v);
@@ -5320,6 +5363,7 @@ Shade.uniform = function(type, v)
         uniform_name: uniform_name
     });
     result._uniforms = [result];
+    result.set(v);
     return result;
 };
 Shade.sampler2D_from_texture = function(texture)
@@ -7070,38 +7114,38 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
     };
 };
 
-Shade.logical_or = logical_operator_exp(
+Shade.or = logical_operator_exp(
     "||", lift_binfun_to_evaluator(function(a, b) { return a || b; }),
     function(i) { return i == 0; }
 );
 
-Shade.Exp.logical_or = function(other)
+Shade.Exp.or = function(other)
 {
-    return Shade.logical_or(this, other);
+    return Shade.or(this, other);
 };
 
-Shade.logical_and = logical_operator_exp(
+Shade.and = logical_operator_exp(
     "&&", lift_binfun_to_evaluator(function(a, b) { return a && b; }),
     function(i) { return i == 0; }
 );
 
-Shade.Exp.logical_and = function(other)
+Shade.Exp.and = function(other)
 {
-    return Shade.logical_and(this, other);
+    return Shade.and(this, other);
 };
 
-Shade.logical_xor = logical_operator_exp(
+Shade.xor = logical_operator_exp(
     "^^", lift_binfun_to_evaluator(function(a, b) { return ~~(a ^ b); }));
-Shade.Exp.logical_xor = function(other)
+Shade.Exp.xor = function(other)
 {
-    return Shade.logical_xor(this, other);
+    return Shade.xor(this, other);
 };
 
-Shade.logical_not = function(exp)
+Shade.not = function(exp)
 {
     exp = Shade.make(exp);
     if (!exp.type.equals(Shade.Types.bool_t)) {
-        throw "Logical_not requires bool expression";
+        throw "logical_not requires bool expression";
     }
     return Shade._create_concrete_value_exp({
         parents: [exp],
@@ -7116,7 +7160,7 @@ Shade.logical_not = function(exp)
     });
 };
 
-Shade.Exp.logical_not = function() { return Shade.logical_not(this); };
+Shade.Exp.not = function() { return Shade.not(this); };
 
 var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator)
 {
@@ -7325,7 +7369,11 @@ Shade.discard_if = function(exp, condition)
     return result;
 };
 // converts a 32-bit integer into an 8-bit RGBA value.
-// as the name implies, this is most useful for picking.
+// this is most useful for picking.
+
+// Ideally we would like this to take shade expressions,
+// but WebGL does not support bitwise operators.
+
 Shade.id = function(id_value)
 {
     var r = id_value & 255;
@@ -7333,7 +7381,7 @@ Shade.id = function(id_value)
     var b = (id_value >> 16) & 255;
     var a = (id_value >> 24) & 255;
     
-    return Shade.vec(r / 255, g / 255, b / 255, a / 255);
+    return vec4.make([r / 255, g / 255, b / 255, a / 255]);
 };
 
 return Shade;
@@ -7880,6 +7928,7 @@ var css_colors = {
 };
 
 var single_hex_to_float = {};
+var rgb_re = / *rgb *\( *(\d+) *, *(\d+) *, *(\d+) *\) */;
 Shade.color = function(spec, alpha)
 {
     if (typeOf(alpha) === 'undefined')
@@ -7895,6 +7944,12 @@ Shade.color = function(spec, alpha)
                              parseInt(spec.substr(5,2), 16) / 255, alpha);
         } else
             throw "hex specifier must be either #rgb or #rrggbb";
+    }
+    var m = rgb_re.exec(spec);
+    if (m) {
+        return Shade.vec(parseInt(m[1]) / 255,
+                         parseInt(m[2]) / 255,
+                         parseInt(m[3]) / 255, alpha);
     }
     if (spec in css_colors)
         return Shade.color(css_colors[spec], alpha);

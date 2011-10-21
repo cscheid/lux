@@ -42,7 +42,7 @@ var square = Facet.model({
   a <em>position</em> to each vertex, and a <em>color</em> to each
   pixel that gets drawn on the screen. These are created in Facet
   with <span class="keyword">Shade</span>, and the expressions
-  are <span class="keyword">bake</span>d into <em>drawables</em>.</p>
+  are <span class="keyword">bake</span>d into <em>batches</em>.</p>
 
 <p>In WebGL and OpenGL, vertices in three-dimensional space are given
 in 4 dimensions, in
@@ -51,7 +51,7 @@ in 4 dimensions, in
   the square and triangle in 3D homogeneous space by picking x and y from their
   <span class="keyword">vertex</span> attribute, setting z to be zero
   and the fourth coordinate to be 1. Variables with values that do not
-  change as the model is being drawn are called <span class="keyword">uniform</span>s, and here we specify
+  change as the batch is being drawn are called <span class="keyword">uniform</span>s, and here we specify
   a uniform <span class="keyword">mvp</span> which will store a 4x4 matrix.
 
   This variable stores
@@ -66,20 +66,20 @@ in 4 dimensions, in
 <pre class="highlight">
 mvp = Shade.uniform("mat4");
 
-square_drawable = Facet.bake(square, {
+square_batch = Facet.bake(square, {
     position: mvp.mul(Shade.vec(square.vertex, 0, 1)),
     color: Shade.color('white')
 });
 
-triangle_drawable = Facet.bake(triangle, {
+triangle_batch = Facet.bake(triangle, {
     position: mvp.mul(Shade.vec(triangle.vertex, 0, 1)),
     color: Shade.color('white')
 });
 </pre>
 
 <p>We are almost done. We now create
-  a <span class="keyword">display</span> function. Drawables have a method
-  predictably named <span class="keyword">draw</span>, which
+  a <span class="keyword">display</span> function. Batches have a method
+  named <span class="keyword">draw</span>, which
   draws the models using the given positions and colors. The camera
   transformation is computed
   by <span class="keyword">Facet.perspective</span>,
