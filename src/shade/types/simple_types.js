@@ -14,4 +14,13 @@
     Shade.Types.bool_t    = Shade.basic('bool');
     Shade.Types.int_t     = Shade.basic('int');
     Shade.Types.sampler2D = Shade.basic('sampler2D');
+
+    Shade.Types.int_t.zero   = "0";
+    Shade.Types.float_t.zero = "0.0";
+    Shade.Types.vec2.zero    = "vec2(0,0)";
+    Shade.Types.vec3.zero    = "vec3(0,0,0)";
+    Shade.Types.vec4.zero    = "vec4(0,0,0,0)";
+    Shade.Types.mat2.zero    = "mat2(0,0,0,0)";
+    Shade.Types.mat3.zero    = "mat3(0,0,0,0,0,0,0,0,0)";
+    Shade.Types.mat4.zero    = "mat4(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)";
 })();
