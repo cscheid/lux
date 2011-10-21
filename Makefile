@@ -58,6 +58,7 @@ facet.js:					\
 	src/facet/drawing_mode/over.js		\
 	src/facet/drawing_mode/standard.js	\
 	src/shade/_begin.js			\
+	src/shade/looping.js			\
 	src/shade/unique_name.js		\
 	src/shade/create.js			\
 	src/shade/memoize_on_field.js		\

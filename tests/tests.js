@@ -1,5 +1,9 @@
 module("Shade tests");
 
+var canvas = document.getElementById("webgl");
+var gl = Facet.initGL(canvas);
+$(canvas).hide();
+
 test("Shade types", function() {
     var x = Shade.basic('float');
     expect(20);
@@ -246,7 +250,6 @@ test("Shade constant folding", function() {
        "selection folding");
 });
 
-
 test("Shade optimizer", function() {
     var uniform = Shade.uniform("vec4");
     var exp = Shade.mul(uniform, Shade.constant(0));
@@ -294,4 +297,22 @@ test("Shade optimizer", function() {
     exp = Shade.mul(identity,
                     Shade.vec(1,1,1,1));
     equal(Shade.Optimizer.is_times_one(exp), true, "detect heterogenous times one");
+});
+
+test("Shade programs", function() {
+    ok(Shade.program({
+        color: Shade.vec(1,1,1,1),
+        position: Shade.vec(1,1,1,1)
+    }), "Basic program");
+});
+
+test("Shade loops", function() {
+    var from = Shade.as_int(0), to = Shade.as_int(10);
+    var avg = Shade.range(from, to).average();
+    Shade.debug = true;
+    var p = Shade.program({
+        color: Shade.vec(1,1,1,1),
+        position: Shade.vec(1,1,1,1),
+        point_size: avg
+    });
 });

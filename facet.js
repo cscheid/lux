@@ -3484,13 +3484,13 @@ Facet.initGL = function(canvas, opts)
     canvas.onselectstart = function() { return false; };
     var gl;
     var clearColor, clearDepth;
-    opts = _.defaults(opts, { clearColor: [1,1,1,0],
-                              clearDepth: 1.0,
-                              attributes: {
-                                  alpha: true,
-                                  depth: true
-                              }
-                            });
+    opts = _.defaults(opts || {}, { clearColor: [1,1,1,0],
+                                    clearDepth: 1.0,
+                                    attributes: {
+                                        alpha: true,
+                                        depth: true
+                                    }
+                                  });
     if (opts.clearColor.expression_type) {
         if (!opts.clearColor.is_constant())
             throw "clearColor must be constant expression";
@@ -3503,7 +3503,7 @@ Facet.initGL = function(canvas, opts)
     if (opts.clearDepth.expression_type) {
         if (!opts.clearDepth.is_constant())
             throw "clearDepth must be constant expression";
-        if (!opts.clearDepth.type.equals(Shade.Types.float))
+        if (!opts.clearDepth.type.equals(Shade.Types.float_t))
             throw "clearDepth must be float";
         clearDepth = opts.clearDepth.constant_value();
     } else
@@ -3521,6 +3521,8 @@ Facet.initGL = function(canvas, opts)
             gl = WebGLUtils.setupWebGL(canvas, opts.attributes);
         else
             gl = WebGLUtils.setupWebGL(canvas);
+        if (!gl)
+            throw "Failed context creation";
         if (opts.debugging) {
             function throwOnGLError(err, funcName, args) {
                 throw WebGLDebugUtils.glEnumToString(err) + 
@@ -4151,6 +4153,113 @@ var Shade = {};
 (function() {
 
 Shade.debug = false;
+/*
+ A range expression represents a finite stream of values.
+
+ It is meant to be an abstraction over looping.
+
+ a range object should have the following fields:
+ 
+ - begin, the first value of the stream, which must be of type int.
+ 
+ - end, the first value past the end of the stream, which also must be of type int.
+ 
+ - value, a function which takes an Shade expression of type integer
+   and returns the value of the stream at that particular index.
+   **This function must not have side effects!** Most importantly, it
+   must not leak the reference to the passed parameter. Bad things
+   will happen if it does.
+
+ With range expressions, we can build safe equivalents of loops
+*/
+
+Shade.variable = function(type)
+{
+    return Shade._create_concrete_exp( {
+        parents: [],
+        type: type,
+        eval: function() {
+            return this.glsl_name;
+        },
+        compile: function() {}
+    });
+};
+
+Shade.range = function(range_begin, range_end)
+{
+    var beg = Shade.make(range_begin).as_int(),
+        end = Shade.make(range_end).as_int();
+    console.log(beg, beg.type.repr());
+    console.log(end, end.type.repr());
+    return {
+        begin: beg,
+        end: end,
+        value: function(index) {
+            return index;
+        },
+
+        // this returns a shade expression which, when evaluated, returns
+        // the average of the values in the range.
+        average: function() {
+            var index_variable = Shade.variable(Shade.Types.int_t);
+            var stream_value = this.value(index_variable);
+            var stream_type = stream_value.type;
+            var average_type;
+            var accumulator_value = Shade.variable(stream_type);
+            if (stream_value.type.equals(Shade.Types.int_t)) {
+                average_type = Shade.Types.float_t;
+            } else if (_.any([Shade.Types.float_t,
+                              Shade.Types.vec2, Shade.Types.vec3, Shade.Types.vec4, 
+                              Shade.Types.mat2, Shade.Types.mat3, Shade.Types.mat4],
+                             function(t) { return t.equals(stream_type); })) {
+                average_type = stream_type;
+            } else
+                throw ("Type error, average can't support range of type " +
+                       stream_type.repr());
+
+            return Shade._create_concrete_exp({
+                parents: [this.begin, this.end, 
+                          index_variable, accumulator_value, stream_value],
+                type: average_type,
+                eval: function() {
+                    return this.glsl_name + "()";
+                },
+                element: Shade.memoize_on_field("_element", function(i) {
+                    if (this.type.is_pod()) {
+                        if (i === 0)
+                            return this;
+                        else
+                            throw this.type.repr() + " is an atomic type";
+                    } else
+                        return this.at(i);
+                }),
+                compile: function(ctx) {
+                    var beg = this.parents[0];
+                    var end = this.parents[1];
+                    var index_variable = this.parents[2];
+                    var accumulator_value = this.parents[3];
+                    var stream_value = this.parents[4];
+                    ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
+                    ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
+                      accumulator_value.type.zero, ";\n");
+                    ctx.strings.push("    for (int",
+                      index_variable.eval(),"=",beg.eval(),";",
+                      index_variable.eval(),"<",end.eval(),";",
+                      "++",index_variable.eval(),") {\n");
+                    ctx.strings.push("        ",
+                      accumulator_value.eval(),"=",
+                      accumulator_value.eval(),"+",
+                      stream_value.eval(),";\n");
+                    ctx.strings.push("    }\n");
+                    ctx.strings.push("    return", 
+                                     this.type.repr(), "(", accumulator_value.eval(), ")/float(",
+                      end.eval(), "-", beg.eval(), ");\n");
+                    ctx.strings.push("}\n");
+                }
+            });
+        }
+    };
+};
 Shade.unique_name = function() {
     var counter = 0;
     return function() {
@@ -4516,6 +4625,15 @@ Shade.Types.function_t = function(return_type, param_types) {
     Shade.Types.bool_t    = Shade.basic('bool');
     Shade.Types.int_t     = Shade.basic('int');
     Shade.Types.sampler2D = Shade.basic('sampler2D');
+
+    Shade.Types.int_t.zero   = "0";
+    Shade.Types.float_t.zero = "0.0";
+    Shade.Types.vec2.zero    = "vec2(0,0)";
+    Shade.Types.vec3.zero    = "vec3(0,0,0)";
+    Shade.Types.vec4.zero    = "vec4(0,0,0,0)";
+    Shade.Types.mat2.zero    = "mat2(0,0,0,0)";
+    Shade.Types.mat3.zero    = "mat3(0,0,0,0,0,0,0,0,0)";
+    Shade.Types.mat4.zero    = "mat4(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)";
 })();
 //////////////////////////////////////////////////////////////////////////////
 // make converts objects which can be meaningfully interpreted as
@@ -5112,7 +5230,7 @@ Shade.swizzle = function(exp, pattern)
 {
     return Shade.make(exp).swizzle(pattern);
 };
-Shade.constant = function(v)
+Shade.constant = function(v, type)
 {
     var constant_tuple_fun = function(type, args)
     {
@@ -5222,10 +5340,20 @@ Shade.constant = function(v)
             throw "type error: constant should be bool, number, vector or matrix";
         }
     }
-    if (t === 'number')
-        return constant_tuple_fun(Shade.basic('float'), [v]);
-    if (t === 'boolean')
-        return constant_tuple_fun(Shade.basic('bool'), [v]);
+    if (t === 'number') {
+        if (type && !(type.equals(Shade.Types.float_t) ||
+                      type.equals(Shade.Types.int_t))) {
+            throw ("expected specified type for numbers to be float or int," +
+                   " got " + type.repr() + " instead.");
+        }
+        return constant_tuple_fun(type || Shade.Types.float_t, [v]);
+    }
+    if (t === 'boolean') {
+        if (type && !type.equals(Shade.Types.bool_t))
+            throw ("boolean constants cannot be interpreted as " + 
+                   type.repr());
+        return constant_tuple_fun(Shade.Types.bool_t, [v]);
+    }
     if (t === 'vector') {
         var d = v.length;
         if (d < 2 && d > 4)
@@ -5235,19 +5363,38 @@ Shade.constant = function(v)
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
             throw "Not all constant params have the same types;";
         }
-        if (el_ts[0] === "number")
-            return constant_tuple_fun(Shade.basic('vec' + d), v);
+        if (el_ts[0] === "number") {
+            var computed_t = Shade.basic('vec' + d);
+            if (type && !computed_t.equals(type)) {
+                throw "passed constant must have type " + computed_t.repr()
+                    + ", but was request to have incompatible type " 
+                    + type.repr();
+            }
+            return constant_tuple_fun(computed_t, v);
+        }
         else
             throw "bad datatype for constant: " + el_ts[0];
     }
     if (t === 'boolean_vector') {
         // FIXME bvecs
         var d = v.length;
-        return constant_tuple_fun(Shade.basic('bvec' + d), v);
+        var computed_t = Shade.basic('bvec' + d);
+        if (type && !computed_t.equals(type)) {
+            throw "passed constant must have type " + computed_t.repr()
+                + ", but was request to have incompatible type " 
+                + type.repr();
+        }
+        return constant_tuple_fun(computed_t, v);
     }
     if (t === 'matrix') {
         var d = Math.sqrt(v.length); // FIXME UGLY
-        return constant_tuple_fun(Shade.basic('mat' + d), v);
+        var computed_t = Shade.basic('mat' + d);
+        if (type && !computed_t.equals(type)) {
+            throw "passed constant must have type " + computed_t.repr()
+                + ", but was request to have incompatible type " 
+                + type.repr();
+        }
+        return constant_tuple_fun(computed_t, v);
     }
     throw "type error: constant_type returned bogus value?";
 };
@@ -6657,7 +6804,7 @@ Shade.Optimizer.is_constant = function(exp)
 Shade.Optimizer.replace_with_constant = function(exp)
 {
     var v = exp.constant_value();
-    var result = Shade.constant(v);
+    var result = Shade.constant(v, exp.type);
     return result;
 };
 
