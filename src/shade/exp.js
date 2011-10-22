@@ -77,6 +77,7 @@ Shade.Exp = {
     // element access for compound expressions
 
     element: function(i) {
+        // FIXME. Why doesn't this check for is_pod and use this.at()?
         throw "invalid call: atomic expression";  
     },
 
@@ -140,6 +141,8 @@ Shade.Exp = {
     //////////////////////////////////////////////////////////////////////////
 
     as_int: function() {
+        if (this.type.equals(Shade.Types.int_t))
+            return this;
         var parent = this;
         return Shade._create_concrete_value_exp({
             parents: [parent],
@@ -154,6 +157,8 @@ Shade.Exp = {
         });
     },
     as_bool: function() {
+        if (this.type.equals(Shade.Types.bool_t))
+            return this;
         var parent = this;
         return Shade._create_concrete_value_exp({
             parents: [parent],
@@ -168,6 +173,8 @@ Shade.Exp = {
         });
     },
     as_float: function() {
+        if (this.type.equals(Shade.Types.float_t))
+            return this;
         var parent = this;
         return Shade._create_concrete_value_exp({
             parents: [parent],
