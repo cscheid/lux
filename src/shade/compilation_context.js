@@ -2,13 +2,27 @@ Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
 
-Shade.CompilationContext = function(compile_type) {
+function new_scope()
+{
     return {
+        declarations: [],
+        initializations: [],
+        add_declaration: function(exp) {
+            this.declarations.push(exp);
+        },
+        add_initialization: function(exp) {
+            this.initializations.push(exp);
+        }
+    };
+};
+
+Shade.CompilationContext = function(compile_type)
+{
+    var result = {
         freshest_glsl_name: 0,
         compile_type: compile_type || Shade.UNSET_PROGRAM_COMPILE,
         float_precision: "highp",
         strings: [],
-        initialization_exprs: [],
         declarations: { uniform: {},
                         attribute: {},
                         varying: {}
@@ -59,29 +73,41 @@ Shade.CompilationContext = function(compile_type) {
                 n.is_unconditional = false;
                 n.glsl_name = that.request_fresh_glsl_name();
                 n.set_requirements(this);
-                for (var j=0; j<n.parents.length; ++j)
+                for (var j=0; j<n.parents.length; ++j) {
                     n.parents[j].children_count++;
+                    // adds base scope to objects which have them.
+                    if (n.has_scope)
+                        n.scope = new_scope();
+                }
             });
 
             // top-level node is always unconditional.
             topo_sort[topo_sort.length-1].is_unconditional = true;
+            // top-level node has global scope.
+            topo_sort[topo_sort.length-1].scope = this.global_scope;
             i = topo_sort.length;
             while (i--) {
                 var n = topo_sort[i];
                 n.propagate_conditions();
+                for (var j=0; j<n.parents.length; ++j) {
+                    if (!n.parents[j].scope) {
+                        n.parents[j].scope = n.scope;
+                    }
+                }
             }
-
+            var p = this.strings.push;
             this.strings.push("precision",this.float_precision,"float;\n");
             for (i=0; i<topo_sort.length; ++i) {
                 topo_sort[i].compile(this);
             }
             this.strings.push("void main() {\n");
-            for (i=0; i<this.initialization_exprs.length; ++i)
-                this.strings.push("    ", this.initialization_exprs[i], ";\n");
+            _.each(this.global_scope.initializations, function(exp) {
+                that.strings.push("    ", exp, ";\n");
+            });
             this.strings.push("    ", fun.eval(), ";\n", "}\n");
         },
         add_initialization: function(expr) {
-            this.initialization_exprs.push(expr);
+            this.global_scope.initializations.push(expr);
         },
         value_function: function() {
             this.strings.push(arguments[0].type.repr(),
@@ -104,4 +130,20 @@ Shade.CompilationContext = function(compile_type) {
             this.strings.push(";\n}\n");
         }
     };
+
+    // for now, add_declaration works differently on global scope. When
+    // we finish the inevitable route of creating a real GLSL AST, then this
+    // will again change. 
+    var global_scope = {
+        initializations: [],
+        add_declaration: function(exp) {
+            result.strings.push(exp, ";\n");
+        },
+        add_initialization: function(exp) {
+            this.initializations.push(exp);
+        }
+    };
+    result.global_scope = global_scope;
+
+    return result;
 };

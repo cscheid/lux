@@ -20,8 +20,10 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             if (this.is_unconditional) {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
-                    ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
+                    this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
+                    this.scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
+                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                    // ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                     ctx.value_function(this, this.precomputed_value_glsl_name);
                 } else {
                     ctx.value_function(this, this.value());
@@ -29,10 +31,14 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             } else {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
                     this.has_precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name), ";\n");
-                    ctx.add_initialization(this.has_precomputed_value_glsl_name + " = false");
+                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                    // ctx.strings.push(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name), ";\n");
+                    // ctx.add_initialization(this.has_precomputed_value_glsl_name + " = false");
+                    this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
+                    this.scope.add_declaration(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name));
+                    this.scope.add_initialization(this.has_precomputed_value_glsl_name + " = false");
+
                     ctx.value_function(this, "(" + this.has_precomputed_value_glsl_name + "?"
                                        + this.precomputed_value_glsl_name + ": (("
                                        + this.has_precomputed_value_glsl_name + "=true),("
@@ -45,18 +51,24 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             if (this.is_unconditional) {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
-                    ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
+                    
+                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                    // ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
+                    this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
+                    this.scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                 } else {
                     // don't emit anything, all is taken care by eval()
                 }
             } else {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
                     this.has_precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name), ";\n");
-                    ctx.add_initialization(this.has_precomputed_value_glsl_name + " = false");
+                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                    // ctx.strings.push(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name), ";\n");
+                    // ctx.add_initialization(this.has_precomputed_value_glsl_name + " = false");
+                    this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
+                    this.scope.add_declaration(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name));
+                    this.scope.add_initialization(this.has_precomputed_value_glsl_name + " = false");
                     ctx.value_function(this, "(" + this.has_precomputed_value_glsl_name + "?"
                                        + this.precomputed_value_glsl_name + ": (("
                                        + this.has_precomputed_value_glsl_name + "=true),("

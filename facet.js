@@ -4167,7 +4167,7 @@ Shade.debug = false;
 
 Shade.variable = function(type)
 {
-    return Shade._create_concrete_exp( {
+    return Shade._create_concrete_exp({
         parents: [],
         type: type,
         eval: function() {
@@ -4218,6 +4218,7 @@ BasicRange.prototype.fold = function(operation, starting_value)
     var operation_value = operation(accumulator_value, element_value);
 
     return Shade._create_concrete_exp({
+        has_scope: true,
         parents: [this.begin, this.end, 
                   index_variable, accumulator_value, element_value,
                   starting_value, operation_value],
@@ -4249,6 +4250,12 @@ BasicRange.prototype.fold = function(operation, starting_value)
                              index_variable.eval(),"=",beg.eval(),";",
                              index_variable.eval(),"<",end.eval(),";",
                              "++",index_variable.eval(),") {\n");
+            _.each(this.scope.declarations, function(exp) {
+                ctx.strings.push("        ", exp, ";\n");
+            });
+            _.each(this.scope.initializations, function(exp) {
+                ctx.strings.push("        ", exp, ";\n");
+            });
             ctx.strings.push("        ",
                              accumulator_value.eval(),"=",
                              operation_value.eval() + ";\n");
@@ -4279,6 +4286,7 @@ BasicRange.prototype.sum = function()
                stream_type.repr());
 
     return Shade._create_concrete_exp({
+        has_scope: true,
         parents: [this.begin, this.end, 
                   index_variable, accumulator_value, element_value],
         type: sum_type,
@@ -4307,6 +4315,12 @@ BasicRange.prototype.sum = function()
                              index_variable.eval(),"=",beg.eval(),";",
                              index_variable.eval(),"<",end.eval(),";",
                              "++",index_variable.eval(),") {\n");
+            _.each(this.scope.declarations, function(exp) {
+                ctx.strings.push("        ", exp, ";\n");
+            });
+            _.each(this.scope.initializations, function(exp) {
+                ctx.strings.push("        ", exp, ";\n");
+            });
             ctx.strings.push("        ",
                              accumulator_value.eval(),"=",
                              accumulator_value.eval(),"+",
@@ -4725,13 +4739,27 @@ Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
 
-Shade.CompilationContext = function(compile_type) {
+function new_scope()
+{
     return {
+        declarations: [],
+        initializations: [],
+        add_declaration: function(exp) {
+            this.declarations.push(exp);
+        },
+        add_initialization: function(exp) {
+            this.initializations.push(exp);
+        }
+    };
+};
+
+Shade.CompilationContext = function(compile_type)
+{
+    var result = {
         freshest_glsl_name: 0,
         compile_type: compile_type || Shade.UNSET_PROGRAM_COMPILE,
         float_precision: "highp",
         strings: [],
-        initialization_exprs: [],
         declarations: { uniform: {},
                         attribute: {},
                         varying: {}
@@ -4782,29 +4810,41 @@ Shade.CompilationContext = function(compile_type) {
                 n.is_unconditional = false;
                 n.glsl_name = that.request_fresh_glsl_name();
                 n.set_requirements(this);
-                for (var j=0; j<n.parents.length; ++j)
+                for (var j=0; j<n.parents.length; ++j) {
                     n.parents[j].children_count++;
+                    // adds base scope to objects which have them.
+                    if (n.has_scope)
+                        n.scope = new_scope();
+                }
             });
 
             // top-level node is always unconditional.
             topo_sort[topo_sort.length-1].is_unconditional = true;
+            // top-level node has global scope.
+            topo_sort[topo_sort.length-1].scope = this.global_scope;
             i = topo_sort.length;
             while (i--) {
                 var n = topo_sort[i];
                 n.propagate_conditions();
+                for (var j=0; j<n.parents.length; ++j) {
+                    if (!n.parents[j].scope) {
+                        n.parents[j].scope = n.scope;
+                    }
+                }
             }
-
+            var p = this.strings.push;
             this.strings.push("precision",this.float_precision,"float;\n");
             for (i=0; i<topo_sort.length; ++i) {
                 topo_sort[i].compile(this);
             }
             this.strings.push("void main() {\n");
-            for (i=0; i<this.initialization_exprs.length; ++i)
-                this.strings.push("    ", this.initialization_exprs[i], ";\n");
+            _.each(this.global_scope.initializations, function(exp) {
+                that.strings.push("    ", exp, ";\n");
+            });
             this.strings.push("    ", fun.eval(), ";\n", "}\n");
         },
         add_initialization: function(expr) {
-            this.initialization_exprs.push(expr);
+            this.global_scope.initializations.push(expr);
         },
         value_function: function() {
             this.strings.push(arguments[0].type.repr(),
@@ -4827,6 +4867,22 @@ Shade.CompilationContext = function(compile_type) {
             this.strings.push(";\n}\n");
         }
     };
+
+    // for now, add_declaration works differently on global scope. When
+    // we finish the inevitable route of creating a real GLSL AST, then this
+    // will again change. 
+    var global_scope = {
+        initializations: [],
+        add_declaration: function(exp) {
+            result.strings.push(exp, ";\n");
+        },
+        add_initialization: function(exp) {
+            this.initializations.push(exp);
+        }
+    };
+    result.global_scope = global_scope;
+
+    return result;
 };
 Shade.Exp = {
     debug_print: function(indent) {
@@ -4864,8 +4920,7 @@ Shade.Exp = {
 
     },
     set_requirements: function() {},
-    // if stage is "vertex" then this expression will be hoisted to the vertex shader
-    stage: null,
+
     // returns all sub-expressions in topologically-sorted order
     sorted_sub_expressions: function() {
         var so_far = [];
@@ -5167,6 +5222,9 @@ Shade.Exp = {
     _type: "shade_expression",
     _attribute_buffers: [],
     _uniforms: [],
+
+    //////////////////////////////////////////////////////////////////////////
+
     attribute_buffers: function() {
         return _.flatten(this.sorted_sub_expressions().map(function(v) { 
             return v._attribute_buffers; 
@@ -5178,6 +5236,7 @@ Shade.Exp = {
         }));
     },
 
+    //////////////////////////////////////////////////////////////////////////
     // simple re-writing of shaders, useful for moving expressions
     // around, such as the things we move around when attributes are 
     // referenced in fragment programs
@@ -5191,12 +5250,12 @@ Shade.Exp = {
         var replaced_pairs = [];
         function has_been_replaced(x) {
             return _.some(replaced_pairs, function(v) {
-                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid); //_.isEqual(x, v[0]);
+                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid);
             });
         }
         function parent_replacement(x) {
             var r = _.select(replaced_pairs, function(v) {
-                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid); //_.isEqual(x, v[0]);
+                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid);
             });
             if (r.length === 0)
                 return x;
@@ -5218,7 +5277,18 @@ Shade.Exp = {
         }
         var result = replaced_pairs[replaced_pairs.length-1][1];
         return result;
-    }
+    },
+
+    //////////////////////////////////////////////////////////////////////////
+    // fields
+    
+    // if stage is "vertex" then this expression will be hoisted to the vertex shader
+    stage: null,
+
+    // is has_scope is true, then the expression has its own scope
+    // (like for-loops)
+    has_scope: false
+
 };
 Shade._create_concrete_exp = Shade._create_concrete(Shade.Exp, ["parents", "compile", "type"]);
 Shade.ValueExp = Shade._create(Shade.Exp, {
@@ -5243,8 +5313,10 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             if (this.is_unconditional) {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
-                    ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
+                    this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
+                    this.scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
+                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                    // ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                     ctx.value_function(this, this.precomputed_value_glsl_name);
                 } else {
                     ctx.value_function(this, this.value());
@@ -5252,10 +5324,14 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             } else {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
                     this.has_precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name), ";\n");
-                    ctx.add_initialization(this.has_precomputed_value_glsl_name + " = false");
+                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                    // ctx.strings.push(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name), ";\n");
+                    // ctx.add_initialization(this.has_precomputed_value_glsl_name + " = false");
+                    this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
+                    this.scope.add_declaration(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name));
+                    this.scope.add_initialization(this.has_precomputed_value_glsl_name + " = false");
+
                     ctx.value_function(this, "(" + this.has_precomputed_value_glsl_name + "?"
                                        + this.precomputed_value_glsl_name + ": (("
                                        + this.has_precomputed_value_glsl_name + "=true),("
@@ -5268,18 +5344,24 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             if (this.is_unconditional) {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
-                    ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
+                    
+                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                    // ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
+                    this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
+                    this.scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                 } else {
                     // don't emit anything, all is taken care by eval()
                 }
             } else {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
                     this.has_precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name), ";\n");
-                    ctx.add_initialization(this.has_precomputed_value_glsl_name + " = false");
+                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                    // ctx.strings.push(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name), ";\n");
+                    // ctx.add_initialization(this.has_precomputed_value_glsl_name + " = false");
+                    this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
+                    this.scope.add_declaration(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name));
+                    this.scope.add_initialization(this.has_precomputed_value_glsl_name + " = false");
                     ctx.value_function(this, "(" + this.has_precomputed_value_glsl_name + "?"
                                        + this.precomputed_value_glsl_name + ": (("
                                        + this.has_precomputed_value_glsl_name + "=true),("

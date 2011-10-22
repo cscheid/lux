@@ -34,8 +34,7 @@ Shade.Exp = {
 
     },
     set_requirements: function() {},
-    // if stage is "vertex" then this expression will be hoisted to the vertex shader
-    stage: null,
+
     // returns all sub-expressions in topologically-sorted order
     sorted_sub_expressions: function() {
         var so_far = [];
@@ -337,6 +336,9 @@ Shade.Exp = {
     _type: "shade_expression",
     _attribute_buffers: [],
     _uniforms: [],
+
+    //////////////////////////////////////////////////////////////////////////
+
     attribute_buffers: function() {
         return _.flatten(this.sorted_sub_expressions().map(function(v) { 
             return v._attribute_buffers; 
@@ -348,6 +350,7 @@ Shade.Exp = {
         }));
     },
 
+    //////////////////////////////////////////////////////////////////////////
     // simple re-writing of shaders, useful for moving expressions
     // around, such as the things we move around when attributes are 
     // referenced in fragment programs
@@ -361,12 +364,12 @@ Shade.Exp = {
         var replaced_pairs = [];
         function has_been_replaced(x) {
             return _.some(replaced_pairs, function(v) {
-                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid); //_.isEqual(x, v[0]);
+                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid);
             });
         }
         function parent_replacement(x) {
             var r = _.select(replaced_pairs, function(v) {
-                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid); //_.isEqual(x, v[0]);
+                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid);
             });
             if (r.length === 0)
                 return x;
@@ -388,6 +391,17 @@ Shade.Exp = {
         }
         var result = replaced_pairs[replaced_pairs.length-1][1];
         return result;
-    }
+    },
+
+    //////////////////////////////////////////////////////////////////////////
+    // fields
+    
+    // if stage is "vertex" then this expression will be hoisted to the vertex shader
+    stage: null,
+
+    // is has_scope is true, then the expression has its own scope
+    // (like for-loops)
+    has_scope: false
+
 };
 Shade._create_concrete_exp = Shade._create_concrete(Shade.Exp, ["parents", "compile", "type"]);

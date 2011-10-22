@@ -12,7 +12,7 @@
 
 Shade.variable = function(type)
 {
-    return Shade._create_concrete_exp( {
+    return Shade._create_concrete_exp({
         parents: [],
         type: type,
         eval: function() {
@@ -63,6 +63,7 @@ BasicRange.prototype.fold = function(operation, starting_value)
     var operation_value = operation(accumulator_value, element_value);
 
     return Shade._create_concrete_exp({
+        has_scope: true,
         parents: [this.begin, this.end, 
                   index_variable, accumulator_value, element_value,
                   starting_value, operation_value],
@@ -94,6 +95,12 @@ BasicRange.prototype.fold = function(operation, starting_value)
                              index_variable.eval(),"=",beg.eval(),";",
                              index_variable.eval(),"<",end.eval(),";",
                              "++",index_variable.eval(),") {\n");
+            _.each(this.scope.declarations, function(exp) {
+                ctx.strings.push("        ", exp, ";\n");
+            });
+            _.each(this.scope.initializations, function(exp) {
+                ctx.strings.push("        ", exp, ";\n");
+            });
             ctx.strings.push("        ",
                              accumulator_value.eval(),"=",
                              operation_value.eval() + ";\n");
@@ -124,6 +131,7 @@ BasicRange.prototype.sum = function()
                stream_type.repr());
 
     return Shade._create_concrete_exp({
+        has_scope: true,
         parents: [this.begin, this.end, 
                   index_variable, accumulator_value, element_value],
         type: sum_type,
@@ -152,6 +160,12 @@ BasicRange.prototype.sum = function()
                              index_variable.eval(),"=",beg.eval(),";",
                              index_variable.eval(),"<",end.eval(),";",
                              "++",index_variable.eval(),") {\n");
+            _.each(this.scope.declarations, function(exp) {
+                ctx.strings.push("        ", exp, ";\n");
+            });
+            _.each(this.scope.initializations, function(exp) {
+                ctx.strings.push("        ", exp, ";\n");
+            });
             ctx.strings.push("        ",
                              accumulator_value.eval(),"=",
                              accumulator_value.eval(),"+",
