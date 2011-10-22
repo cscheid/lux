@@ -248,6 +248,14 @@ test("Shade constant folding", function() {
                                  Shade.vec(0,0,0,0)).constant_value(),
                  vec.make([1,1,1,1])),
        "selection folding");
+
+    equal(Shade.sub(Shade.constant(1, Shade.Types.int_t),
+                    Shade.constant(2, Shade.Types.int_t)).constant_value(), -1,
+          "int constant folding");
+
+    equal(Shade.add(Shade.constant(1, Shade.Types.int_t),
+                    Shade.constant(2, Shade.Types.int_t)).constant_value(), 3,
+          "int constant folding");
 });
 
 test("Shade optimizer", function() {
@@ -308,11 +316,27 @@ test("Shade programs", function() {
 
 test("Shade loops", function() {
     var from = Shade.as_int(0), to = Shade.as_int(10);
-    var avg = Shade.range(from, to).average();
-    Shade.debug = true;
-    var p = Shade.program({
+    var range = Shade.range(from, to);
+
+    ok(Shade.program({
         color: Shade.vec(1,1,1,1),
         position: Shade.vec(1,1,1,1),
-        point_size: avg
-    });
+        point_size: range.sum()
+    }), "program with sum");
+    ok(Shade.program({
+        color: Shade.vec(1,1,1,1),
+        position: Shade.vec(1,1,1,1),
+        point_size: range.average()
+    }), "program with average");
+
+    Shade.debug = true;
+
+    ok(Shade.program({
+        color: Shade.vec(1,1,1,1),
+        position: Shade.vec(1,1,1,1),
+        point_size: range
+            .transform(function (x) { return x.as_float(); })
+            .fold(function(i, j) { return Shade.min(i, j); }, 1000)
+                  // Shade.constant(1000).as_int())
+    }), "program with fold");
 });
