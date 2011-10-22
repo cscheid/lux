@@ -47,11 +47,6 @@ BasicRange.prototype.transform = function(xform)
         });
 };
 
-BasicRange.prototype.average = function()
-{
-    return this.sum().div(this.end.sub(this.begin).as_float());
-};
-
 BasicRange.prototype.fold = function(operation, starting_value)
 {
     operation = Shade.make(operation);
@@ -65,7 +60,7 @@ BasicRange.prototype.fold = function(operation, starting_value)
     return Shade._create_concrete_exp({
         has_scope: true,
         parents: [this.begin, this.end, 
-                  index_variable, accumulator_value, element_value,
+                  index_variable, //  accumulator_value, element_value,
                   starting_value, operation_value],
         type: result_type,
         eval: function() {
@@ -84,10 +79,10 @@ BasicRange.prototype.fold = function(operation, starting_value)
             var beg = this.parents[0];
             var end = this.parents[1];
             var index_variable = this.parents[2];
-            var accumulator_value = this.parents[3];
-            var element_value = this.parents[4];
-            var starting_value = this.parents[5];
-            var operation_value = this.parents[6];
+            // var accumulator_value = this.parents[3];
+            // var element_value = this.parents[4];
+            var starting_value = this.parents[3];
+            var operation_value = this.parents[4];
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
             ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
                              starting_value.eval(), ";\n");
@@ -114,68 +109,17 @@ BasicRange.prototype.fold = function(operation, starting_value)
 
 BasicRange.prototype.sum = function()
 {
-    var index_variable = Shade.variable(Shade.Types.int_t);
-    var element_value = this.value(index_variable);
-    var stream_type = element_value.type;
-    var sum_type;
-    var accumulator_value = Shade.variable(stream_type);
-    if (element_value.type.equals(Shade.Types.int_t)) {
-        sum_type = Shade.Types.float_t;
-    } else if (_.any([Shade.Types.float_t,
-                      Shade.Types.vec2, Shade.Types.vec3, Shade.Types.vec4, 
-                      Shade.Types.mat2, Shade.Types.mat3, Shade.Types.mat4],
-                     function(t) { return t.equals(stream_type); })) {
-        sum_type = stream_type;
-    } else
-        throw ("Type error, sum can't support range of type " +
-               stream_type.repr());
+    console.log(this.value(this.begin).type.repr());
+    return this.fold(Shade.add, this.value(this.begin).type.zero);
+};
 
-    return Shade._create_concrete_exp({
-        has_scope: true,
-        parents: [this.begin, this.end, 
-                  index_variable, accumulator_value, element_value],
-        type: sum_type,
-        eval: function() {
-            return this.glsl_name + "()";
-        },
-        element: Shade.memoize_on_field("_element", function(i) {
-            if (this.type.is_pod()) {
-                if (i === 0)
-                    return this;
-                else
-                    throw this.type.repr() + " is an atomic type";
-            } else
-                return this.at(i);
-        }),
-        compile: function(ctx) {
-            var beg = this.parents[0];
-            var end = this.parents[1];
-            var index_variable = this.parents[2];
-            var accumulator_value = this.parents[3];
-            var element_value = this.parents[4];
-            ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
-            ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
-                             accumulator_value.type.zero, ";\n");
-            ctx.strings.push("    for (int",
-                             index_variable.eval(),"=",beg.eval(),";",
-                             index_variable.eval(),"<",end.eval(),";",
-                             "++",index_variable.eval(),") {\n");
-            _.each(this.scope.declarations, function(exp) {
-                ctx.strings.push("        ", exp, ";\n");
-            });
-            _.each(this.scope.initializations, function(exp) {
-                ctx.strings.push("        ", exp, ";\n");
-            });
-            ctx.strings.push("        ",
-                             accumulator_value.eval(),"=",
-                             accumulator_value.eval(),"+",
-                             element_value.eval(),";\n");
-            ctx.strings.push("    }\n");
-            ctx.strings.push("    return", 
-                             this.type.repr(), "(", accumulator_value.eval(), ");\n");
-            ctx.strings.push("}\n");
-        }
-    });
+BasicRange.prototype.average = function()
+{
+    var s = this.sum();
+    if (s.type.equals(Shade.Types.int_t)) {
+        s = s.as_float();
+    }
+    return s.div(this.end.sub(this.begin).as_float());
 };
 
 })();

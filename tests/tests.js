@@ -318,18 +318,18 @@ test("Shade loops", function() {
     var from = Shade.as_int(0), to = Shade.as_int(10);
     var range = Shade.range(from, to);
 
+    Shade.debug = true;
+
     ok(Shade.program({
         color: Shade.vec(1,1,1,1),
         position: Shade.vec(1,1,1,1),
-        point_size: range.sum()
+        point_size: range.sum().as_float()
     }), "program with sum");
     ok(Shade.program({
         color: Shade.vec(1,1,1,1),
         position: Shade.vec(1,1,1,1),
         point_size: range.average()
     }), "program with average");
-
-    Shade.debug = true;
 
     ok(Shade.program({
         color: Shade.vec(1,1,1,1),

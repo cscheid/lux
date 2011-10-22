@@ -4204,7 +4204,11 @@ BasicRange.prototype.transform = function(xform)
 
 BasicRange.prototype.average = function()
 {
-    return this.sum().div(this.end.sub(this.begin).as_float());
+    var s = this.sum();
+    if (s.type.equals(Shade.Types.int_t)) {
+        s = s.as_float();
+    }
+    return s.div(this.end.sub(this.begin).as_float());
 };
 
 BasicRange.prototype.fold = function(operation, starting_value)
@@ -4220,7 +4224,7 @@ BasicRange.prototype.fold = function(operation, starting_value)
     return Shade._create_concrete_exp({
         has_scope: true,
         parents: [this.begin, this.end, 
-                  index_variable, accumulator_value, element_value,
+                  index_variable, //  accumulator_value, element_value,
                   starting_value, operation_value],
         type: result_type,
         eval: function() {
@@ -4239,10 +4243,10 @@ BasicRange.prototype.fold = function(operation, starting_value)
             var beg = this.parents[0];
             var end = this.parents[1];
             var index_variable = this.parents[2];
-            var accumulator_value = this.parents[3];
-            var element_value = this.parents[4];
-            var starting_value = this.parents[5];
-            var operation_value = this.parents[6];
+            // var accumulator_value = this.parents[3];
+            // var element_value = this.parents[4];
+            var starting_value = this.parents[3];
+            var operation_value = this.parents[4];
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
             ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
                              starting_value.eval(), ";\n");
@@ -4269,68 +4273,71 @@ BasicRange.prototype.fold = function(operation, starting_value)
 
 BasicRange.prototype.sum = function()
 {
-    var index_variable = Shade.variable(Shade.Types.int_t);
-    var element_value = this.value(index_variable);
-    var stream_type = element_value.type;
-    var sum_type;
-    var accumulator_value = Shade.variable(stream_type);
-    if (element_value.type.equals(Shade.Types.int_t)) {
-        sum_type = Shade.Types.float_t;
-    } else if (_.any([Shade.Types.float_t,
-                      Shade.Types.vec2, Shade.Types.vec3, Shade.Types.vec4, 
-                      Shade.Types.mat2, Shade.Types.mat3, Shade.Types.mat4],
-                     function(t) { return t.equals(stream_type); })) {
-        sum_type = stream_type;
-    } else
-        throw ("Type error, sum can't support range of type " +
-               stream_type.repr());
+    console.log(this.value(this.begin).type.repr());
+    return this.fold(Shade.add, this.value(this.begin).type.zero);
 
-    return Shade._create_concrete_exp({
-        has_scope: true,
-        parents: [this.begin, this.end, 
-                  index_variable, accumulator_value, element_value],
-        type: sum_type,
-        eval: function() {
-            return this.glsl_name + "()";
-        },
-        element: Shade.memoize_on_field("_element", function(i) {
-            if (this.type.is_pod()) {
-                if (i === 0)
-                    return this;
-                else
-                    throw this.type.repr() + " is an atomic type";
-            } else
-                return this.at(i);
-        }),
-        compile: function(ctx) {
-            var beg = this.parents[0];
-            var end = this.parents[1];
-            var index_variable = this.parents[2];
-            var accumulator_value = this.parents[3];
-            var element_value = this.parents[4];
-            ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
-            ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
-                             accumulator_value.type.zero, ";\n");
-            ctx.strings.push("    for (int",
-                             index_variable.eval(),"=",beg.eval(),";",
-                             index_variable.eval(),"<",end.eval(),";",
-                             "++",index_variable.eval(),") {\n");
-            _.each(this.scope.declarations, function(exp) {
-                ctx.strings.push("        ", exp, ";\n");
-            });
-            _.each(this.scope.initializations, function(exp) {
-                ctx.strings.push("        ", exp, ";\n");
-            });
-            ctx.strings.push("        ",
-                             accumulator_value.eval(),"=",
-                             accumulator_value.eval(),"+",
-                             element_value.eval(),";\n");
-            ctx.strings.push("    }\n");
-            ctx.strings.push("    return", 
-                             this.type.repr(), "(", accumulator_value.eval(), ");\n");
-            ctx.strings.push("}\n");
-        }
-    });
+    // var index_variable = Shade.variable(Shade.Types.int_t);
+    // var element_value = this.value(index_variable);
+    // var stream_type = element_value.type;
+    // var sum_type;
+    // var accumulator_value = Shade.variable(stream_type);
+    // if (element_value.type.equals(Shade.Types.int_t)) {
+    //     sum_type = Shade.Types.float_t;
+    // } else if (_.any([Shade.Types.float_t,
+    //                   Shade.Types.vec2, Shade.Types.vec3, Shade.Types.vec4, 
+    //                   Shade.Types.mat2, Shade.Types.mat3, Shade.Types.mat4],
+    //                  function(t) { return t.equals(stream_type); })) {
+    //     sum_type = stream_type;
+    // } else
+    //     throw ("Type error, sum can't support range of type " +
+    //            stream_type.repr());
+
+    // return Shade._create_concrete_exp({
+    //     has_scope: true,
+    //     parents: [this.begin, this.end, 
+    //               index_variable, accumulator_value, element_value],
+    //     type: sum_type,
+    //     eval: function() {
+    //         return this.glsl_name + "()";
+    //     },
+    //     element: Shade.memoize_on_field("_element", function(i) {
+    //         if (this.type.is_pod()) {
+    //             if (i === 0)
+    //                 return this;
+    //             else
+    //                 throw this.type.repr() + " is an atomic type";
+    //         } else
+    //             return this.at(i);
+    //     }),
+    //     compile: function(ctx) {
+    //         var beg = this.parents[0];
+    //         var end = this.parents[1];
+    //         var index_variable = this.parents[2];
+    //         var accumulator_value = this.parents[3];
+    //         var element_value = this.parents[4];
+    //         ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
+    //         ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
+    //                          accumulator_value.type.zero, ";\n");
+    //         ctx.strings.push("    for (int",
+    //                          index_variable.eval(),"=",beg.eval(),";",
+    //                          index_variable.eval(),"<",end.eval(),";",
+    //                          "++",index_variable.eval(),") {\n");
+    //         _.each(this.scope.declarations, function(exp) {
+    //             ctx.strings.push("        ", exp, ";\n");
+    //         });
+    //         _.each(this.scope.initializations, function(exp) {
+    //             ctx.strings.push("        ", exp, ";\n");
+    //         });
+    //         ctx.strings.push("        ",
+    //                          accumulator_value.eval(),"=",
+    //                          accumulator_value.eval(),"+",
+    //                          element_value.eval(),";\n");
+    //         ctx.strings.push("    }\n");
+    //         ctx.strings.push("    return", 
+    //                          this.type.repr(), "(", accumulator_value.eval(), ");\n");
+    //         ctx.strings.push("}\n");
+    //     }
+    // });
 };
 
 })();
@@ -4699,15 +4706,6 @@ Shade.Types.function_t = function(return_type, param_types) {
     Shade.Types.bool_t    = Shade.basic('bool');
     Shade.Types.int_t     = Shade.basic('int');
     Shade.Types.sampler2D = Shade.basic('sampler2D');
-
-    Shade.Types.int_t.zero   = "0";
-    Shade.Types.float_t.zero = "0.0";
-    Shade.Types.vec2.zero    = "vec2(0,0)";
-    Shade.Types.vec3.zero    = "vec3(0,0,0)";
-    Shade.Types.vec4.zero    = "vec4(0,0,0,0)";
-    Shade.Types.mat2.zero    = "mat2(0,0,0,0)";
-    Shade.Types.mat3.zero    = "mat3(0,0,0,0,0,0,0,0,0)";
-    Shade.Types.mat4.zero    = "mat4(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)";
 })();
 //////////////////////////////////////////////////////////////////////////////
 // make converts objects which can be meaningfully interpreted as
@@ -5315,8 +5313,6 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
                     this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
                     this.scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
-                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
-                    // ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                     ctx.value_function(this, this.precomputed_value_glsl_name);
                 } else {
                     ctx.value_function(this, this.value());
@@ -5325,9 +5321,6 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
                     this.has_precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
-                    // ctx.strings.push(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name), ";\n");
-                    // ctx.add_initialization(this.has_precomputed_value_glsl_name + " = false");
                     this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
                     this.scope.add_declaration(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name));
                     this.scope.add_initialization(this.has_precomputed_value_glsl_name + " = false");
@@ -5344,9 +5337,6 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             if (this.is_unconditional) {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    
-                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
-                    // ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                     this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
                     this.scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                 } else {
@@ -5356,9 +5346,6 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
                     this.has_precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    // ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
-                    // ctx.strings.push(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name), ";\n");
-                    // ctx.add_initialization(this.has_precomputed_value_glsl_name + " = false");
                     this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
                     this.scope.add_declaration(Shade.Types.bool_t.declare(this.has_precomputed_value_glsl_name));
                     this.scope.add_initialization(this.has_precomputed_value_glsl_name + " = false");
@@ -5551,6 +5538,15 @@ Shade.constant = function(v, type)
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };
 Shade.as_bool = function(v) { return Shade.make(v).as_bool(); };
 Shade.as_float = function(v) { return Shade.make(v).as_float(); };
+
+Shade.Types.int_t.zero   = Shade.constant(0, Shade.Types.int_t);
+Shade.Types.float_t.zero = Shade.constant(0);
+Shade.Types.vec2.zero    = Shade.constant(vec2.make([0,0]));
+Shade.Types.vec3.zero    = Shade.constant(vec3.make([0,0,0]));
+Shade.Types.vec4.zero    = Shade.constant(vec4.make([0,0,0,0]));
+Shade.Types.mat2.zero    = Shade.constant(mat2.make([0,0,0,0]));
+Shade.Types.mat3.zero    = Shade.constant(mat3.make([0,0,0,0,0,0,0,0,0]));
+Shade.Types.mat4.zero    = Shade.constant(mat4.make([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]));
 // FIXME: Shade.set should be (name, exp), not (exp, name)
 Shade.set = function(exp, name)
 {

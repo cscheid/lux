@@ -170,3 +170,12 @@ Shade.constant = function(v, type)
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };
 Shade.as_bool = function(v) { return Shade.make(v).as_bool(); };
 Shade.as_float = function(v) { return Shade.make(v).as_float(); };
+
+Shade.Types.int_t.zero   = Shade.constant(0, Shade.Types.int_t);
+Shade.Types.float_t.zero = Shade.constant(0);
+Shade.Types.vec2.zero    = Shade.constant(vec2.make([0,0]));
+Shade.Types.vec3.zero    = Shade.constant(vec3.make([0,0,0]));
+Shade.Types.vec4.zero    = Shade.constant(vec4.make([0,0,0,0]));
+Shade.Types.mat2.zero    = Shade.constant(mat2.make([0,0,0,0]));
+Shade.Types.mat3.zero    = Shade.constant(mat3.make([0,0,0,0,0,0,0,0,0]));
+Shade.Types.mat4.zero    = Shade.constant(mat4.make([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]));
