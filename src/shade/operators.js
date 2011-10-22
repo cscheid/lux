@@ -59,7 +59,9 @@ Shade.add = function() {
             [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
             [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2]
+            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+            
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -77,6 +79,9 @@ Shade.add = function() {
         else if (exp2.type.is_vec())
             vt = vec[exp2.type.vec_dimension()];
         var v1 = exp1.constant_value(), v2 = exp2.constant_value();
+        if (exp1.type.equals(Shade.Types.int_t) && 
+            exp2.type.equals(Shade.Types.int_t))
+            return v1 + v2;
         if (exp1.type.equals(Shade.Types.float_t) &&
             exp2.type.equals(Shade.Types.float_t))
             return v1 + v2;
@@ -124,7 +129,9 @@ Shade.sub = function() {
             [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
             [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2]
+            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+            
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -141,6 +148,9 @@ Shade.sub = function() {
         else if (exp2.type.is_vec())
             vt = vec[exp2.type.vec_dimension()];
         var v1 = exp1.constant_value(), v2 = exp2.constant_value();
+        if (exp1.type.equals(Shade.Types.int_t) && 
+            exp2.type.equals(Shade.Types.int_t))
+            return v1 - v2;
         if (exp1.type.equals(Shade.Types.float_t) &&
             exp2.type.equals(Shade.Types.float_t))
             return v1 - v2;
@@ -294,7 +304,9 @@ Shade.mul = function() {
             [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
             [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2]
+            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+            
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
