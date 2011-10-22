@@ -33,7 +33,9 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
                 if (matched)
                     return this_params[param_length];
             }
-            throw "Could not find appropriate type signature";
+            var types = _.map(_.toArray(arguments).slice(0, arguments.length),
+                  function(x) { return x.type.repr(); }).join(", ");
+            throw "Could not find appropriate type match for (" + types + ")";
         };
     }
 
@@ -204,6 +206,8 @@ function mod_min_max_constant_evaluator(op) {
         });
         if (exp.parents[0].type.equals(Shade.Types.float_t))
             return op.apply(op, values);
+        else if (exp.parents[0].type.equals(Shade.Types.int_t))
+            return op.apply(op, values);
         else if (exp.parents[0].type.equals(exp.parents[1].type)) {
             return vec.make(zipWith(op, values[0], values[1]));
         } else {
@@ -220,6 +224,7 @@ _.each({
     "max": Math.max
 }, function(op, k) {
     Shade[k] = builtin_glsl_function(k, [
+        [Shade.Types.int_t,    Shade.Types.int_t,   Shade.Types.int_t],
         [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,     Shade.Types.vec2,    Shade.Types.vec2],
         [Shade.Types.vec3,     Shade.Types.vec3,    Shade.Types.vec3],
