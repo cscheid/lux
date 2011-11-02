@@ -1,12 +1,12 @@
-# Facet: an EDSL for WebGL Graphics
+# Facet: the EDSL for WebGL Graphics
 
-**Facet** is a Javascript library which provides a set of primitives
-to make WebGL programming easier and cleaner.
+**Facet** provides a set of primitives that make WebGL programming
+  easier and cleaner.
 
 ### Using Facet
 
 Facet is under heavy development, so the current state of 
-documentation is, ahem, less than ideal. However, I make a serious
+documentation is, ahem, less than ideal. Still, I make a serious
 effort to keep all the Facet demos working, and you can see them live
 [here](http://cscheid.github.com/facet/demos).
 
