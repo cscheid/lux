@@ -66,6 +66,7 @@ test("Shade expressions", function() {
                             Shade.vec(0,2,3)).type.repr(), "bvec3", "relational ops");
     ok(Shade.any(Shade.greaterThan(Shade.vec(1,2,3),
                                    Shade.vec(0,2,3))), "relational ops");
+
 });
 
 test("Shade compilation", function() {

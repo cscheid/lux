@@ -8,10 +8,11 @@ Shade.discard_if = function(exp, condition)
             var cond = _.all(this.parents, function(v) {
                 return v.is_constant();
             });
-            return (cond && !this.parents[1].constant_value());
+            return (cond && !this.parents[0].constant_value());
         }),
         _must_be_function_call: true,
         type: exp.type,
+        expression_type: "discard_if",
         parents: [condition, exp],
         parent_is_unconditional: function(i) {
             return i === 0;
