@@ -1,0 +1,32 @@
+<html>
+<body>
+<div>
+</div>
+<canvas id="foo" width="640" height="400"></canvas>
+<script>
+var canvas = document.getElementById("foo");
+var gl = canvas.getContext("experimental-webgl");
+
+var fshader = gl.createShader(gl.FRAGMENT_SHADER);
+
+var fp_source =
+"precision highp float;\n" + 
+" varying vec4 baz;\n" +
+" vec4 glsl_name_39 (void) {\n" + 
+"     if ( (!((bool(false)?vec4(0,0,0,1):baz).a > float(0))) ) discard;\n" + 
+"     return  vec4(0, 0, 0, 0) ;\n" + 
+"}\n" + 
+" void main() {\n" + 
+"      ( gl_FragColor = glsl_name_39() ) ;\n" + 
+" }\n";
+
+gl.shaderSource(fshader, fp_source);
+gl.compileShader(fshader);
+if (!gl.getShaderParameter(fshader, gl.COMPILE_STATUS)) {
+    alert("FAILED!\n" + gl.getShaderInfoLog(fshader));
+} else {
+    alert("PASSED.");
+}
+</script>
+</body>
+</html>

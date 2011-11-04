@@ -42,7 +42,7 @@ function init_webgl()
          S.vec(0,1,0,point_alpha),
          S.vec(0,0,1,point_alpha)])(data.species);
 
-    scatterplot_drawable = Facet.Marks.dots({
+    scatterplot_drawable = Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
         x: data.sepalLength,
         y: data.petalLength,
