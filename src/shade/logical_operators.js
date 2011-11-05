@@ -31,8 +31,10 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
                                     parent_is_unconditional)
 {
     return function() {
-        if (arguments.length === 0) return Shade.constant(false);
-        if (arguments.length === 1) return Shade.make(arguments[1]).as_bool();
+        if (arguments.length === 0) 
+            throw ("operator " + operator_name 
+                   + " requires at least 1 parameter");
+        if (arguments.length === 1) return Shade.make(arguments[0]).as_bool();
         var first = Shade.make(arguments[0]);
         if (!first.type.equals(Shade.Types.bool_t))
             throw ("operator " + operator_name + 
