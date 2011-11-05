@@ -5,8 +5,10 @@
 Shade.make = function(exp)
 {
     var t = typeOf(exp);
-    if (t === 'boolean' ||
-        t === 'number') {
+    if (t === 'undefined') {
+        throw "Shade.make does not support undefined";
+    }
+    if (t === 'boolean' || t === 'number') {
         return Shade.constant(exp);
     } else if (t === 'array') {
         return Shade.seq(exp);
