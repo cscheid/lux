@@ -4,6 +4,7 @@ Shade.sampler2D_from_texture = function(texture)
         var result = Shade.uniform("sampler2D");
         result.set(texture);
         texture._shade_expression = result;
+        // FIXME: What if the same texture is bound to many samplers?!
         return result;
     }();
 };
