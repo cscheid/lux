@@ -53,26 +53,20 @@ Facet.Marks.dots = function(opts)
     var no_alpha = S.mix(fill_color, stroke_color,
                          S.clamp(stroke_width.sub(distance_to_border), 0, 1));
     
-    if (opts.plain) {
-        var result = Facet.bake(model, {
-            position: gl_Position,
-            point_size: point_diameter,
-            color: fill_color,
-            mode: opts.mode
-        });
-        result.gl_Position = gl_Position;
-        return result;
-    } else {
-        var result = Facet.bake(model, {
-            position: gl_Position,
-            point_size: point_diameter,
-            color: S.selection(use_alpha,
-                               no_alpha.mul(S.vec(1,1,1,S.clamp(distance_to_border, 0, 1))),
-                               no_alpha)
-                .discard_if(distance_to_center_in_pixels.gt(point_radius)),
-            mode: opts.mode
-        });
-        result.gl_Position = gl_Position;
-        return result;
-    }
+    var plain_fill_color = fill_color;
+    var alpha_fill_color = 
+        S.selection(use_alpha,
+                    no_alpha.mul(S.vec(1,1,1,S.clamp(distance_to_border, 0, 1))),
+                    no_alpha)
+        .discard_if(distance_to_center_in_pixels.gt(point_radius));
+
+    var result = Facet.bake(model, {
+        position: gl_Position,
+        point_size: point_diameter,
+        color: Shade.selection(opts.plain, plain_fill_color, alpha_fill_color),
+        mode: opts.mode
+    });
+    // FIXME there must be a better way to do this.
+    result.gl_Position = gl_Position;
+    return result;
 };
