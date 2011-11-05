@@ -3,17 +3,31 @@ Shade.Optimizer = {};
 Shade.Optimizer.transform_expression = function(operations)
 {
     return function(v) {
+        var old_v;
         for (var i=0; i<operations.length; ++i) {
+            if (Shade.debug) {
+                old_v = v;
+            }
             var test = operations[i][0];
             var fun = operations[i][1];
-            if (operations[i][2]) {
-                var old_guid;
+            var old_guid = v.guid;
+            if (operations[i][3]) {
+                var this_old_guid;
                 do {
-                    old_guid = v.guid;
+                    this_old_guid = v.guid;
                     v = v.replace_if(test, fun);
-                } while (v.guid !== old_guid);
-            } else
+                } while (v.guid !== this_old_guid);
+            } else {
                 v = v.replace_if(test, fun);
+            }
+            var new_guid = v.guid;
+            if (Shade.debug && old_guid != new_guid) {
+                console.log("Pass",operations[i][2],"succeeded");
+                console.log("Before: ");
+                old_v.debug_print();
+                console.log("After: ");
+                v.debug_print();
+            }
         }
         return v;
     };
@@ -184,6 +198,64 @@ Shade.Optimizer.replace_vec_at_constant_with_swizzle = function(exp)
     throw "Internal error, shouldn't get here";
 };
 
+Shade.Optimizer.is_logical_and_with_constant = function(exp)
+{
+    return (exp.expression_type === "operator&&" &&
+            exp.parents[0].is_constant());
+};
+
+Shade.Optimizer.replace_logical_and_with_constant = function(exp)
+{
+    if (exp.parents[0].constant_value()) {
+        return exp.parents[1];
+    } else {
+        return Shade.make(false);
+    }
+};
+
+Shade.Optimizer.is_logical_or_with_constant = function(exp)
+{
+    return (exp.expression_type === "operator||" &&
+            exp.parents[0].is_constant());
+};
+
+Shade.Optimizer.replace_logical_or_with_constant = function(exp)
+{
+    if (exp.parents[0].constant_value()) {
+        return Shade.make(true);
+    } else {
+        return exp.parents[1];
+    }
+};
+
+Shade.Optimizer.is_never_discarding = function(exp)
+{
+    return (exp.expression_type === "discard_if" &&
+            exp.parents[0].is_constant() &&
+            !exp.parents[0].constant_value());
+};
+
+Shade.Optimizer.remove_discard = function(exp)
+{
+    return exp.parents[1];
+};
+
+Shade.Optimizer.is_known_branch = function(exp)
+{
+    var result = (exp.expression_type === "selection" &&
+                  exp.parents[0].is_constant());
+    return result;
+};
+
+Shade.Optimizer.prune_selection_branch = function(exp)
+{
+    if (exp.parents[0].constant_value()) {
+        return exp.parents[1];
+    } else {
+        return exp.parents[2];
+    }
+};
+
 Shade.program = function(program_obj)
 {
     var vp_obj = {}, fp_obj = {};
@@ -229,33 +301,35 @@ Shade.program = function(program_obj)
     // explicit per-vertex hoisting must happen before is_attribute hoisting,
     // otherwise we might end up reading from a varying in the vertex program,
     // which is undefined behavior
-    var fp_optimize = Shade.Optimizer.transform_expression([
-        [is_per_vertex, hoist_to_varying],
-        [is_attribute, hoist_to_varying],
-        [Shade.Optimizer.is_times_zero, Shade.Optimizer.replace_with_zero, 
-         true],
-        [Shade.Optimizer.is_times_one, Shade.Optimizer.replace_with_notone, 
-         true],
-        [Shade.Optimizer.is_plus_zero, Shade.Optimizer.replace_with_nonzero,
-         true],
-        [Shade.Optimizer.vec_at_constant_index, 
-         Shade.Optimizer.replace_vec_at_constant_with_swizzle, false],
-        [Shade.Optimizer.is_constant,
-         Shade.Optimizer.replace_with_constant]
-    ]);
 
-    var vp_optimize = Shade.Optimizer.transform_expression([
+    var common_sequence = [
         [Shade.Optimizer.is_times_zero, Shade.Optimizer.replace_with_zero, 
-         true],
+         "v * 0", true],
         [Shade.Optimizer.is_times_one, Shade.Optimizer.replace_with_notone, 
-         true],
+         "v * 1", true],
         [Shade.Optimizer.is_plus_zero, Shade.Optimizer.replace_with_nonzero,
-         true],
+         "v + 0", true],
+        [Shade.Optimizer.is_never_discarding,
+         Shade.Optimizer.remove_discard, "discard_if(false)"],
+        [Shade.Optimizer.is_known_branch,
+         Shade.Optimizer.prune_selection_branch, "constant?a:b", true],
         [Shade.Optimizer.vec_at_constant_index, 
-         Shade.Optimizer.replace_vec_at_constant_with_swizzle, false],
+         Shade.Optimizer.replace_vec_at_constant_with_swizzle, "vec[constant_ix]"],
         [Shade.Optimizer.is_constant,
-         Shade.Optimizer.replace_with_constant]
-    ]);
+         Shade.Optimizer.replace_with_constant, "constant folding"],
+        [Shade.Optimizer.is_logical_or_with_constant,
+         Shade.Optimizer.replace_logical_or_with_constant, "constant||v", true],
+        [Shade.Optimizer.is_logical_and_with_constant,
+         Shade.Optimizer.replace_logical_and_with_constant, "constant&&v", true]];
+
+    var fp_sequence = [
+        [is_per_vertex, hoist_to_varying, "per-vertex hoisting"],
+        [is_attribute, hoist_to_varying, "attribute hoisting"]  
+    ];
+    fp_sequence.push.apply(fp_sequence, common_sequence);
+    var vp_sequence = common_sequence;
+    var fp_optimize = Shade.Optimizer.transform_expression(fp_sequence);
+    var vp_optimize = Shade.Optimizer.transform_expression(vp_sequence);
 
     var used_varying_names = [];
     _.each(fp_obj, function(v, k) {
