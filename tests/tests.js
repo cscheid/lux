@@ -248,10 +248,25 @@ test("Shade constant folding", function() {
                                  Shade.vec(0,0,0,0)).constant_value(),
                  vec.make([1,1,1,1])),
        "selection folding");
+
+    equal(Shade.or(true).constant_value(), true, "single logical value");
+    equal(Shade.make(true).discard_if(false).is_constant(), true, "discard constant folding");
+    equal(Shade.make(false).discard_if(false).constant_value(), false, "discard constant folding");
+
+    var tex = Shade.uniform("sampler2D");
+    var texcoord = Shade.varying("fooobarasdf", "vec2");
+
+    equal(Shade.selection(true,
+                          Shade.selection(false,
+                                          Shade.color('red'),
+                                          Shade.texture2D(tex, texcoord)),
+                          Shade.color('black')).is_constant(), false, "11052011 Marks.dots issue");
 });
 
 test("Shade optimizer", function() {
     var uniform = Shade.uniform("vec4");
+    var uniform_logical = Shade.uniform("bool");
+    var uniform_logical_2 = Shade.uniform("bool");
     var exp = Shade.mul(uniform, Shade.constant(0));
     equal(Shade.Optimizer.is_times_zero(exp), true, "detect times zero");
 
@@ -297,6 +312,29 @@ test("Shade optimizer", function() {
     exp = Shade.mul(identity,
                     Shade.vec(1,1,1,1));
     equal(Shade.Optimizer.is_times_one(exp), true, "detect heterogenous times one");
+
+    equal(Shade.Optimizer.is_logical_or_with_constant(
+        Shade.or(true, uniform_logical)), true, "detect true || x");
+
+    ok(uniform_logical.guid !== undefined, "uniform_logical has guid");
+    equal(Shade.Optimizer.replace_logical_or_with_constant(
+        Shade.or(false, uniform_logical)).guid, uniform_logical.guid, "optimize false || x");
+    equal(Shade.Optimizer.replace_logical_or_with_constant(
+        Shade.or(true, uniform_logical)).constant_value(), true, "optimize true || x");
+
+    equal(Shade.Optimizer.replace_logical_and_with_constant(
+        Shade.and(true, uniform_logical)).guid, uniform_logical.guid, "optimize true && x");
+    equal(Shade.Optimizer.replace_logical_and_with_constant(
+        Shade.and(false, uniform_logical)).constant_value(), false, "optimize false && x");
+
+    equal(Shade.Optimizer.is_known_branch(
+        Shade.selection(true, uniform_logical, uniform_logical_2)), true, "detect known branch");
+    equal(Shade.Optimizer.prune_selection_branch(
+        Shade.selection(true, uniform_logical, uniform_logical_2)).guid, 
+          uniform_logical.guid, "optimize known branch");
+    equal(Shade.Optimizer.prune_selection_branch(
+        Shade.selection(false, uniform_logical, uniform_logical_2)).guid, 
+          uniform_logical_2.guid, "optimize known branch");
 });
 
 test("Shade programs", function() {
@@ -315,4 +353,5 @@ test("Shade loops", function() {
         position: Shade.vec(1,1,1,1),
         point_size: avg
     });
+    ok(p, "Basic looping program");
 });
