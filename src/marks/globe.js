@@ -50,7 +50,7 @@ Facet.Marks.globe = function(opts)
     var sphere = spherical_mercator_patch(40);
     var model_matrix = Shade.uniform("mat4");
 
-    var texture = Facet.texture_from_image({
+    var texture = Facet.texture({
         width: 2048,
         height: 2048,
         TEXTURE_MAG_FILTER: gl.LINEAR,
