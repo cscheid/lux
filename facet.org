@@ -131,6 +131,7 @@ stricter type checking.
 
 
 ** TODO Code review on FIXMEs
+** TODO Review best practices on exception raising/handling in JS.
 * Features
 ** Unprojecting
 Since I can't read from the depth buffer, I need a WebGL unproject by

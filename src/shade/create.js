@@ -10,6 +10,12 @@ Shade._create = (function() {
                 this[key] = new_obj[key];
             }
             this.guid = "GUID_" + guid;
+
+            // this is where memoize_on_field stashes results. putting
+            // them all in a single member variable makes it easy to
+            // create a clean prototype
+            this._caches = {};
+
             guid += 1;
         }
         F.prototype = base_type;
