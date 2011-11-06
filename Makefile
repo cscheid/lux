@@ -109,6 +109,7 @@ facet.js:					\
 	src/shade/_end.js			\
 	src/marks/_begin.js			\
 	src/marks/dots.js			\
+	src/marks/scatterplot.js		\
 	src/marks/globe.js			\
 	src/models.js				\
 	src/colors.js
