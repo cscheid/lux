@@ -73,7 +73,7 @@ $().ready(function() {
     $("#fp_button").click(function() {
         current_mode = "per_fragment";
     });
-    gl = Facet.initGL(canvas,
+    gl = Facet.init(canvas,
                 {
                     attributes: {
                         alpha: true,

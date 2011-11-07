@@ -85,7 +85,7 @@ function draw_it()
 $().ready(function () {
     var canvas = document.getElementById("webgl");
 
-    gl = Facet.initGL(canvas, {
+    gl = Facet.init(canvas, {
         display: draw_it
     });
     pc_batch = create_parallel_coords_batch();

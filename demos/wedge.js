@@ -48,7 +48,7 @@ $().ready(function () {
     var strings = {};
     strings[0] = "Miss";
 
-    gl = Facet.initGL(canvas, {
+    gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
         display: draw_it,

@@ -35,7 +35,7 @@ function init_webgl()
 
 $().ready(function() {
     var canvas = document.getElementById("foo");
-    gl = Facet.initGL(canvas,
+    gl = Facet.init(canvas,
                 {
                     attributes: {
                         alpha: true,

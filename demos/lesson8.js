@@ -72,18 +72,18 @@ $().ready(function () {
                                                per_vertex: thisCheck.is(":checked") });
     });
 
-    gl = Facet.initGL(canvas,
-                      {
-                          clearDepth: 1.0,
-                          clearColor: [0,0,0,0.2],
-                          display: draw_it,
-                          attributes:
-                          {
-                              alpha: true,
-                              depth: true
-                          },
-                          debugging: true
-                      });
+    gl = Facet.init(canvas,
+                    {
+                        clearDepth: 1.0,
+                        clearColor: [0,0,0,0.2],
+                        display: draw_it,
+                        attributes:
+                        {
+                            alpha: true,
+                            depth: true
+                        },
+                        debugging: true
+                    });
     // because we're making faces with different textures on each
     // corner, we need separate
     // vertices for each "side" of the corner. So, even though there's

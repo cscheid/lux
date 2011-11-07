@@ -3222,7 +3222,6 @@ function draw_it(batch)
 
 var largest_batch_id = 1;
 
-// FIXME: push the primitives weirdness fix down the API
 Facet.bake = function(model, appearance)
 {
     var ctx = Facet._globals.ctx;
@@ -3263,7 +3262,7 @@ Facet.bake = function(model, appearance)
 
     var draw_batch_id = largest_batch_id++;
 
-    // NB: the batch_id field in the *_opts objects is not
+    // FIXME the batch_id field in the *_opts objects is not
     // the same as the batch_id in the batch itself. 
     // 
     // The former is used to avoid state switching, while the latter is
@@ -3478,7 +3477,7 @@ Facet.id_buffer = function(vertex_array)
     var byteArray = new Uint8Array(typedArray.buffer);
     return Facet.attribute_buffer(byteArray, 4, 'ubyte', true);
 };
-Facet.initGL = function(canvas, opts)
+Facet.init = function(canvas, opts)
 {
     canvas.unselectable = true;
     canvas.onselectstart = function() { return false; };
@@ -4279,6 +4278,12 @@ Shade._create = (function() {
                 this[key] = new_obj[key];
             }
             this.guid = "GUID_" + guid;
+
+            // this is where memoize_on_field stashes results. putting
+            // them all in a single member variable makes it easy to
+            // create a clean prototype
+            this._caches = {};
+
             guid += 1;
         }
         F.prototype = base_type;
@@ -4308,13 +4313,13 @@ Shade._create_concrete = function(base, requirements)
 Shade.memoize_on_field = function(field_name, fun)
 {
     return function() {
-        if (typeOf(this[field_name]) === "undefined") {
-            this[field_name] = {};
+        if (typeOf(this._caches[field_name]) === "undefined") {
+            this._caches[field_name] = {};
         }
-        if (typeOf(this[field_name][arguments[0]]) === "undefined") {
-            this[field_name][arguments[0]] = fun.apply(this, arguments);
+        if (typeOf(this._caches[field_name][arguments[0]]) === "undefined") {
+            this._caches[field_name][arguments[0]] = fun.apply(this, arguments);
         }
-        return this[field_name][arguments[0]];
+        return this._caches[field_name][arguments[0]];
     };
 }
 
@@ -4642,8 +4647,10 @@ Shade.Types.function_t = function(return_type, param_types) {
 Shade.make = function(exp)
 {
     var t = typeOf(exp);
-    if (t === 'boolean' ||
-        t === 'number') {
+    if (t === 'undefined') {
+        throw "Shade.make does not support undefined";
+    }
+    if (t === 'boolean' || t === 'number') {
         return Shade.constant(exp);
     } else if (t === 'array') {
         return Shade.seq(exp);
@@ -4847,6 +4854,7 @@ Shade.Exp = {
     // element access for compound expressions
 
     element: function(i) {
+        // FIXME. Why doesn't this check for is_pod and use this.at()?
         throw "invalid call: atomic expression";  
     },
 
@@ -4910,6 +4918,8 @@ Shade.Exp = {
     //////////////////////////////////////////////////////////////////////////
 
     as_int: function() {
+        if (this.type.equals(Shade.Types.int_t))
+            return this;
         var parent = this;
         return Shade._create_concrete_value_exp({
             parents: [parent],
@@ -4924,6 +4934,8 @@ Shade.Exp = {
         });
     },
     as_bool: function() {
+        if (this.type.equals(Shade.Types.bool_t))
+            return this;
         var parent = this;
         return Shade._create_concrete_value_exp({
             parents: [parent],
@@ -4938,6 +4950,8 @@ Shade.Exp = {
         });
     },
     as_float: function() {
+        if (this.type.equals(Shade.Types.float_t))
+            return this;
         var parent = this;
         return Shade._create_concrete_value_exp({
             parents: [parent],
@@ -5519,6 +5533,7 @@ Shade.sampler2D_from_texture = function(texture)
         var result = Shade.uniform("sampler2D");
         result.set(texture);
         texture._shade_expression = result;
+        // FIXME: What if the same texture is bound to many samplers?!
         return result;
     }();
 };
@@ -5672,7 +5687,9 @@ Shade.add = function() {
             [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
             [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2]
+            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+            
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -5690,6 +5707,9 @@ Shade.add = function() {
         else if (exp2.type.is_vec())
             vt = vec[exp2.type.vec_dimension()];
         var v1 = exp1.constant_value(), v2 = exp2.constant_value();
+        if (exp1.type.equals(Shade.Types.int_t) && 
+            exp2.type.equals(Shade.Types.int_t))
+            return v1 + v2;
         if (exp1.type.equals(Shade.Types.float_t) &&
             exp2.type.equals(Shade.Types.float_t))
             return v1 + v2;
@@ -5737,7 +5757,9 @@ Shade.sub = function() {
             [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
             [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2]
+            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+            
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -5754,6 +5776,9 @@ Shade.sub = function() {
         else if (exp2.type.is_vec())
             vt = vec[exp2.type.vec_dimension()];
         var v1 = exp1.constant_value(), v2 = exp2.constant_value();
+        if (exp1.type.equals(Shade.Types.int_t) && 
+            exp2.type.equals(Shade.Types.int_t))
+            return v1 - v2;
         if (exp1.type.equals(Shade.Types.float_t) &&
             exp2.type.equals(Shade.Types.float_t))
             return v1 - v2;
@@ -5907,7 +5932,9 @@ Shade.mul = function() {
             [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
             [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2]
+            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+            
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -6180,7 +6207,9 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
                 if (matched)
                     return this_params[param_length];
             }
-            throw "Could not find appropriate type signature";
+            var types = _.map(_.toArray(arguments).slice(0, arguments.length),
+                  function(x) { return x.type.repr(); }).join(", ");
+            throw "Could not find appropriate type match for (" + types + ")";
         };
     }
 
@@ -6351,6 +6380,8 @@ function mod_min_max_constant_evaluator(op) {
         });
         if (exp.parents[0].type.equals(Shade.Types.float_t))
             return op.apply(op, values);
+        else if (exp.parents[0].type.equals(Shade.Types.int_t))
+            return op.apply(op, values);
         else if (exp.parents[0].type.equals(exp.parents[1].type)) {
             return vec.make(zipWith(op, values[0], values[1]));
         } else {
@@ -6367,6 +6398,7 @@ _.each({
     "max": Math.max
 }, function(op, k) {
     Shade[k] = builtin_glsl_function(k, [
+        [Shade.Types.int_t,    Shade.Types.int_t,   Shade.Types.int_t],
         [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,     Shade.Types.vec2,    Shade.Types.vec2],
         [Shade.Types.vec3,     Shade.Types.vec3,    Shade.Types.vec3],
@@ -6780,17 +6812,31 @@ Shade.Optimizer = {};
 Shade.Optimizer.transform_expression = function(operations)
 {
     return function(v) {
+        var old_v;
         for (var i=0; i<operations.length; ++i) {
+            if (Shade.debug) {
+                old_v = v;
+            }
             var test = operations[i][0];
             var fun = operations[i][1];
-            if (operations[i][2]) {
-                var old_guid;
+            var old_guid = v.guid;
+            if (operations[i][3]) {
+                var this_old_guid;
                 do {
-                    old_guid = v.guid;
+                    this_old_guid = v.guid;
                     v = v.replace_if(test, fun);
-                } while (v.guid !== old_guid);
-            } else
+                } while (v.guid !== this_old_guid);
+            } else {
                 v = v.replace_if(test, fun);
+            }
+            var new_guid = v.guid;
+            if (Shade.debug && old_guid != new_guid) {
+                console.log("Pass",operations[i][2],"succeeded");
+                console.log("Before: ");
+                old_v.debug_print();
+                console.log("After: ");
+                v.debug_print();
+            }
         }
         return v;
     };
@@ -6961,6 +7007,64 @@ Shade.Optimizer.replace_vec_at_constant_with_swizzle = function(exp)
     throw "Internal error, shouldn't get here";
 };
 
+Shade.Optimizer.is_logical_and_with_constant = function(exp)
+{
+    return (exp.expression_type === "operator&&" &&
+            exp.parents[0].is_constant());
+};
+
+Shade.Optimizer.replace_logical_and_with_constant = function(exp)
+{
+    if (exp.parents[0].constant_value()) {
+        return exp.parents[1];
+    } else {
+        return Shade.make(false);
+    }
+};
+
+Shade.Optimizer.is_logical_or_with_constant = function(exp)
+{
+    return (exp.expression_type === "operator||" &&
+            exp.parents[0].is_constant());
+};
+
+Shade.Optimizer.replace_logical_or_with_constant = function(exp)
+{
+    if (exp.parents[0].constant_value()) {
+        return Shade.make(true);
+    } else {
+        return exp.parents[1];
+    }
+};
+
+Shade.Optimizer.is_never_discarding = function(exp)
+{
+    return (exp.expression_type === "discard_if" &&
+            exp.parents[0].is_constant() &&
+            !exp.parents[0].constant_value());
+};
+
+Shade.Optimizer.remove_discard = function(exp)
+{
+    return exp.parents[1];
+};
+
+Shade.Optimizer.is_known_branch = function(exp)
+{
+    var result = (exp.expression_type === "selection" &&
+                  exp.parents[0].is_constant());
+    return result;
+};
+
+Shade.Optimizer.prune_selection_branch = function(exp)
+{
+    if (exp.parents[0].constant_value()) {
+        return exp.parents[1];
+    } else {
+        return exp.parents[2];
+    }
+};
+
 Shade.program = function(program_obj)
 {
     var vp_obj = {}, fp_obj = {};
@@ -7006,33 +7110,35 @@ Shade.program = function(program_obj)
     // explicit per-vertex hoisting must happen before is_attribute hoisting,
     // otherwise we might end up reading from a varying in the vertex program,
     // which is undefined behavior
-    var fp_optimize = Shade.Optimizer.transform_expression([
-        [is_per_vertex, hoist_to_varying],
-        [is_attribute, hoist_to_varying],
-        [Shade.Optimizer.is_times_zero, Shade.Optimizer.replace_with_zero, 
-         true],
-        [Shade.Optimizer.is_times_one, Shade.Optimizer.replace_with_notone, 
-         true],
-        [Shade.Optimizer.is_plus_zero, Shade.Optimizer.replace_with_nonzero,
-         true],
-        [Shade.Optimizer.vec_at_constant_index, 
-         Shade.Optimizer.replace_vec_at_constant_with_swizzle, false],
-        [Shade.Optimizer.is_constant,
-         Shade.Optimizer.replace_with_constant]
-    ]);
 
-    var vp_optimize = Shade.Optimizer.transform_expression([
+    var common_sequence = [
         [Shade.Optimizer.is_times_zero, Shade.Optimizer.replace_with_zero, 
-         true],
+         "v * 0", true],
         [Shade.Optimizer.is_times_one, Shade.Optimizer.replace_with_notone, 
-         true],
+         "v * 1", true],
         [Shade.Optimizer.is_plus_zero, Shade.Optimizer.replace_with_nonzero,
-         true],
+         "v + 0", true],
+        [Shade.Optimizer.is_never_discarding,
+         Shade.Optimizer.remove_discard, "discard_if(false)"],
+        [Shade.Optimizer.is_known_branch,
+         Shade.Optimizer.prune_selection_branch, "constant?a:b", true],
         [Shade.Optimizer.vec_at_constant_index, 
-         Shade.Optimizer.replace_vec_at_constant_with_swizzle, false],
+         Shade.Optimizer.replace_vec_at_constant_with_swizzle, "vec[constant_ix]"],
         [Shade.Optimizer.is_constant,
-         Shade.Optimizer.replace_with_constant]
-    ]);
+         Shade.Optimizer.replace_with_constant, "constant folding"],
+        [Shade.Optimizer.is_logical_or_with_constant,
+         Shade.Optimizer.replace_logical_or_with_constant, "constant||v", true],
+        [Shade.Optimizer.is_logical_and_with_constant,
+         Shade.Optimizer.replace_logical_and_with_constant, "constant&&v", true]];
+
+    var fp_sequence = [
+        [is_per_vertex, hoist_to_varying, "per-vertex hoisting"],
+        [is_attribute, hoist_to_varying, "attribute hoisting"]  
+    ];
+    fp_sequence.push.apply(fp_sequence, common_sequence);
+    var vp_sequence = common_sequence;
+    var fp_optimize = Shade.Optimizer.transform_expression(fp_sequence);
+    var vp_optimize = Shade.Optimizer.transform_expression(vp_sequence);
 
     var used_varying_names = [];
     _.each(fp_obj, function(v, k) {
@@ -7238,8 +7344,10 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
                                     parent_is_unconditional)
 {
     return function() {
-        if (arguments.length === 0) return Shade.constant(false);
-        if (arguments.length === 1) return Shade.make(arguments[1]).as_bool();
+        if (arguments.length === 0) 
+            throw ("operator " + operator_name 
+                   + " requires at least 1 parameter");
+        if (arguments.length === 1) return Shade.make(arguments[0]).as_bool();
         var first = Shade.make(arguments[0]);
         if (!first.type.equals(Shade.Types.bool_t))
             throw ("operator " + operator_name + 
@@ -7496,10 +7604,11 @@ Shade.discard_if = function(exp, condition)
             var cond = _.all(this.parents, function(v) {
                 return v.is_constant();
             });
-            return (cond && !this.parents[1].constant_value());
+            return (cond && !this.parents[0].constant_value());
         }),
         _must_be_function_call: true,
         type: exp.type,
+        expression_type: "discard_if",
         parents: [condition, exp],
         parent_is_unconditional: function(i) {
             return i === 0;
@@ -7538,9 +7647,6 @@ Facet.Marks = {};
 Facet.Marks.dots = function(opts)
 {
     opts = _.defaults(opts, {
-        x_scale: function (x) { return x; },
-        y_scale: function (x) { return x; },
-        xy_scale: function (x) { return x; },
         fill_color: Shade.vec(0,0,0,1),
         stroke_color: Shade.vec(0,0,0,1),
         point_diameter: 5,
@@ -7550,7 +7656,11 @@ Facet.Marks.dots = function(opts)
         plain: false
     });
 
-    function to_opengl(x) { return x.mul(2).sub(1); };
+    if (!opts.position)
+        throw "Facet.Marks.dots expects parameter 'position'";
+    if (!opts.elements)
+        throw "Facet.Marks.dots expects parameter 'elements'";
+
     var S = Shade;
 
     var fill_color     = Shade.make(opts.fill_color);
@@ -7559,58 +7669,80 @@ Facet.Marks.dots = function(opts)
     var stroke_width   = Shade.make(opts.stroke_width).add(1);
     var use_alpha      = Shade.make(opts.alpha);
     
-    var x_scale = opts.x_scale;
-    var y_scale = opts.y_scale;
-    
     var model_opts = {
-        type: "points"
+        type: "points",
+        vertex: opts.position,
+        elements: opts.elements
     };
 
-    if (opts.x) {
-        model_opts.vertex = S.vec(to_opengl(opts.x_scale(opts.x)), 
-                                  to_opengl(opts.y_scale(opts.y)));
-    } else if (opts.xy) {
-        model_opts.vertex = opts.xy_scale(opts.xy).mul(2).sub(S.vec(1,1));
-    };
-
-    if (opts.model) {
-        model_opts.elements = opts.model.elements;
-    } else if (opts.elements) {
-        model_opts.elements = opts.elements;
-    }
     var model = Facet.model(model_opts);
 
     var distance_to_center_in_pixels = S.pointCoord().sub(S.vec(0.5, 0.5))
         .length().mul(point_diameter);
     var point_radius = point_diameter.div(2);
     var distance_to_border = point_radius.sub(distance_to_center_in_pixels);
-    var gl_Position = S.vec(model.vertex, 0, 1);
+    var gl_Position = model.vertex;
 
     var no_alpha = S.mix(fill_color, stroke_color,
                          S.clamp(stroke_width.sub(distance_to_border), 0, 1));
     
-    if (opts.plain) {
-        var result = Facet.bake(model, {
-            position: gl_Position,
-            point_size: point_diameter,
-            color: fill_color,
-            mode: opts.mode
-        });
-        result.gl_Position = gl_Position;
-        return result;
-    } else {
-        var result = Facet.bake(model, {
-            position: gl_Position,
-            point_size: point_diameter,
-            color: S.selection(use_alpha,
-                               no_alpha.mul(S.vec(1,1,1,S.clamp(distance_to_border, 0, 1))),
-                               no_alpha)
-                .discard_if(distance_to_center_in_pixels.gt(point_radius)),
-            mode: opts.mode
-        });
-        result.gl_Position = gl_Position;
-        return result;
+    var plain_fill_color = fill_color;
+    var alpha_fill_color = 
+        S.selection(use_alpha,
+                    no_alpha.mul(S.vec(1,1,1,S.clamp(distance_to_border, 0, 1))),
+                    no_alpha)
+        .discard_if(distance_to_center_in_pixels.gt(point_radius));
+
+    var result = Facet.bake(model, {
+        position: gl_Position,
+        point_size: point_diameter,
+        color: Shade.selection(opts.plain, plain_fill_color, alpha_fill_color),
+        mode: opts.mode
+    });
+    // FIXME there must be a better way to do this.
+    result.gl_Position = gl_Position;
+    return result;
+};
+// FIXME: alpha=0 points should discard because of depth buffer
+Facet.Marks.scatterplot = function(opts)
+{
+    opts = _.defaults(opts, {
+        x_scale: function (x) { return x; },
+        y_scale: function (x) { return x; },
+        xy_scale: function (x) { return x; }
+    });
+
+    function to_opengl(x) { return x.mul(2).sub(1); };
+    var S = Shade;
+    
+    var x_scale = opts.x_scale;
+    var y_scale = opts.y_scale;
+
+    var position, elements;
+
+    if (opts.x) {
+        position = S.vec(to_opengl(opts.x_scale(opts.x)), 
+                         to_opengl(opts.y_scale(opts.y)));
+    } else if (opts.xy) {
+        position = opts.xy_scale(opts.xy).mul(2).sub(S.vec(1,1));
+    };
+
+    if (opts.model) {
+        elements = opts.model.elements;
+    } else if (opts.elements) {
+        elements = opts.elements;
     }
+    return Facet.Marks.dots({
+        position: S.vec(position, 0, 1),
+        elements: elements,
+        fill_color: opts.fill_color,
+        stroke_color: opts.stroke_color,
+        point_diameter: opts.point_diameter,
+        stroke_width: opts.stroke_width,
+        mode: opts.mode,
+        alpha: opts.alpha,
+        plain: opts.plain
+    });
 };
 function spherical_mercator_patch(tess)
 {
@@ -7664,7 +7796,7 @@ Facet.Marks.globe = function(opts)
     var sphere = spherical_mercator_patch(40);
     var model_matrix = Shade.uniform("mat4");
 
-    var texture = Facet.texture_from_image({
+    var texture = Facet.texture({
         width: 2048,
         height: 2048,
         TEXTURE_MAG_FILTER: gl.LINEAR,
@@ -8103,3 +8235,27 @@ Shade.color = function(spec, alpha)
     throw "Unrecognized color specifier " + spec;
 };
 }());
+
+Shade.Colors = {};
+
+Shade.Colors.alpha = function(color, alpha)
+{
+    color = Shade.make(color);
+    alpha = Shade.make(alpha);
+    if (!alpha.type.equals(Shade.Types.float_t))
+        throw "Shade.Colors.alpha type error: alpha parameter must be float";
+    if (color.type.equals(Shade.Types.vec4)) {
+        return Shade.vec(color.swizzle("rgb"), alpha);
+    }
+    if (color.type.equals(Shade.Types.vec3)) {
+        return Shade.vec(color, alpha);
+    }
+    throw "Shade.Colors.alpha type error: color parameter must be vec3 or vec4";
+};
+
+Shade.Exp.alpha = function(alpha)
+{
+    return Shade.Colors.alpha(this, alpha);
+};
+
+

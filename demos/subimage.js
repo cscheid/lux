@@ -37,7 +37,7 @@ $().ready(function () {
     var prev_mouse_pos;
     var mv = Shade.uniform("mat4");
     var proj = Shade.uniform("mat4");
-    var gl = Facet.initGL(canvas, {
+    var gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,1],
         display: function() {

@@ -1,4 +1,4 @@
-Facet.initGL = function(canvas, opts)
+Facet.init = function(canvas, opts)
 {
     canvas.unselectable = true;
     canvas.onselectstart = function() { return false; };
