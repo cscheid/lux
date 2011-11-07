@@ -107,10 +107,10 @@ facet.js:					\
 	src/shade/discard.js			\
 	src/shade/id.js				\
 	src/shade/_end.js			\
-	src/marks/_begin.js			\
-	src/marks/dots.js			\
-	src/marks/scatterplot.js		\
-	src/marks/globe.js			\
+	src/facet/marks/_begin.js		\
+	src/facet/marks/dots.js			\
+	src/facet/marks/scatterplot.js		\
+	src/facet/marks/globe.js		\
 	src/models.js				\
 	src/colors.js
 
