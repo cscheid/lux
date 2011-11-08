@@ -1,0 +1,240 @@
+<html>
+<head><title>Facet Documentation</title>
+<link rel="stylesheet" href="css/bootstrap.css"/>
+<!-- don't hate me, hate Linux Chrome 16's broken optimizeLegibility -->
+<script src="js/bdetect.js"></script>
+<script>
+if (BrowserDetect.OS !== "Linux" || BrowserDetect.browser !== "Chrome")
+document.write('<link ref="stylesheet" href="css/legibility.css"/>');
+</script>
+<link rel="stylesheet" href="css/bootstrap.css"/>
+<link rel="stylesheet" href="css/style.css"/>
+<link rel="stylesheet" href="css/mchighlight-javascript.css"/>
+  <script src="js/jquery-1.6.2.min.js"></script>
+  <script src="js/mclexer.js"></script>
+  <script src="js/mchighlight.js"></script>
+  <script src="js/mchighlight-javascript.js"></script>
+  <script src="js/mchighlight-javascript.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="span12 offset4">
+	<h1>Facet documentation</h1>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span4">
+	<h2>Essentials</h2>
+      </div>
+      <div class="span12">
+	<p>A Facet program will probably need the following few
+	functions. With them, you will be able to write programs which
+	use basic 2D and 3D graphics.
+	</p>
+
+	<h3>Marks</h3>
+	<p>Facet provides some visual primitives which you can use
+	to draw graphics. <b>Marks</b> are almost ready-made
+	graphics: you provide a few details and Facet returns an
+	object ready for drawing:</p>
+<div>
+<div class="negoffset4">
+  <div class="span4">
+    <a href="../demos/scatter.html"><img src="img/scatterplot_demo.png"></a>
+    <p class="nomargin"><a href="../demos/scatter.html">Scatterplot demo</a></p>
+  </div>
+</div>
+<pre class="highlight">
+// A scatterplot is a set of dots with specified scales for x and y
+var scatterplot_batch = Facet.Marks.scatterplot({
+    x: iris.sepalLength,
+    y: iris.petalLength,
+    x_scale: Shade.Utils.fit(iris.sepalLength),
+    y_scale: Shade.Utils.fit(iris.petalLength),
+    fill_color: Shade.color('red'),
+    stroke_color: Shade.color('black'),
+    point_diameter: 10
+});
+</div>
+</pre>
+
+	<p>To draw this on the screen, simply
+	call <span class="inline-highlight">scatterplot_batch.draw()</span>.</p>
+
+	<h3>Models and Batches</h3>
+	<p>Facet also provides some <b>models</b>, predefined
+	geometrical shapes which you can use to construct your
+	graphics. For example, we can create a cube like this:</p>
+<div>
+<div class="negoffset4">
+  <div class="span4">
+    <a href="../demos/lesson6.html"><img src="img/lesson6_demo.png"></a>
+    <p class="nomargin"><a href="../demos/lesson6.html">Cube model demo</a></p>
+  </div>
+</div>
+<pre class="highlight">
+// The default cube is centered at the origin and has side length 2
+var cube = Facet.Models.flat_cube();
+</pre>
+	<p>With a model in hand, we proceed to create a <b>batch</b>,
+	which determines how the model is actually drawn on the
+	canvas. We make a batch
+	by <span class="inline-highlight">Facet.bake</span>ing a
+	model. We need to specify where the model vertices will appear
+	on the canvas. We use a
+	"synthetic camera", which will project the model onto the
+	screen, much in the same way that a photographic camera
+	projects light onto a film. Facet provides a synthetic camera
+	class:</p>
+<pre class="highlight">
+var camera = Facet.Camera.perspective({
+    look_at: [[0, 0, 6],  // the position of the camera,
+              [0, 0, -1], // towards where the camera points,
+              [0, 1, 0]], // and towards where its top points;
+    field_of_view_y: 45,  // vertical angular extent into the scene;
+    aspect_ratio: 1.3333, // aspect ratio of the canvas;
+    near_distance: 0.1,   // anything closer than this ...
+    far_distance: 100     // ... or further away will be clipped;
+});
+</pre>
+        <p>The <span class="inline-highlight">project</span> method of
+        the returned object will return a vertex, appropriately
+        transformed.</p>
+	<p>Finally, we need to tell Facet how to color the model. In the
+	simplest case, we can just use a solid color:</p>
+<pre class="highlight">
+var batch = Facet.bake(cube, {
+    position: camera.project(cube.vertex),
+    color: Shade.color('blue')
+});
+</pre>
+        <p>Voil&agrave;! The batch is ready to draw.</p>
+
+	<h3>Custom Models</h3>
+<div class="negoffset4">
+  <div class="span4">
+    <a href="../demos/lesson5.html"><img src="img/lesson5_demo.png"></a>
+    <p class="nomargin"><a href="../demos/lesson5.html">Custom models demo</a></p>
+  </div>
+</div>
+	<p>When the predefined Facet marks and models become too
+	restrictive for your needs, you can easily create objects with
+	customized appearances. The main way to define the appearance
+	of a Facet object from scratch is to create a <b>custom</b>
+	model, and bake it into a <b>batch</b>. The
+	function <span class="inline-highlight">Facet.model</span> is
+	used to specify the model. Let's say our model is a square:
+<pre class="highlight">
+var square_model = Facet.model({
+    vertex: [[-1, -1,
+               1, -1,
+               1,  1,
+              -1,  1], 2],
+    colors: [Shade.color('red'),
+             Shade.color('green'),
+             Shade.color('blue'),
+             Shade.color('white')]
+    type: "triangles",
+    elements: [0, 1, 2, 
+               0, 2, 3],
+});
+</pre>
+	<p>Facet models can be of a few different <b>types</b>. Here
+	we are using triangles, so our model will be a set of
+	triangles. The <span class="inline-highlight">vertex</span>
+	attribute specifies the positions of the vertices and the
+	dimensions, and they can be in 2, 3 or 4-dimensional
+	(homogeneous) space. Here we're using 2D, but notice that the
+	coordinates are passed in a flat
+	list. The <span class="inline-highlight">elements</span>
+	attribute tells Facet how to make (in this case) triangles out
+	of those vertices, and specifies the indices into the list of
+	vertices, three at a time. So there'll be two
+	triangles, <span class="inline-highlight">0,1,2</span> and
+        <span class="inline-highlight">0,2,3</span>. Finally, we
+        specify that these model's vertices should also have an
+        associated <span class="inline-highlight">colors</span>
+        attribute. All attributes (in this case only the colors) in a
+        model are associated to the respective vertices in the list
+        order. This model can be baked into a batch in the same way as
+        the model above.
+	</p>
+
+	<h3>Setting up a Canvas</h3>
+	<p>Facet needs an HTML canvas element in which to draw. Your
+	HTML page should have something like the following:</p>
+<pre class="html-highlight">
+&lt;body&gt; ...
+  &lt;canvas id="facet-canvas" width="640" height="480"&gt;&lt;/canvas&gt;
+&lt;/body&gt;
+</pre>
+	<p>To
+	initialize a canvas with the appropriate features, simply call
+	<span class="inline-highlight">Facet.init</span>:</p>
+<pre class="highlight">
+function draw_it()
+{
+    batch.draw();
+}
+
+var canvas = document.getElementById("facet-canvas");
+gl = Facet.init(canvas, {
+    clearDepth: 1.0,
+    clearColor: [0,0,0,1],
+    display: draw_it,
+    attributes: {
+      alpha: true,
+      depth: true
+    },
+});</pre>
+        <p>Every attribute of the second parameter
+        in <span class="inline-highlight">Facet.init</span> is
+        optional, but passing
+        a <span class="inline-highlight">display</span> callback
+        function is recommended, because Facet will use this function
+        to refresh the display when necessary. In the example above, the
+        other option values are the defaults used by Facet if the
+        attributes are omitted.
+	</p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="span4">
+	<h2>Demos</h2>
+      </div>
+      <div class="span12">
+	<p>
+	If looking at examples of complete applications is your cup of
+	tea, Facet comes with quite a
+	few <a href="../demos/index.html">demo scripts</a>.
+	</p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="span4">
+	<h2>API Reference</h2>
+      </div>
+      <div class="span12">
+	<h3>Facet</h3>
+	<p>TBD.</p>
+	<h3>Shade</h3>
+	<p>TBD.</p>
+	<h3>Linalg</h3>
+	<p>TBD.</p>
+	<h3>Data</h3>
+	<p>TBD.</p>
+      </div>
+    </div>
+    
+    
+  </div>
+  <script>
+    /* not available yet
+      $('.highlight').each(function(i, v) { HTMLHighlighter.highlight(v); });
+    */
+    $('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+    $('.inline-highlight').each(function(i, v) { Highlighter.highlight(v); });
+  </script>
+</body>

@@ -1,37 +1,51 @@
 <html>
-<head><title>Facet: WebGL can be fun!</title>
-<link rel="stylesheet" href="style.css"/>
+<head><title>Facet makes WebGL fun!</title>
+<link rel="stylesheet" href="css/bootstrap.css"/>
+<!-- don't hate me, hate Linux Chrome 16's broken optimizeLegibility -->
+<script src="js/bdetect.js"></script>
+<script>
+if (BrowserDetect.OS !== "Linux" || BrowserDetect.browser !== "Chrome")
+document.write('<link ref="stylesheet" href="css/legibility.css"/>');
+</script>
+<link rel="stylesheet" href="css/bootstrap.css"/>
+<link rel="stylesheet" href="css/style.css"/>
+<link rel="stylesheet" href="css/mchighlight-javascript.css"/>
 </head>
 <body>
-  <div class="body">
-    <div class="content">
-<h1>Facet: a DSL for WebGL graphics</h1>
-<p>Facet is a Javascript library that makes WebGL fun.</p>
-
-<h2>Facet in action</h2>
-<p>Try out the Facet <a href="demos/index.html">demos</a>, or fork the
-  <a href="http://github.com/cscheid/facet">Facet git repo</a>! Facet
-  is open source.</p>
-
-<h2>Why Facet?</h2>
-<p><a href="http://www.khronos.org/webgl/">WebGL</a> makes it possible
-  to create compelling and fast 3D graphics on a modern web
-  browser. But it does not make it <b>easy</b>! WebGL is based on
-  OpenGL ES, which is based on OpenGL, which is a fundamentally old API. These
-  are delightful assembly languages for graphics, but it's 2011, and
-  we can do better than assembly.</p>
-
-<p>Facet tries to give programmers a set of primitives that can be
-  composed together to create higher-level constructs. The most
-  important aspect of Facet is that although you will never have to
-  write a WebGL shader with it, you will be able to do pretty much
-  anything that's possible with shaders.</p>
-
-<h2>Who?</h2>
-<p>Facet is developed primarily by <a href="http://cscheid.net">Carlos Scheidegger</a>, at the
-  <a href="http://www.research.att.com">AT&amp;T Research</a> <a href="http://www.research.att.com/infovis">infovis department</a>.</p>
-</div>
-</div>
-<a href="http://github.com/cscheid/facet"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://a248.e.akamai.net/assets.github.com/img/30f550e0d38ceb6ef5b81500c64d970b7fb0f028/687474703a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6f72616e67655f6666373630302e706e67" alt="Fork me on GitHub"></a>
+  <div class="container">
+    <div class="row">
+      <div class="span4">
+      </div>
+      <div class="span12">
+	<h1>Facet: the DSEL for WebGL graphics</h1>
+	<p>Facet is a domain-specific embedded language for WebGL graphics.</p>
+	
+	<h2>Facet in action</h2>
+	<p>Try out the Facet <a href="demos/index.html">demos</a>,
+	  read the <a href="doc/index.html">documentation</a>, or fork the
+	  <a href="http://github.com/cscheid/facet">Facet git repo</a>! Facet
+	  is open source.</p>
+	
+	<h2>Why Facet?</h2>
+	<p><a href="http://www.khronos.org/webgl/">WebGL</a> makes it possible
+	  to create compelling and fast 3D graphics on a modern web
+	  browser. But it does not make it <b>easy</b>! WebGL is based on
+	  OpenGL ES, which is based on OpenGL, which is a fundamentally old API. These
+	  are delightful assembly languages for graphics, but it's 2011, and
+	  we can do better than assembly.</p>
+	
+	<p>Facet tries to give programmers a set of primitives that can be
+	  composed together to create higher-level constructs. The most
+	  important aspect of Facet is that although you will never have to
+	  write a WebGL shader with it, you will be able to do pretty much
+	  anything that's possible with shaders.</p>
+	
+	<h2>Who?</h2>
+	<p>Facet is developed primarily by <a href="http://cscheid.net">Carlos Scheidegger</a>, at the
+	  <a href="http://www.research.att.com">AT&amp;T Research</a> <a href="http://www.research.att.com/infovis">infovis department</a>.</p>
+      </div>
+    </div>
+  </div>
+  <a href="http://github.com/cscheid/facet"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://a248.e.akamai.net/assets.github.com/img/30f550e0d38ceb6ef5b81500c64d970b7fb0f028/687474703a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6f72616e67655f6666373630302e706e67" alt="Fork me on GitHub"></a>
 </body>
 </html>
