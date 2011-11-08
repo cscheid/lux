@@ -101,7 +101,7 @@ function draw_it()
 </pre>
 
 <p>In this last snippet of code we create the required WebGL
-  scaffolding, using <span class="keyword">Facet.initGL</span>. 
+  scaffolding, using <span class="keyword">Facet.init</span>. 
   Notice that Facet
   populates the WebGL context with an extra
   function, <span class="keyword">display</span>. This function
@@ -112,16 +112,16 @@ function draw_it()
 
 <pre class="highlight">
 var canvas = document.getElementById("webgl");
-gl = Facet.initGL(canvas, {
-                      clearDepth: 1.0,
-                      clearColor: [0,0,0,1],
-                      display: draw_it,
-                      attributes: {
-                          alpha: true,
-                          depth: true
-                      },
-                      debugging: true
-                  });
+gl = Facet.init(canvas, {
+                    clearDepth: 1.0,
+                    clearColor: [0,0,0,1],
+                    display: draw_it,
+                    attributes: {
+                        alpha: true,
+                        depth: true
+                    },
+                    debugging: true
+                });
 gl.display();
 </pre>
 

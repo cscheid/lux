@@ -1,6 +1,6 @@
 body {
   font: 14px "Helvetica Neue", sans-serif;
-  text-rendering: optimizeLegibility;
+  /* text-rendering: optimizeLegibility; */
   margin-top: 1em;
   font-weight: 200;
   font-size: 1.25em;

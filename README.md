@@ -1,4 +1,4 @@
-# Facet: the EDSL for WebGL Graphics
+# Facet: the DSEL for WebGL Graphics
 
 **Facet** provides a set of primitives that make WebGL programming
   easier and cleaner.
@@ -6,14 +6,16 @@
 ### Using Facet
 
 Facet is under heavy development, so the current state of 
-documentation is, ahem, less than ideal. Still, I make a serious
+documentation is less than ideal. Still, I make a serious
 effort to keep all the Facet demos working, and you can see them live
 [here](http://cscheid.github.com/facet/demos).
 
 If you cloned the Facet repo, you can find the demos in the `demos/`
-directory. Because of AJAX restrictions, you will probably want to run
+directory. Because of AJAX security restrictions, you will probably want to run
 a local webserver instead of accessing the files through the file://
-scheme. The easiest way to do this if you run any modern Unix is to
+scheme (files in the file:/// scheme are considered all as being
+different domains, to prevent malicious scripts from trolling your
+hard drive). The easiest way to do this if you run any modern Unix is to
 chdir to the local Facet repository and run
 
     python -m SimpleHTTPServer 8888
@@ -29,7 +31,7 @@ to build Facet. On Ubuntu 11.04 and later, you can say
     sudo apt-get install nodejs
 
 to get node.js, but as far as I'm aware you're on your own to install
-npm. On OS X, I like [homebrew](http://mxcl.github.com/homebrew):
+[npm](http://npmjs.org/). On OS X, I like [homebrew](http://mxcl.github.com/homebrew):
 
     brew install node
     brew install npm

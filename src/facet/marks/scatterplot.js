@@ -1,4 +1,3 @@
-// FIXME: alpha=0 points should discard because of depth buffer
 Facet.Marks.scatterplot = function(opts)
 {
     opts = _.defaults(opts, {

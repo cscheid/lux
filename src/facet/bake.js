@@ -86,7 +86,6 @@ function draw_it(batch)
 
 var largest_batch_id = 1;
 
-// FIXME: push the primitives weirdness fix down the API
 Facet.bake = function(model, appearance)
 {
     var ctx = Facet._globals.ctx;
@@ -127,7 +126,7 @@ Facet.bake = function(model, appearance)
 
     var draw_batch_id = largest_batch_id++;
 
-    // NB: the batch_id field in the *_opts objects is not
+    // FIXME the batch_id field in the *_opts objects is not
     // the same as the batch_id in the batch itself. 
     // 
     // The former is used to avoid state switching, while the latter is
