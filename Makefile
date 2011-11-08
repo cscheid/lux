@@ -111,7 +111,12 @@ facet.js:					\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\
 	src/facet/marks/globe.js		\
-	src/models.js				\
+	src/facet/models/_begin.js		\
+	src/facet/models/flat_cube.js		\
+	src/facet/models/mesh.js		\
+	src/facet/models/sphere.js		\
+	src/facet/models/square.js		\
+	src/facet/models/teapot.js		\
 	src/colors.js
 
 # If the chmods below don't make sense to you right now, wait until

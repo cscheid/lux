@@ -32,12 +32,11 @@ $().ready(function () {
         },
         debugging: true
     });
-    var cube = Models.flat_cube();
+    var teapot = Models.teapot();
 
-    cube_drawable = Facet.bake(cube, {
-        position: camera.project(model_mat.mul(Shade.vec(cube.vertex, 1))),
-        color: Shade.texture2D(Facet.texture({ src: "img/nehe.jpg" }),
-                               cube.tex_coord)
+    cube_drawable = Facet.bake(teapot, {
+        position: camera.project(model_mat.mul(Shade.vec(teapot.vertex, 1))),
+        color: Shade.vec(Shade.abs(teapot.vertex), 1)
     });
 
     var start = new Date().getTime();

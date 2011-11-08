@@ -4,6 +4,7 @@ var sphere, sphere_prog, sphere_drawable;
 var current_mode;
 var current_rotation = 0;
 var mvp;
+var Models = Facet.Models;
 
 //////////////////////////////////////////////////////////////////////////////
 

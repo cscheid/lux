@@ -1,4 +1,5 @@
 var S = Shade;
+var Models = Facet.Models;
 
 var gl;
 var drawable;

@@ -10,7 +10,7 @@ var cube_model;
 var light_ambient = Shade.color('gray');
 var light_diffuse = Shade.color('white');
 var light_position = Shade.vec(0, 0, 2);
-
+var Models = Facet.Models;
 var mat_ambient = Shade.vec(0.2, 0.2, 0.2, 1);
 
 //////////////////////////////////////////////////////////////////////////////

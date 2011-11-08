@@ -2,6 +2,7 @@ var gl;
 var cube_drawable, pyramid_drawable;
 var mvp;
 var phase = 0;
+var Models = Facet.Models;
 
 var current_mouse_x = 0;
 var current_mouse_y = 0;
