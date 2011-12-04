@@ -33,6 +33,8 @@ facet.js:					\
 	src/facet/bake.js			\
 	src/facet/camera/_begin.js		\
 	src/facet/camera/perspective.js		\
+	src/facet/data/_begin.js		\
+	src/facet/data/texture_table.js		\
 	src/facet/draw.js			\
 	src/facet/element_buffer.js		\
 	src/facet/fresh_pick_id.js		\

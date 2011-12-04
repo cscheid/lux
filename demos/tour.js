@@ -24,11 +24,11 @@ function data_buffers()
 {
     var d = Data.flowers();
     return {
-        sepalLength: Facet.attribute_buffer(d.flowers.map(function(v) { return v.sepalLength; }), 1),
-        sepalWidth:  Facet.attribute_buffer(d.flowers.map(function(v) { return v.sepalWidth; }), 1),
-        petalLength: Facet.attribute_buffer(d.flowers.map(function(v) { return v.petalLength; }), 1),
-        petalWidth:  Facet.attribute_buffer(d.flowers.map(function(v) { return v.petalWidth; }), 1),
-        species:     Facet.attribute_buffer(d.flowers.map(function(v) { return d.species.indexOf(v.species); }), 1, 'ubyte'),
+        sepalLength: Facet.attribute_buffer(d.data.map(function(v) { return v.sepalLength; }), 1),
+        sepalWidth:  Facet.attribute_buffer(d.data.map(function(v) { return v.sepalWidth; }), 1),
+        petalLength: Facet.attribute_buffer(d.data.map(function(v) { return v.petalLength; }), 1),
+        petalWidth:  Facet.attribute_buffer(d.data.map(function(v) { return v.petalWidth; }), 1),
+        species:     Facet.attribute_buffer(d.data.map(function(v) { return d.species.indexOf(v.species); }), 1, 'ubyte'),
         columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species']
     };
 }
@@ -103,7 +103,7 @@ function init_webgl()
          S.vec(0,1,0,point_alpha),
          S.vec(0,0,1,point_alpha)])(data.species);
 
-    tour_batch = Facet.Marks.dots({
+    tour_batch = Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
         xy: xy_expression,
         xy_scale: S.Utils.linear(xy_center.sub(xy_distance),

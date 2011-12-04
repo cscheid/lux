@@ -12,6 +12,24 @@ Shade.make = function(exp)
         return Shade.constant(exp);
     } else if (t === 'array') {
         return Shade.seq(exp);
+    } else if (t === 'function') {
+        /* lifts the passed function to a "shade function".
+        
+        In other words, this creates a function that replaces every
+        passed parameter p by Shade.make(p) This way, we save a lot of
+        typing and errors. If a javascript function is expected to
+        take shade values and produce shade expressions as a result,
+        simply wrap that function around a call to Shade.make()
+
+         */
+
+        return function() {
+            var wrapped_arguments = [];
+            for (var i=0; i<arguments.length; ++i) {
+                wrapped_arguments.push(Shade.make(arguments[i]));
+            }
+            return exp.apply(this, wrapped_arguments);
+        };
     }
     t = constant_type(exp);
     if (t === 'vector' || t === 'matrix') {

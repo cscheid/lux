@@ -1,7 +1,7 @@
 module("Shade tests");
 
 var canvas = document.getElementById("webgl");
-var gl = Facet.initGL(canvas);
+var gl = Facet.init(canvas);
 $(canvas).hide();
 
 test("Shade types", function() {
@@ -348,11 +348,32 @@ test("Shade programs", function() {
 test("Shade loops", function() {
     var from = Shade.as_int(0), to = Shade.as_int(10);
     var avg = Shade.range(from, to).average();
-    Shade.debug = true;
+//     Shade.debug = true;
     var p = Shade.program({
         color: Shade.vec(1,1,1,1),
         position: Shade.vec(1,1,1,1),
         point_size: avg
     });
     ok(p, "Basic looping program");
+});
+
+test("Texture tables", function() {
+    var simple_data = {
+        number_columns: [0, 1, 2],
+        columns: [0, 1, 2],
+        data: [ { 0: 0, 1: 1, 2: 2 },
+                { 0: 3, 1: 4, 2: 5 },
+                { 0: 6, 1: 7, 2: 8 } ]
+    };
+    var table = Facet.Data.texture_table(simple_data);
+
+    for (var row_ix=0; row_ix<3; ++row_ix) {
+        for (var col_ix=0; col_ix<3; ++col_ix) {
+            var linear_index = row_ix * 3 + col_ix;
+            var tex_y = Math.floor(linear_index / 4);
+            var tex_x = linear_index - tex_y * 4;
+            ok(vec.equal(table.index(row_ix, col_ix).constant_value(),
+                         vec.make([tex_x, tex_y])));
+        }
+    }
 });

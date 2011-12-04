@@ -34,8 +34,8 @@ Shade.range = function(range_begin, range_end)
 {
     var beg = Shade.make(range_begin).as_int(),
         end = Shade.make(range_end).as_int();
-    console.log(beg, beg.type.repr());
-    console.log(end, end.type.repr());
+//     console.log(beg, beg.type.repr());
+//     console.log(end, end.type.repr());
     return {
         begin: beg,
         end: end,

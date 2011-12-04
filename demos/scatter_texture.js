@@ -32,6 +32,9 @@ function init_webgl()
 {
     Facet.set_context(gl);
     data = data_buffers();
+    var flowers = Data.flowers();
+
+    var texture_table = Facet.Data.texture_table(flowers);
 
     point_diameter = S.uniform("float", 10);
     stroke_width   = S.uniform("float", 2.5);
@@ -42,10 +45,23 @@ function init_webgl()
          S.vec(0,1,0,point_alpha),
          S.vec(0,0,1,point_alpha)])(data.species);
 
+    var raw = _.range(texture_table.n_rows);
+    console.log(texture_table);
+    console.log(raw);
+    var point_index = Facet.attribute_buffer(raw, 1);
+    var x = texture_table.at(0, 0); // point_index, 0);
+    var y = texture_table.at(0, 1); // point_index, 1);
+//     x.debug_print();
+//     y.debug_print();
+
+    console.log(data.species);
+    console.log(point_index);
+
+    Shade.debug = true;
     scatterplot_drawable = Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
-        x: data.sepalLength,
-        y: data.petalLength,
+        x: x,
+        y: y,
         x_scale: S.Utils.fit(data.sepalLength),
         y_scale: S.Utils.fit(data.petalLength),
         fill_color: species_color,

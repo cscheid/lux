@@ -3419,6 +3419,72 @@ Facet.Camera.perspective = function(opts)
         }
     };
 };
+Facet.Data = {};
+// currently this does not support storing tables in RGBA textures.
+// Storing tables in RGBA textures instead of luminance textures is important
+// when pushing large data onto the GPU because of texture addressing limitations
+// 
+// (8192^2 = 64M texture entries, which becomes a more respectable total 256M entries if allowing
+// 4 entries per texture pixel)
+//
+//
+Facet.Data.texture_table = function(table)
+{
+    var ctx = Facet._globals.ctx;
+
+    var elements = [];
+    for (var row_ix = 0; row_ix < table.data.length; ++row_ix) {
+        var row = table.data[row_ix];
+        for (var col_ix = 0; col_ix < table.number_columns.length; ++col_ix) {
+            var col_name = table.columns[table.number_columns[col_ix]];
+            var val = row[col_name];
+            if (typeof val !== "number")
+                throw "texture_table requires numeric values";
+            elements.push(val);
+        }
+    }
+
+    var table_ncols = table.number_columns.length;
+    var table_nrows = table.data.length;
+
+    var texture_width = 1;
+    while (texture_width * texture_width < elements.length) {
+        texture_width = texture_width * 2;
+    }
+    var texture_height = Math.ceil(elements.length / texture_width);
+    while (elements.length < texture_height * texture_width)
+        elements.push(0);
+
+    var texture = Facet.texture({
+        width: texture_width,
+        height: texture_height,
+        buffer: new Float32Array(elements),
+        type: ctx.FLOAT,
+        format: ctx.LUMINANCE,
+        min_filter: ctx.NEAREST,
+        mag_filter: ctx.NEAREST
+    });
+
+    var index = Shade.make(function(row, col) {
+        var linear_index = row.mul(table_nrows).add(col);
+        var y = linear_index.div(texture_width).floor();
+        var x = linear_index.sub(y.mul(texture_width));
+        return Shade.vec(x, y);
+    });
+
+    var at = Shade.make(function(row, col) {
+        // returns Shade expression with value at row, col
+        var uv = index(row, col).div(Shade.vec(texture_width, texture_height));
+        return Shade.texture2D(texture, uv).at(0);
+    });
+
+    return {
+        n_rows: table_nrows,
+        n_cols: table_ncols,
+        at: at,
+        index: index
+    };
+};
 (function() {
 
 })();
@@ -3527,7 +3593,7 @@ Facet.init = function(canvas, opts)
                 throw WebGLDebugUtils.glEnumToString(err) + 
                     " was caused by call to " + funcName;
             }
-            gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError);
+            gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
@@ -3539,11 +3605,24 @@ Facet.init = function(canvas, opts)
             if (typeof listener != "undefined")
                 canvas.addEventListener(ename, listener, false);
         }
+        var ext;
+        var exts = _.map(gl.getSupportedExtensions(), function (x) { 
+            return x.toLowerCase();
+        });
+        if (exts.indexOf("oes_texture_float") == -1) {
+            // FIXME design something like progressive enhancement for these cases. HARD!
+            alert("OES_texture_float is not available on your browser/computer! " +
+                  "Facet will not work, sorry.");
+            throw "Insufficient GPU support";
+        } else {
+            gl.getExtension("oes_texture_float");
+        }
     } catch(e) {
         alert(e);
     }
     if (!gl) {
         alert("Could not initialise WebGL, sorry :-(");
+        throw "Failed initalization";
     }
 
     gl.display = function() {
@@ -3940,37 +4019,44 @@ Facet.texture = function(opts)
         mag_filter: ctx.LINEAR,
         min_filter: ctx.LINEAR,
         wrap_s: ctx.CLAMP_TO_EDGE,
-        wrap_t: ctx.CLAMP_TO_EDGE
+        wrap_t: ctx.CLAMP_TO_EDGE,
+        format: ctx.RGBA,
+        type: ctx.UNSIGNED_BYTE
     });
-    var onload = opts.onload || function() {};
-    var mipmaps = opts.mipmaps || false;
-    var width = opts.width;
-    var height = opts.height;
 
     function handler(texture) {
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
-        ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
-        if (texture.image) {
-            ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, ctx.RGBA, 
-                           ctx.UNSIGNED_BYTE, texture.image);
-        } else {
-            ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, 
-                           texture.width, texture.height,
-                           0, ctx.RGBA, ctx.UNSIGNED_BYTE, texture.buffer);
-        }
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
-        if (mipmaps)
+        ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        if (texture.image) {
+            ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+            ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, 
+                            ctx.BROWSER_DEFAULT_WEBGL);
+            ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format, opts.format,
+                           opts.type, texture.image);
+        } else {
+            ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+            ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, ctx.NONE);
+            console.log(ctx.TEXTURE_2D, 0, opts.format,
+                        texture.width, texture.height,
+                        0, opts.format, opts.type, texture.buffer);
+            ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
+                           texture.width, texture.height,
+                           0, opts.format, opts.type, texture.buffer);
+        }
+        if (opts.mipmaps)
             ctx.generateMipmap(ctx.TEXTURE_2D);
         ctx.bindTexture(ctx.TEXTURE_2D, null);
-        onload(texture);
+        opts.onload(texture);
 
         // to ensure that all textures are bound correctly,
         // we unload the current batch, forcing all uniforms to be re-evaluated.
         Facet.unload_batch();
     }
+
     var texture = ctx.createTexture();
     texture._shade_type = 'texture';
     texture.width = opts.width;
@@ -4201,8 +4287,8 @@ Shade.range = function(range_begin, range_end)
 {
     var beg = Shade.make(range_begin).as_int(),
         end = Shade.make(range_end).as_int();
-    console.log(beg, beg.type.repr());
-    console.log(end, end.type.repr());
+//     console.log(beg, beg.type.repr());
+//     console.log(end, end.type.repr());
     return {
         begin: beg,
         end: end,
@@ -4667,6 +4753,24 @@ Shade.make = function(exp)
         return Shade.constant(exp);
     } else if (t === 'array') {
         return Shade.seq(exp);
+    } else if (t === 'function') {
+        /* lifts the passed function to a "shade function".
+        
+        In other words, this creates a function that replaces every
+        passed parameter p by Shade.make(p) This way, we save a lot of
+        typing and errors. If a javascript function is expected to
+        take shade values and produce shade expressions as a result,
+        simply wrap that function around a call to Shade.make()
+
+         */
+
+        return function() {
+            var wrapped_arguments = [];
+            for (var i=0; i<arguments.length; ++i) {
+                wrapped_arguments.push(Shade.make(arguments[i]));
+            }
+            return exp.apply(this, wrapped_arguments);
+        };
     }
     t = constant_type(exp);
     if (t === 'vector' || t === 'matrix') {
