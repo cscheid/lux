@@ -97,18 +97,18 @@ $().ready(function () {
 
     texture[0] = Facet.texture({ 
         src: "img/glass.jpg",
-        TEXTURE_MAG_FILTER: gl.LINEAR,
-        TEXTURE_MIN_FILTER: gl.LINEAR
+        mag_filter: gl.LINEAR,
+        min_filter: gl.LINEAR
     });
     texture[1] = Facet.texture({ 
         src: "img/glass.jpg",
-        TEXTURE_MAG_FILTER: gl.NEAREST,
-        TEXTURE_MIN_FILTER: gl.NEAREST
+        mag_filter: gl.NEAREST,
+        min_filter: gl.NEAREST
     });
     texture[2] = Facet.texture({ 
         src: "img/glass.jpg",
-        TEXTURE_MAG_FILTER: gl.LINEAR,
-        TEXTURE_MIN_FILTER: gl.LINEAR_MIPMAP_NEAREST,
+        mag_filter: gl.LINEAR,
+        min_filter: gl.LINEAR_MIPMAP_NEAREST,
         mipmaps: true
     });
     sampler = Shade.uniform("sampler2D");

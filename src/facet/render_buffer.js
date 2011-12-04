@@ -5,18 +5,22 @@ Facet.render_buffer = function(opts)
     ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
     opts = _.defaults(opts || {}, {
         width: 512,
-        height: 512
+        height: 512,
+        mag_filter: ctx.LINEAR,
+        min_filter: ctx.LINEAR,
+        wrap_s: ctx.CLAMP_TO_EDGE,
+        wrap_t: ctx.CLAMP_TO_EDGE
     });
-    rttFramebuffer.width  =  opts.width;
+    rttFramebuffer.width  = opts.width;
     rttFramebuffer.height = opts.height;
 
     var rttTexture = ctx.createTexture();
     rttTexture._shade_type = 'texture';
     ctx.bindTexture(ctx.TEXTURE_2D, rttTexture);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.TEXTURE_MAG_FILTER || ctx.LINEAR);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.TEXTURE_MIN_FILTER || ctx.LINEAR);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.TEXTURE_WRAP_S || ctx.CLAMP_TO_EDGE);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.TEXTURE_WRAP_T || ctx.CLAMP_TO_EDGE);
+    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
+    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
+    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
+    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
     ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, null);
 
     var renderbuffer = ctx.createRenderbuffer();

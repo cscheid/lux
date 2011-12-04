@@ -53,8 +53,8 @@ Facet.Marks.globe = function(opts)
     var texture = Facet.texture({
         width: 2048,
         height: 2048,
-        TEXTURE_MAG_FILTER: gl.LINEAR,
-        TEXTURE_MIN_FILTER: gl.LINEAR
+        mag_filter: gl.LINEAR,
+        min_filter: gl.LINEAR
     });
 
     min_x = Shade.uniform("float");

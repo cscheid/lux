@@ -10,8 +10,8 @@ Facet.Picker = {
             rb = Facet.render_buffer({
                 width: ctx.viewportWidth,
                 height: ctx.viewportHeight,
-                TEXTURE_MAG_FILTER: ctx.NEAREST,
-                TEXTURE_MIN_FILTER: ctx.NEAREST
+                mag_filter: ctx.NEAREST,
+                min_filter: ctx.NEAREST
             });
         }
 

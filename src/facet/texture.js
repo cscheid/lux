@@ -5,6 +5,14 @@
 Facet.texture = function(opts)
 {
     var ctx = Facet._globals.ctx;
+    opts = _.defaults(opts, {
+        onload: function() {},
+        mipmaps: false,
+        mag_filter: ctx.LINEAR,
+        min_filter: ctx.LINEAR,
+        wrap_s: ctx.CLAMP_TO_EDGE,
+        wrap_t: ctx.CLAMP_TO_EDGE
+    });
     var onload = opts.onload || function() {};
     var mipmaps = opts.mipmaps || false;
     var width = opts.width;
@@ -21,14 +29,15 @@ Facet.texture = function(opts)
                            texture.width, texture.height,
                            0, ctx.RGBA, ctx.UNSIGNED_BYTE, texture.buffer);
         }
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.TEXTURE_MAG_FILTER || ctx.LINEAR);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.TEXTURE_MIN_FILTER || ctx.LINEAR);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.TEXTURE_WRAP_S || ctx.CLAMP_TO_EDGE);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.TEXTURE_WRAP_T || ctx.CLAMP_TO_EDGE);
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
         if (mipmaps)
             ctx.generateMipmap(ctx.TEXTURE_2D);
         ctx.bindTexture(ctx.TEXTURE_2D, null);
         onload(texture);
+
         // to ensure that all textures are bound correctly,
         // we unload the current batch, forcing all uniforms to be re-evaluated.
         Facet.unload_batch();
