@@ -1,11 +1,12 @@
 Shade.Optimizer = {};
+Shade.Optimizer.debug = false;
 
 Shade.Optimizer.transform_expression = function(operations)
 {
     return function(v) {
         var old_v;
         for (var i=0; i<operations.length; ++i) {
-            if (Shade.debug) {
+            if (Shade.Optimizer.debug) {
                 old_v = v;
             }
             var test = operations[i][0];
@@ -21,7 +22,7 @@ Shade.Optimizer.transform_expression = function(operations)
                 v = v.replace_if(test, fun);
             }
             var new_guid = v.guid;
-            if (Shade.debug && old_guid != new_guid) {
+            if (Shade.Optimizer.debug && old_guid != new_guid) {
                 console.log("Pass",operations[i][2],"succeeded");
                 console.log("Before: ");
                 old_v.debug_print();

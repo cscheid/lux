@@ -18,10 +18,6 @@ Facet.texture = function(opts)
 
     function handler(texture) {
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
         ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
         if (texture.image) {
             ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
@@ -30,20 +26,20 @@ Facet.texture = function(opts)
             ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format, opts.format,
                            opts.type, texture.image);
         } else {
-            ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+            ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, false);
             ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, ctx.NONE);
-            console.log(ctx.TEXTURE_2D, 0, opts.format,
-                        texture.width, texture.height,
-                        0, opts.format, opts.type, texture.buffer);
             ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
                            texture.width, texture.height,
                            0, opts.format, opts.type, texture.buffer);
         }
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
         if (opts.mipmaps)
             ctx.generateMipmap(ctx.TEXTURE_2D);
         ctx.bindTexture(ctx.TEXTURE_2D, null);
         opts.onload(texture);
-
         // to ensure that all textures are bound correctly,
         // we unload the current batch, forcing all uniforms to be re-evaluated.
         Facet.unload_batch();

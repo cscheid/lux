@@ -1,11 +1,6 @@
-// currently this does not support storing tables in RGBA textures.
-// Storing tables in RGBA textures instead of luminance textures is important
-// when pushing large data onto the GPU because of texture addressing limitations
-// 
-// (8192^2 = 64M texture entries, which becomes a more respectable total 256M entries if allowing
-// 4 entries per texture pixel)
-//
-//
+// NB: Luminance float textures appear to clamp to [0,1] on Chrome 15
+// on Linux...
+
 Facet.Data.texture_table = function(table)
 {
     var ctx = Facet._globals.ctx;
@@ -19,40 +14,51 @@ Facet.Data.texture_table = function(table)
             if (typeof val !== "number")
                 throw "texture_table requires numeric values";
             elements.push(val);
+            elements.push(val);
+            elements.push(val);
+            elements.push(val);
         }
     }
 
     var table_ncols = table.number_columns.length;
     var table_nrows = table.data.length;
-
     var texture_width = 1;
-    while (texture_width * texture_width < elements.length) {
+
+    while (4 * texture_width * texture_width < elements.length) {
         texture_width = texture_width * 2;
     }
-    var texture_height = Math.ceil(elements.length / texture_width);
-    while (elements.length < texture_height * texture_width)
+
+    var texture_height = Math.ceil(elements.length / (4 * texture_width));
+    while (elements.length < 4 * texture_height * texture_width) {
         elements.push(0);
+        elements.push(0);
+        elements.push(0);
+        elements.push(0);
+    }
 
     var texture = Facet.texture({
         width: texture_width,
         height: texture_height,
         buffer: new Float32Array(elements),
         type: ctx.FLOAT,
-        format: ctx.LUMINANCE,
+        format: ctx.RGBA,
         min_filter: ctx.NEAREST,
         mag_filter: ctx.NEAREST
     });
 
     var index = Shade.make(function(row, col) {
-        var linear_index = row.mul(table_nrows).add(col);
+        var linear_index = row.mul(table_ncols).add(col);
+        var x = Shade.mod(linear_index, texture_width); // linear_index.sub(y.mul(texture_width));
         var y = linear_index.div(texture_width).floor();
-        var x = linear_index.sub(y.mul(texture_width));
-        return Shade.vec(x, y);
+        var result = Shade.vec(x, y);
+        return result;
     });
-
     var at = Shade.make(function(row, col) {
         // returns Shade expression with value at row, col
-        var uv = index(row, col).div(Shade.vec(texture_width, texture_height));
+        var uv = index(row, col)
+            .add(Shade.vec(0.5, 0.5))
+            .div(Shade.vec(texture_width, texture_height))
+            ;
         return Shade.texture2D(texture, uv).at(0);
     });
 

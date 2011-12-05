@@ -5,26 +5,31 @@ var stroke_width;
 var point_diameter;
 var point_alpha;
 var data;
-var scatterplot_drawable;
+var scatterplot_batch;
 var alive = false;
 
 //////////////////////////////////////////////////////////////////////////////
 
 function display()
 {
-    scatterplot_drawable.draw();
+    scatterplot_batch.draw();
 }
 
 function data_buffers()
 {
     var d = Data.flowers();
+    var tt = Facet.Data.texture_table(d);
+    var point_index = Facet.attribute_buffer(_.range(tt.n_rows), 1);
+    
     return {
-        sepalLength: Facet.attribute_buffer(d.data.map(function(v) { return v.sepalLength; }), 1),
-        sepalWidth:  Facet.attribute_buffer(d.data.map(function(v) { return v.sepalWidth; }), 1),
-        petalLength: Facet.attribute_buffer(d.data.map(function(v) { return v.petalLength; }), 1),
-        petalWidth:  Facet.attribute_buffer(d.data.map(function(v) { return v.petalWidth; }), 1),
-        species:     Facet.attribute_buffer(d.data.map(function(v) { return d.species.indexOf(v.species); }), 1, 'ubyte'),
-        columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species']
+        sepalLength: tt.at(point_index, 0),
+        sepalWidth:  tt.at(point_index, 1),
+        petalLength: tt.at(point_index, 2),
+        petalWidth:  tt.at(point_index, 3),
+        species:     tt.at(point_index, 4),
+        columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species'],
+        n_rows: d.data.length,
+        n_columns: 5,
     };
 }
 
@@ -32,9 +37,6 @@ function init_webgl()
 {
     Facet.set_context(gl);
     data = data_buffers();
-    var flowers = Data.flowers();
-
-    var texture_table = Facet.Data.texture_table(flowers);
 
     point_diameter = S.uniform("float", 10);
     stroke_width   = S.uniform("float", 2.5);
@@ -45,28 +47,15 @@ function init_webgl()
          S.vec(0,1,0,point_alpha),
          S.vec(0,0,1,point_alpha)])(data.species);
 
-    var raw = _.range(texture_table.n_rows);
-    console.log(texture_table);
-    console.log(raw);
-    var point_index = Facet.attribute_buffer(raw, 1);
-    var x = texture_table.at(0, 0); // point_index, 0);
-    var y = texture_table.at(0, 1); // point_index, 1);
-//     x.debug_print();
-//     y.debug_print();
-
-    console.log(data.species);
-    console.log(point_index);
-
-    Shade.debug = true;
-    scatterplot_drawable = Facet.Marks.scatterplot({
-        elements: data.sepalWidth.numItems,
-        x: x,
-        y: y,
-        x_scale: S.Utils.fit(data.sepalLength),
-        y_scale: S.Utils.fit(data.petalLength),
+    // Shade.debug = true;
+    scatterplot_batch = Facet.Marks.scatterplot({
+        elements: data.n_rows,
+        x: data.sepalLength,
+        y: data.petalLength,
+        x_scale: S.Utils.linear(4, 8, 0, 1),
+        y_scale: S.Utils.linear(1, 7, 0, 1),
         fill_color: species_color,
-        stroke_color: S.mix(species_color, S.color("black"), 0.5), // mul(S.vec(0.5, 0.5, 0.5, 0.5)),
-        stroke_width: stroke_width,
+        stroke_width: 0, // stroke_width,
         point_diameter: point_diameter,
         mode: Facet.DrawingMode.over
     });

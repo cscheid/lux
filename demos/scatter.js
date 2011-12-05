@@ -23,7 +23,7 @@ function data_buffers()
         sepalWidth:  Facet.attribute_buffer(d.data.map(function(v) { return v.sepalWidth; }), 1),
         petalLength: Facet.attribute_buffer(d.data.map(function(v) { return v.petalLength; }), 1),
         petalWidth:  Facet.attribute_buffer(d.data.map(function(v) { return v.petalWidth; }), 1),
-        species:     Facet.attribute_buffer(d.data.map(function(v) { return d.species.indexOf(v.species); }), 1, 'ubyte'),
+        species:     Facet.attribute_buffer(d.data.map(function(v) { return v.species; }), 1, 'ubyte'),
         columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species']
     };
 }

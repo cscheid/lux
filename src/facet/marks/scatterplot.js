@@ -14,10 +14,10 @@ Facet.Marks.scatterplot = function(opts)
 
     var position, elements;
 
-    if (opts.x) {
+    if (!_.isUndefined(opts.x)) {
         position = S.vec(to_opengl(opts.x_scale(opts.x)), 
                          to_opengl(opts.y_scale(opts.y)));
-    } else if (opts.xy) {
+    } else if (!_.isUndefined(opts.xy)) {
         position = opts.xy_scale(opts.xy).mul(2).sub(S.vec(1,1));
     };
 
