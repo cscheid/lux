@@ -157,6 +157,7 @@ Facet.bake = function(model, appearance)
     _.each(appearance, function(value, key) {
         if (Shade.is_program_parameter(key)) {
             if (key === 'color' || key === 'gl_FragColor') {
+                // FIXME The alpha test should be dependent on the drawing mode.
                 var pick_if = (appearance.pick_if ||
                                Shade.make(value).swizzle("a").gt(0));
                 pick_program_exp[key] = pick_id
