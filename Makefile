@@ -82,6 +82,7 @@ facet.js:					\
 	src/shade/attribute.js			\
 	src/shade/varying.js			\
 	src/shade/pointCoord.js			\
+	src/shade/round_dot.js			\
 	src/shade/operators.js			\
 	src/shade/neg.js			\
 	src/shade/vec.js			\
