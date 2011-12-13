@@ -266,14 +266,27 @@ Shade.program = function(program_obj)
     // However, these names should still work, in case the users
     // want to have GLSL-familiar names.
     _.each(program_obj, function(v, k) {
+        v = Shade.make(v);
         if (k === 'color' || k === 'gl_FragColor') {
-            fp_obj['gl_FragColor'] = Shade.make(v);
+            if (!v.type.equals(Shade.Types.vec4)) {
+                throw "Shade.program: color attribute must be of type vec4, got " +
+                    v.type.repr() + " instead.";
+            }
+            fp_obj['gl_FragColor'] = v;
         } else if (k === 'position') {
-            vp_obj['gl_Position'] = Shade.make(v);
+            if (!v.type.equals(Shade.Types.vec4)) {
+                throw "Shade.program: position attribute must be of type vec4, got " +
+                    v.type.repr() + " instead.";
+            }
+            vp_obj['gl_Position'] = v;
         } else if (k === 'point_size') {
-            vp_obj['gl_PointSize'] = Shade.make(v);
+            if (!v.type.equals(Shade.Types.float_t)) {
+                throw "Shade.program: color attribute must be of type float, got " +
+                    v.type.repr() + " instead.";
+            }
+            vp_obj['gl_PointSize'] = v;
         } else
-            vp_obj[k] = Shade.make(v);
+            vp_obj[k] = v;
     });
 
     var vp_compile = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE),
