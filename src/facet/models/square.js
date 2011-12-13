@@ -6,4 +6,4 @@ Facet.Models.square = function() {
         vertex: uv,
         tex_coord: uv
     });
-}
+};
