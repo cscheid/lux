@@ -35,6 +35,7 @@ stricter type checking.
 * Documentation
 ** TODO NeHe Lessons
 ** TODO Change lesson2.html to reflect camera class.
+** TODO We need a "pitfalls". For example, zoom.get() vs. zoom...
 * Expressions
 ** TODO ternary op performance fixes.
 Right now the algorithm in place is correct, but conservative. Ideally,

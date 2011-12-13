@@ -3293,6 +3293,7 @@ Facet.bake = function(model, appearance)
     _.each(appearance, function(value, key) {
         if (Shade.is_program_parameter(key)) {
             if (key === 'color' || key === 'gl_FragColor') {
+                // FIXME The alpha test should be dependent on the drawing mode.
                 var pick_if = (appearance.pick_if ||
                                Shade.make(value).swizzle("a").gt(0));
                 pick_program_exp[key] = pick_id
@@ -3446,7 +3447,6 @@ Facet.Camera.ortho = function(opts)
         var view_ratio = (right - left) / (top - bottom);
         var l, r, t, b;
         if (view_ratio > screen_ratio) {
-            console.log("Letterbox");
             // fat view rectangle, "letterbox" the projection
             var cy = (top + bottom) / 2;
             var half_width = (right - left) / 2;
@@ -3456,7 +3456,6 @@ Facet.Camera.ortho = function(opts)
             t = cy + half_height;
             b = cy - half_height;
         } else {
-            console.log("Pillarbox");
             // tall view rectangle, "pillarbox" the projection
             var cx = (right + left) / 2;
             var half_height = (top - bottom) / 2;
@@ -4002,6 +4001,13 @@ Facet.render_buffer = function(opts)
             } finally {
                 ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
             }
+        },
+        make_screen_batch: function (with_texel_at_uv) {
+            var sq = Facet.Models.square();
+            return Facet.bake(sq, {
+                position: Shade.vec(sq.vertex.mul(2).sub(Shade.vec(1, 1)), 0, 1),
+                color: with_texel_at_uv(Shade.texture2D(rttTexture, sq.tex_coord), sq.tex_coord)
+            });
         }
     };
 };
@@ -5713,6 +5719,10 @@ Shade.pointCoord = function() {
         }
     });
 };
+Shade.round_dot = function(color) {
+    var outside_dot = Shade.pointCoord().sub(Shade.vec(0.5, 0.5)).length().gt(0.25);
+    return Shade.make(color).discard_if(outside_dot);
+};
 (function() {
 
 var operator = function(exp1, exp2, 
@@ -7162,14 +7172,27 @@ Shade.program = function(program_obj)
     // However, these names should still work, in case the users
     // want to have GLSL-familiar names.
     _.each(program_obj, function(v, k) {
+        v = Shade.make(v);
         if (k === 'color' || k === 'gl_FragColor') {
-            fp_obj['gl_FragColor'] = Shade.make(v);
+            if (!v.type.equals(Shade.Types.vec4)) {
+                throw "Shade.program: color attribute must be of type vec4, got " +
+                    v.type.repr() + " instead.";
+            }
+            fp_obj['gl_FragColor'] = v;
         } else if (k === 'position') {
-            vp_obj['gl_Position'] = Shade.make(v);
+            if (!v.type.equals(Shade.Types.vec4)) {
+                throw "Shade.program: position attribute must be of type vec4, got " +
+                    v.type.repr() + " instead.";
+            }
+            vp_obj['gl_Position'] = v;
         } else if (k === 'point_size') {
-            vp_obj['gl_PointSize'] = Shade.make(v);
+            if (!v.type.equals(Shade.Types.float_t)) {
+                throw "Shade.program: color attribute must be of type float, got " +
+                    v.type.repr() + " instead.";
+            }
+            vp_obj['gl_PointSize'] = v;
         } else
-            vp_obj[k] = Shade.make(v);
+            vp_obj[k] = v;
     });
 
     var vp_compile = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE),
@@ -8135,7 +8158,7 @@ Facet.Models.square = function() {
         vertex: uv,
         tex_coord: uv
     });
-}
+};
 Facet.Models.teapot = function()
 {
     return Facet.model({
