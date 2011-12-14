@@ -198,6 +198,7 @@ function atan()
 Shade.atan = atan;
 Shade.Exp.atan = function() { return Shade.atan(this); };
 Shade.pow = common_fun_2op("pow", common_fun_2op_constant_evaluator(Math.pow));
+Shade.Exp.pow = function(other) { return Shade.pow(this, other); };
 
 function mod_min_max_constant_evaluator(op) {
     return function(exp) {
