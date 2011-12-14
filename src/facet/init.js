@@ -48,7 +48,7 @@ Facet.init = function(canvas, opts)
                 throw WebGLDebugUtils.glEnumToString(err) + 
                     " was caused by call to " + funcName;
             }
-            gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError);
+            gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
@@ -60,11 +60,24 @@ Facet.init = function(canvas, opts)
             if (typeof listener != "undefined")
                 canvas.addEventListener(ename, listener, false);
         }
+        var ext;
+        var exts = _.map(gl.getSupportedExtensions(), function (x) { 
+            return x.toLowerCase();
+        });
+        if (exts.indexOf("oes_texture_float") == -1) {
+            // FIXME design something like progressive enhancement for these cases. HARD!
+            alert("OES_texture_float is not available on your browser/computer! " +
+                  "Facet will not work, sorry.");
+            throw "Insufficient GPU support";
+        } else {
+            gl.getExtension("oes_texture_float");
+        }
     } catch(e) {
         alert(e);
     }
     if (!gl) {
         alert("Could not initialise WebGL, sorry :-(");
+        throw "Failed initalization";
     }
 
     gl.display = function() {
