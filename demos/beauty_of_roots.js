@@ -160,16 +160,13 @@ $().ready(function() {
                     points_batch = Facet.bake(points_model, {
                         position: camera.project(pt),
                         mode: Facet.DrawingMode.additive,
-
-                        color: Shade.round_dot(Shade.vec(0.1,0,0,1)),
                         color: Shade.pointCoord().sub(Shade.vec(0.5, 0.5))
                                     .length().pow(2).neg()
                                     .mul(20)
                                     .exp()
                                     .mul(pointweight)
                                     .mul(zoom.pow(0.33))
-                                    .mul(Shade.color("white"))
-                        ,
+                                    .mul(Shade.color("white")),
                         gl_PointSize: zoom.pow(0.5).mul(pointsize)
                     });
                     $("#loading").fadeOut(500);
