@@ -3613,7 +3613,7 @@ Facet.init = function(canvas, opts)
                 throw WebGLDebugUtils.glEnumToString(err) + 
                     " was caused by call to " + funcName;
             }
-            gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError);
+            gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
@@ -3625,11 +3625,24 @@ Facet.init = function(canvas, opts)
             if (typeof listener != "undefined")
                 canvas.addEventListener(ename, listener, false);
         }
+        var ext;
+        var exts = _.map(gl.getSupportedExtensions(), function (x) { 
+            return x.toLowerCase();
+        });
+        if (exts.indexOf("oes_texture_float") == -1) {
+            // FIXME design something like progressive enhancement for these cases. HARD!
+            alert("OES_texture_float is not available on your browser/computer! " +
+                  "Facet will not work, sorry.");
+            throw "Insufficient GPU support";
+        } else {
+            gl.getExtension("oes_texture_float");
+        }
     } catch(e) {
         alert(e);
     }
     if (!gl) {
         alert("Could not initialise WebGL, sorry :-(");
+        throw "Failed initalization";
     }
 
     gl.display = function() {
@@ -3947,14 +3960,16 @@ Facet.render_buffer = function(opts)
     rttFramebuffer.width  =  opts.width;
     rttFramebuffer.height = opts.height;
 
-    var rttTexture = ctx.createTexture();
-    rttTexture._shade_type = 'texture';
-    ctx.bindTexture(ctx.TEXTURE_2D, rttTexture);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.TEXTURE_MAG_FILTER || ctx.LINEAR);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.TEXTURE_MIN_FILTER || ctx.LINEAR);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.TEXTURE_WRAP_S || ctx.CLAMP_TO_EDGE);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.TEXTURE_WRAP_T || ctx.CLAMP_TO_EDGE);
-    ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, null);
+    var rttTexture = Facet.texture(opts);
+
+    // var rttTexture = ctx.createTexture();
+    // rttTexture._shade_type = 'texture';
+    // ctx.bindTexture(ctx.TEXTURE_2D, rttTexture);
+    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.TEXTURE_MAG_FILTER || ctx.LINEAR);
+    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.TEXTURE_MIN_FILTER || ctx.LINEAR);
+    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.TEXTURE_WRAP_S || ctx.CLAMP_TO_EDGE);
+    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.TEXTURE_WRAP_T || ctx.CLAMP_TO_EDGE);
+    // ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, null);
 
     var renderbuffer = ctx.createRenderbuffer();
     ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderbuffer);
@@ -4023,34 +4038,46 @@ Facet.set_context = function(the_ctx)
 Facet.texture = function(opts)
 {
     var ctx = Facet._globals.ctx;
-    var onload = opts.onload || function() {};
-    var mipmaps = opts.mipmaps || false;
-    var width = opts.width;
-    var height = opts.height;
+    opts = _.defaults(opts, {
+        onload: function() {},
+        mipmaps: false,
+        mag_filter: ctx.LINEAR,
+        min_filter: ctx.LINEAR,
+        wrap_s: ctx.CLAMP_TO_EDGE,
+        wrap_t: ctx.CLAMP_TO_EDGE,
+        format: ctx.RGBA,
+        type: ctx.UNSIGNED_BYTE
+    });
 
     function handler(texture) {
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
-        ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+        ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
         if (texture.image) {
-            ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, ctx.RGBA, 
-                           ctx.UNSIGNED_BYTE, texture.image);
+            ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+            ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, 
+                            ctx.BROWSER_DEFAULT_WEBGL);
+            ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format, opts.format,
+                           opts.type, texture.image);
         } else {
-            ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, 
+            ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, false);
+            ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, ctx.NONE);
+            ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
                            texture.width, texture.height,
-                           0, ctx.RGBA, ctx.UNSIGNED_BYTE, texture.buffer);
+                           0, opts.format, opts.type, texture.buffer);
         }
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.TEXTURE_MAG_FILTER || ctx.LINEAR);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.TEXTURE_MIN_FILTER || ctx.LINEAR);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.TEXTURE_WRAP_S || ctx.CLAMP_TO_EDGE);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.TEXTURE_WRAP_T || ctx.CLAMP_TO_EDGE);
-        if (mipmaps)
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
+        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
+        if (opts.mipmaps)
             ctx.generateMipmap(ctx.TEXTURE_2D);
         ctx.bindTexture(ctx.TEXTURE_2D, null);
-        onload(texture);
+        opts.onload(texture);
         // to ensure that all textures are bound correctly,
         // we unload the current batch, forcing all uniforms to be re-evaluated.
         Facet.unload_batch();
     }
+
     var texture = ctx.createTexture();
     texture._shade_type = 'texture';
     texture.width = opts.width;
@@ -6469,6 +6496,7 @@ function atan()
 Shade.atan = atan;
 Shade.Exp.atan = function() { return Shade.atan(this); };
 Shade.pow = common_fun_2op("pow", common_fun_2op_constant_evaluator(Math.pow));
+Shade.Exp.pow = function(other) { return Shade.pow(this, other); };
 
 function mod_min_max_constant_evaluator(op) {
     return function(exp) {

@@ -142,5 +142,7 @@ picking.
 ** Multiple WebGL canvases in a same page
 This means multiple contexts, and lots of things are going to break.
 ** TEXT SUPPORT
+** Mousewheel support
+*** Integrate https://github.com/brandonaaron/jquery-mousewheel ?
 * Other
 ** FIXME what do we do on canvas resizing?
