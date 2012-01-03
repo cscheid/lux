@@ -1,4 +1,5 @@
 var S = Shade;
+var Models = Facet.Models;
 
 var gl;
 var drawable;
@@ -35,7 +36,7 @@ function init_webgl()
 
 $().ready(function() {
     var canvas = document.getElementById("foo");
-    gl = Facet.initGL(canvas,
+    gl = Facet.init(canvas,
                 {
                     attributes: {
                         alpha: true,

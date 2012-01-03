@@ -5,6 +5,7 @@ var proj;
 var angle = 0;
 var sampler = [];
 var cube_model;
+var Models = Facet.Models;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -38,7 +39,7 @@ function draw_it()
 $().ready(function () {
     var canvas = document.getElementById("webgl");
 
-    gl = Facet.initGL(canvas,
+    gl = Facet.init(canvas,
                      {
                          clearDepth: 1.0,
                          clearColor: [0,0,0,1],

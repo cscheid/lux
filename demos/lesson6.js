@@ -2,6 +2,7 @@ var gl;
 var cube_drawable, pyramid_drawable;
 var model_mat;
 var angle = 0;
+var Models = Facet.Models;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -21,7 +22,7 @@ $().ready(function () {
         far_distance: 100
     });
     model_mat = Shade.uniform("mat4");
-    gl = Facet.initGL(canvas, {
+    gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
         display: draw_it,

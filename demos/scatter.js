@@ -42,7 +42,7 @@ function init_webgl()
          S.vec(0,1,0,point_alpha),
          S.vec(0,0,1,point_alpha)])(data.species);
 
-    scatterplot_drawable = Facet.Marks.dots({
+    scatterplot_drawable = Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
         x: data.sepalLength,
         y: data.petalLength,
@@ -97,13 +97,13 @@ $().ready(function() {
         change: change_stroke_width
     });
     var canvas = document.getElementById("scatterplot");
-    gl = Facet.initGL(canvas, { attributes: { alpha: true,
-                                              depth: true
-                                            },
-                                debugging: true,
-                                display: display,
-                                clearColor: [0, 0, 0, 0.2]
-                              });
+    gl = Facet.init(canvas, { attributes: { alpha: true,
+                                            depth: true
+                                          },
+                              debugging: true,
+                              display: display,
+                              clearColor: [0, 0, 0, 0.2]
+                            });
     init_webgl();
     var start = new Date().getTime();
     var f = function () {

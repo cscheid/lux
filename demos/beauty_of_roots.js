@@ -166,7 +166,8 @@ $().ready(function() {
                                     .exp()
                                     .mul(pointweight)
                                     .mul(zoom.pow(0.33))
-                                    .mul(Shade.color("white")),
+                                    .mul(Shade.color("white"))
+                        ,
                         gl_PointSize: zoom.pow(0.5).mul(pointsize)
                     });
                     $("#loading").fadeOut(500);

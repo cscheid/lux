@@ -10,7 +10,7 @@ var cube_model;
 var light_ambient = Shade.color('gray');
 var light_diffuse = Shade.color('white');
 var light_position = Shade.vec(0, 0, 2);
-
+var Models = Facet.Models;
 var mat_ambient = Shade.vec(0.2, 0.2, 0.2, 1);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -72,18 +72,18 @@ $().ready(function () {
                                                per_vertex: thisCheck.is(":checked") });
     });
 
-    gl = Facet.initGL(canvas,
-                      {
-                          clearDepth: 1.0,
-                          clearColor: [0,0,0,0.2],
-                          display: draw_it,
-                          attributes:
-                          {
-                              alpha: true,
-                              depth: true
-                          },
-                          debugging: true
-                      });
+    gl = Facet.init(canvas,
+                    {
+                        clearDepth: 1.0,
+                        clearColor: [0,0,0,0.2],
+                        display: draw_it,
+                        attributes:
+                        {
+                            alpha: true,
+                            depth: true
+                        },
+                        debugging: true
+                    });
     // because we're making faces with different textures on each
     // corner, we need separate
     // vertices for each "side" of the corner. So, even though there's

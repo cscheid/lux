@@ -158,7 +158,7 @@ $().ready(function() {
         change: change_stroke_width
     });
     var canvas = document.getElementById("scatterplot");
-    gl = Facet.initGL(canvas, { attributes: { alpha: true,
+    gl = Facet.init(canvas, { attributes: { alpha: true,
                                              depth: true
                                            }
                              });

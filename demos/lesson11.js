@@ -2,6 +2,7 @@ var gl;
 var cube_drawable, pyramid_drawable;
 var mvp;
 var phase = 0;
+var Models = Facet.Models;
 
 var current_mouse_x = 0;
 var current_mouse_y = 0;
@@ -23,7 +24,7 @@ function draw_it()
 $().ready(function () {
     var canvas = document.getElementById("webgl");
 
-    gl = Facet.initGL(canvas, {
+    gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
         display: draw_it,

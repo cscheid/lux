@@ -28,7 +28,7 @@ function make_graph_drawable(model, center, zoom)
 {
     var half_width  = Shade.div(720, zoom).div(2);
     var half_height = Shade.div(480, zoom).div(2);
-    var dots_drawable = Facet.Marks.dots({
+    var dots_drawable = Facet.Marks.scatterplot({
         elements: model.node_elements,
         x: model.position.at(0),
         y: model.position.at(1),
@@ -81,7 +81,7 @@ $().ready(function () {
                        graph_drawable = make_graph_drawable(model, center, zoom);
                        gl.display();
                    });
-    gl = Facet.initGL(canvas, {
+    gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0],
         display: draw_it,
