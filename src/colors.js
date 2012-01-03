@@ -151,7 +151,6 @@ var css_colors = {
     "yellowgreen":	    "#9ACD32"
 };
 
-var single_hex_to_float = {};
 var rgb_re = / *rgb *\( *(\d+) *, *(\d+) *, *(\d+) *\) */;
 Shade.color = function(spec, alpha)
 {
