@@ -85,10 +85,34 @@
 
 Facet = {};
 // yucky globals used throughout Facet. I guess this means I lost.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+/* FIXME there should be one globals object per WebGL context.
+
+ When fixing Facet so that it works in multiple-context
+ situations, all the globals scattered throughout Facet should be
+ collected here.
+
+*/
 
 Facet._globals = {
-    ctx: undefined, // stores the active webgl context
-    display_callback: undefined
+    ctx: undefined,
+     // stores the active webgl context
+
+    display_callback: undefined,
+    // when Facet.init is called with a display callback, it gets stored in
+    // _globals.display_callback
+
+    batch_render_mode: 0
+    // batches can currently be rendered in "draw" or "pick" mode.
+
+    // draw: 0
+    // pick: 1
+
+    // these are indices into an array defined inside Facet.bake
+
+    // For legibility, they should be strings, but for speed, they'll be integers.
 };
 // Underscore.js 1.1.7
 // (c) 2011 Jeremy Ashkenas, DocumentCloud Inc.
@@ -3224,17 +3248,87 @@ var largest_batch_id = 1;
 
 Facet.bake = function(model, appearance)
 {
+    appearance = Shade.canonicalize_program_object(appearance);
     var ctx = Facet._globals.ctx;
-    var draw_program_exp = {};
-    _.each(appearance, function(value, key) {
-        if (Shade.is_program_parameter(key)) {
-            draw_program_exp[key] = value;
+
+    var batch_id = Facet.fresh_pick_id();
+
+    function build_attribute_arrays_obj(prog) {
+        return _.build(_.map(
+            prog.attribute_buffers, function(v) { return [v._shade_name, v]; }
+        ));
+    };
+
+    function process_appearance(val_key_function) {
+        var result = {};
+        _.each(appearance, function(value, key) {
+            if (Shade.is_program_parameter(key)) {
+                result[key] = val_key_function(value, key);
+            }
+        });
+        return Shade.program(result);
+    }
+
+    function create_draw_program() {
+        return process_appearance(function(value, key) {
+            return value;
+        });
+    }
+
+    function create_pick_program() {
+        var pick_id;
+        if (appearance.pick_id)
+            pick_id = Shade.make(appearance.pick_id);
+        else {
+            pick_id = Shade.make(Shade.id(batch_id));
         }
-    });
-    var draw_program = Shade.program(draw_program_exp);
-    var draw_attribute_arrays = _.build(_.map(
-        draw_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
-    ));
+        return process_appearance(function(value, key) {
+            if (key === 'gl_FragColor') {
+                var pick_if = (appearance.pick_if || 
+                               Shade.make(value).swizzle("a").gt(0));
+                return pick_id.discard_if(Shade.not(pick_if));
+            } else
+                return value;
+        });
+    }
+
+    /* Facet unprojecting uses the render-as-depth technique suggested
+     by Benedetto et al. in the SpiderGL paper in the context of
+     shadow mapping:
+
+     SpiderGL: A JavaScript 3D Graphics Library for Next-Generation
+     WWW
+
+     Marco Di Benedetto, Federico Ponchio, Fabio Ganovelli, Roberto
+     Scopigno. Visual Computing Lab, ISTI-CNR
+
+     http://vcg.isti.cnr.it/Publications/2010/DPGS10/spidergl.pdf
+
+     FIXME: Perhaps there should be an option of doing this directly as
+     render-to-float-texture.
+
+     */
+    
+    function create_unproject_program() {
+        return process_appearance(function(value, key) {
+            if (key === 'gl_FragColor') {
+                var position_z = appearance['gl_Position'].swizzle('z'),
+                    position_w = appearance['gl_Position'].swizzle('w');
+                var normalized_z = position_z.div(position_w);
+                console.log("normalized_z type", normalized_z.type.repr());
+
+                Shade.debug = true;
+                var result_rgba = Shade.vec(
+                    normalized_z,
+                    normalized_z.mul(1 << 8),
+                    normalized_z.mul(1 << 16),
+                    normalized_z.mul(1 << 24)
+                );
+                return result_rgba;
+            } else
+                return value;
+        });
+    }
 
     var primitive_types = {
         points: ctx.POINTS,
@@ -3260,9 +3354,7 @@ Facet.bake = function(model, appearance)
     }
     var primitives = [primitive_types[model.type], model.elements];
 
-    var draw_batch_id = largest_batch_id++;
-
-    // FIXME the batch_id field in the *_opts objects is not
+    // FIXME the batch_id field in the batch_opts objects is not
     // the same as the batch_id in the batch itself. 
     // 
     // The former is used to avoid state switching, while the latter is
@@ -3272,58 +3364,27 @@ Facet.bake = function(model, appearance)
     // This should not lead to any problems right now but might be confusing to
     // readers.
 
-    var draw_opts = {
-        program: draw_program,
-        attributes: draw_attribute_arrays,
-        set_caps: ((appearance.mode && appearance.mode.set_draw_caps) || 
-                   Facet.DrawingMode.standard.set_draw_caps),
-        draw_chunk: draw_chunk,
-        batch_id: draw_batch_id
-    };
-
-    var batch_id = Facet.fresh_pick_id();
-    var pick_id;
-    if (appearance.pick_id)
-        pick_id = Shade.make(appearance.pick_id);
-    else {
-        pick_id = Shade.make(Shade.id(batch_id));
+    function create_batch_opts(program, caps_name) {
+        return {
+            program: program,
+            attributes: build_attribute_arrays_obj(program),
+            set_caps: ((appearance.mode && appearance.mode[caps_name]) ||
+                       Facet.DrawingMode.standard[caps_name]),
+            draw_chunk: draw_chunk,
+            batch_id: largest_batch_id++
+        };
     }
 
-    var pick_program_exp = {};
-    _.each(appearance, function(value, key) {
-        if (Shade.is_program_parameter(key)) {
-            if (key === 'color' || key === 'gl_FragColor') {
-                // FIXME The alpha test should be dependent on the drawing mode.
-                var pick_if = (appearance.pick_if ||
-                               Shade.make(value).swizzle("a").gt(0));
-                pick_program_exp[key] = pick_id
-                    .discard_if(Shade.not(pick_if));
-            } else {
-                pick_program_exp[key] = value;
-            }
-        }
-    });
-    var pick_program = Shade.program(pick_program_exp);
-    var pick_attribute_arrays = _.build(_.map(
-        pick_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
-    ));
-        
-    var pick_batch_id = largest_batch_id++;
-    var pick_opts = {
-        program: pick_program,
-        attributes: pick_attribute_arrays,
-        set_caps: ((appearance.mode && appearance.mode.set_pick_caps) || 
-                   Facet.DrawingMode.standard.set_pick_caps),
-        draw_chunk: draw_chunk,
-        batch_id: pick_batch_id
-    };
+    var draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
+    var pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
+    var unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
 
-    var which_opts = [ draw_opts, pick_opts ];
+    var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {
         batch_id: batch_id,
         draw: function() {
-            draw_it(which_opts[Facet.Picker.picking_mode]);
+            draw_it(which_opts[Facet._globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.
@@ -3854,9 +3915,9 @@ Facet.model = function(input)
 var rb;
 
 Facet.Picker = {
-    picking_mode: 0,
     draw_pick_scene: function(callback) {
-        var ctx = Facet._globals.ctx;
+        var _globals = Facet._globals;
+        var ctx = _globals.ctx;
         if (!rb) {
             rb = Facet.render_buffer({
                 width: ctx.viewportWidth,
@@ -3866,8 +3927,9 @@ Facet.Picker = {
             });
         }
 
-        callback = callback || Facet._globals.display_callback;
-        this.picking_mode = 1;
+        callback = callback || _globals.display_callback;
+        var old_scene_render_mode = _globals.batch_render_mode;
+        _globals.batch_render_mode = 1;
         try {
             rb.render_to_buffer(function() {
                 ctx.clearColor(0,0,0,0);
@@ -3875,7 +3937,7 @@ Facet.Picker = {
                 callback();
             });
         } finally {
-            this.picking_mode = 0;
+            _globals.batch_render_mode = old_scene_render_mode;
         }
     },
     pick: function(x, y) {
@@ -4166,6 +4228,9 @@ Facet.Scale.Geo.latlong_to_spherical = function(lat, lon)
 // Facet.bake, in order for the batch to automatically set the capabilities.
 // This lets us specify blending, depth-testing, etc. at bake time.
 
+/* FIXME This is double dispatch done wrong. See facet.org for details.
+ */
+
 Facet.DrawingMode = {};
 Facet.DrawingMode.additive = {
     set_draw_caps: function()
@@ -4178,6 +4243,13 @@ Facet.DrawingMode.additive = {
         ctx.depthMask(false);
     },
     set_pick_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
+    },
+    set_unproject_caps: function()
     {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
@@ -4223,6 +4295,13 @@ Facet.DrawingMode.over = {
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
     }
 };
 
@@ -4241,6 +4320,12 @@ Facet.DrawingMode.over_with_depth = {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
     }
 };
 Facet.DrawingMode.standard = {
@@ -4251,6 +4336,12 @@ Facet.DrawingMode.standard = {
         ctx.depthFunc(ctx.LESS);
     },
     set_pick_caps: function()
+    { 
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+   },
+    set_unproject_caps: function()
     {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
@@ -5369,7 +5460,18 @@ Shade.constant = function(v, type)
     var constant_tuple_fun = function(type, args)
     {
         function to_glsl(type, args) {
-            return type + '(' + _.toArray(args).join(', ') + ')';
+            // FIXME this seems incredibly ugly, but we need something
+            // like it, so that numbers are appropriately promoted to floats
+            // in GLSL's syntax.
+
+            var string_args = _.map(args, function(arg) {
+                var v = String(arg);
+                if (v.indexOf(".") === -1) {
+                    return v + ".0";
+                } else
+                    return v;
+            });
+            return type + '(' + _.toArray(string_args).join(', ') + ')';
         }
 
         function matrix_row(i) {
@@ -7190,35 +7292,56 @@ Shade.Optimizer.prune_selection_branch = function(exp)
     }
 };
 
+// We provide saner names for program targets so users don't
+// need to memorize gl_FragColor, gl_Position and gl_PointSize.
+//
+// However, these names should still work, in case the users
+// want to have GLSL-familiar names.
+Shade.canonicalize_program_object = function(program_obj)
+{
+    var result = {};
+    var canonicalization_map = {
+        'color': 'gl_FragColor',
+        'position': 'gl_Position',
+        'point_size': 'gl_PointSize'
+    };
+
+    _.each(program_obj, function(v, k) {
+        var transposed_key = (k in canonicalization_map) ?
+            canonicalization_map[k] : k;
+        result[transposed_key] = v;
+    });
+    return result;
+};
+
 Shade.program = function(program_obj)
 {
+    program_obj = Shade.canonicalize_program_object(program_obj);
     var vp_obj = {}, fp_obj = {};
 
-    // We provide saner names for program targets so users don't
-    // need to memorize gl_FragColor, gl_Position and gl_PointSize.
-    //
-    // However, these names should still work, in case the users
-    // want to have GLSL-familiar names.
     _.each(program_obj, function(v, k) {
         v = Shade.make(v);
-        if (k === 'color' || k === 'gl_FragColor') {
+        if (k === 'gl_FragColor') {
             if (!v.type.equals(Shade.Types.vec4)) {
                 throw "Shade.program: color attribute must be of type vec4, got " +
                     v.type.repr() + " instead.";
             }
             fp_obj['gl_FragColor'] = v;
-        } else if (k === 'position') {
+        } else if (k === 'gl_Position') {
             if (!v.type.equals(Shade.Types.vec4)) {
                 throw "Shade.program: position attribute must be of type vec4, got " +
                     v.type.repr() + " instead.";
             }
             vp_obj['gl_Position'] = v;
-        } else if (k === 'point_size') {
+        } else if (k === 'gl_PointSize') {
             if (!v.type.equals(Shade.Types.float_t)) {
                 throw "Shade.program: color attribute must be of type float, got " +
                     v.type.repr() + " instead.";
             }
             vp_obj['gl_PointSize'] = v;
+        } else if (k.substr(0, 3) === 'gl_') {
+            // FIXME: Can we sensibly work around these?
+            throw "gl_* are reserved GLSL names, sorry; you can't use them in Facet.";
         } else
             vp_obj[k] = v;
     });
@@ -7732,6 +7855,77 @@ Shade.look_at = function(eye, center, up)
                                z.dot(eye).neg(),
                                1));
 };
+/*
+ * Shade.discard_if: conditionally discard fragments from the pipeline
+ * 
+
+*********************************************************************************
+ * 
+ * For future reference, this is a copy of the org discussion on the
+ * discard statement as I was designing it.
+ * 
+
+Discard is a statement; I don't really have statements in the
+language.
+
+
+*** discard is fragment-only.
+
+How do I implement discard in a vertex shader?
+
+**** Possibilities:
+***** Disallow it to happen in the vertex shader
+Good: Simplest
+Bad: Breaks the model in Facet programs where we don't care much about
+what happens in vertex expressions vs fragment expressions
+Ugly: The error messages would be really opaque, unless I specifically
+detect where the discard statement would appear.
+***** Send the vertex outside the homogenous cube
+Good: Simple
+Bad: doesn't discard the whole primitive
+Ugly: would make triangles, etc look really weird.
+***** Set some special varying which discards every single fragment in the shader
+Good: Discards an entire primitive.
+Bad: Wastes a varying, which might be a scarce resource.
+Ugly: varying cannot be discrete (bool). The solution would be to
+discard if varying is greater than zero, set the discarded varying to be greater
+than the largest possible distance between two vertices on the screen,
+and the non-discarded to zero.
+
+*** Implementation ideas:
+
+**** special key for the program description
+
+like so:
+
+{
+  gl_Position: foo
+  gl_FragColor: bar
+  discard_if: baz
+}
+
+The main disadvantage here is that one application of discard is to
+save computation time. This means that my current initialization of
+variables used in more than one context will be wasteful if none of
+these variables are actually used before the discard condition is
+verified. What I would need, then, is some dependency analysis that
+determines which variables are used for which discard checks, and
+computes those in the correct order.
+
+This discard interacts with the initializer code.
+
+**** new expression called discard_if
+
+We add a discard_when(condition, value_if_not) expression, which
+issues the discard statement if condition is true. 
+
+But what about discard_when being executed inside conditional
+expressions? Worse: discard_when would turn case D above from a
+performance problem into an actual bug.
+
+ * 
+ */
+
 Shade.discard_if = function(exp, condition)
 {
     exp = Shade.make(exp);
@@ -8349,7 +8543,6 @@ var css_colors = {
     "yellowgreen":	    "#9ACD32"
 };
 
-var single_hex_to_float = {};
 var rgb_re = / *rgb *\( *(\d+) *, *(\d+) *, *(\d+) *\) */;
 Shade.color = function(spec, alpha)
 {

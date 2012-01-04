@@ -48,6 +48,35 @@ I will want to propagate BDDs up the expression tree and check them
 ** TODO precision declarations
 
 * Rendering
+** Batch Drawing Mode and Scene Rendering Mode
+Batches can be drawn in different modes, currently:
+
+- "regular" drawing
+- additive blending
+- alpha-blended
+
+But scenes can also be rendered in different modes, currently
+
+- regular drawing mode
+- picking mode
+- depth unproject mode
+
+These two possibilities interact, and the result is a double dispatch,
+currently implemented badly on Facet.DrawingMode.*
+
+This should be fixed.
+
+Namely, the Facet.DrawingMode.<foo>.set_<bar>_caps functions dispatch on both foo and bar.
+
+One better solution is to have a dictionary and dispatch on (<foo>,
+<bar>) pairs.
+
+This would pave the way for extensible batch drawing modes. But extending
+rendering modes is not as easy because, for example, the picking
+procedure requires extra state to be kept around. This should be
+designed carefully (in other words, I'm afraid of trying it out right
+now)
+
 * API
 ** TODO I really should have a matrix stack.
 ** TODO I should have a camera class
