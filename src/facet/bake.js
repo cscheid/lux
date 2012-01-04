@@ -89,16 +89,49 @@ var largest_batch_id = 1;
 Facet.bake = function(model, appearance)
 {
     var ctx = Facet._globals.ctx;
-    var draw_program_exp = {};
-    _.each(appearance, function(value, key) {
-        if (Shade.is_program_parameter(key)) {
-            draw_program_exp[key] = value;
+
+    function build_attribute_arrays_obj(prog) {
+        return _.build(_.map(
+            prog.attribute_buffers, function(v) { return [v._shade_name, v]; }
+        ));
+    };
+
+    function create_draw_program() {
+        var draw_program_exp = {};
+        _.each(appearance, function(value, key) {
+            if (Shade.is_program_parameter(key)) {
+                draw_program_exp[key] = value;
+            }
+        });
+        return Shade.program(draw_program_exp);
+    }
+
+    function create_pick_program() {
+        var pick_id;
+        if (appearance.pick_id)
+            pick_id = Shade.make(appearance.pick_id);
+        else {
+            pick_id = Shade.make(Shade.id(batch_id));
         }
-    });
-    var draw_program = Shade.program(draw_program_exp);
-    var draw_attribute_arrays = _.build(_.map(
-        draw_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
-    ));
+
+        var pick_program_exp = {};
+        _.each(appearance, function(value, key) {
+            if (Shade.is_program_parameter(key)) {
+                if (key === 'color' || key === 'gl_FragColor') {
+                    // FIXME The alpha test should be dependent on the drawing mode.
+                    var pick_if = (appearance.pick_if ||
+                                   Shade.make(value).swizzle("a").gt(0));
+                    pick_program_exp[key] = pick_id
+                        .discard_if(Shade.not(pick_if));
+                } else {
+                    pick_program_exp[key] = value;
+                }
+            }
+        });
+        return Shade.program(pick_program_exp);
+    }
+
+    var batch_id = Facet.fresh_pick_id();
 
     var primitive_types = {
         points: ctx.POINTS,
@@ -124,8 +157,6 @@ Facet.bake = function(model, appearance)
     }
     var primitives = [primitive_types[model.type], model.elements];
 
-    var draw_batch_id = largest_batch_id++;
-
     // FIXME the batch_id field in the *_opts objects is not
     // the same as the batch_id in the batch itself. 
     // 
@@ -136,50 +167,24 @@ Facet.bake = function(model, appearance)
     // This should not lead to any problems right now but might be confusing to
     // readers.
 
+    var draw_program = create_draw_program();
     var draw_opts = {
         program: draw_program,
-        attributes: draw_attribute_arrays,
+        attributes: build_attribute_arrays_obj(draw_program),
         set_caps: ((appearance.mode && appearance.mode.set_draw_caps) || 
                    Facet.DrawingMode.standard.set_draw_caps),
         draw_chunk: draw_chunk,
-        batch_id: draw_batch_id
+        batch_id: largest_batch_id++
     };
 
-    var batch_id = Facet.fresh_pick_id();
-    var pick_id;
-    if (appearance.pick_id)
-        pick_id = Shade.make(appearance.pick_id);
-    else {
-        pick_id = Shade.make(Shade.id(batch_id));
-    }
-
-    var pick_program_exp = {};
-    _.each(appearance, function(value, key) {
-        if (Shade.is_program_parameter(key)) {
-            if (key === 'color' || key === 'gl_FragColor') {
-                // FIXME The alpha test should be dependent on the drawing mode.
-                var pick_if = (appearance.pick_if ||
-                               Shade.make(value).swizzle("a").gt(0));
-                pick_program_exp[key] = pick_id
-                    .discard_if(Shade.not(pick_if));
-            } else {
-                pick_program_exp[key] = value;
-            }
-        }
-    });
-    var pick_program = Shade.program(pick_program_exp);
-    var pick_attribute_arrays = _.build(_.map(
-        pick_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
-    ));
-        
-    var pick_batch_id = largest_batch_id++;
+    var pick_program = create_pick_program(appearance);
     var pick_opts = {
         program: pick_program,
-        attributes: pick_attribute_arrays,
+        attributes: build_attribute_arrays_obj(pick_program),
         set_caps: ((appearance.mode && appearance.mode.set_pick_caps) || 
                    Facet.DrawingMode.standard.set_pick_caps),
         draw_chunk: draw_chunk,
-        batch_id: pick_batch_id
+        batch_id: largest_batch_id++
     };
 
     var which_opts = [ draw_opts, pick_opts ];
