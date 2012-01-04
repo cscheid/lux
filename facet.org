@@ -1,5 +1,9 @@
 The Big List of Facet TODOs
 
+* BUGS
+** Grand Tour demo is broken!!
+It's a dots vs scatterplot marks issue. Look it up.
+** OpenStreetMap globe is broken on MacBook Air 11" (is it a precision problem?)
 * Optimizer
 ** TODO Common subexpression elimination
     
@@ -40,66 +44,6 @@ stricter type checking.
 ** TODO ternary op performance fixes.
 Right now the algorithm in place is correct, but conservative. Ideally,
 I will want to propagate BDDs up the expression tree and check them
-
-** TODO discard
-
-Discard is a statement; I don't really have statements in the
-language.
-
-
-*** discard is fragment-only.
-
-How do I implement discard in a vertex shader?
-
-**** Possibilities:
-***** Disallow it to happen in the vertex shader
-Good: Simplest
-Bad: Breaks the model in Facet programs where we don't care much about
-what happens in vertex expressions vs fragment expressions
-Ugly: The error messages would be really opaque, unless I specifically
-detect where the discard statement would appear.
-***** Send the vertex outside the homogenous cube
-Good: Simple
-Bad: doesn't discard the whole primitive
-Ugly: would make triangles, etc look really weird.
-***** Set some special varying which discards every single fragment in the shader
-Good: Discards an entire primitive.
-Bad: Wastes a varying, which might be a scarce resource.
-Ugly: varying cannot be discrete (bool). The solution would be to
-discard if varying is greater than zero, set the discarded varying to be greater
-than the largest possible distance between two vertices on the screen,
-and the non-discarded to zero.
-
-*** Implementation ideas:
-
-**** special key for the program description
-
-like so:
-
-{
-  gl_Position: foo
-  gl_FragColor: bar
-  discard_if: baz
-}
-
-The main disadvantage here is that one application of discard is to
-save computation time. This means that my current initialization of
-variables used in more than one context will be wasteful if none of
-these variables are actually used before the discard condition is
-verified. What I would need, then, is some dependency analysis that
-determines which variables are used for which discard checks, and
-computes those in the correct order.
-
-This discard interacts with the initializer code.
-
-**** new expression called discard_if
-
-We add a discard_when(condition, value_if_not) expression, which
-issues the discard statement if condition is true. 
-
-But what about discard_when being executed inside conditional
-expressions? Worse: discard_when would turn case D above from a
-performance problem into an actual bug.
 
 ** TODO precision declarations
 
