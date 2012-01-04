@@ -256,35 +256,56 @@ Shade.Optimizer.prune_selection_branch = function(exp)
     }
 };
 
+// We provide saner names for program targets so users don't
+// need to memorize gl_FragColor, gl_Position and gl_PointSize.
+//
+// However, these names should still work, in case the users
+// want to have GLSL-familiar names.
+Shade.canonicalize_program_object = function(program_obj)
+{
+    var result = {};
+    var canonicalization_map = {
+        'color': 'gl_FragColor',
+        'position': 'gl_Position',
+        'point_size': 'gl_PointSize'
+    };
+
+    _.each(program_obj, function(v, k) {
+        var transposed_key = (k in canonicalization_map) ?
+            canonicalization_map[k] : k;
+        result[transposed_key] = v;
+    });
+    return result;
+};
+
 Shade.program = function(program_obj)
 {
+    program_obj = Shade.canonicalize_program_object(program_obj);
     var vp_obj = {}, fp_obj = {};
 
-    // We provide saner names for program targets so users don't
-    // need to memorize gl_FragColor, gl_Position and gl_PointSize.
-    //
-    // However, these names should still work, in case the users
-    // want to have GLSL-familiar names.
     _.each(program_obj, function(v, k) {
         v = Shade.make(v);
-        if (k === 'color' || k === 'gl_FragColor') {
+        if (k === 'gl_FragColor') {
             if (!v.type.equals(Shade.Types.vec4)) {
                 throw "Shade.program: color attribute must be of type vec4, got " +
                     v.type.repr() + " instead.";
             }
             fp_obj['gl_FragColor'] = v;
-        } else if (k === 'position') {
+        } else if (k === 'gl_Position') {
             if (!v.type.equals(Shade.Types.vec4)) {
                 throw "Shade.program: position attribute must be of type vec4, got " +
                     v.type.repr() + " instead.";
             }
             vp_obj['gl_Position'] = v;
-        } else if (k === 'point_size') {
+        } else if (k === 'gl_PointSize') {
             if (!v.type.equals(Shade.Types.float_t)) {
                 throw "Shade.program: color attribute must be of type float, got " +
                     v.type.repr() + " instead.";
             }
             vp_obj['gl_PointSize'] = v;
+        } else if (k.substr(0, 3) === 'gl_') {
+            // FIXME: Can we sensibly work around these?
+            throw "gl_* are reserved GLSL names, sorry; you can't use them in Facet.";
         } else
             vp_obj[k] = v;
     });

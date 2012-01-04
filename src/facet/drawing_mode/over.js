@@ -36,6 +36,13 @@ Facet.DrawingMode.over = {
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
     }
 };
 
@@ -50,6 +57,12 @@ Facet.DrawingMode.over_with_depth = {
         ctx.depthFunc(ctx.LESS);
     },
     set_pick_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+    },
+    set_unproject_caps: function()
     {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);

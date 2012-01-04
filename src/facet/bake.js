@@ -88,7 +88,10 @@ var largest_batch_id = 1;
 
 Facet.bake = function(model, appearance)
 {
+    appearance = Shade.canonicalize_program_object(appearance);
     var ctx = Facet._globals.ctx;
+
+    var batch_id = Facet.fresh_pick_id();
 
     function build_attribute_arrays_obj(prog) {
         return _.build(_.map(
@@ -96,14 +99,20 @@ Facet.bake = function(model, appearance)
         ));
     };
 
-    function create_draw_program() {
-        var draw_program_exp = {};
+    function process_appearance(val_key_function) {
+        var result = {};
         _.each(appearance, function(value, key) {
             if (Shade.is_program_parameter(key)) {
-                draw_program_exp[key] = value;
+                result[key] = val_key_function(value, key);
             }
         });
-        return Shade.program(draw_program_exp);
+        return Shade.program(result);
+    }
+
+    function create_draw_program() {
+        return process_appearance(function(value, key) {
+            return value;
+        });
     }
 
     function create_pick_program() {
@@ -113,25 +122,53 @@ Facet.bake = function(model, appearance)
         else {
             pick_id = Shade.make(Shade.id(batch_id));
         }
-
-        var pick_program_exp = {};
-        _.each(appearance, function(value, key) {
-            if (Shade.is_program_parameter(key)) {
-                if (key === 'color' || key === 'gl_FragColor') {
-                    // FIXME The alpha test should be dependent on the drawing mode.
-                    var pick_if = (appearance.pick_if ||
-                                   Shade.make(value).swizzle("a").gt(0));
-                    pick_program_exp[key] = pick_id
-                        .discard_if(Shade.not(pick_if));
-                } else {
-                    pick_program_exp[key] = value;
-                }
-            }
+        return process_appearance(function(value, key) {
+            if (key === 'gl_FragColor') {
+                var pick_if = (appearance.pick_if || 
+                               Shade.make(value).swizzle("a").gt(0));
+                return pick_id.discard_if(Shade.not(pick_if));
+            } else
+                return value;
         });
-        return Shade.program(pick_program_exp);
     }
 
-    var batch_id = Facet.fresh_pick_id();
+    /* Facet unprojecting uses the render-as-depth technique suggested
+     by Benedetto et al. in the SpiderGL paper in the context of
+     shadow mapping:
+
+     SpiderGL: A JavaScript 3D Graphics Library for Next-Generation
+     WWW
+
+     Marco Di Benedetto, Federico Ponchio, Fabio Ganovelli, Roberto
+     Scopigno. Visual Computing Lab, ISTI-CNR
+
+     http://vcg.isti.cnr.it/Publications/2010/DPGS10/spidergl.pdf
+
+     FIXME: Perhaps there should be an option of doing this directly as
+     render-to-float-texture.
+
+     */
+    
+    function create_unproject_program() {
+        return process_appearance(function(value, key) {
+            if (key === 'gl_FragColor') {
+                var position_z = appearance['gl_Position'].swizzle('z'),
+                    position_w = appearance['gl_Position'].swizzle('w');
+                var normalized_z = position_z.div(position_w);
+                console.log("normalized_z type", normalized_z.type.repr());
+
+                Shade.debug = true;
+                var result_rgba = Shade.vec(
+                    normalized_z,
+                    normalized_z.mul(1 << 8),
+                    normalized_z.mul(1 << 16),
+                    normalized_z.mul(1 << 24)
+                );
+                return result_rgba;
+            } else
+                return value;
+        });
+    }
 
     var primitive_types = {
         points: ctx.POINTS,
@@ -157,7 +194,7 @@ Facet.bake = function(model, appearance)
     }
     var primitives = [primitive_types[model.type], model.elements];
 
-    // FIXME the batch_id field in the *_opts objects is not
+    // FIXME the batch_id field in the batch_opts objects is not
     // the same as the batch_id in the batch itself. 
     // 
     // The former is used to avoid state switching, while the latter is
@@ -167,32 +204,27 @@ Facet.bake = function(model, appearance)
     // This should not lead to any problems right now but might be confusing to
     // readers.
 
-    var draw_program = create_draw_program();
-    var draw_opts = {
-        program: draw_program,
-        attributes: build_attribute_arrays_obj(draw_program),
-        set_caps: ((appearance.mode && appearance.mode.set_draw_caps) || 
-                   Facet.DrawingMode.standard.set_draw_caps),
-        draw_chunk: draw_chunk,
-        batch_id: largest_batch_id++
-    };
+    function create_batch_opts(program, caps_name) {
+        return {
+            program: program,
+            attributes: build_attribute_arrays_obj(program),
+            set_caps: ((appearance.mode && appearance.mode[caps_name]) ||
+                       Facet.DrawingMode.standard[caps_name]),
+            draw_chunk: draw_chunk,
+            batch_id: largest_batch_id++
+        };
+    }
 
-    var pick_program = create_pick_program(appearance);
-    var pick_opts = {
-        program: pick_program,
-        attributes: build_attribute_arrays_obj(pick_program),
-        set_caps: ((appearance.mode && appearance.mode.set_pick_caps) || 
-                   Facet.DrawingMode.standard.set_pick_caps),
-        draw_chunk: draw_chunk,
-        batch_id: largest_batch_id++
-    };
+    var draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
+    var pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
+    var unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
 
-    var which_opts = [ draw_opts, pick_opts ];
+    var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {
         batch_id: batch_id,
         draw: function() {
-            draw_it(which_opts[Facet.Picker.picking_mode]);
+            draw_it(which_opts[Facet._globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.

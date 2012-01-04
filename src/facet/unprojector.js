@@ -1,0 +1,69 @@
+(function() {
+
+var rb;
+var depth_value;
+var clear_batch;
+
+Facet.Unprojector = {
+    draw_unproject_scene: function(callback) {
+        var _globals = Facet._globals;
+        var ctx = _globals.ctx;
+        if (!rb) {
+            rb = Facet.render_buffer({
+                width: ctx.viewportWidth,
+                height: ctx.viewportHeight,
+                TEXTURE_MAG_FILTER: ctx.NEAREST,
+                TEXTURE_MIN_FILTER: ctx.NEAREST
+            });
+        }
+        // In addition to clearing the depth buffer, we need to fill
+        // the color buffer with
+        // the right depth value. We do it via the batch below.
+
+        if (!clear_batch) {
+            var xy = Shade.make(Facet.attribute_buffer(
+                [-1, -1,   1, -1,   -1,  1,   1,  1], 2));
+            var model = Facet.model({
+                type: "triangle_strip",
+                elements: 4,
+                vertex: xy
+            });
+            depth_value = Shade.uniform("float");
+            clear_batch = Facet.bake(model, {
+                position: Shade.make(xy, depth_value),
+                color: Shade.vec([1,1,1,1])
+            });
+        }
+
+        callback = callback || _globals.display_callback;
+        var old_scene_render_mode = _globals.batch_render_mode;
+        _globals.batch_render_mode = 2;
+        try {
+            rb.render_to_buffer(function() {
+                ctx.clear(ctx.DEPTH_BUFFER_BIT);
+                depth_value.set(ctx.getParameter(ctx.DEPTH_CLEAR_VALUE));
+                callback();
+            });
+        } finally {
+            _globals.batch_render_mode = old_scene_render_mode;
+        }
+    },
+
+    unproject: function(x, y) {
+        var ctx = Facet._globals.ctx;
+        var buf = new ArrayBuffer(4);
+        var result_bytes = new Uint8Array(4);
+        ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
+                       result_bytes);
+        rb.render_to_buffer(function() {
+            ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
+                           result_bytes);
+        });
+        return result_bytes[0] + 
+            result_bytes[1] / (1 << 8) + 
+            result_bytes[2] / (1 << 16) +
+            result_bytes[3] / (1 << 24);
+    }
+};
+
+})();
