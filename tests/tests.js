@@ -1,7 +1,7 @@
 module("Shade tests");
 
 var canvas = document.getElementById("webgl");
-var gl = Facet.initGL(canvas);
+var gl = Facet.init(canvas);
 $(canvas).hide();
 
 test("Shade types", function() {
@@ -94,8 +94,23 @@ test("Shade compilation", function() {
               "}\n" +
               " void main() {\n" +
               "      glsl_name_9 = false ;\n" +
-              "      ((_unique_name_2 > float(0))?cos ( glsl_name_4() ):sin ( glsl_name_4() )) ;\n"+
+              "      ((_unique_name_2 > float(0.0))?cos ( glsl_name_4() ):sin ( glsl_name_4() )) ;\n"+
               " }\n");
+    })();
+
+    raises(function () {
+        Shade.program({
+            gl_Position: Shade.vec(0,0,0,1),
+            gl_FragColor: Shade.vec(1,1,1,1),
+            gl_Nononono: Shade.vec(1,0,0,0)
+        });
+    }, "gl_* are reserved GLSL names, sorry; you can't use them in Facet.");
+    
+    (function () {
+        Shade.program({
+            gl_Position: Shade.vec(16777216, 0, 0, 1),
+            gl_FragColor: Shade.vec(1,1,1,1)
+        });
     })();
 });
 
