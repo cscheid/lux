@@ -3,7 +3,18 @@ Shade.constant = function(v, type)
     var constant_tuple_fun = function(type, args)
     {
         function to_glsl(type, args) {
-            return type + '(' + _.toArray(args).join(', ') + ')';
+            // FIXME this seems incredibly ugly, but we need something
+            // like it, so that numbers are appropriately promoted to floats
+            // in GLSL's syntax.
+
+            var string_args = _.map(args, function(arg) {
+                var v = String(arg);
+                if (v.indexOf(".") === -1) {
+                    return v + ".0";
+                } else
+                    return v;
+            });
+            return type + '(' + _.toArray(string_args).join(', ') + ')';
         }
 
         function matrix_row(i) {
