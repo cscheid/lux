@@ -1,11 +1,13 @@
 Shade.Optimizer = {};
 
+Shade.Optimizer._debug_passes = false;
+
 Shade.Optimizer.transform_expression = function(operations)
 {
     return function(v) {
         var old_v;
         for (var i=0; i<operations.length; ++i) {
-            if (Shade.debug) {
+            if (Shade.debug && Shade.Optimizer._debug_passes) {
                 old_v = v;
             }
             var test = operations[i][0];
@@ -21,7 +23,8 @@ Shade.Optimizer.transform_expression = function(operations)
                 v = v.replace_if(test, fun);
             }
             var new_guid = v.guid;
-            if (Shade.debug && old_guid != new_guid) {
+            if (Shade.debug && Shade.Optimizer._debug_passes &&
+                old_guid != new_guid) {
                 console.log("Pass",operations[i][2],"succeeded");
                 console.log("Before: ");
                 old_v.debug_print();
@@ -390,12 +393,17 @@ Shade.program = function(program_obj)
     var vp_source = vp_compile.source(),
         fp_source = fp_compile.source();
     if (Shade.debug) {
-        console.log("Vertex program final AST:");
-        vp_exp.debug_print();
+        if (Shade.debug && Shade.Optimizer._debug_passes) {
+            console.log("Vertex program final AST:");
+            vp_exp.debug_print();
+        }
         console.log("Vertex program source:");
         console.log(vp_source);
-        console.log("Fragment program final AST:");
-        fp_exp.debug_print();
+        
+        if (Shade.debug && Shade.Optimizer._debug_passes) {
+            console.log("Fragment program final AST:");
+            fp_exp.debug_print();
+        }
         console.log("Fragment program source:");
         console.log(fp_source);
     }
