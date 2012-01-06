@@ -3314,10 +3314,24 @@ Facet.bake = function(model, appearance)
             if (key === 'gl_FragColor') {
                 var position_z = appearance['gl_Position'].swizzle('z'),
                     position_w = appearance['gl_Position'].swizzle('w');
-                var normalized_z = position_z.div(position_w);
-                console.log("normalized_z type", normalized_z.type.repr());
+                var normalized_z = position_z.div(position_w).add(1).div(2);
 
-                Shade.debug = true;
+                // normalized_z ranges from 0 to 1.
+
+                // an opengl z-buffer actually stores information as
+                // 1/z, so that more precision is spent on the close part
+                // of the depth range. Here, we are storing z, and so our efficiency won't be great.
+                // 
+                // However, even 1/z is only an approximation to the ideal scenario, and 
+                // if we're already doing this computation on a shader, it might be worthwhile to use
+                // Thatcher Ulrich's suggestion about constant relative precision using 
+                // a logarithmic mapping:
+
+                // http://tulrich.com/geekstuff/log_depth_buffer.txt
+
+                // This mapping, incidentally, is more directly interpretable as
+                // linear interpolation in log space.
+
                 var result_rgba = Shade.vec(
                     normalized_z,
                     normalized_z.mul(1 << 8),
@@ -3384,6 +3398,8 @@ Facet.bake = function(model, appearance)
     var result = {
         batch_id: batch_id,
         draw: function() {
+            console.log(this.batch_id, Facet._globals.batch_render_mode, 
+                        which_opts[Facet._globals.batch_render_mode]);
             draw_it(which_opts[Facet._globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
@@ -4174,6 +4190,90 @@ Facet.texture = function(opts)
     }
     return texture;
 };
+(function() {
+
+var rb;
+var depth_value;
+var clear_batch;
+    
+Facet.Unprojector = {
+    draw_unproject_scene: function(callback) {
+        var _globals = Facet._globals;
+        var ctx = _globals.ctx;
+        if (!rb) {
+            rb = Facet.render_buffer({
+                width: ctx.viewportWidth,
+                height: ctx.viewportHeight,
+                TEXTURE_MAG_FILTER: ctx.NEAREST,
+                TEXTURE_MIN_FILTER: ctx.NEAREST
+            });
+        }
+        // In addition to clearing the depth buffer, we need to fill
+        // the color buffer with
+        // the right depth value. We do it via the batch below.
+
+        if (!clear_batch) {
+            var xy = Shade.make(Facet.attribute_buffer(
+                [-1, -1,   1, -1,   -1,  1,   1,  1], 2));
+            var model = Facet.model({
+                type: "triangle_strip",
+                elements: 4,
+                vertex: xy
+            });
+            depth_value = Shade.uniform("float");
+            console.log("xy type", xy.type.repr());
+            clear_batch = Facet.bake(model, {
+                position: Shade.vec(xy, depth_value, 1.0),
+                color: Shade.vec(1,1,1,1)
+            });
+        }
+
+        callback = callback || _globals.display_callback;
+        var old_scene_render_mode = _globals.batch_render_mode;
+        _globals.batch_render_mode = 2;
+        rb.render_to_buffer(function() {
+            var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
+            var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
+            ctx.clearColor(old_clear_depth,
+                           old_clear_depth / (1 << 8),
+                           old_clear_depth / (1 << 16),
+                           old_clear_depth / (1 << 24));
+            ctx.clear(ctx.DEPTH_BUFFER_BIT | ctx.COLOR_BUFFER_BIT);
+            try {
+                callback();
+            } finally {
+                console.log(old_clear_color);
+                ctx.clearColor(old_clear_color[0],
+                               old_clear_color[1],
+                               old_clear_color[2],
+                               old_clear_color[3]);
+                _globals.batch_render_mode = old_scene_render_mode;
+            }
+        });
+    },
+
+    unproject: function(x, y) {
+        var ctx = Facet._globals.ctx;
+        var buf = new ArrayBuffer(4);
+        var result_bytes = new Uint8Array(4);
+        ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
+                       result_bytes);
+        rb.render_to_buffer(function() {
+            ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
+                           result_bytes);
+        });
+        console.log(result_bytes[0], 
+                    result_bytes[1],
+                    result_bytes[2], 
+                    result_bytes[3]);
+        return result_bytes[0] / 256 + 
+            result_bytes[1] / (1 << 16) + 
+            result_bytes[2] / (1 << 24);
+        // +  result_bytes[3] / (1 << 32);
+    }
+};
+
+})();
 Facet.Net = {};
 // based on http://calumnymmo.wordpress.com/2010/12/22/so-i-decided-to-wait/
 Facet.Net.buffer_ajax = function(url, handler)
@@ -7036,12 +7136,14 @@ Shade.seq = function(parents)
 };
 Shade.Optimizer = {};
 
+Shade.Optimizer._debug_passes = false;
+
 Shade.Optimizer.transform_expression = function(operations)
 {
     return function(v) {
         var old_v;
         for (var i=0; i<operations.length; ++i) {
-            if (Shade.debug) {
+            if (Shade.debug && Shade.Optimizer._debug_passes) {
                 old_v = v;
             }
             var test = operations[i][0];
@@ -7057,7 +7159,8 @@ Shade.Optimizer.transform_expression = function(operations)
                 v = v.replace_if(test, fun);
             }
             var new_guid = v.guid;
-            if (Shade.debug && old_guid != new_guid) {
+            if (Shade.debug && Shade.Optimizer._debug_passes &&
+                old_guid != new_guid) {
                 console.log("Pass",operations[i][2],"succeeded");
                 console.log("Before: ");
                 old_v.debug_print();
@@ -7426,12 +7529,17 @@ Shade.program = function(program_obj)
     var vp_source = vp_compile.source(),
         fp_source = fp_compile.source();
     if (Shade.debug) {
-        console.log("Vertex program final AST:");
-        vp_exp.debug_print();
+        if (Shade.debug && Shade.Optimizer._debug_passes) {
+            console.log("Vertex program final AST:");
+            vp_exp.debug_print();
+        }
         console.log("Vertex program source:");
         console.log(vp_source);
-        console.log("Fragment program final AST:");
-        fp_exp.debug_print();
+        
+        if (Shade.debug && Shade.Optimizer._debug_passes) {
+            console.log("Fragment program final AST:");
+            fp_exp.debug_print();
+        }
         console.log("Fragment program source:");
         console.log(fp_source);
     }
