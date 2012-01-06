@@ -154,10 +154,24 @@ Facet.bake = function(model, appearance)
             if (key === 'gl_FragColor') {
                 var position_z = appearance['gl_Position'].swizzle('z'),
                     position_w = appearance['gl_Position'].swizzle('w');
-                var normalized_z = position_z.div(position_w);
-                console.log("normalized_z type", normalized_z.type.repr());
+                var normalized_z = position_z.div(position_w).add(1).div(2);
 
-                Shade.debug = true;
+                // normalized_z ranges from 0 to 1.
+
+                // an opengl z-buffer actually stores information as
+                // 1/z, so that more precision is spent on the close part
+                // of the depth range. Here, we are storing z, and so our efficiency won't be great.
+                // 
+                // However, even 1/z is only an approximation to the ideal scenario, and 
+                // if we're already doing this computation on a shader, it might be worthwhile to use
+                // Thatcher Ulrich's suggestion about constant relative precision using 
+                // a logarithmic mapping:
+
+                // http://tulrich.com/geekstuff/log_depth_buffer.txt
+
+                // This mapping, incidentally, is more directly interpretable as
+                // linear interpolation in log space.
+
                 var result_rgba = Shade.vec(
                     normalized_z,
                     normalized_z.mul(1 << 8),
@@ -224,6 +238,8 @@ Facet.bake = function(model, appearance)
     var result = {
         batch_id: batch_id,
         draw: function() {
+            console.log(this.batch_id, Facet._globals.batch_render_mode, 
+                        which_opts[Facet._globals.batch_render_mode]);
             draw_it(which_opts[Facet._globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that

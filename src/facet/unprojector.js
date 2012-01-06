@@ -3,7 +3,7 @@
 var rb;
 var depth_value;
 var clear_batch;
-
+    
 Facet.Unprojector = {
     draw_unproject_scene: function(callback) {
         var _globals = Facet._globals;
@@ -29,24 +29,35 @@ Facet.Unprojector = {
                 vertex: xy
             });
             depth_value = Shade.uniform("float");
+            console.log("xy type", xy.type.repr());
             clear_batch = Facet.bake(model, {
-                position: Shade.make(xy, depth_value),
-                color: Shade.vec([1,1,1,1])
+                position: Shade.vec(xy, depth_value, 1.0),
+                color: Shade.vec(1,1,1,1)
             });
         }
 
         callback = callback || _globals.display_callback;
         var old_scene_render_mode = _globals.batch_render_mode;
         _globals.batch_render_mode = 2;
-        try {
-            rb.render_to_buffer(function() {
-                ctx.clear(ctx.DEPTH_BUFFER_BIT);
-                depth_value.set(ctx.getParameter(ctx.DEPTH_CLEAR_VALUE));
+        rb.render_to_buffer(function() {
+            var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
+            var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
+            ctx.clearColor(old_clear_depth,
+                           old_clear_depth / (1 << 8),
+                           old_clear_depth / (1 << 16),
+                           old_clear_depth / (1 << 24));
+            ctx.clear(ctx.DEPTH_BUFFER_BIT | ctx.COLOR_BUFFER_BIT);
+            try {
                 callback();
-            });
-        } finally {
-            _globals.batch_render_mode = old_scene_render_mode;
-        }
+            } finally {
+                console.log(old_clear_color);
+                ctx.clearColor(old_clear_color[0],
+                               old_clear_color[1],
+                               old_clear_color[2],
+                               old_clear_color[3]);
+                _globals.batch_render_mode = old_scene_render_mode;
+            }
+        });
     },
 
     unproject: function(x, y) {
@@ -59,10 +70,14 @@ Facet.Unprojector = {
             ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                            result_bytes);
         });
-        return result_bytes[0] + 
-            result_bytes[1] / (1 << 8) + 
-            result_bytes[2] / (1 << 16) +
-            result_bytes[3] / (1 << 24);
+        console.log(result_bytes[0], 
+                    result_bytes[1],
+                    result_bytes[2], 
+                    result_bytes[3]);
+        return result_bytes[0] / 256 + 
+            result_bytes[1] / (1 << 16) + 
+            result_bytes[2] / (1 << 24);
+        // +  result_bytes[3] / (1 << 32);
     }
 };
 
