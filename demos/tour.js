@@ -103,7 +103,7 @@ function init_webgl()
          S.vec(0,1,0,point_alpha),
          S.vec(0,0,1,point_alpha)])(data.species);
 
-    tour_batch = Facet.Marks.dots({
+    tour_batch = Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
         xy: xy_expression,
         xy_scale: S.Utils.linear(xy_center.sub(xy_distance),
