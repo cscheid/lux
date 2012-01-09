@@ -1,4 +1,3 @@
-// FIXME: Shade.set should be (name, exp), not (exp, name)
 Shade.set = function(exp, name)
 {
     exp = Shade.make(exp);

@@ -355,7 +355,10 @@ Shade.Exp = {
     // around, such as the things we move around when attributes are 
     // referenced in fragment programs
     // 
-    // FIXME: it's currently easy to create bad expressions with these.
+    // NB: it's easy to create bad expressions with these.
+    //
+    // The general rule is that types should be preserved (although
+    // that might not *always* be the case)
     find_if: function(check) {
         return _.select(this.sorted_sub_expressions(), check);
     },

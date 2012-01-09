@@ -22,7 +22,7 @@ Shade.constant = function(v, type)
     var constant_tuple_fun = function(type, args)
     {
         function to_glsl(type, args) {
-            // FIXME this seems incredibly ugly, but we need something
+            // this seems incredibly ugly, but we need something
             // like it, so that numbers are appropriately promoted to floats
             // in GLSL's syntax.
 

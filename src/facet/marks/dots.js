@@ -1,4 +1,3 @@
-// FIXME: alpha=0 points should discard because of depth buffer
 Facet.Marks.dots = function(opts)
 {
     opts = _.defaults(opts, {
@@ -54,7 +53,12 @@ Facet.Marks.dots = function(opts)
         color: Shade.selection(opts.plain, plain_fill_color, alpha_fill_color),
         mode: opts.mode
     });
-    // FIXME there must be a better way to do this.
+
+    /* We pass the gl_Position attribute explicitly because some other
+     call might want to explicitly use the same position of the dots marks.
+
+     This is the exact use case of dot-and-line graph drawing.
+     */
     result.gl_Position = gl_Position;
     return result;
 };
