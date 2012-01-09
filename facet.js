@@ -3083,11 +3083,12 @@ mat.str = function(m1)
 };
 
 })();
-// FIXME DO NOT POLLUTE GLOBAL NAMESPACE
+// FIXME Can I make these two the same function call?
+function facet_constant_type(obj)
 // it is convenient in many places to accept as a parameter a scalar,
 // a vector or a matrix. This function tries to
-// tell them apart.
-function constant_type(obj)
+// tell them apart. Functions such as vec.make and mat.make populate
+// the _type slot. This is ugly, but extremely convenient.
 {
     var t = typeof obj;
     if (t === "boolean")         return "boolean";
@@ -3102,7 +3103,7 @@ function constant_type(obj)
 //////////////////////////////////////////////////////////////////////////////
 // http://javascript.crockford.com/remedial.html
 
-function typeOf(value) 
+function facet_typeOf(value) 
 {
     var s = typeof value;
     if (s === 'object') {
@@ -3200,7 +3201,7 @@ function draw_it(batch)
 
         for (key in attributes) {
             var attr = program[key];
-            if (typeof attr !== 'undefined') {
+            if (!_.isUndefined(attr)) {
                 ctx.enableVertexAttribArray(attr);
                 attributes[key].bind(attr);
             }
@@ -3211,10 +3212,10 @@ function draw_it(batch)
             var key = uniform.uniform_name;
             var call = uniform.uniform_call,
                 value = uniform.get();
-            if (typeOf(value) === 'undefined') {
+            if (_.isUndefined(value)) {
                 throw "uniform " + key + " has not been set.";
             }
-            var t = constant_type(value);
+            var t = facet_constant_type(value);
             if (t === "other") {
                 uniform._facet_active_uniform = (function(uid, cat) {
                     return function(v) {
@@ -3357,7 +3358,7 @@ Facet.bake = function(model, appearance)
     var primitive_type = primitive_types[model.type];
     var elements = model.elements;
     var draw_chunk;
-    if (typeOf(model.elements) === 'number') {
+    if (facet_typeOf(elements) === 'number') {
         draw_chunk = function() {
             ctx.drawArrays(primitive_type, 0, elements);
         };
@@ -3632,7 +3633,7 @@ Facet.fresh_pick_id = function(quantity)
 })();
 Facet.id_buffer = function(vertex_array)
 {
-    if (typeOf(vertex_array) !== 'array')
+    if (facet_typeOf(vertex_array) !== 'array')
         throw "id_buffer expects array of integers";
     var typedArray = new Int32Array(vertex_array);
     var byteArray = new Uint8Array(typedArray.buffer);
@@ -3671,12 +3672,7 @@ Facet.init = function(canvas, opts)
 
     Facet._globals.display_callback = (opts.display || function() {});
 
-    if (typeof opts === "undefined")
-        opts = {};
-    // if (typeof listeners === "undefined")
-    //     listeners = {};
     try {
-//         gl = WebGLDebugUtils.makeDebugContext(canvas.getContext("experimental-webgl"));
         if ("attributes" in opts)
             gl = WebGLUtils.setupWebGL(canvas, opts.attributes);
         else
@@ -3697,7 +3693,7 @@ Facet.init = function(canvas, opts)
         for (var i=0; i<names.length; ++i) {
             var ename = names[i];
             var listener = opts[ename];
-            if (typeof listener != "undefined")
+            if (!_.isUndefined(listener))
                 canvas.addEventListener(ename, listener, false);
         }
         var ext;
@@ -3870,7 +3866,7 @@ Facet.model = function(input)
             if (v._shade_type === 'element_buffer')
                 // example: 'elements: Facet.element_buffer(...)'
                 result.elements = Shade.make(v);
-            else if (typeOf(v) === 'array')
+            else if (facet_typeOf(v) === 'array')
                 // example: 'elements: [0, 1, 2, 3]'
                 result.elements = Shade.make(Facet.element_buffer(v));
             else
@@ -3882,9 +3878,9 @@ Facet.model = function(input)
             // example: 'vertex: Facet.attribute_buffer(...)'
             result[k] = Shade.make(v);
             n_elements = v.numItems;
-        } else if (typeOf(v) === "array") { // ... or a list of per-vertex things
+        } else if (facet_typeOf(v) === "array") { // ... or a list of per-vertex things
             // These things can be shade vecs
-            if (typeOf(v[0]) !== "array") {
+            if (facet_typeOf(v[0]) !== "array") {
                 // example: 'color: [Shade.color('white'), Shade.color('blue'), ...]
                 // assume it's a list of shade vecs, assume they all have the same dimension
                 var dimension = v[0].type.vec_dimension();
@@ -3915,7 +3911,7 @@ Facet.model = function(input)
     }
     if (!("elements" in result)) {
         // populate automatically using some sensible guess inferred from the attributes above
-        if (typeOf(n_elements) === "undefined") {
+        if (_.isUndefined(n_elements)) {
             throw "could not figure out how many elements are in this model; "
                 + "consider passing an 'elements' field";
         } else {
@@ -4602,7 +4598,7 @@ Shade._create_concrete = function(base, requirements)
             if (!(field in new_obj)) {
                 throw "new expression missing " + requirements[i];
             }
-            if (typeOf(new_obj[field]) === 'undefined') {
+            if (_.isUndefined(new_obj[field])) {
                 throw "field '" + field + "' cannot be undefined";
             }
         }
@@ -4616,16 +4612,16 @@ Shade._create_concrete = function(base, requirements)
 Shade.memoize_on_field = function(field_name, fun)
 {
     return function() {
-        if (typeOf(this._caches[field_name]) === "undefined") {
+        if (_.isUndefined(this._caches[field_name])) {
             this._caches[field_name] = {};
         }
-        if (typeOf(this._caches[field_name][arguments[0]]) === "undefined") {
+        if (_.isUndefined(this._caches[field_name][arguments[0]])) {
             this._caches[field_name][arguments[0]] = fun.apply(this, arguments);
         }
         return this._caches[field_name][arguments[0]];
     };
 }
-
+// FIXME DO NOT POLLUTE GLOBAL NAMESPACE These really need to go someplace else.
 function zipWith(f, l1, l2)
 {
     var result = [];
@@ -4659,7 +4655,7 @@ Shade.Types.base_t = {
     is_function: function() { return false; },
     is_sampler:  function() { return false; },
     equals: function(other) {
-        if (typeOf(other) === 'undefined')
+        if (_.isUndefined(other))
             throw "type cannot be compared to undefined";
         return this.repr() == other.repr();
     },
@@ -4949,16 +4945,16 @@ Shade.Types.function_t = function(return_type, param_types) {
 // static polymorphism
 Shade.make = function(exp)
 {
-    var t = typeOf(exp);
-    if (t === 'undefined') {
-        throw "Shade.make does not support undefined";
+    if (_.isUndefined(exp)) {
+        throw "expected a value, got undefined instead";
     }
+    var t = facet_typeOf(exp);
     if (t === 'boolean' || t === 'number') {
         return Shade.constant(exp);
     } else if (t === 'array') {
         return Shade.seq(exp);
     }
-    t = constant_type(exp);
+    t = facet_constant_type(exp);
     if (t === 'vector' || t === 'matrix') {
         return Shade.constant(exp);
     } else if (exp._shade_type === 'attribute_buffer') {
@@ -4998,7 +4994,7 @@ Shade.CompilationContext = function(compile_type) {
         //     this.min_version = Math.max(this.min_version, version);
         // },
         declare: function(decltype, glsl_name, type, declmap) {
-            if (typeof type === 'undefined') {
+            if (_.isUndefined(type)) {
                 throw "must define type";                
             }
             if (!(glsl_name in declmap)) {
@@ -5080,7 +5076,7 @@ Shade.CompilationContext = function(compile_type) {
 };
 Shade.Exp = {
     debug_print: function(indent) {
-        if (indent === undefined) indent = 0;
+        if (_.isUndefined(indent)) indent = 0;
         var str = "";
         for (var i=0; i<indent; ++i) { str = str + ' '; }
         if (this.parents.length === 0) 
@@ -5124,7 +5120,7 @@ Shade.Exp = {
                 return;
             }
             var parents = exp.parents;
-            if (typeOf(parents) === "undefined") {
+            if (_.isUndefined(parents)) {
                 throw "Internal error: expression " + exp.eval()
                     + " has undefined parents.";
             }
@@ -5363,7 +5359,7 @@ Shade.Exp = {
             },
             constant_value: Shade.memoize_on_field("_constant_value", function() {
                 var a = this.parents[0].constant_value();
-                if (typeOf(a) === 'array') // this was a GLSL array of stuff
+                if (facet_typeOf(a) === 'array') // this was a GLSL array of stuff
                     return a[this.parents[1].constant_value()];
                 else { // this was a vec.
                     if (a._type === 'vector') {
@@ -5645,9 +5641,9 @@ Shade.constant = function(v, type)
         });
     };
 
-    var t = constant_type(v);
+    var t = facet_constant_type(v);
     if (t === 'other') {
-        t = typeOf(v);
+        t = facet_typeOf(v);
         if (t === 'array') {
             var new_v = v.map(Shade.make);
             var array_size = new_v.length;
@@ -5709,7 +5705,7 @@ Shade.constant = function(v, type)
         var d = v.length;
         if (d < 2 && d > 4)
             throw "invalid length for constant vector: " + v;
-        var el_ts = _.map(v, function(t) { return typeOf(t); });
+        var el_ts = _.map(v, function(t) { return facet_typeOf(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
             throw "not all constant params have the same types";
         }
@@ -5735,7 +5731,7 @@ Shade.constant = function(v, type)
         }
         return constant_tuple_fun(computed_t, v);
     }
-    throw "type error: constant_type returned bogus value?";
+    throw "internal error: facet_constant_type returned bogus value";
 };
 
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };
@@ -5796,11 +5792,11 @@ Shade.uniform = function(type, v)
     ];
 
     var uniform_name = Shade.unique_name();
-    if (typeof type === 'undefined') throw "uniform requires type";
+    if (_.isUndefined(type)) throw "uniform requires type";
     if (typeof type === 'string') type = Shade.basic(type);
     var value;
     var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
-    if (typeof call !== 'undefined') {
+    if (!_.isUndefined(call)) {
         call = call[1];
     } else {
         throw "Unsupported type " + type.repr() + " for uniform.";
@@ -5835,7 +5831,7 @@ Shade.uniform = function(type, v)
         },
         // FIXME: type checking
         set: function(v) {
-            var t = constant_type(v);
+            var t = facet_constant_type(v);
             if (t === "shade_expression")
                 v = v.constant_value();
             value = v;
@@ -5870,7 +5866,7 @@ Shade.attribute_from_buffer = function(buffer)
         var itemTypeMap = [ undefined, Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec3, Shade.Types.vec4 ];
         var itemType = itemTypeMap[buffer.itemSize];
         var itemName;
-        if (typeof buffer._shade_name === 'undefined') {
+        if (_.isUndefined(buffer._shade_name)) {
             itemName = Shade.unique_name();
             buffer._shade_name = itemName;
         } else {
@@ -5885,7 +5881,7 @@ Shade.attribute_from_buffer = function(buffer)
 
 Shade.attribute = function(name, type)
 {
-    if (typeof type === 'undefined') throw "attribute requires type";
+    if (_.isUndefined(type)) throw "attribute requires type";
     if (typeof type === 'string') type = Shade.basic(type);
     return Shade._create_concrete_exp( {
         parents: [],
@@ -5920,8 +5916,8 @@ Shade.attribute = function(name, type)
 // FIXME: typechecking
 Shade.varying = function(name, type)
 {
-    if (typeof type === 'undefined') throw "varying requires type";
-    if (typeof type === 'string') type = Shade.basic(type);
+    if (_.isUndefined(type)) throw "varying requires type";
+    if (facet_typeOf(type) === 'string') type = Shade.basic(type);
     return Shade._create_concrete_exp( {
         parents: [],
         type: type,
@@ -6133,9 +6129,9 @@ Shade.sub = function() {
 Shade.div = function() {
     if (arguments.length === 0) throw "div needs at least two arguments";
     function div_type_resolver(t1, t2) {
-        if (typeof t1 === 'undefined')
+        if (_.isUndefined(t1))
             throw "internal error: t1 multiplication with undefined type";
-        if (typeof t2 === 'undefined')
+        if (_.isUndefined(t2))
             throw "internal error: t2 multiplication with undefined type";
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
@@ -6182,7 +6178,7 @@ Shade.div = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         };
-        var t1 = constant_type(v1), t2 = constant_type(v2);
+        var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { return x / y; },
                       vector: function (x, y) { 
@@ -6229,9 +6225,9 @@ Shade.mul = function() {
     if (arguments.length === 0) throw "mul needs at least one argument";
     if (arguments.length === 1) return arguments[0];
     function mul_type_resolver(t1, t2) {
-        if (typeof t1 === 'undefined')
+        if (_.isUndefined(t1))
             throw "t1 multiplication with undefined type?";
-        if (typeof t2 === 'undefined')
+        if (_.isUndefined(t2))
             throw "t2 multiplication with undefined type?";
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
@@ -6286,7 +6282,7 @@ Shade.mul = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         }
-        var t1 = constant_type(v1), t2 = constant_type(v2);
+        var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },
@@ -6331,7 +6327,7 @@ Shade.vec = function()
         var arg = Shade.make(arguments[i]);
         parents.push(arg);
         parent_offsets.push(total_size);
-        if (typeOf(vec_type) === 'undefined')
+        if (_.isUndefined(vec_type))
             vec_type = arg.type.element_type(0);
         else if (!vec_type.equals(arg.type.element_type(0)))
             throw "vec requires equal types";
@@ -6396,7 +6392,7 @@ Shade.vec = function()
             var result = [];
             var parent_values = _.each(this.parents, function(v) {
                 var c = v.constant_value();
-                if (typeOf(c) === 'number')
+                if (facet_typeOf(c) === 'number')
                     result.push(c);
                 else
                     for (var i=0; i<c.length; ++i)
@@ -6512,7 +6508,7 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
     for (var i=0; i<type_resolving_list.length; ++i)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
             var t = type_resolving_list[i][j];
-            if (typeof(t) === 'undefined')
+            if (_.isUndefined(t))
                 throw "undefined type in type_resolver";
         }
     // takes a list of lists of possible argument types, returns a function to 
@@ -7193,12 +7189,12 @@ Shade.Optimizer.is_zero = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = constant_type(v);
+    var t = facet_constant_type(v);
     if (t === 'number')
         return v === 0;
     if (t === 'vector')
         return _.all(v, function (x) { return x === 0; });
-    if (typeof(v) === 'matrix')
+    if (facet_typeOf(v) === 'matrix')
         return _.all(v, function (x) { return x === 0; });
     return false;
 };
@@ -7208,7 +7204,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = constant_type(v);
+    var t = facet_constant_type(v);
     if (t === 'number')
         return v === 1;
     if (t === 'vector') {
@@ -7319,7 +7315,7 @@ Shade.Optimizer.vec_at_constant_index = function(exp)
     if (!exp.parents[1].is_constant())
         return false;
     var v = exp.parents[1].constant_value();
-    if (typeOf(v) !== "number")
+    if (facet_typeOf(v) !== "number")
         return false;
     var t = exp.parents[0].type;
     if (t.equals(Shade.Types.vec2) && (v >= 0) && (v <= 1))
@@ -7846,33 +7842,35 @@ Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (typeOf(a) === 'number' ||
-            typeOf(a) === 'boolean')
+        if (facet_typeOf(a) === 'number' ||
+            facet_typeOf(a) === 'boolean')
             return a === b;
-        if (typeOf(a) === 'array')
+        if (facet_typeOf(a) === 'array')
             return _.all(zipWith(function(a, b) { return a === b; }, a, b),
                          function (x) { return x; });
-        if (constant_type(a) === 'vector' ||
-            constant_type(a) === 'matrix')
+        // FIXME BUGGY
+        if (facet_constant_type(a) === 'vector' ||
+            facet_constant_type(a) === 'matrix')
             return a.eql(b);
-        throw "internal error: unrecognized type " + typeOf(a) + 
-            " " + constant_type(a);
+        throw "internal error: unrecognized type " + facet_typeOf(a) + 
+            " " + facet_constant_type(a);
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (typeOf(a) === 'number' ||
-            typeOf(a) === 'boolean')
+        if (facet_typeOf(a) === 'number' ||
+            facet_typeOf(a) === 'boolean')
             return a !== b;
-        if (typeOf(a) === 'array')
+        if (facet_typeOf(a) === 'array')
             return _.any(zipWith(function(a, b) { return a !== b; }, a, b),
                          function (x) { return x; });
-        if (constant_type(a) === 'vector' ||
-            constant_type(a) === 'matrix')
-            return !a.eql(b);
-        throw "internal error: unrecognized type " + typeOf(a) + 
-            " " + constant_type(a);
+        // FIXME BUGGY
+        if (facet_constant_type(a) === 'vector' ||
+            facet_constant_type(a) === 'matrix')
+            return !a.eql(b); 
+        throw "internal error: unrecognized type " + facet_typeOf(a) + 
+            " " + facet_constant_type(a);
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 
@@ -8404,7 +8402,7 @@ Facet.Models.flat_cube = function() {
 Facet.Models.mesh = function(u_secs, v_secs) {
     var verts = [];
     var elements = [];
-    if (typeof v_secs === "undefined") v_secs = u_secs;
+    if (_.isUndefined(v_secs)) v_secs = u_secs;
     if (v_secs <= 0) throw "v_secs must be positive";
     if (u_secs <= 0) throw "u_secs must be positive";
     v_secs = Math.floor(v_secs);
@@ -8447,7 +8445,7 @@ Facet.Models.mesh = function(u_secs, v_secs) {
 Facet.Models.sphere = function(lat_secs, long_secs) {
     var verts = [];
     var elements = [];
-    if (typeof long_secs === "undefined") long_secs = lat_secs;
+    if (_.isUndefined(long_secs)) long_secs = lat_secs;
     if (lat_secs <= 0) throw "lat_secs must be positive";
     if (long_secs <= 0) throw "long_secs must be positive";
     lat_secs = Math.floor(lat_secs);
@@ -8483,7 +8481,7 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
                       S.sin(phi),
                       S.cos(theta).mul(cosphi), 1)
     });
-},
+}
 Facet.Models.square = function() {
     var uv = Shade.make(Facet.attribute_buffer([0, 0, 1, 0, 0, 1, 1, 1], 2));
     return Facet.model({
@@ -8658,7 +8656,7 @@ var css_colors = {
 var rgb_re = / *rgb *\( *(\d+) *, *(\d+) *, *(\d+) *\) */;
 Shade.color = function(spec, alpha)
 {
-    if (typeOf(alpha) === 'undefined')
+    if (_.isUndefined(alpha))
         alpha = 1;
     if (spec[0] === '#') {
         if (spec.length === 4) {
