@@ -65,7 +65,7 @@ Facet.Camera.perspective = function(opts)
             else if (t.equals(Shade.Types.vec4))
                 return vp_uniform.mul(model_vertex);
             else
-                throw "Type mismatch: expected vec, got " + t.repr();
+                throw "expected vec, got " + t.repr();
         },
         eye_vertex: function(model_vertex) {
             var t = model_vertex.type;
@@ -76,7 +76,7 @@ Facet.Camera.perspective = function(opts)
             else if (t.equals(Shade.Types.vec4))
                 return view_uniform.mul(model_vertex);
             else
-                throw "Type mismatch: expected vec, got " + t.repr();
+                throw "expected vec, got " + t.repr();
         }
     };
 };

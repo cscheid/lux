@@ -169,7 +169,7 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
         if (constant_type(a) === 'vector' ||
             constant_type(a) === 'matrix')
             return a.eql(b);
-        throw "internal error: Unrecognized type " + typeOf(a) + 
+        throw "internal error: unrecognized type " + typeOf(a) + 
             " " + constant_type(a);
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
@@ -185,7 +185,7 @@ Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
         if (constant_type(a) === 'vector' ||
             constant_type(a) === 'matrix')
             return !a.eql(b);
-        throw "internal error: Unrecognized type " + typeOf(a) + 
+        throw "internal error: unrecognized type " + typeOf(a) + 
             " " + constant_type(a);
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };

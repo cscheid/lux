@@ -33,19 +33,19 @@ Facet.render_buffer = function(opts)
         case ctx.FRAMEBUFFER_COMPLETE:
             break;
         case ctx.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+            throw("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
             break;
         case ctx.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+            throw("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
             break;
         case ctx.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
+            throw("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
             break;
         case ctx.FRAMEBUFFER_UNSUPPORTED:
-            throw("Incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED");
+            throw("incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED");
             break;
         default:
-            throw("Incomplete framebuffer: " + status);
+            throw("incomplete framebuffer: " + status);
     }
 
     ctx.bindTexture(ctx.TEXTURE_2D, null);

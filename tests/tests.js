@@ -126,7 +126,7 @@ test("Shade compilation", function() {
             gl_Nononono: Shade.vec(1,0,0,0)
         });
     }, function(e) {
-        return e === "gl_* are reserved GLSL names, sorry; you can't use them in Facet.";
+        return e === "gl_* are reserved GLSL names";
     }, "reserved GLSL names in Facet");
     
     (function () {

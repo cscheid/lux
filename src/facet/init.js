@@ -42,7 +42,7 @@ Facet.init = function(canvas, opts)
         else
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
-            throw "Failed context creation";
+            throw "failed context creation";
         if (opts.debugging) {
             function throwOnGLError(err, funcName, args) {
                 throw WebGLDebugUtils.glEnumToString(err) + 
@@ -68,7 +68,7 @@ Facet.init = function(canvas, opts)
             // FIXME design something like progressive enhancement for these cases. HARD!
             alert("OES_texture_float is not available on your browser/computer! " +
                   "Facet will not work, sorry.");
-            throw "Insufficient GPU support";
+            throw "insufficient GPU support";
         } else {
             gl.getExtension("oes_texture_float");
         }
@@ -77,7 +77,7 @@ Facet.init = function(canvas, opts)
     }
     if (!gl) {
         alert("Could not initialise WebGL, sorry :-(");
-        throw "Failed initalization";
+        throw "failed initalization";
     }
 
     gl.display = function() {

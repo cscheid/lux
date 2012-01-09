@@ -34,10 +34,10 @@ Shade.CompilationContext = function(compile_type) {
             } else {
                 var existing_type = declmap[glsl_name];
                 if (!existing_type.equals(type)) {
-                    throw ("Compile error: Different expressions use "
+                    throw ("compile error: different expressions use "
                            + "conflicting types for '" + decltype + " " + glsl_name
                            + "': '" + existing_type.repr() + "', '"
-                           + type.repr() + "'.");
+                           + type.repr() + "'");
                 }
             }
         },

@@ -12,11 +12,11 @@ Shade.Types.base_t = {
     is_sampler:  function() { return false; },
     equals: function(other) {
         if (typeOf(other) === 'undefined')
-            throw "Type.equals can't be compared to undefined";
+            throw "type cannot be compared to undefined";
         return this.repr() == other.repr();
     },
     swizzle: function(pattern) {
-        throw "type '" + this.repr() + "' does not support swizzling.";
+        throw "type '" + this.repr() + "' does not support swizzling";
     },
     element_type: function(i) {
         throw "invalid call: atomic expression";

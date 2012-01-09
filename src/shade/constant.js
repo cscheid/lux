@@ -88,7 +88,7 @@ Shade.constant = function(v, type)
                     this.type.equals(Shade.Types.mat4))
                     return mat[Math.sqrt(args.length)].make(args);
                 else
-                    throw "Internal Error: constant of unknown type";
+                    throw "internal error: constant of unknown type";
             }),
             compile: function(ctx) {},
             parents: [],
@@ -138,7 +138,7 @@ Shade.constant = function(v, type)
                 }
             });
         } else {
-            throw "type error: constant should be bool, number, vector, matrix or array. Got " + t
+            throw "type error: constant should be bool, number, vector, matrix or array. got " + t
             + " instead";
         }
     }
@@ -159,10 +159,10 @@ Shade.constant = function(v, type)
     if (t === 'vector') {
         var d = v.length;
         if (d < 2 && d > 4)
-            throw "Invalid length for constant vector: " + v;
+            throw "invalid length for constant vector: " + v;
         var el_ts = _.map(v, function(t) { return typeOf(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
-            throw "Not all constant params have the same types;";
+            throw "not all constant params have the same types";
         }
         if (el_ts[0] === "number") {
             var computed_t = Shade.basic('vec' + d);

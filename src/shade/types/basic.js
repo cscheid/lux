@@ -51,7 +51,7 @@ Shade.basic = function(repr) {
                 group_res = [ /[rgba]/, /[xyzw]/, /[stpq]/ ];
                 break;
             default:
-                throw "Internal error?!";
+                throw "internal error on swizzle";
             };
             if (!pattern.match(valid_re)) {
                 throw "invalid swizzle pattern '" + pattern + "'";
@@ -126,7 +126,7 @@ Shade.basic = function(repr) {
                 return Shade.basic("int");
             if (repr == "float")
                 return Shade.basic("float");
-            throw "datatype not array!";
+            throw "datatype not array";
         },
         size_for_vec_constructor: function() {
             var repr = this.repr();
@@ -144,7 +144,7 @@ Shade.basic = function(repr) {
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")  
                 return parseInt(repr[3]);
-            throw "datatype not array!";
+            throw "datatype not array";
         },
         is_floating: function() {
             var repr = this.repr();
@@ -190,10 +190,10 @@ Shade.basic = function(repr) {
                 else if (f === 'i')
                     return Shade.Types.int_t;
                 else
-                    throw "Internal error";
+                    throw "internal error";
             } else
                 // FIXME implement this
-                throw "Unimplemented for mats";
+                throw "unimplemented for mats";
         }
     });
 };

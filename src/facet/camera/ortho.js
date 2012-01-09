@@ -79,7 +79,7 @@ Facet.Camera.ortho = function(opts)
             else if (t.equals(Shade.Types.vec4))
                 return proj_uniform.mul(model_vertex);
             else
-                throw "Type mismatch: expected vec, got " + t.repr();
+                throw "expected vec, got " + t.repr();
         }
     };
 };

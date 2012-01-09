@@ -12,9 +12,9 @@ Facet.Marks.dots = function(opts)
     });
 
     if (!opts.position)
-        throw "Facet.Marks.dots expects parameter 'position'";
+        throw "missing required parameter 'position'";
     if (!opts.elements)
-        throw "Facet.Marks.dots expects parameter 'elements'";
+        throw "missing required parameter 'elements'";
 
     var S = Shade;
 

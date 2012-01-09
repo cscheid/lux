@@ -176,7 +176,7 @@ Shade.color = function(spec, alpha)
     }
     if (spec in css_colors)
         return Shade.color(css_colors[spec], alpha);
-    throw "Unrecognized color specifier " + spec;
+    throw "unrecognized color specifier " + spec;
 };
 }());
 
@@ -187,14 +187,14 @@ Shade.Colors.alpha = function(color, alpha)
     color = Shade.make(color);
     alpha = Shade.make(alpha);
     if (!alpha.type.equals(Shade.Types.float_t))
-        throw "Shade.Colors.alpha type error: alpha parameter must be float";
+        throw "alpha parameter must be float";
     if (color.type.equals(Shade.Types.vec4)) {
         return Shade.vec(color.swizzle("rgb"), alpha);
     }
     if (color.type.equals(Shade.Types.vec3)) {
         return Shade.vec(color, alpha);
     }
-    throw "Shade.Colors.alpha type error: color parameter must be vec3 or vec4";
+    throw "color parameter must be vec3 or vec4";
 };
 
 Shade.Exp.alpha = function(alpha)

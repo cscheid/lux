@@ -21,7 +21,7 @@ Shade.set = function(exp, name)
             if ((ctx.compile_type !== Shade.VERTEX_PROGRAM_COMPILE) &&
                 (name !== "gl_FragColor") &&
                 (name.substring(0, 11) !== "gl_FragData")) {
-                throw ("The only allowed output variables on a fragment"
+                throw ("the only allowed output variables on a fragment"
                        + " shader are gl_FragColor and gl_FragData[]");
             }
             if (name !== "gl_FragColor" &&

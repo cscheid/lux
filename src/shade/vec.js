@@ -17,7 +17,7 @@ Shade.vec = function()
     parent_offsets.push(total_size);
     if (total_size < 1 || total_size > 4) {
         throw "vec constructor requires resulting width to be between "
-            + "1 and 4, got " + total_size + " instead.";
+            + "1 and 4, got " + total_size + " instead";
     }
     var type;
     if (vec_type.equals(Shade.Types.float_t)) {
@@ -27,7 +27,7 @@ Shade.vec = function()
     } else if (vec_type.equals(Shade.Types.bool_t)) {
         type = Shade.basic("bvec" + total_size);
     } else {
-        throw "vec type must be bool, int, or float.";
+        throw "vec type must be bool, int, or float";
     }
     
     return Shade._create_concrete_value_exp({
@@ -44,7 +44,7 @@ Shade.vec = function()
                     return this.parents[j].element(i);
                 i = i - sz;
             }
-            throw "Element " + old_i + " out of bounds (size=" 
+            throw "element " + old_i + " out of bounds (size=" 
                 + total_size + ")";
         },
         element_is_constant: function(i) {
@@ -55,7 +55,7 @@ Shade.vec = function()
                     return this.parents[j].element_is_constant(i);
                 i = i - sz;
             }
-            throw "Element " + old_i + " out of bounds (size=" 
+            throw "element " + old_i + " out of bounds (size=" 
                 + total_size + ")";
         },
         element_constant_value: function(i) {
@@ -66,7 +66,7 @@ Shade.vec = function()
                     return this.parents[j].element_constant_value(i);
                 i = i - sz;
             }
-            throw "Element " + old_i + " out of bounds (size=" 
+            throw "element " + old_i + " out of bounds (size=" 
                 + total_size + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function () {

@@ -176,9 +176,9 @@ Shade.div = function() {
     if (arguments.length === 0) throw "div needs at least two arguments";
     function div_type_resolver(t1, t2) {
         if (typeof t1 === 'undefined')
-            throw "t1 multiplication with undefined type?";
+            throw "internal error: t1 multiplication with undefined type";
         if (typeof t2 === 'undefined')
-            throw "t2 multiplication with undefined type?";
+            throw "internal error: t2 multiplication with undefined type";
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4],
@@ -208,8 +208,8 @@ Shade.div = function() {
             if (t1.equals(type_list[i][0]) &&
                 t2.equals(type_list[i][1]))
                 return type_list[i][2];
-        throw ("type mismatch on div: unexpected types  '"
-                   + t1.repr() + "' and '" + t2.repr() + "'.");
+        throw ("type mismatch on div: unexpected types '"
+                   + t1.repr() + "' and '" + t2.repr() + "'");
     };
     function evaluator(exp) {
         var exp1 = exp.parents[0];

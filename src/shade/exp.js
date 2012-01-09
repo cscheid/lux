@@ -204,7 +204,7 @@ Shade.Exp = {
                 case 't': return 1;
                 case 'p': return 2;
                 case 'q': return 3;
-                default: throw "Invalid swizzle pattern";
+                default: throw "invalid swizzle pattern";
                 }
             };
             var result = [];
@@ -291,7 +291,7 @@ Shade.Exp = {
                     } else {
                         // FIXME: at constant_value for mats is broken.
                         //  Lift and use matrix_row from constant.js
-                        throw "at constant_value currently broken";
+                        throw "at constant_value for mats is currently broken";
                     }
                 }
             }),
@@ -326,7 +326,7 @@ Shade.Exp = {
                 var ix = this.parents[1].constant_value();
                 var x = this.parents[0].element(ix);
                 if (x === this) {
-                    throw "Would have gone into an infinite loop here: internal error.";
+                    throw "internal error: would have gone into an infinite loop here.";
                 }
                 return x.element_constant_value(i);
             }),
