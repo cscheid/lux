@@ -91,7 +91,6 @@ test("Shade expressions", function() {
     raises(function() {
         Shade.constant([1,2,3,4]).swizzle("a");
     }, function(e) {
-        console.log(e);
         return e === "type 'float[4]' does not support swizzling";
     }, "disallow swizzle on arrays");
 });
