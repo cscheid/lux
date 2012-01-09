@@ -1,7 +1,7 @@
 Facet.Models.mesh = function(u_secs, v_secs) {
     var verts = [];
     var elements = [];
-    if (typeof v_secs === "undefined") v_secs = u_secs;
+    if (_.isUndefined(v_secs)) v_secs = u_secs;
     if (v_secs <= 0) throw "v_secs must be positive";
     if (u_secs <= 0) throw "u_secs must be positive";
     v_secs = Math.floor(v_secs);

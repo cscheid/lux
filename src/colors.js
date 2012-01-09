@@ -154,7 +154,7 @@ var css_colors = {
 var rgb_re = / *rgb *\( *(\d+) *, *(\d+) *, *(\d+) *\) */;
 Shade.color = function(spec, alpha)
 {
-    if (typeOf(alpha) === 'undefined')
+    if (_.isUndefined(alpha))
         alpha = 1;
     if (spec[0] === '#') {
         if (spec.length === 4) {

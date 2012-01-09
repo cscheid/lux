@@ -96,9 +96,9 @@ Shade.constant = function(v, type)
         });
     };
 
-    var t = constant_type(v);
+    var t = facet_constant_type(v);
     if (t === 'other') {
-        t = typeOf(v);
+        t = facet_typeOf(v);
         if (t === 'array') {
             var new_v = v.map(Shade.make);
             var array_size = new_v.length;
@@ -160,7 +160,7 @@ Shade.constant = function(v, type)
         var d = v.length;
         if (d < 2 && d > 4)
             throw "invalid length for constant vector: " + v;
-        var el_ts = _.map(v, function(t) { return typeOf(t); });
+        var el_ts = _.map(v, function(t) { return facet_typeOf(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
             throw "not all constant params have the same types";
         }
@@ -186,7 +186,7 @@ Shade.constant = function(v, type)
         }
         return constant_tuple_fun(computed_t, v);
     }
-    throw "type error: constant_type returned bogus value?";
+    throw "internal error: facet_constant_type returned bogus value";
 };
 
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };

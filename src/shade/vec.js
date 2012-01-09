@@ -8,7 +8,7 @@ Shade.vec = function()
         var arg = Shade.make(arguments[i]);
         parents.push(arg);
         parent_offsets.push(total_size);
-        if (typeOf(vec_type) === 'undefined')
+        if (_.isUndefined(vec_type))
             vec_type = arg.type.element_type(0);
         else if (!vec_type.equals(arg.type.element_type(0)))
             throw "vec requires equal types";
@@ -73,7 +73,7 @@ Shade.vec = function()
             var result = [];
             var parent_values = _.each(this.parents, function(v) {
                 var c = v.constant_value();
-                if (typeOf(c) === 'number')
+                if (facet_typeOf(c) === 'number')
                     result.push(c);
                 else
                     for (var i=0; i<c.length; ++i)

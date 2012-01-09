@@ -14,7 +14,7 @@ Facet.model = function(input)
             if (v._shade_type === 'element_buffer')
                 // example: 'elements: Facet.element_buffer(...)'
                 result.elements = Shade.make(v);
-            else if (typeOf(v) === 'array')
+            else if (facet_typeOf(v) === 'array')
                 // example: 'elements: [0, 1, 2, 3]'
                 result.elements = Shade.make(Facet.element_buffer(v));
             else
@@ -26,9 +26,9 @@ Facet.model = function(input)
             // example: 'vertex: Facet.attribute_buffer(...)'
             result[k] = Shade.make(v);
             n_elements = v.numItems;
-        } else if (typeOf(v) === "array") { // ... or a list of per-vertex things
+        } else if (facet_typeOf(v) === "array") { // ... or a list of per-vertex things
             // These things can be shade vecs
-            if (typeOf(v[0]) !== "array") {
+            if (facet_typeOf(v[0]) !== "array") {
                 // example: 'color: [Shade.color('white'), Shade.color('blue'), ...]
                 // assume it's a list of shade vecs, assume they all have the same dimension
                 var dimension = v[0].type.vec_dimension();
@@ -59,7 +59,7 @@ Facet.model = function(input)
     }
     if (!("elements" in result)) {
         // populate automatically using some sensible guess inferred from the attributes above
-        if (typeOf(n_elements) === "undefined") {
+        if (_.isUndefined(n_elements)) {
             throw "could not figure out how many elements are in this model; "
                 + "consider passing an 'elements' field";
         } else {

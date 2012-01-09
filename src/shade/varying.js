@@ -1,8 +1,8 @@
 // FIXME: typechecking
 Shade.varying = function(name, type)
 {
-    if (typeof type === 'undefined') throw "varying requires type";
-    if (typeof type === 'string') type = Shade.basic(type);
+    if (_.isUndefined(type)) throw "varying requires type";
+    if (facet_typeOf(type) === 'string') type = Shade.basic(type);
     return Shade._create_concrete_exp( {
         parents: [],
         type: type,

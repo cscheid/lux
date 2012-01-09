@@ -4,10 +4,10 @@
 Shade.memoize_on_field = function(field_name, fun)
 {
     return function() {
-        if (typeOf(this._caches[field_name]) === "undefined") {
+        if (_.isUndefined(this._caches[field_name])) {
             this._caches[field_name] = {};
         }
-        if (typeOf(this._caches[field_name][arguments[0]]) === "undefined") {
+        if (_.isUndefined(this._caches[field_name][arguments[0]])) {
             this._caches[field_name][arguments[0]] = fun.apply(this, arguments);
         }
         return this._caches[field_name][arguments[0]];

@@ -40,7 +40,7 @@ function draw_it(batch)
 
         for (key in attributes) {
             var attr = program[key];
-            if (typeof attr !== 'undefined') {
+            if (!_.isUndefined(attr)) {
                 ctx.enableVertexAttribArray(attr);
                 attributes[key].bind(attr);
             }
@@ -51,10 +51,10 @@ function draw_it(batch)
             var key = uniform.uniform_name;
             var call = uniform.uniform_call,
                 value = uniform.get();
-            if (typeOf(value) === 'undefined') {
+            if (_.isUndefined(value)) {
                 throw "uniform " + key + " has not been set.";
             }
-            var t = constant_type(value);
+            var t = facet_constant_type(value);
             if (t === "other") {
                 uniform._facet_active_uniform = (function(uid, cat) {
                     return function(v) {
@@ -197,7 +197,7 @@ Facet.bake = function(model, appearance)
     var primitive_type = primitive_types[model.type];
     var elements = model.elements;
     var draw_chunk;
-    if (typeOf(model.elements) === 'number') {
+    if (facet_typeOf(elements) === 'number') {
         draw_chunk = function() {
             ctx.drawArrays(primitive_type, 0, elements);
         };

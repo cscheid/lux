@@ -1,6 +1,6 @@
 Shade.Exp = {
     debug_print: function(indent) {
-        if (indent === undefined) indent = 0;
+        if (_.isUndefined(indent)) indent = 0;
         var str = "";
         for (var i=0; i<indent; ++i) { str = str + ' '; }
         if (this.parents.length === 0) 
@@ -44,7 +44,7 @@ Shade.Exp = {
                 return;
             }
             var parents = exp.parents;
-            if (typeOf(parents) === "undefined") {
+            if (_.isUndefined(parents)) {
                 throw "Internal error: expression " + exp.eval()
                     + " has undefined parents.";
             }
@@ -283,7 +283,7 @@ Shade.Exp = {
             },
             constant_value: Shade.memoize_on_field("_constant_value", function() {
                 var a = this.parents[0].constant_value();
-                if (typeOf(a) === 'array') // this was a GLSL array of stuff
+                if (facet_typeOf(a) === 'array') // this was a GLSL array of stuff
                     return a[this.parents[1].constant_value()];
                 else { // this was a vec.
                     if (a._type === 'vector') {

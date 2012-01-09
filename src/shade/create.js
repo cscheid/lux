@@ -31,7 +31,7 @@ Shade._create_concrete = function(base, requirements)
             if (!(field in new_obj)) {
                 throw "new expression missing " + requirements[i];
             }
-            if (typeOf(new_obj[field]) === 'undefined') {
+            if (_.isUndefined(new_obj[field])) {
                 throw "field '" + field + "' cannot be undefined";
             }
         }

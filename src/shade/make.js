@@ -4,16 +4,16 @@
 // static polymorphism
 Shade.make = function(exp)
 {
-    var t = typeOf(exp);
-    if (t === 'undefined') {
-        throw "Shade.make does not support undefined";
+    if (_.isUndefined(exp)) {
+        throw "expected a value, got undefined instead";
     }
+    var t = facet_typeOf(exp);
     if (t === 'boolean' || t === 'number') {
         return Shade.constant(exp);
     } else if (t === 'array') {
         return Shade.seq(exp);
     }
-    t = constant_type(exp);
+    t = facet_constant_type(exp);
     if (t === 'vector' || t === 'matrix') {
         return Shade.constant(exp);
     } else if (exp._shade_type === 'attribute_buffer') {

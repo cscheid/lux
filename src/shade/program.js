@@ -53,12 +53,12 @@ Shade.Optimizer.is_zero = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = constant_type(v);
+    var t = facet_constant_type(v);
     if (t === 'number')
         return v === 0;
     if (t === 'vector')
         return _.all(v, function (x) { return x === 0; });
-    if (typeof(v) === 'matrix')
+    if (facet_typeOf(v) === 'matrix')
         return _.all(v, function (x) { return x === 0; });
     return false;
 };
@@ -68,7 +68,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = constant_type(v);
+    var t = facet_constant_type(v);
     if (t === 'number')
         return v === 1;
     if (t === 'vector') {
@@ -179,7 +179,7 @@ Shade.Optimizer.vec_at_constant_index = function(exp)
     if (!exp.parents[1].is_constant())
         return false;
     var v = exp.parents[1].constant_value();
-    if (typeOf(v) !== "number")
+    if (facet_typeOf(v) !== "number")
         return false;
     var t = exp.parents[0].type;
     if (t.equals(Shade.Types.vec2) && (v >= 0) && (v <= 1))

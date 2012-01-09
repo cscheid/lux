@@ -1,7 +1,7 @@
 Facet.Models.sphere = function(lat_secs, long_secs) {
     var verts = [];
     var elements = [];
-    if (typeof long_secs === "undefined") long_secs = lat_secs;
+    if (_.isUndefined(long_secs)) long_secs = lat_secs;
     if (lat_secs <= 0) throw "lat_secs must be positive";
     if (long_secs <= 0) throw "long_secs must be positive";
     lat_secs = Math.floor(lat_secs);
@@ -37,4 +37,4 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
                       S.sin(phi),
                       S.cos(theta).mul(cosphi), 1)
     });
-},
+}

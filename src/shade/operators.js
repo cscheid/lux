@@ -175,9 +175,9 @@ Shade.sub = function() {
 Shade.div = function() {
     if (arguments.length === 0) throw "div needs at least two arguments";
     function div_type_resolver(t1, t2) {
-        if (typeof t1 === 'undefined')
+        if (_.isUndefined(t1))
             throw "internal error: t1 multiplication with undefined type";
-        if (typeof t2 === 'undefined')
+        if (_.isUndefined(t2))
             throw "internal error: t2 multiplication with undefined type";
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
@@ -224,7 +224,7 @@ Shade.div = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         };
-        var t1 = constant_type(v1), t2 = constant_type(v2);
+        var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { return x / y; },
                       vector: function (x, y) { 
@@ -271,9 +271,9 @@ Shade.mul = function() {
     if (arguments.length === 0) throw "mul needs at least one argument";
     if (arguments.length === 1) return arguments[0];
     function mul_type_resolver(t1, t2) {
-        if (typeof t1 === 'undefined')
+        if (_.isUndefined(t1))
             throw "t1 multiplication with undefined type?";
-        if (typeof t2 === 'undefined')
+        if (_.isUndefined(t2))
             throw "t2 multiplication with undefined type?";
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
@@ -328,7 +328,7 @@ Shade.mul = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         }
-        var t1 = constant_type(v1), t2 = constant_type(v2);
+        var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },

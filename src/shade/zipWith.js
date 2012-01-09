@@ -1,4 +1,4 @@
-
+// FIXME DO NOT POLLUTE GLOBAL NAMESPACE These really need to go someplace else.
 function zipWith(f, l1, l2)
 {
     var result = [];

@@ -8,7 +8,7 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
     for (var i=0; i<type_resolving_list.length; ++i)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
             var t = type_resolving_list[i][j];
-            if (typeof(t) === 'undefined')
+            if (_.isUndefined(t))
                 throw "undefined type in type_resolver";
         }
     // takes a list of lists of possible argument types, returns a function to 

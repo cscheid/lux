@@ -11,7 +11,7 @@ Shade.Types.base_t = {
     is_function: function() { return false; },
     is_sampler:  function() { return false; },
     equals: function(other) {
-        if (typeOf(other) === 'undefined')
+        if (_.isUndefined(other))
             throw "type cannot be compared to undefined";
         return this.repr() == other.repr();
     },

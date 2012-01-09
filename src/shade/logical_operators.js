@@ -160,33 +160,35 @@ Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (typeOf(a) === 'number' ||
-            typeOf(a) === 'boolean')
+        if (facet_typeOf(a) === 'number' ||
+            facet_typeOf(a) === 'boolean')
             return a === b;
-        if (typeOf(a) === 'array')
+        if (facet_typeOf(a) === 'array')
             return _.all(zipWith(function(a, b) { return a === b; }, a, b),
                          function (x) { return x; });
-        if (constant_type(a) === 'vector' ||
-            constant_type(a) === 'matrix')
+        // FIXME BUGGY
+        if (facet_constant_type(a) === 'vector' ||
+            facet_constant_type(a) === 'matrix')
             return a.eql(b);
-        throw "internal error: unrecognized type " + typeOf(a) + 
-            " " + constant_type(a);
+        throw "internal error: unrecognized type " + facet_typeOf(a) + 
+            " " + facet_constant_type(a);
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (typeOf(a) === 'number' ||
-            typeOf(a) === 'boolean')
+        if (facet_typeOf(a) === 'number' ||
+            facet_typeOf(a) === 'boolean')
             return a !== b;
-        if (typeOf(a) === 'array')
+        if (facet_typeOf(a) === 'array')
             return _.any(zipWith(function(a, b) { return a !== b; }, a, b),
                          function (x) { return x; });
-        if (constant_type(a) === 'vector' ||
-            constant_type(a) === 'matrix')
-            return !a.eql(b);
-        throw "internal error: unrecognized type " + typeOf(a) + 
-            " " + constant_type(a);
+        // FIXME BUGGY
+        if (facet_constant_type(a) === 'vector' ||
+            facet_constant_type(a) === 'matrix')
+            return !a.eql(b); 
+        throw "internal error: unrecognized type " + facet_typeOf(a) + 
+            " " + facet_constant_type(a);
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 

@@ -25,7 +25,7 @@ Shade.CompilationContext = function(compile_type) {
         //     this.min_version = Math.max(this.min_version, version);
         // },
         declare: function(decltype, glsl_name, type, declmap) {
-            if (typeof type === 'undefined') {
+            if (_.isUndefined(type)) {
                 throw "must define type";                
             }
             if (!(glsl_name in declmap)) {

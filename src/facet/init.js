@@ -31,12 +31,7 @@ Facet.init = function(canvas, opts)
 
     Facet._globals.display_callback = (opts.display || function() {});
 
-    if (typeof opts === "undefined")
-        opts = {};
-    // if (typeof listeners === "undefined")
-    //     listeners = {};
     try {
-//         gl = WebGLDebugUtils.makeDebugContext(canvas.getContext("experimental-webgl"));
         if ("attributes" in opts)
             gl = WebGLUtils.setupWebGL(canvas, opts.attributes);
         else
@@ -57,7 +52,7 @@ Facet.init = function(canvas, opts)
         for (var i=0; i<names.length; ++i) {
             var ename = names[i];
             var listener = opts[ename];
-            if (typeof listener != "undefined")
+            if (!_.isUndefined(listener))
                 canvas.addEventListener(ename, listener, false);
         }
         var ext;
