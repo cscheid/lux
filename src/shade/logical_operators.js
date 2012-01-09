@@ -166,10 +166,6 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
         if (facet_typeOf(a) === 'array')
             return _.all(zipWith(function(a, b) { return a === b; }, a, b),
                          function (x) { return x; });
-        // FIXME BUGGY
-        if (facet_constant_type(a) === 'vector' ||
-            facet_constant_type(a) === 'matrix')
-            return a.eql(b);
         throw "internal error: unrecognized type " + facet_typeOf(a) + 
             " " + facet_constant_type(a);
     }));
@@ -183,10 +179,6 @@ Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
         if (facet_typeOf(a) === 'array')
             return _.any(zipWith(function(a, b) { return a !== b; }, a, b),
                          function (x) { return x; });
-        // FIXME BUGGY
-        if (facet_constant_type(a) === 'vector' ||
-            facet_constant_type(a) === 'matrix')
-            return !a.eql(b); 
         throw "internal error: unrecognized type " + facet_typeOf(a) + 
             " " + facet_constant_type(a);
     }));

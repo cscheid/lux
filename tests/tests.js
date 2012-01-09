@@ -88,6 +88,12 @@ test("Shade expressions", function() {
     ok(Shade.any(Shade.greaterThan(Shade.vec(1,2,3),
                                    Shade.vec(0,2,3))), "relational ops");
 
+    raises(function() {
+        Shade.constant([1,2,3,4]).swizzle("a");
+    }, function(e) {
+        console.log(e);
+        return e === "type 'float[4]' does not support swizzling";
+    }, "disallow swizzle on arrays");
 });
 
 test("Shade compilation", function() {
@@ -169,6 +175,15 @@ test("Shade constant folding", function() {
     equal(v.element_is_constant(1), false, "constant element checks");
     equal(v.element_is_constant(2), true, "constant element checks");
     equal(v.element_is_constant(3), true, "constant element checks");
+    equal(Shade.constant([1,2,3,4,5,6]).is_constant(), true, 
+          "constant checking for arrays");
+    raises(function() {
+        var x = Shade.constant([1,2,3,4,5]);
+        var y = Shade.constant([1,2,3,4,5]);
+        Shade.eq(x, y).constant_value();
+    }, function(e) {
+        return e === "operator== does not support arrays";
+    }, "operator== does not support arrays");
 
     equal(Shade.mul(Shade.vec(1, Shade.attribute("foo", "vec2")),
                     Shade.vec(4, Shade.attribute("bar", "vec2"))).element_constant_value(0),

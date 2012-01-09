@@ -17,6 +17,8 @@
 
 Shade.constant = function(v, type)
 {
+    var mat_length_to_dimension = {16: 4, 9: 3, 4: 2, 1: 1};
+
     var constant_tuple_fun = function(type, args)
     {
         function to_glsl(type, args) {
@@ -86,7 +88,7 @@ Shade.constant = function(v, type)
                 if (this.type.equals(Shade.Types.mat2) ||
                     this.type.equals(Shade.Types.mat3) ||
                     this.type.equals(Shade.Types.mat4))
-                    return mat[Math.sqrt(args.length)].make(args);
+                    return mat[mat_length_to_dimension[args.length]].make(args);
                 else
                     throw "internal error: constant of unknown type";
             }),
@@ -108,8 +110,11 @@ Shade.constant = function(v, type)
 
             var new_types = new_v.map(function(t) { return t.type; });
             var array_type = Shade.array(new_types[0], array_size);
-            if (_.any(new_types, function(t) { return !t.equals(array_type); })) {
+            if (_.any(new_types, function(t) { return !t.equals(new_types[0]); })) {
                 throw "array elements must have identical types";
+            }
+            if (_.any(new_v, function(el) { return !el.is_constant() })) {
+                throw "constant array elements must be constant as well";
             }
             return Shade._create_concrete_exp( {
                 parents: new_v,
@@ -127,6 +132,7 @@ Shade.constant = function(v, type)
                     ctx.strings.push("}\n");
                     ctx.add_initialization(this.array_initializer_glsl_name + "()");
                 },
+                is_constant: function() { return true; },
                 element: function(i) {
                     return this.parents[i];
                 },
@@ -177,7 +183,7 @@ Shade.constant = function(v, type)
             throw "bad datatype for constant: " + el_ts[0];
     }
     if (t === 'matrix') {
-        var d = Math.sqrt(v.length); // FIXME UGLY
+        var d = mat_length_to_dimension[v.length];
         var computed_t = Shade.basic('mat' + d);
         if (type && !computed_t.equals(type)) {
             throw "passed constant must have type " + computed_t.repr()

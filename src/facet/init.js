@@ -11,6 +11,7 @@ Facet.init = function(canvas, opts)
                                         depth: true
                                     }
                                   });
+    // FIXME This should be a "is Shade expression" check
     if (opts.clearColor.expression_type) {
         if (!opts.clearColor.is_constant())
             throw "clearColor must be constant expression";
@@ -20,6 +21,7 @@ Facet.init = function(canvas, opts)
     } else
         clearColor = opts.clearColor;
 
+    // FIXME This should be a "is Shade expression" check
     if (opts.clearDepth.expression_type) {
         if (!opts.clearDepth.is_constant())
             throw "clearDepth must be constant expression";

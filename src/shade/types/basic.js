@@ -29,9 +29,8 @@ Shade.basic = function(repr) {
         declare: function(glsl_name) { return repr + " " + glsl_name; },
         repr: function() { return repr; },
         swizzle: function(pattern) {
-            // FIXME swizzle is for vecs only, not arrays in general.
-            if (!(this.is_array())) {
-                throw "swizzle pattern requires array type";
+            if (!this.is_vec()) {
+                throw "swizzle requires a vec";
             }
             var base_repr = this.repr();
             var base_size = Number(base_repr[base_repr.length-1]);
@@ -100,7 +99,15 @@ Shade.basic = function(repr) {
             if (this.repr() === 'float'
                 || this.repr() === 'int'
                 || this.repr() === 'bool')
-                return 1; // FIXME convenient, probably wrong
+                // This is convenient: assuming vec_dimension() === 1 for POD 
+                // lets me pretend floats, ints and bools are vec1, ivec1 and bvec1.
+                // 
+                // However, this might have
+                // other bad consequences I have not thought of.
+                //
+                // For example, I cannot make float_t.is_vec() be true, because
+                // this would allow sizzling from a float, which GLSL disallows.
+                return 1;
             if (!this.is_vec()) {
                 throw "is_vec() === false, cannot call vec_dimension";
             }

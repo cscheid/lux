@@ -19,7 +19,7 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
     var result = ctx.createBuffer();
     ctx.bindBuffer(ctx.ARRAY_BUFFER, result);
     ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
-    result._shade_type = 'attribute_buffer'; // FIXME: UGLY
+    result._shade_type = 'attribute_buffer';
     result.array = typedArray;
     result.itemSize = itemSize;
     result.numItems = vertex_array.length/itemSize;

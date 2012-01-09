@@ -5,7 +5,7 @@ Facet.element_buffer = function(vertex_array)
     ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, result);
     var typedArray = new Uint16Array(vertex_array);
     ctx.bufferData(ctx.ELEMENT_ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
-    result._shade_type = 'element_buffer'; // FIXME: UGLY
+    result._shade_type = 'element_buffer';
     result.array = typedArray;
     result.itemSize = 1;
     result.numItems = vertex_array.length;

@@ -12,15 +12,6 @@ Facet.render_buffer = function(opts)
 
     var rttTexture = Facet.texture(opts);
 
-    // var rttTexture = ctx.createTexture();
-    // rttTexture._shade_type = 'texture';
-    // ctx.bindTexture(ctx.TEXTURE_2D, rttTexture);
-    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.TEXTURE_MAG_FILTER || ctx.LINEAR);
-    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.TEXTURE_MIN_FILTER || ctx.LINEAR);
-    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.TEXTURE_WRAP_S || ctx.CLAMP_TO_EDGE);
-    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.TEXTURE_WRAP_T || ctx.CLAMP_TO_EDGE);
-    // ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, null);
-
     var renderbuffer = ctx.createRenderbuffer();
     ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderbuffer);
     ctx.renderbufferStorage(ctx.RENDERBUFFER, ctx.DEPTH_COMPONENT16, rttFramebuffer.width, rttFramebuffer.height);

@@ -51,8 +51,11 @@ Shade.uniform = function(type, v)
                 ctx.value_function(this, this.precomputed_value_glsl_name);
             }
         },
-        // FIXME: type checking
         set: function(v) {
+            // Ideally, we'd like to do type checking here, but I'm concerned about
+            // performance implications. setting a uniform might be a hot path
+            // then again, facet_constant_type is unlikely to be particularly fast.
+            // FIXME check performance
             var t = facet_constant_type(v);
             if (t === "shade_expression")
                 v = v.constant_value();

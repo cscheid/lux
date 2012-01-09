@@ -77,7 +77,6 @@ Shade.Exp = {
     // element access for compound expressions
 
     element: function(i) {
-        // FIXME. Why doesn't this check for is_pod and use this.at()?
         throw "invalid call: atomic expression";  
     },
 
@@ -263,7 +262,11 @@ Shade.Exp = {
         // this "works around" current constant index restrictions in webgl
         // look for it to get broken in the future as this hole is plugged.
         index._must_be_function_call = true;
-        // FIXME: enforce that at only takes floats or ints;
+        if (!index.type.equals(Shade.Types.float_t) ||
+            !index.type.equals(Shade.Types.int_t)) {
+            throw "at expects int or float, got '" + 
+                index.repr() + "' instead";
+        }
         return Shade._create_concrete_exp( {
             parents: [parent, index],
             type: parent.type.array_base(),
@@ -298,8 +301,8 @@ Shade.Exp = {
             // the reason for the (if x === this) checks here is that sometimes
             // the only appropriate description of an element() of an
             // opaque object (uniforms and attributes, notably) is an at() call.
-            // This means that (this.parents[0].element(ix) === this) happens
-            // sometimes, and we're stuck in an infinite loop.
+            // This means that (this.parents[0].element(ix) === this) is
+            // sometimes true, and we're stuck in an infinite loop.
             element: Shade.memoize_on_field("_element", function(i) {
                 if (!this.parents[1].is_constant()) {
                     throw "at().element cannot be called with non-constant index";
