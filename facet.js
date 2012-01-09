@@ -3595,14 +3595,16 @@ Facet.element_buffer = function(vertex_array)
     result.array = typedArray;
     result.itemSize = 1;
     result.numItems = vertex_array.length;
-    // FIXME: to make the interface uniform with attribute buffer, bind
-    // takes an unused argument "attribute". I don't see a way to fix this
-    // right now while keeping the drawing interface clean (that is, element buffers
-    // and attribute buffers being interchangeable).
-    // NB it's no longer clear that we need element_buffers and
-    // attribute_buffers to look the same way.
+    result.bind = function() {
+        /* Javascript functions are quirky in that they can take unused arguments.
+         So if a call passes an argument to result.bind, it won't fail; the argument
+         is simply dropped on the floor.
 
-    result.bind = function(attribute) {
+         This has the fortuitous consequence of making attribute
+         buffers and element buffers share the same interface
+         (attributes that get passed to bind are ignored by element
+         buffers and handled by attribute buffers)
+        */
         ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, this);
     };
     result.draw = function(primitive) {
@@ -5412,7 +5414,10 @@ Shade.Exp = {
     // around, such as the things we move around when attributes are 
     // referenced in fragment programs
     // 
-    // FIXME: it's currently easy to create bad expressions with these.
+    // NB: it's easy to create bad expressions with these.
+    //
+    // The general rule is that types should be preserved (although
+    // that might not *always* be the case)
     find_if: function(check) {
         return _.select(this.sorted_sub_expressions(), check);
     },
@@ -5551,7 +5556,7 @@ Shade.constant = function(v, type)
     var constant_tuple_fun = function(type, args)
     {
         function to_glsl(type, args) {
-            // FIXME this seems incredibly ugly, but we need something
+            // this seems incredibly ugly, but we need something
             // like it, so that numbers are appropriately promoted to floats
             // in GLSL's syntax.
 
@@ -5728,7 +5733,6 @@ Shade.as_int = function(v) { return Shade.make(v).as_int(); };
 Shade.as_bool = function(v) { return Shade.make(v).as_bool(); };
 Shade.as_float = function(v) { return Shade.make(v).as_float(); };
 
-// FIXME: Shade.set should be (name, exp), not (exp, name)
 Shade.set = function(exp, name)
 {
     exp = Shade.make(exp);
@@ -7614,10 +7618,16 @@ Shade.Utils.linear = function(f1, f2, t1, t2)
 // fits between [0, 1]
 
 Shade.Utils.fit = function(data) {
-    // FIXME this makes float attribute buffers work, but it's probably brittle
+    // this makes float attribute buffers work, but it might be confusing to the
+    // user that there exist values v for which Shade.Utils.fit(v) works,
+    // but Shade.Utils.fit(Shade.make(v)) does not
     var t = data._shade_type; 
-    if (t === 'attribute_buffer')
+    if (t === 'attribute_buffer') {
+        if (data.itemSize !== 1)
+            throw "only dimension-1 attribute buffers are supported";
         data = data.array;
+    }
+
     var min = _.min(data), max = _.max(data);
     return Shade.Utils.linear(min, max, 0, 1);
 };
@@ -8095,7 +8105,6 @@ Shade.id = function(id_value)
 return Shade;
 }());
 Facet.Marks = {};
-// FIXME: alpha=0 points should discard because of depth buffer
 Facet.Marks.dots = function(opts)
 {
     opts = _.defaults(opts, {
@@ -8151,7 +8160,12 @@ Facet.Marks.dots = function(opts)
         color: Shade.selection(opts.plain, plain_fill_color, alpha_fill_color),
         mode: opts.mode
     });
-    // FIXME there must be a better way to do this.
+
+    /* We pass the gl_Position attribute explicitly because some other
+     call might want to explicitly use the same position of the dots marks.
+
+     This is the exact use case of dot-and-line graph drawing.
+     */
     result.gl_Position = gl_Position;
     return result;
 };
