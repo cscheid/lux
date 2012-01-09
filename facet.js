@@ -3480,7 +3480,7 @@ Facet.Camera.perspective = function(opts)
             else if (t.equals(Shade.Types.vec4))
                 return vp_uniform.mul(model_vertex);
             else
-                throw "Type mismatch: expected vec, got " + t.repr();
+                throw "expected vec, got " + t.repr();
         },
         eye_vertex: function(model_vertex) {
             var t = model_vertex.type;
@@ -3491,7 +3491,7 @@ Facet.Camera.perspective = function(opts)
             else if (t.equals(Shade.Types.vec4))
                 return view_uniform.mul(model_vertex);
             else
-                throw "Type mismatch: expected vec, got " + t.repr();
+                throw "expected vec, got " + t.repr();
         }
     };
 };
@@ -3576,7 +3576,7 @@ Facet.Camera.ortho = function(opts)
             else if (t.equals(Shade.Types.vec4))
                 return proj_uniform.mul(model_vertex);
             else
-                throw "Type mismatch: expected vec, got " + t.repr();
+                throw "expected vec, got " + t.repr();
         }
     };
 };
@@ -3682,7 +3682,7 @@ Facet.init = function(canvas, opts)
         else
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
-            throw "Failed context creation";
+            throw "failed context creation";
         if (opts.debugging) {
             function throwOnGLError(err, funcName, args) {
                 throw WebGLDebugUtils.glEnumToString(err) + 
@@ -3708,7 +3708,7 @@ Facet.init = function(canvas, opts)
             // FIXME design something like progressive enhancement for these cases. HARD!
             alert("OES_texture_float is not available on your browser/computer! " +
                   "Facet will not work, sorry.");
-            throw "Insufficient GPU support";
+            throw "insufficient GPU support";
         } else {
             gl.getExtension("oes_texture_float");
         }
@@ -3717,7 +3717,7 @@ Facet.init = function(canvas, opts)
     }
     if (!gl) {
         alert("Could not initialise WebGL, sorry :-(");
-        throw "Failed initalization";
+        throw "failed initalization";
     }
 
     gl.display = function() {
@@ -3807,7 +3807,7 @@ Facet.translation = function(v)
     else if (v.length === 2) return t_3x3(v);
     else if (arguments.length === 2) return t_3x3(arguments);
 
-    throw "Invalid vector size for translation";
+    throw "invalid vector size for translation";
 };
 
 Facet.scaling = function (v)
@@ -3828,7 +3828,7 @@ Facet.scaling = function (v)
     else if (v.length === 2) return s_3x3(v);
     else if (arguments.length === 2) return s_3x3(arguments);
 
-    throw "Invalid size for scale";
+    throw "invalid size for scale";
 };
 
 Facet.rotation = function(angle, axis)
@@ -3916,8 +3916,8 @@ Facet.model = function(input)
     if (!("elements" in result)) {
         // populate automatically using some sensible guess inferred from the attributes above
         if (typeOf(n_elements) === "undefined") {
-            throw "Facet.model could not figure out how many elements are in this model; "
-                + "consider passing an 'elements' field.";
+            throw "could not figure out how many elements are in this model; "
+                + "consider passing an 'elements' field";
         } else {
             result.elements = n_elements;
         }
@@ -4059,19 +4059,19 @@ Facet.render_buffer = function(opts)
         case ctx.FRAMEBUFFER_COMPLETE:
             break;
         case ctx.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+            throw("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
             break;
         case ctx.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+            throw("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
             break;
         case ctx.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
+            throw("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
             break;
         case ctx.FRAMEBUFFER_UNSUPPORTED:
-            throw("Incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED");
+            throw("incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED");
             break;
         default:
-            throw("Incomplete framebuffer: " + status);
+            throw("incomplete framebuffer: " + status);
     }
 
     ctx.bindTexture(ctx.TEXTURE_2D, null);
@@ -4600,10 +4600,10 @@ Shade._create_concrete = function(base, requirements)
         for (var i=0; i<requirements.length; ++i) {
             var field = requirements[i];
             if (!(field in new_obj)) {
-                throw "New expression missing " + requirements[i];
+                throw "new expression missing " + requirements[i];
             }
             if (typeOf(new_obj[field]) === 'undefined') {
-                throw "field '" + field + "' cannot be undefined.";
+                throw "field '" + field + "' cannot be undefined";
             }
         }
         return Shade._create(base, new_obj);
@@ -4660,11 +4660,11 @@ Shade.Types.base_t = {
     is_sampler:  function() { return false; },
     equals: function(other) {
         if (typeOf(other) === 'undefined')
-            throw "Type.equals can't be compared to undefined";
+            throw "type cannot be compared to undefined";
         return this.repr() == other.repr();
     },
     swizzle: function(pattern) {
-        throw "type '" + this.repr() + "' does not support swizzling.";
+        throw "type '" + this.repr() + "' does not support swizzling";
     },
     element_type: function(i) {
         throw "invalid call: atomic expression";
@@ -4732,7 +4732,7 @@ Shade.basic = function(repr) {
                 group_res = [ /[rgba]/, /[xyzw]/, /[stpq]/ ];
                 break;
             default:
-                throw "Internal error?!";
+                throw "internal error on swizzle";
             };
             if (!pattern.match(valid_re)) {
                 throw "invalid swizzle pattern '" + pattern + "'";
@@ -4807,7 +4807,7 @@ Shade.basic = function(repr) {
                 return Shade.basic("int");
             if (repr == "float")
                 return Shade.basic("float");
-            throw "datatype not array!";
+            throw "datatype not array";
         },
         size_for_vec_constructor: function() {
             var repr = this.repr();
@@ -4825,7 +4825,7 @@ Shade.basic = function(repr) {
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")  
                 return parseInt(repr[3]);
-            throw "datatype not array!";
+            throw "datatype not array";
         },
         is_floating: function() {
             var repr = this.repr();
@@ -4871,10 +4871,10 @@ Shade.basic = function(repr) {
                 else if (f === 'i')
                     return Shade.Types.int_t;
                 else
-                    throw "Internal error";
+                    throw "internal error";
             } else
                 // FIXME implement this
-                throw "Unimplemented for mats";
+                throw "unimplemented for mats";
         }
     });
 };
@@ -5007,10 +5007,10 @@ Shade.CompilationContext = function(compile_type) {
             } else {
                 var existing_type = declmap[glsl_name];
                 if (!existing_type.equals(type)) {
-                    throw ("Compile error: Different expressions use "
+                    throw ("compile error: different expressions use "
                            + "conflicting types for '" + decltype + " " + glsl_name
                            + "': '" + existing_type.repr() + "', '"
-                           + type.repr() + "'.");
+                           + type.repr() + "'");
                 }
             }
         },
@@ -5284,7 +5284,7 @@ Shade.Exp = {
                 case 't': return 1;
                 case 'p': return 2;
                 case 'q': return 3;
-                default: throw "Invalid swizzle pattern";
+                default: throw "invalid swizzle pattern";
                 }
             };
             var result = [];
@@ -5371,7 +5371,7 @@ Shade.Exp = {
                     } else {
                         // FIXME: at constant_value for mats is broken.
                         //  Lift and use matrix_row from constant.js
-                        throw "at constant_value currently broken";
+                        throw "at constant_value for mats is currently broken";
                     }
                 }
             }),
@@ -5406,7 +5406,7 @@ Shade.Exp = {
                 var ix = this.parents[1].constant_value();
                 var x = this.parents[0].element(ix);
                 if (x === this) {
-                    throw "Would have gone into an infinite loop here: internal error.";
+                    throw "internal error: would have gone into an infinite loop here.";
                 }
                 return x.element_constant_value(i);
             }),
@@ -5637,7 +5637,7 @@ Shade.constant = function(v, type)
                     this.type.equals(Shade.Types.mat4))
                     return mat[Math.sqrt(args.length)].make(args);
                 else
-                    throw "Internal Error: constant of unknown type";
+                    throw "internal error: constant of unknown type";
             }),
             compile: function(ctx) {},
             parents: [],
@@ -5687,7 +5687,7 @@ Shade.constant = function(v, type)
                 }
             });
         } else {
-            throw "type error: constant should be bool, number, vector, matrix or array. Got " + t
+            throw "type error: constant should be bool, number, vector, matrix or array. got " + t
             + " instead";
         }
     }
@@ -5708,10 +5708,10 @@ Shade.constant = function(v, type)
     if (t === 'vector') {
         var d = v.length;
         if (d < 2 && d > 4)
-            throw "Invalid length for constant vector: " + v;
+            throw "invalid length for constant vector: " + v;
         var el_ts = _.map(v, function(t) { return typeOf(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
-            throw "Not all constant params have the same types;";
+            throw "not all constant params have the same types";
         }
         if (el_ts[0] === "number") {
             var computed_t = Shade.basic('vec' + d);
@@ -5765,7 +5765,7 @@ Shade.set = function(exp, name)
             if ((ctx.compile_type !== Shade.VERTEX_PROGRAM_COMPILE) &&
                 (name !== "gl_FragColor") &&
                 (name.substring(0, 11) !== "gl_FragData")) {
-                throw ("The only allowed output variables on a fragment"
+                throw ("the only allowed output variables on a fragment"
                        + " shader are gl_FragColor and gl_FragData[]");
             }
             if (name !== "gl_FragColor" &&
@@ -6134,9 +6134,9 @@ Shade.div = function() {
     if (arguments.length === 0) throw "div needs at least two arguments";
     function div_type_resolver(t1, t2) {
         if (typeof t1 === 'undefined')
-            throw "t1 multiplication with undefined type?";
+            throw "internal error: t1 multiplication with undefined type";
         if (typeof t2 === 'undefined')
-            throw "t2 multiplication with undefined type?";
+            throw "internal error: t2 multiplication with undefined type";
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4],
@@ -6166,8 +6166,8 @@ Shade.div = function() {
             if (t1.equals(type_list[i][0]) &&
                 t2.equals(type_list[i][1]))
                 return type_list[i][2];
-        throw ("type mismatch on div: unexpected types  '"
-                   + t1.repr() + "' and '" + t2.repr() + "'.");
+        throw ("type mismatch on div: unexpected types '"
+                   + t1.repr() + "' and '" + t2.repr() + "'");
     };
     function evaluator(exp) {
         var exp1 = exp.parents[0];
@@ -6340,7 +6340,7 @@ Shade.vec = function()
     parent_offsets.push(total_size);
     if (total_size < 1 || total_size > 4) {
         throw "vec constructor requires resulting width to be between "
-            + "1 and 4, got " + total_size + " instead.";
+            + "1 and 4, got " + total_size + " instead";
     }
     var type;
     if (vec_type.equals(Shade.Types.float_t)) {
@@ -6350,7 +6350,7 @@ Shade.vec = function()
     } else if (vec_type.equals(Shade.Types.bool_t)) {
         type = Shade.basic("bvec" + total_size);
     } else {
-        throw "vec type must be bool, int, or float.";
+        throw "vec type must be bool, int, or float";
     }
     
     return Shade._create_concrete_value_exp({
@@ -6367,7 +6367,7 @@ Shade.vec = function()
                     return this.parents[j].element(i);
                 i = i - sz;
             }
-            throw "Element " + old_i + " out of bounds (size=" 
+            throw "element " + old_i + " out of bounds (size=" 
                 + total_size + ")";
         },
         element_is_constant: function(i) {
@@ -6378,7 +6378,7 @@ Shade.vec = function()
                     return this.parents[j].element_is_constant(i);
                 i = i - sz;
             }
-            throw "Element " + old_i + " out of bounds (size=" 
+            throw "element " + old_i + " out of bounds (size=" 
                 + total_size + ")";
         },
         element_constant_value: function(i) {
@@ -6389,7 +6389,7 @@ Shade.vec = function()
                     return this.parents[j].element_constant_value(i);
                 i = i - sz;
             }
-            throw "Element " + old_i + " out of bounds (size=" 
+            throw "element " + old_i + " out of bounds (size=" 
                 + total_size + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function () {
@@ -6435,7 +6435,7 @@ Shade.mat = function()
 
     if (rows < 1 || rows > 4) {
         throw "mat constructor requires resulting dimension to be between "
-            + "2 and 4.";
+            + "2 and 4";
     }
     var type = Shade.basic("mat" + rows);
     return Shade._create_concrete_value_exp( {
@@ -6485,7 +6485,7 @@ Shade.mat3 = function(m)
                          m.element(1).swizzle("xyz"),
                          m.element(2).swizzle("xyz"));
     } else {
-        throw "mat3: need matrix to convert to mat3";
+        throw "need matrix to convert to mat3";
     }
 };
 // per_vertex is an identity operation value-wise, but it tags the AST
@@ -7217,7 +7217,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
         case 3: return vec.equal(v, vec.make([1,1,1]));
         case 4: return vec.equal(v, vec.make([1,1,1,1]));
         default:
-            throw "Bad vec length: " + v.length;    
+            throw "bad vec length: " + v.length;    
         }
     }
     if (t === 'matrix')
@@ -7245,7 +7245,7 @@ Shade.Optimizer.replace_with_nonzero = function(exp)
         return exp.parents[1];
     if (Shade.Optimizer.is_zero(exp.parents[1]))
         return exp.parents[0];
-    throw "no zero value on input to replace_with_nonzero?!";
+    throw "internal error: no zero value on input to replace_with_nonzero";
 };
 
 
@@ -7267,7 +7267,7 @@ Shade.Optimizer.is_times_one = function(exp)
     } else if (t1.is_mat() && t2.is_vec()) {
         return Shade.Optimizer.is_mul_identity(exp.parents[0]);
     } else {
-        throw "Internal error, never should have gotten here";
+        throw "internal error on Shade.Optimizer.is_times_one";
     }
 };
 
@@ -7281,14 +7281,14 @@ Shade.Optimizer.replace_with_notone = function(exp)
         } else if (Shade.Optimizer.is_mul_identity(exp.parents[1])) {
             return exp.parents[0];
         } else {
-            throw "Intenal error, never should have gotten here";
+            throw "internal error on Shade.Optimizer.replace_with_notone";
         }
     } else if (!t1.equals(ft) && t2.equals(ft)) {
         return exp.parents[0];
     } else if (t1.equals(ft) && !t2.equals(ft)) {
         return exp.parents[1];
     }
-    throw "no is_mul_identity value on input to replace_with_notone?!";
+    throw "internal error: no is_mul_identity value on input to replace_with_notone";
 };
 
 Shade.Optimizer.replace_with_zero = function(x)
@@ -7309,7 +7309,7 @@ Shade.Optimizer.replace_with_zero = function(x)
         return Shade.constant(mat3.create());
     if (x.type.equals(Shade.Types.mat4))
         return Shade.constant(mat4.create());
-    throw "not a type replaceable with zero!?";
+    throw "internal error: not a type replaceable with zero";
 };
 
 Shade.Optimizer.vec_at_constant_index = function(exp)
@@ -7338,7 +7338,7 @@ Shade.Optimizer.replace_vec_at_constant_with_swizzle = function(exp)
     if (v == 1) return exp.parents[0].swizzle("y");
     if (v == 2) return exp.parents[0].swizzle("z");
     if (v == 3) return exp.parents[0].swizzle("w");
-    throw "Internal error, shouldn't get here";
+    throw "internal error on Shade.Optimizer.replace_vec_at_constant_with_swizzle";
 };
 
 Shade.Optimizer.is_logical_and_with_constant = function(exp)
@@ -7430,25 +7430,25 @@ Shade.program = function(program_obj)
         v = Shade.make(v);
         if (k === 'gl_FragColor') {
             if (!v.type.equals(Shade.Types.vec4)) {
-                throw "Shade.program: color attribute must be of type vec4, got " +
-                    v.type.repr() + " instead.";
+                throw "color attribute must be of type vec4, got " +
+                    v.type.repr() + " instead";
             }
             fp_obj['gl_FragColor'] = v;
         } else if (k === 'gl_Position') {
             if (!v.type.equals(Shade.Types.vec4)) {
-                throw "Shade.program: position attribute must be of type vec4, got " +
-                    v.type.repr() + " instead.";
+                throw "position attribute must be of type vec4, got " +
+                    v.type.repr() + " instead";
             }
             vp_obj['gl_Position'] = v;
         } else if (k === 'gl_PointSize') {
             if (!v.type.equals(Shade.Types.float_t)) {
-                throw "Shade.program: color attribute must be of type float, got " +
-                    v.type.repr() + " instead.";
+                throw "color attribute must be of type float, got " +
+                    v.type.repr() + " instead";
             }
             vp_obj['gl_PointSize'] = v;
         } else if (k.substr(0, 3) === 'gl_') {
             // FIXME: Can we sensibly work around these?
-            throw "gl_* are reserved GLSL names, sorry; you can't use them in Facet.";
+            throw "gl_* are reserved GLSL names";
         } else
             vp_obj[k] = v;
     });
@@ -7855,7 +7855,7 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
         if (constant_type(a) === 'vector' ||
             constant_type(a) === 'matrix')
             return a.eql(b);
-        throw "internal error: Unrecognized type " + typeOf(a) + 
+        throw "internal error: unrecognized type " + typeOf(a) + 
             " " + constant_type(a);
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
@@ -7871,7 +7871,7 @@ Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
         if (constant_type(a) === 'vector' ||
             constant_type(a) === 'matrix')
             return !a.eql(b);
-        throw "internal error: Unrecognized type " + typeOf(a) + 
+        throw "internal error: unrecognized type " + typeOf(a) + 
             " " + constant_type(a);
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
@@ -8101,9 +8101,9 @@ Facet.Marks.dots = function(opts)
     });
 
     if (!opts.position)
-        throw "Facet.Marks.dots expects parameter 'position'";
+        throw "missing required parameter 'position'";
     if (!opts.elements)
-        throw "Facet.Marks.dots expects parameter 'elements'";
+        throw "missing required parameter 'elements'";
 
     var S = Shade;
 
@@ -8680,7 +8680,7 @@ Shade.color = function(spec, alpha)
     }
     if (spec in css_colors)
         return Shade.color(css_colors[spec], alpha);
-    throw "Unrecognized color specifier " + spec;
+    throw "unrecognized color specifier " + spec;
 };
 }());
 
@@ -8691,14 +8691,14 @@ Shade.Colors.alpha = function(color, alpha)
     color = Shade.make(color);
     alpha = Shade.make(alpha);
     if (!alpha.type.equals(Shade.Types.float_t))
-        throw "Shade.Colors.alpha type error: alpha parameter must be float";
+        throw "alpha parameter must be float";
     if (color.type.equals(Shade.Types.vec4)) {
         return Shade.vec(color.swizzle("rgb"), alpha);
     }
     if (color.type.equals(Shade.Types.vec3)) {
         return Shade.vec(color, alpha);
     }
-    throw "Shade.Colors.alpha type error: color parameter must be vec3 or vec4";
+    throw "color parameter must be vec3 or vec4";
 };
 
 Shade.Exp.alpha = function(alpha)
