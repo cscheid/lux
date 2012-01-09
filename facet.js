@@ -4614,26 +4614,6 @@ Shade.memoize_on_field = function(field_name, fun)
         return this._caches[field_name][arguments[0]];
     };
 }
-// FIXME DO NOT POLLUTE GLOBAL NAMESPACE These really need to go someplace else.
-function zipWith(f, l1, l2)
-{
-    var result = [];
-    var l = Math.min(l1.length, l2.length);
-    for (var i=0; i<l; ++i) {
-        result.push(f(l1[i], l2[i]));
-    }
-    return result;
-}
-
-function zipWith3(f, l1, l2, l3)
-{
-    var result = [];
-    var l = Math.min(l1.length, l2.length, l3.length);
-    for (var i=0; i<l; ++i) {
-        result.push(f(l1[i], l2[i], l3[i]));
-    }
-    return result;
-}
 Shade.Types = {};
 Shade.Types.base_t = {
     is_floating: function() { return false; },
@@ -5339,11 +5319,10 @@ Shade.Exp = {
         // this "works around" current constant index restrictions in webgl
         // look for it to get broken in the future as this hole is plugged.
         index._must_be_function_call = true;
-        // FIXME: enforce that at only takes floats or ints;
-        if (!index.type.equals(Shade.Types.float_t) ||
+        if (!index.type.equals(Shade.Types.float_t) &&
             !index.type.equals(Shade.Types.int_t)) {
             throw "at expects int or float, got '" + 
-                index.repr() + "' instead";
+                index.type.repr() + "' instead";
         }
         return Shade._create_concrete_exp( {
             parents: [parent, index],
@@ -5663,7 +5642,7 @@ Shade.constant = function(v, type)
             if (_.any(new_types, function(t) { return !t.equals(new_types[0]); })) {
                 throw "array elements must have identical types";
             }
-            if (_.any(new_v, function(el) { return !el.is_constant() })) {
+            if (_.any(new_v, function(el) { return !el.is_constant(); })) {
                 throw "constant array elements must be constant as well";
             }
             return Shade._create_concrete_exp( {
@@ -6524,6 +6503,18 @@ Shade.per_vertex = function(exp)
     });
 };
 (function() {
+
+function zipWith(f, v1, v2)
+{
+    return _.map(_.zip(v1, v2),
+                 function(v) { return f(v[0], v[1]); });
+}
+
+function zipWith3(f, v1, v2, v3)
+{
+    return _.map(_.zip(v1, v2, v3),
+                 function(v) { return f(v[0], v[1], v[2]); });
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // common functions
@@ -7871,7 +7862,8 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
             facet_typeOf(a) === 'boolean')
             return a === b;
         if (facet_typeOf(a) === 'array')
-            return _.all(zipWith(function(a, b) { return a === b; }, a, b),
+            return _.all(_.map(_.zip(a, b),
+                               function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
         throw "internal error: unrecognized type " + facet_typeOf(a) + 
             " " + facet_constant_type(a);
@@ -7884,7 +7876,8 @@ Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
             facet_typeOf(a) === 'boolean')
             return a !== b;
         if (facet_typeOf(a) === 'array')
-            return _.any(zipWith(function(a, b) { return a !== b; }, a, b),
+            return _.any(_.map(_.zip(a, b),
+                               function(v) { return v[0] !== v[1]; } ),
                          function (x) { return x; });
         throw "internal error: unrecognized type " + facet_typeOf(a) + 
             " " + facet_constant_type(a);
