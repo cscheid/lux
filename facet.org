@@ -77,6 +77,8 @@ designed carefully (in other words, I'm afraid of trying it out right
 now)
 
 * API
+** TODO Support for boolean vectors
+Part of it exists throughout Facet, but it's scattered and untested.
 ** TODO I really should have a matrix stack.
 ** TODO I should have a camera class
 
@@ -94,6 +96,14 @@ The main difficulty is that I currently
 assume a one-to-one relationship between array buffers and attributes
 throughout the API.
 * Testing/Engineering
+** TODO fix the _shade_type ugliness
+One possibility is to create a WebGLObject prototype that knows how to
+turn itself into a Shade expression
+** TODO runtime type information
+It is very convenient to use runtime type checking to get
+polymorphism, but it seems like it tends to proliferate along the
+code. I should try to consolidate all these calls in a single API of
+some sort.
 ** TODO Write test suite for all builtins constant folding
 I've been seeing a lot of infinite loops because of co-recursion in
 constant_value. What do I do about it?
@@ -101,8 +111,6 @@ constant_value. What do I do about it?
 ** TODO Typechecking code review 
 functions like cosh which just build other expressions should have
 stricter type checking.
-
-
 ** TODO Code review on FIXMEs
 ** TODO Review best practices on exception raising/handling in JS.
 * Features

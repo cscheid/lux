@@ -3140,7 +3140,7 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
     var result = ctx.createBuffer();
     ctx.bindBuffer(ctx.ARRAY_BUFFER, result);
     ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
-    result._shade_type = 'attribute_buffer'; // FIXME: UGLY
+    result._shade_type = 'attribute_buffer';
     result.array = typedArray;
     result.itemSize = itemSize;
     result.numItems = vertex_array.length/itemSize;
@@ -3591,7 +3591,7 @@ Facet.element_buffer = function(vertex_array)
     ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, result);
     var typedArray = new Uint16Array(vertex_array);
     ctx.bufferData(ctx.ELEMENT_ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
-    result._shade_type = 'element_buffer'; // FIXME: UGLY
+    result._shade_type = 'element_buffer';
     result.array = typedArray;
     result.itemSize = 1;
     result.numItems = vertex_array.length;
@@ -3652,6 +3652,7 @@ Facet.init = function(canvas, opts)
                                         depth: true
                                     }
                                   });
+    // FIXME This should be a "is Shade expression" check
     if (opts.clearColor.expression_type) {
         if (!opts.clearColor.is_constant())
             throw "clearColor must be constant expression";
@@ -3661,6 +3662,7 @@ Facet.init = function(canvas, opts)
     } else
         clearColor = opts.clearColor;
 
+    // FIXME This should be a "is Shade expression" check
     if (opts.clearDepth.expression_type) {
         if (!opts.clearDepth.is_constant())
             throw "clearDepth must be constant expression";
@@ -4033,15 +4035,6 @@ Facet.render_buffer = function(opts)
     rttFramebuffer.height = opts.height;
 
     var rttTexture = Facet.texture(opts);
-
-    // var rttTexture = ctx.createTexture();
-    // rttTexture._shade_type = 'texture';
-    // ctx.bindTexture(ctx.TEXTURE_2D, rttTexture);
-    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.TEXTURE_MAG_FILTER || ctx.LINEAR);
-    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.TEXTURE_MIN_FILTER || ctx.LINEAR);
-    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.TEXTURE_WRAP_S || ctx.CLAMP_TO_EDGE);
-    // ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.TEXTURE_WRAP_T || ctx.CLAMP_TO_EDGE);
-    // ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, null);
 
     var renderbuffer = ctx.createRenderbuffer();
     ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderbuffer);
@@ -4706,9 +4699,8 @@ Shade.basic = function(repr) {
         declare: function(glsl_name) { return repr + " " + glsl_name; },
         repr: function() { return repr; },
         swizzle: function(pattern) {
-            // FIXME swizzle is for vecs only, not arrays in general.
-            if (!(this.is_array())) {
-                throw "swizzle pattern requires array type";
+            if (!this.is_vec()) {
+                throw "swizzle requires a vec";
             }
             var base_repr = this.repr();
             var base_size = Number(base_repr[base_repr.length-1]);
@@ -4777,7 +4769,15 @@ Shade.basic = function(repr) {
             if (this.repr() === 'float'
                 || this.repr() === 'int'
                 || this.repr() === 'bool')
-                return 1; // FIXME convenient, probably wrong
+                // This is convenient: assuming vec_dimension() === 1 for POD 
+                // lets me pretend floats, ints and bools are vec1, ivec1 and bvec1.
+                // 
+                // However, this might have
+                // other bad consequences I have not thought of.
+                //
+                // For example, I cannot make float_t.is_vec() be true, because
+                // this would allow sizzling from a float, which GLSL disallows.
+                return 1;
             if (!this.is_vec()) {
                 throw "is_vec() === false, cannot call vec_dimension";
             }
@@ -4874,6 +4874,7 @@ Shade.basic = function(repr) {
         }
     });
 };
+// FIXME should be Shade.Types.array
 Shade.array = function(base_type, size) {
     return Shade._create(Shade.Types.base_t, {
         is_array: function() { return true; },
@@ -5153,7 +5154,6 @@ Shade.Exp = {
     // element access for compound expressions
 
     element: function(i) {
-        // FIXME. Why doesn't this check for is_pod and use this.at()?
         throw "invalid call: atomic expression";  
     },
 
@@ -5340,6 +5340,11 @@ Shade.Exp = {
         // look for it to get broken in the future as this hole is plugged.
         index._must_be_function_call = true;
         // FIXME: enforce that at only takes floats or ints;
+        if (!index.type.equals(Shade.Types.float_t) ||
+            !index.type.equals(Shade.Types.int_t)) {
+            throw "at expects int or float, got '" + 
+                index.repr() + "' instead";
+        }
         return Shade._create_concrete_exp( {
             parents: [parent, index],
             type: parent.type.array_base(),
@@ -5374,8 +5379,8 @@ Shade.Exp = {
             // the reason for the (if x === this) checks here is that sometimes
             // the only appropriate description of an element() of an
             // opaque object (uniforms and attributes, notably) is an at() call.
-            // This means that (this.parents[0].element(ix) === this) happens
-            // sometimes, and we're stuck in an infinite loop.
+            // This means that (this.parents[0].element(ix) === this) is
+            // sometimes true, and we're stuck in an infinite loop.
             element: Shade.memoize_on_field("_element", function(i) {
                 if (!this.parents[1].is_constant()) {
                     throw "at().element cannot be called with non-constant index";
@@ -5562,6 +5567,8 @@ Shade.swizzle = function(exp, pattern)
 
 Shade.constant = function(v, type)
 {
+    var mat_length_to_dimension = {16: 4, 9: 3, 4: 2, 1: 1};
+
     var constant_tuple_fun = function(type, args)
     {
         function to_glsl(type, args) {
@@ -5631,7 +5638,7 @@ Shade.constant = function(v, type)
                 if (this.type.equals(Shade.Types.mat2) ||
                     this.type.equals(Shade.Types.mat3) ||
                     this.type.equals(Shade.Types.mat4))
-                    return mat[Math.sqrt(args.length)].make(args);
+                    return mat[mat_length_to_dimension[args.length]].make(args);
                 else
                     throw "internal error: constant of unknown type";
             }),
@@ -5653,8 +5660,11 @@ Shade.constant = function(v, type)
 
             var new_types = new_v.map(function(t) { return t.type; });
             var array_type = Shade.array(new_types[0], array_size);
-            if (_.any(new_types, function(t) { return !t.equals(array_type); })) {
+            if (_.any(new_types, function(t) { return !t.equals(new_types[0]); })) {
                 throw "array elements must have identical types";
+            }
+            if (_.any(new_v, function(el) { return !el.is_constant() })) {
+                throw "constant array elements must be constant as well";
             }
             return Shade._create_concrete_exp( {
                 parents: new_v,
@@ -5672,6 +5682,7 @@ Shade.constant = function(v, type)
                     ctx.strings.push("}\n");
                     ctx.add_initialization(this.array_initializer_glsl_name + "()");
                 },
+                is_constant: function() { return true; },
                 element: function(i) {
                     return this.parents[i];
                 },
@@ -5722,7 +5733,7 @@ Shade.constant = function(v, type)
             throw "bad datatype for constant: " + el_ts[0];
     }
     if (t === 'matrix') {
-        var d = Math.sqrt(v.length); // FIXME UGLY
+        var d = mat_length_to_dimension[v.length];
         var computed_t = Shade.basic('mat' + d);
         if (type && !computed_t.equals(type)) {
             throw "passed constant must have type " + computed_t.repr()
@@ -5829,8 +5840,11 @@ Shade.uniform = function(type, v)
                 ctx.value_function(this, this.precomputed_value_glsl_name);
             }
         },
-        // FIXME: type checking
         set: function(v) {
+            // Ideally, we'd like to do type checking here, but I'm concerned about
+            // performance implications. setting a uniform might be a hot path
+            // then again, facet_constant_type is unlikely to be particularly fast.
+            // FIXME check performance
             var t = facet_constant_type(v);
             if (t === "shade_expression")
                 v = v.constant_value();
@@ -5913,11 +5927,22 @@ Shade.attribute = function(name, type)
         }
     });
 };
-// FIXME: typechecking
 Shade.varying = function(name, type)
 {
     if (_.isUndefined(type)) throw "varying requires type";
     if (facet_typeOf(type) === 'string') type = Shade.basic(type);
+    var allowed_types = [
+        Shade.Types.float_t,
+        Shade.Types.vec2,
+        Shade.Types.vec3,
+        Shade.Types.vec4,
+        Shade.Types.mat2,
+        Shade.Types.mat3,
+        Shade.Types.mat4
+    ];
+    if (!_.any(allowed_types, function(t) { return t.equals(type); })) {
+        throw "varying does not support type '" + type.repr() + "'";
+    }
     return Shade._create_concrete_exp( {
         parents: [],
         type: type,
@@ -7848,10 +7873,6 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
         if (facet_typeOf(a) === 'array')
             return _.all(zipWith(function(a, b) { return a === b; }, a, b),
                          function (x) { return x; });
-        // FIXME BUGGY
-        if (facet_constant_type(a) === 'vector' ||
-            facet_constant_type(a) === 'matrix')
-            return a.eql(b);
         throw "internal error: unrecognized type " + facet_typeOf(a) + 
             " " + facet_constant_type(a);
     }));
@@ -7865,10 +7886,6 @@ Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
         if (facet_typeOf(a) === 'array')
             return _.any(zipWith(function(a, b) { return a !== b; }, a, b),
                          function (x) { return x; });
-        // FIXME BUGGY
-        if (facet_constant_type(a) === 'vector' ||
-            facet_constant_type(a) === 'matrix')
-            return !a.eql(b); 
         throw "internal error: unrecognized type " + facet_typeOf(a) + 
             " " + facet_constant_type(a);
     }));
