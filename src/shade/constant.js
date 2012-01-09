@@ -1,3 +1,20 @@
+// Shade.constant creates a constant value in the Shade language.
+// 
+// This value can be one of:
+// - a single float: 
+//    Shade.constant(1)
+//    Shade.constant(3.0, Shade.Types.float_t)
+// - a single integer:
+//    Shade.constant(1, Shade.Types.int_t)
+// - a boolean:
+//    Shade.constant(false);
+// - a GLSL vec2, vec3 or vec4 (of floating point values):
+//    Shade.constant(2, vec.make([1, 2]));
+// - a GLSL matrix of dimensions 2x2, 3x3, 4x4 (Facet currently does not support GLSL rectangular matrices):
+//    Shade.constant(2, mat.make([1, 0, 0, 1]));
+// - An array of constant values of the same type:
+//    Shade.constant([2, 3, 4, 5, 6]);
+
 Shade.constant = function(v, type)
 {
     var constant_tuple_fun = function(type, args)
@@ -88,7 +105,12 @@ Shade.constant = function(v, type)
             if (array_size == 0) {
                 throw "array constant must be non-empty";
             }
-            var array_type = Shade.array(new_v[0].type, array_size);
+
+            var new_types = new_v.map(function(t) { return t.type; });
+            var array_type = Shade.array(new_types[0], array_size);
+            if (_.any(new_types, function(t) { return !t.equals(array_type); })) {
+                throw "array elements must have identical types";
+            }
             return Shade._create_concrete_exp( {
                 parents: new_v,
                 type: array_type,
@@ -116,7 +138,8 @@ Shade.constant = function(v, type)
                 }
             });
         } else {
-            throw "type error: constant should be bool, number, vector or matrix";
+            throw "type error: constant should be bool, number, vector, matrix or array. Got " + t
+            + " instead";
         }
     }
     if (t === 'number') {
@@ -137,7 +160,6 @@ Shade.constant = function(v, type)
         var d = v.length;
         if (d < 2 && d > 4)
             throw "Invalid length for constant vector: " + v;
-
         var el_ts = _.map(v, function(t) { return typeOf(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
             throw "Not all constant params have the same types;";
@@ -153,17 +175,6 @@ Shade.constant = function(v, type)
         }
         else
             throw "bad datatype for constant: " + el_ts[0];
-    }
-    if (t === 'boolean_vector') {
-        // FIXME bvecs
-        var d = v.length;
-        var computed_t = Shade.basic('bvec' + d);
-        if (type && !computed_t.equals(type)) {
-            throw "passed constant must have type " + computed_t.repr()
-                + ", but was request to have incompatible type " 
-                + type.repr();
-        }
-        return constant_tuple_fun(computed_t, v);
     }
     if (t === 'matrix') {
         var d = Math.sqrt(v.length); // FIXME UGLY
@@ -181,3 +192,4 @@ Shade.constant = function(v, type)
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };
 Shade.as_bool = function(v) { return Shade.make(v).as_bool(); };
 Shade.as_float = function(v) { return Shade.make(v).as_float(); };
+

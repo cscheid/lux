@@ -22,7 +22,7 @@ Shade.basic = function(repr) {
     };
 
     if (!is_valid_basic_type(repr)) {
-        throw "invalid basic type '" + repr + "'.";
+        throw "invalid basic type '" + repr + "'";
     };
     
     return Shade._create(Shade.Types.base_t, {
@@ -31,7 +31,7 @@ Shade.basic = function(repr) {
         swizzle: function(pattern) {
             // FIXME swizzle is for vecs only, not arrays in general.
             if (!(this.is_array())) {
-                throw "Swizzle pattern requires array type";
+                throw "swizzle pattern requires array type";
             }
             var base_repr = this.repr();
             var base_size = Number(base_repr[base_repr.length-1]);
@@ -54,15 +54,15 @@ Shade.basic = function(repr) {
                 throw "Internal error?!";
             };
             if (!pattern.match(valid_re)) {
-                throw "Invalid swizzle pattern '" + pattern + "'.";
+                throw "invalid swizzle pattern '" + pattern + "'";
             }
             var count = 0;
             for (var i=0; i<group_res.length; ++i) {
                 if (pattern.match(group_res[i])) count += 1;
             }
             if (count != 1) {
-                throw ("Swizzle pattern '" + pattern + 
-                       "' belongs to more than one group.");
+                throw ("swizzle pattern '" + pattern + 
+                       "' belongs to more than one group");
             }
             if (pattern.length === 1) {
                 return this.array_base();

@@ -29,7 +29,6 @@ Facet.Unprojector = {
                 vertex: xy
             });
             depth_value = Shade.uniform("float");
-            console.log("xy type", xy.type.repr());
             clear_batch = Facet.bake(model, {
                 position: Shade.vec(xy, depth_value, 1.0),
                 color: Shade.vec(1,1,1,1)
@@ -50,7 +49,6 @@ Facet.Unprojector = {
             try {
                 callback();
             } finally {
-                console.log(old_clear_color);
                 ctx.clearColor(old_clear_color[0],
                                old_clear_color[1],
                                old_clear_color[2],
@@ -70,10 +68,6 @@ Facet.Unprojector = {
             ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                            result_bytes);
         });
-        console.log(result_bytes[0], 
-                    result_bytes[1],
-                    result_bytes[2], 
-                    result_bytes[3]);
         return result_bytes[0] / 256 + 
             result_bytes[1] / (1 << 16) + 
             result_bytes[2] / (1 << 24);

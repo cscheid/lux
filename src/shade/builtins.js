@@ -35,7 +35,7 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
             }
             var types = _.map(_.toArray(arguments).slice(0, arguments.length),
                   function(x) { return x.type.repr(); }).join(", ");
-            throw "Could not find appropriate type match for (" + types + ")";
+            throw "could not find appropriate type match for (" + types + ")";
         };
     }
 

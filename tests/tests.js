@@ -6,12 +6,17 @@ $(canvas).hide();
 
 test("Shade types", function() {
     var x = Shade.basic('float');
-    expect(20);
+    expect(21);
     raises(function() {
         Shade.basic('askldjasdf');
+    }, function(e) {
+        return e === "invalid basic type 'askldjasdf'";
     }, "bad basic objects should fail");
     raises(function() {
         Shade.basic('vec2').swizzle('rx');
+    }, function(e) {
+        console.log(e);
+        return e === "swizzle pattern 'rx' belongs to more than one group";
     }, "bad swizzle pattern");
     ok(Shade.basic('vec2').swizzle('rg'), "basic swizzle pattern #1");
     ok(Shade.basic('vec2').equals(Shade.Types.vec2), "type equality");
@@ -24,30 +29,47 @@ test("Shade types", function() {
     equal(Shade.basic('vec4').swizzle('q').repr(),
           'float', "basic swizzle to scalar");
     raises(function() {
-        Shade.Shade.varying("model_pos");
-    }, "declarations require types");
+        Shade.varying("model_pos");
+    }, function(e) { return e === "varying requires type"; });
 
-    equal(Shade.basic('vec4').is_vec(), true, "type check methods");
+    equal(Shade.basic('vec4').is_vec(),  true,  "type check methods");
     equal(Shade.basic('float').is_vec(), false, "type check methods");
-    equal(Shade.basic('mat4').is_vec(), false, "type check methods");
-    equal(Shade.basic('mat4').is_pod(), false, "type check methods");
-    equal(Shade.basic('float').is_pod(), true, "type check methods");
+    equal(Shade.basic('mat4').is_vec(),  false, "type check methods");
+    equal(Shade.basic('mat4').is_pod(),  false, "type check methods");
+    equal(Shade.basic('float').is_pod(), true,  "type check methods");
     raises(function() {
-        Shade.constant($V([1, false]), "bad constant");
-    }, "bad constant");
+        var v = [];
+        Shade.constant(v);
+    }, function(e) { 
+        return e === "array constant must be non-empty"; 
+    });
+    raises(function() {
+        var v = [1, false];
+        Shade.constant(v);
+    }, function(e) {
+        return e === "array elements must have identical types";
+    });
 
     ok(Shade.basic('vec4').element_type(0).equals(Shade.Types.float_t), "element_type");
     ok(Shade.vec(Shade.vec(3, 4), 0).type.element_type(2).equals(Shade.Types.float_t), "element_type");
     raises(function() {
         Shade.vec(Shade.vec(3, 4), true);
+    }, function(e) {
+        return e === "vec requires equal types";
     }, "bad vec construction");
     raises(function() {
         Shade.vec(Shade.vec(3, 4), 5).type.element_type(3);
+    }, function(e) {
+        return e === "invalid call: vec3 has no element 3";
     }, "out-of-bounds element_type check");
 
     raises(function() {
         Shade.constant(1.5).equal(Shade.as_int(3));
+    }, function(e) {
+        return e === "type error on equal: could not find appropriate type match for (float, int)";
     }, "comparison type check");
+
+    
 });
 
 test("Shade expressions", function() {
@@ -104,7 +126,9 @@ test("Shade compilation", function() {
             gl_FragColor: Shade.vec(1,1,1,1),
             gl_Nononono: Shade.vec(1,0,0,0)
         });
-    }, "gl_* are reserved GLSL names, sorry; you can't use them in Facet.");
+    }, function(e) {
+        return e === "gl_* are reserved GLSL names, sorry; you can't use them in Facet.";
+    }, "reserved GLSL names in Facet");
     
     (function () {
         Shade.program({
