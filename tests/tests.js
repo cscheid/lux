@@ -15,7 +15,6 @@ test("Shade types", function() {
     raises(function() {
         Shade.basic('vec2').swizzle('rx');
     }, function(e) {
-        console.log(e);
         return e === "swizzle pattern 'rx' belongs to more than one group";
     }, "bad swizzle pattern");
     ok(Shade.basic('vec2').swizzle('rg'), "basic swizzle pattern #1");
