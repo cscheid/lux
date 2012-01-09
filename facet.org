@@ -1,9 +1,8 @@
 The Big List of Facet TODOs
 
 * BUGS
-** Grand Tour demo is broken!!
-It's a dots vs scatterplot marks issue. Look it up.
 ** OpenStreetMap globe is broken on MacBook Air 11" (is it a precision problem?)
+** Grand Tour demo is broken on MacBook Air 11" as well
 * Optimizer
 ** TODO Common subexpression elimination
     

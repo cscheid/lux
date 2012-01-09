@@ -3398,8 +3398,6 @@ Facet.bake = function(model, appearance)
     var result = {
         batch_id: batch_id,
         draw: function() {
-            console.log(this.batch_id, Facet._globals.batch_render_mode, 
-                        which_opts[Facet._globals.batch_render_mode]);
             draw_it(which_opts[Facet._globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
@@ -4221,7 +4219,6 @@ Facet.Unprojector = {
                 vertex: xy
             });
             depth_value = Shade.uniform("float");
-            console.log("xy type", xy.type.repr());
             clear_batch = Facet.bake(model, {
                 position: Shade.vec(xy, depth_value, 1.0),
                 color: Shade.vec(1,1,1,1)
@@ -4242,7 +4239,6 @@ Facet.Unprojector = {
             try {
                 callback();
             } finally {
-                console.log(old_clear_color);
                 ctx.clearColor(old_clear_color[0],
                                old_clear_color[1],
                                old_clear_color[2],
@@ -4262,10 +4258,6 @@ Facet.Unprojector = {
             ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                            result_bytes);
         });
-        console.log(result_bytes[0], 
-                    result_bytes[1],
-                    result_bytes[2], 
-                    result_bytes[3]);
         return result_bytes[0] / 256 + 
             result_bytes[1] / (1 << 16) + 
             result_bytes[2] / (1 << 24);
@@ -4711,7 +4703,7 @@ Shade.basic = function(repr) {
     };
 
     if (!is_valid_basic_type(repr)) {
-        throw "invalid basic type '" + repr + "'.";
+        throw "invalid basic type '" + repr + "'";
     };
     
     return Shade._create(Shade.Types.base_t, {
@@ -4720,7 +4712,7 @@ Shade.basic = function(repr) {
         swizzle: function(pattern) {
             // FIXME swizzle is for vecs only, not arrays in general.
             if (!(this.is_array())) {
-                throw "Swizzle pattern requires array type";
+                throw "swizzle pattern requires array type";
             }
             var base_repr = this.repr();
             var base_size = Number(base_repr[base_repr.length-1]);
@@ -4743,15 +4735,15 @@ Shade.basic = function(repr) {
                 throw "Internal error?!";
             };
             if (!pattern.match(valid_re)) {
-                throw "Invalid swizzle pattern '" + pattern + "'.";
+                throw "invalid swizzle pattern '" + pattern + "'";
             }
             var count = 0;
             for (var i=0; i<group_res.length; ++i) {
                 if (pattern.match(group_res[i])) count += 1;
             }
             if (count != 1) {
-                throw ("Swizzle pattern '" + pattern + 
-                       "' belongs to more than one group.");
+                throw ("swizzle pattern '" + pattern + 
+                       "' belongs to more than one group");
             }
             if (pattern.length === 1) {
                 return this.array_base();
@@ -5555,6 +5547,23 @@ Shade.swizzle = function(exp, pattern)
 {
     return Shade.make(exp).swizzle(pattern);
 };
+// Shade.constant creates a constant value in the Shade language.
+// 
+// This value can be one of:
+// - a single float: 
+//    Shade.constant(1)
+//    Shade.constant(3.0, Shade.Types.float_t)
+// - a single integer:
+//    Shade.constant(1, Shade.Types.int_t)
+// - a boolean:
+//    Shade.constant(false);
+// - a GLSL vec2, vec3 or vec4 (of floating point values):
+//    Shade.constant(2, vec.make([1, 2]));
+// - a GLSL matrix of dimensions 2x2, 3x3, 4x4 (Facet currently does not support GLSL rectangular matrices):
+//    Shade.constant(2, mat.make([1, 0, 0, 1]));
+// - An array of constant values of the same type:
+//    Shade.constant([2, 3, 4, 5, 6]);
+
 Shade.constant = function(v, type)
 {
     var constant_tuple_fun = function(type, args)
@@ -5645,7 +5654,12 @@ Shade.constant = function(v, type)
             if (array_size == 0) {
                 throw "array constant must be non-empty";
             }
-            var array_type = Shade.array(new_v[0].type, array_size);
+
+            var new_types = new_v.map(function(t) { return t.type; });
+            var array_type = Shade.array(new_types[0], array_size);
+            if (_.any(new_types, function(t) { return !t.equals(array_type); })) {
+                throw "array elements must have identical types";
+            }
             return Shade._create_concrete_exp( {
                 parents: new_v,
                 type: array_type,
@@ -5673,7 +5687,8 @@ Shade.constant = function(v, type)
                 }
             });
         } else {
-            throw "type error: constant should be bool, number, vector or matrix";
+            throw "type error: constant should be bool, number, vector, matrix or array. Got " + t
+            + " instead";
         }
     }
     if (t === 'number') {
@@ -5694,7 +5709,6 @@ Shade.constant = function(v, type)
         var d = v.length;
         if (d < 2 && d > 4)
             throw "Invalid length for constant vector: " + v;
-
         var el_ts = _.map(v, function(t) { return typeOf(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
             throw "Not all constant params have the same types;";
@@ -5710,17 +5724,6 @@ Shade.constant = function(v, type)
         }
         else
             throw "bad datatype for constant: " + el_ts[0];
-    }
-    if (t === 'boolean_vector') {
-        // FIXME bvecs
-        var d = v.length;
-        var computed_t = Shade.basic('bvec' + d);
-        if (type && !computed_t.equals(type)) {
-            throw "passed constant must have type " + computed_t.repr()
-                + ", but was request to have incompatible type " 
-                + type.repr();
-        }
-        return constant_tuple_fun(computed_t, v);
     }
     if (t === 'matrix') {
         var d = Math.sqrt(v.length); // FIXME UGLY
@@ -5738,6 +5741,7 @@ Shade.constant = function(v, type)
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };
 Shade.as_bool = function(v) { return Shade.make(v).as_bool(); };
 Shade.as_float = function(v) { return Shade.make(v).as_float(); };
+
 // FIXME: Shade.set should be (name, exp), not (exp, name)
 Shade.set = function(exp, name)
 {
@@ -6535,7 +6539,7 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
             }
             var types = _.map(_.toArray(arguments).slice(0, arguments.length),
                   function(x) { return x.type.repr(); }).join(", ");
-            throw "Could not find appropriate type match for (" + types + ")";
+            throw "could not find appropriate type match for (" + types + ")";
         };
     }
 
