@@ -64,7 +64,6 @@ facet.js:					\
 	src/shade/unique_name.js		\
 	src/shade/create.js			\
 	src/shade/memoize_on_field.js		\
-	src/shade/zipWith.js			\
 	src/shade/types/_begin.js		\
 	src/shade/types/base_t.js		\
 	src/shade/types/basic.js		\

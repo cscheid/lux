@@ -113,7 +113,7 @@ Shade.constant = function(v, type)
             if (_.any(new_types, function(t) { return !t.equals(new_types[0]); })) {
                 throw "array elements must have identical types";
             }
-            if (_.any(new_v, function(el) { return !el.is_constant() })) {
+            if (_.any(new_v, function(el) { return !el.is_constant(); })) {
                 throw "constant array elements must be constant as well";
             }
             return Shade._create_concrete_exp( {

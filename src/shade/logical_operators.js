@@ -164,7 +164,8 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
             facet_typeOf(a) === 'boolean')
             return a === b;
         if (facet_typeOf(a) === 'array')
-            return _.all(zipWith(function(a, b) { return a === b; }, a, b),
+            return _.all(_.map(_.zip(a, b),
+                               function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
         throw "internal error: unrecognized type " + facet_typeOf(a) + 
             " " + facet_constant_type(a);
@@ -177,7 +178,8 @@ Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
             facet_typeOf(a) === 'boolean')
             return a !== b;
         if (facet_typeOf(a) === 'array')
-            return _.any(zipWith(function(a, b) { return a !== b; }, a, b),
+            return _.any(_.map(_.zip(a, b),
+                               function(v) { return v[0] !== v[1]; } ),
                          function (x) { return x; });
         throw "internal error: unrecognized type " + facet_typeOf(a) + 
             " " + facet_constant_type(a);

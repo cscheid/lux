@@ -1,5 +1,17 @@
 (function() {
 
+function zipWith(f, v1, v2)
+{
+    return _.map(_.zip(v1, v2),
+                 function(v) { return f(v[0], v[1]); });
+}
+
+function zipWith3(f, v1, v2, v3)
+{
+    return _.map(_.zip(v1, v2, v3),
+                 function(v) { return f(v[0], v[1], v[2]); });
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // common functions
 
