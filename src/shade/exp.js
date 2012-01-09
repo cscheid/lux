@@ -262,10 +262,10 @@ Shade.Exp = {
         // this "works around" current constant index restrictions in webgl
         // look for it to get broken in the future as this hole is plugged.
         index._must_be_function_call = true;
-        if (!index.type.equals(Shade.Types.float_t) ||
+        if (!index.type.equals(Shade.Types.float_t) &&
             !index.type.equals(Shade.Types.int_t)) {
             throw "at expects int or float, got '" + 
-                index.repr() + "' instead";
+                index.type.repr() + "' instead";
         }
         return Shade._create_concrete_exp( {
             parents: [parent, index],
