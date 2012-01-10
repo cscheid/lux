@@ -28,7 +28,7 @@ Shade.constant = function(v, type)
 
             var string_args = _.map(args, function(arg) {
                 var v = String(arg);
-                if (v.indexOf(".") === -1) {
+                if (facet_typeOf(arg) === "number" && v.indexOf(".") === -1) {
                     return v + ".0";
                 } else
                     return v;
