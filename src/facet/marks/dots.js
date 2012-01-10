@@ -5,7 +5,7 @@ Facet.Marks.dots = function(opts)
         stroke_color: Shade.vec(0,0,0,1),
         point_diameter: 5,
         stroke_width: 2,
-        mode: Facet.DrawingMode.over,
+        mode: Facet.DrawingMode.over_with_depth,
         alpha: true,
         plain: false
     });
