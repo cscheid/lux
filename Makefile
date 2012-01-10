@@ -60,6 +60,7 @@ facet.js:					\
 	src/facet/drawing_mode/over.js		\
 	src/facet/drawing_mode/standard.js	\
 	src/shade/_begin.js			\
+	src/shade/color.js			\
 	src/shade/looping.js			\
 	src/shade/unique_name.js		\
 	src/shade/create.js			\
@@ -109,6 +110,8 @@ facet.js:					\
 	src/shade/discard.js			\
 	src/shade/id.js				\
 	src/shade/_end.js			\
+	src/shade/colors/_begin.js		\
+	src/shade/colors/alpha.js		\
 	src/facet/marks/_begin.js		\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\
@@ -118,8 +121,7 @@ facet.js:					\
 	src/facet/models/mesh.js		\
 	src/facet/models/sphere.js		\
 	src/facet/models/square.js		\
-	src/facet/models/teapot.js		\
-	src/colors.js
+	src/facet/models/teapot.js
 
 # If the chmods below don't make sense to you right now, wait until
 # you fix a bug on the compilation output instead of the source :)
