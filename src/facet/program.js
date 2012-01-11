@@ -8,6 +8,10 @@ Facet.program = function(vs_src, fs_src)
         ctx.compileShader(shader);
         if (!ctx.getShaderParameter(shader, ctx.COMPILE_STATUS)) {
             alert(ctx.getShaderInfoLog(shader));
+            console.log("Error message: ");
+            console.log(ctx.getShaderInfoLog(shader));
+            console.log("Failing shader: ");
+            console.log(str);
             return null;
         }
         return shader;
