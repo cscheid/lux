@@ -13,6 +13,8 @@ Shade.selection = function(condition, if_true, if_false)
         parents: [condition, if_true, if_false],
         type: if_true.type,
         expression_type: "selection",
+        // FIXME: works around Chrome Bug ID 103053
+        _must_be_function_call: true,
         value: function() {
             return "(" + this.parents[0].evaluate() + "?"
                 + this.parents[1].evaluate() + ":"
