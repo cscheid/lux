@@ -1,11 +1,12 @@
 (function() {
 
 var table = {};
-_.each(["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz"], function(space) {
+var colorspaces = ["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz"];
+_.each(colorspaces, function(space) {
     table[space] = {};
     table[space][space] = function(x) { return x; };
     table[space].create = function(v0, v1, v2) {
-        // this function is carefully designed to work for the above 
+        // this function is carefully designed to work for the above
         // color space names. if those change, this probably changes
         // too.
         var l = space.length;
@@ -14,13 +15,23 @@ _.each(["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz"], function(space) {
             field_2 = space[l-1];
         var result = {
             space: space,
-            values: function () {
+            values: function() {
                 return [this[field_0], this[field_1], this[field_2]];
+            },
+            as_shade: function(alpha) {
+                if (_.isUndefined(alpha))
+                    alpha = 1;
+                var srgb = table[space].rgb(this);
+                return Shade.vec(srgb.r, srgb.g, srgb.b, alpha);
             }
         };
+        
         result[field_0] = v0;
         result[field_1] = v1;
         result[field_2] = v2;
+        _.each(colorspaces, function(other_space) {
+            result[other_space] = function() { return table[space][other_space](this); };
+        });
         return result;
     };
 });
@@ -56,11 +67,13 @@ function qtrans(q1, q2, hue)
 
 function gtrans(u, gamma)
 {
+    if (u < 0) return u;
     return Math.pow(u, 1.0 / gamma);
 }
 
 function ftrans(u, gamma)
 {
+    if (u < 0) return u;
     return Math.pow(u, gamma);
 }
 
@@ -115,7 +128,7 @@ table.rgb.hls = function(rgb)
 
 table.rgb.xyz = function(rgb)
 {
-    var yn = white_point_uv[1];
+    var yn = white_point.y;
     return table.xyz.create(
         yn * (0.412453 * rgb.r + 0.357580 * rgb.g + 0.180423 * rgb.b),
         yn * (0.212671 * rgb.r + 0.715160 * rgb.g + 0.072169 * rgb.b),
@@ -125,7 +138,7 @@ table.rgb.xyz = function(rgb)
 table.rgb.srgb = function(rgb)
 {
     return table.rgb.create(gtrans(rgb.r, 2.2),
-                            gtrans(rgb.b, 2.2),
+                            gtrans(rgb.g, 2.2),
                             gtrans(rgb.b, 2.2));
 };
 
@@ -137,7 +150,7 @@ table.rgb.srgb = function(rgb)
 
 table.srgb.xyz = function(srgb)
 {
-    var yn = white_point_uv[1];
+    var yn = white_point.y;
     var r = ftrans(srgb.r, 2.2),
         g = ftrans(srgb.g, 2.2),
         b = ftrans(srgb.b, 2.2);
@@ -184,9 +197,9 @@ table.srgb.hcl = _.compose(table.rgb.hcl, table.srgb.rgb);
 
 table.xyz.rgb = function(xyz)
 {
-    var yn = white_point_uv[1];
+    var yn = white_point.y;
     return table.rgb.create(
-        ( 3.230479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn,
+        ( 3.240479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn,
         (-0.969256 * xyz.x + 1.875992 * xyz.y + 0.041556 * xyz.z) / yn,
         ( 0.055648 * xyz.x - 0.204043 * xyz.y + 1.057311 * xyz.z) / yn
     );
@@ -194,9 +207,9 @@ table.xyz.rgb = function(xyz)
 
 table.xyz.srgb = function(xyz)
 {
-    var yn = white_point_uv[1];
+    var yn = white_point.y;
     return table.srgb.create(
-        gtrans(( 3.230479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn, 2.2),
+        gtrans(( 3.240479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn, 2.2),
         gtrans((-0.969256 * xyz.x + 1.875992 * xyz.y + 0.041556 * xyz.z) / yn, 2.2),
         gtrans(( 0.055648 * xyz.x - 0.204043 * xyz.y + 1.057311 * xyz.z) / yn, 2.2)
     );
@@ -223,13 +236,10 @@ table.luv.hcl = function(luv)
 table.luv.xyz = function(luv)
 {
     var x = 0, y = 0, z = 0;
-    var xn = white_point[0],
-        yn = white_point[1],
-        zn = white_point[2];
     if (!(luv.l <= 0 && luv.u == 0 && luv.v == 0)) {
-        y = yn * ((luv.l > 7.999592) ? 
-                  Math.pow((luv.l + 16)/116, 3) : 
-                  luv.l / 903.3);
+        y = white_point.y * ((luv.l > 7.999592) ? 
+                             Math.pow((luv.l + 16)/116, 3) : 
+                             luv.l / 903.3);
         // var t = xyz_to_uv(xn, yn, zn);
         // var un = t[0], vn = t[1];
         var result_u = luv.u / (13 * luv.l) + white_point_uv[0];
@@ -322,5 +332,7 @@ table.hsv.hls  = _.compose(table.rgb.hls,  table.hsv.rgb);
 table.hsv.xyz  = _.compose(table.rgb.xyz,  table.hsv.rgb);
 table.hsv.luv  = _.compose(table.rgb.luv,  table.hsv.rgb);
 table.hsv.hcl  = _.compose(table.rgb.hcl,  table.hsv.rgb);
+
+Shade.Colors.jstable = table;
 
 })();
