@@ -82,6 +82,7 @@ facet.js:					\
 	src/shade/sampler2D_from_texture.js	\
 	src/shade/attribute.js			\
 	src/shade/varying.js			\
+	src/shade/fragCoord.js			\
 	src/shade/pointCoord.js			\
 	src/shade/round_dot.js			\
 	src/shade/operators.js			\
@@ -112,6 +113,7 @@ facet.js:					\
 	src/shade/_end.js			\
 	src/shade/colors/_begin.js		\
 	src/shade/colors/alpha.js		\
+	src/shade/colors/convert.js		\
 	src/facet/marks/_begin.js		\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\
