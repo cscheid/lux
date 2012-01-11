@@ -16,7 +16,7 @@ Shade.Exp = {
             console.log(str + ')');
         }
     },
-    eval: function() {
+    evaluate: function() {
         return this.glsl_name + "()";
     },
     parent_is_unconditional: function(i) {
@@ -45,7 +45,7 @@ Shade.Exp = {
             }
             var parents = exp.parents;
             if (_.isUndefined(parents)) {
-                throw "Internal error: expression " + exp.eval()
+                throw "Internal error: expression " + exp.evaluate()
                     + " has undefined parents.";
             }
             for (var i=0; i<parents.length; ++i) {
@@ -146,7 +146,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.int_t,
-            value: function() { return "int(" + this.parents[0].eval() + ")"; },
+            value: function() { return "int(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -162,7 +162,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.bool_t,
-            value: function() { return "bool(" + this.parents[0].eval() + ")"; },
+            value: function() { return "bool(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -178,7 +178,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.float_t,
-            value: function() { return "float(" + this.parents[0].eval() + ")"; },
+            value: function() { return "float(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -205,7 +205,7 @@ Shade.Exp = {
                 case 'q': return 3;
                 default: throw "invalid swizzle pattern";
                 }
-            };
+            }
             var result = [];
             for (var i=0; i<pattern.length; ++i) {
                 result.push(to_index(pattern[i]));
@@ -219,7 +219,7 @@ Shade.Exp = {
             parents: [parent],
             type: parent.type.swizzle(pattern),
             expression_type: "swizzle",
-            eval: function() { return this.parents[0].eval() + "." + pattern; },
+            evaluate: function() { return this.parents[0].evaluate() + "." + pattern; },
             is_constant: Shade.memoize_on_field("_is_constant", function () {
                 var that = this;
                 return _.all(indices, function(i) {
@@ -271,13 +271,13 @@ Shade.Exp = {
             parents: [parent, index],
             type: parent.type.array_base(),
             expression_type: "index",
-            eval: function() { 
+            evaluate: function() { 
                 if (this.parents[1].type.is_integral()) {
-                    return this.parents[0].eval() + 
-                        "[" + this.parents[1].eval() + "]"; 
+                    return this.parents[0].evaluate() + 
+                        "[" + this.parents[1].evaluate() + "]"; 
                 } else {
-                    return this.parents[0].eval() + 
-                        "[int(" + this.parents[1].eval() + ")]"; 
+                    return this.parents[0].evaluate() + 
+                        "[int(" + this.parents[1].evaluate() + ")]"; 
                 }
             },
             is_constant: function() {

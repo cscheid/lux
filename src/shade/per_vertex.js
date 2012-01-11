@@ -8,7 +8,7 @@ Shade.per_vertex = function(exp)
         parents: [exp],
         type: exp.type,
         stage: "vertex",
-        eval: function() { return this.parents[0].eval(); },
+        evaluate: function() { return this.parents[0].evaluate(); },
         compile: function () {}
     });
 };

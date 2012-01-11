@@ -34,7 +34,7 @@ Shade.attribute = function(name, type)
             } else
                 return this.at(i);
         }),
-        eval: function() { 
+        evaluate: function() { 
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
             } else

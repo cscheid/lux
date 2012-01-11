@@ -46,7 +46,7 @@ Shade.constant = function(v, type)
         }
 
         return Shade._create_concrete_exp( {
-            eval: function(glsl_name) {
+            evaluate: function(glsl_name) {
                 return to_glsl(this.type.repr(), args);
             },
             expression_type: "constant{" + args + "}",
@@ -104,7 +104,7 @@ Shade.constant = function(v, type)
         if (t === 'array') {
             var new_v = v.map(Shade.make);
             var array_size = new_v.length;
-            if (array_size == 0) {
+            if (array_size === 0) {
                 throw "array constant must be non-empty";
             }
 
@@ -120,15 +120,15 @@ Shade.constant = function(v, type)
                 parents: new_v,
                 type: array_type,
                 expression_type: "constant",
-                eval: function() { return this.glsl_name; },
+                evaluate: function() { return this.glsl_name; },
                 compile: function (ctx) {
                     this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
                     ctx.strings.push(this.type.declare(this.glsl_name), ";\n");
                     ctx.strings.push("void", this.array_initializer_glsl_name, "(void) {\n");
                     for (var i=0; i<this.parents.length; ++i) {
                         ctx.strings.push("    ", this.glsl_name, "[", i, "] =",
-                                         this.parents[i].eval(), ";\n");
-                    };
+                                         this.parents[i].evaluate(), ";\n");
+                    }
                     ctx.strings.push("}\n");
                     ctx.add_initialization(this.array_initializer_glsl_name + "()");
                 },
@@ -162,8 +162,9 @@ Shade.constant = function(v, type)
                    type.repr());
         return constant_tuple_fun(Shade.Types.bool_t, [v]);
     }
+    var d, computed_t;
     if (t === 'vector') {
-        var d = v.length;
+        d = v.length;
         if (d < 2 && d > 4)
             throw "invalid length for constant vector: " + v;
         var el_ts = _.map(v, function(t) { return facet_typeOf(t); });
@@ -171,7 +172,7 @@ Shade.constant = function(v, type)
             throw "not all constant params have the same types";
         }
         if (el_ts[0] === "number") {
-            var computed_t = Shade.basic('vec' + d);
+            computed_t = Shade.basic('vec' + d);
             if (type && !computed_t.equals(type)) {
                 throw "passed constant must have type " + computed_t.repr()
                     + ", but was request to have incompatible type " 
@@ -183,8 +184,8 @@ Shade.constant = function(v, type)
             throw "bad datatype for constant: " + el_ts[0];
     }
     if (t === 'matrix') {
-        var d = mat_length_to_dimension[v.length];
-        var computed_t = Shade.basic('mat' + d);
+        d = mat_length_to_dimension[v.length];
+        computed_t = Shade.basic('mat' + d);
         if (type && !computed_t.equals(type)) {
             throw "passed constant must have type " + computed_t.repr()
                 + ", but was request to have incompatible type " 

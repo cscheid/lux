@@ -24,11 +24,12 @@ Facet.Camera.ortho = function(opts)
     {
         var view_ratio = (right - left) / (top - bottom);
         var l, r, t, b;
+        var half_width, half_height;
         if (view_ratio > screen_ratio) {
             // fat view rectangle, "letterbox" the projection
             var cy = (top + bottom) / 2;
-            var half_width = (right - left) / 2;
-            var half_height = half_width / screen_ratio;
+            half_width = (right - left) / 2;
+            half_height = half_width / screen_ratio;
             l = left;
             r = right;
             t = cy + half_height;
@@ -36,8 +37,8 @@ Facet.Camera.ortho = function(opts)
         } else {
             // tall view rectangle, "pillarbox" the projection
             var cx = (right + left) / 2;
-            var half_height = (top - bottom) / 2;
-            var half_width = half_height * screen_ratio;
+            half_height = (top - bottom) / 2;
+            half_width = half_height * screen_ratio;
             l = cx - half_width;
             r = cx + half_width;
             t = top;

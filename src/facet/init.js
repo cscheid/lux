@@ -41,10 +41,10 @@ Facet.init = function(canvas, opts)
         if (!gl)
             throw "failed context creation";
         if (opts.debugging) {
-            function throwOnGLError(err, funcName, args) {
+            var throwOnGLError = function(err, funcName, args) {
                 throw WebGLDebugUtils.glEnumToString(err) + 
                     " was caused by call to " + funcName;
-            }
+            };
             gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
         gl.viewportWidth = canvas.width;

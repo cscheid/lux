@@ -27,7 +27,7 @@ Shade.varying = function(name, type)
             } else
                 return this.at(i);
         }),
-        eval: function() { return name; },
+        evaluate: function() { return name; },
         compile: function(ctx) {
             ctx.declare_varying(name, this.type);
         }

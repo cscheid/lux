@@ -28,8 +28,9 @@ Facet.program = function(vs_src, fs_src)
 
     var active_uniforms = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
     var array_name_regexp = /.*\[0\]/;
+    var info;
     for (var i=0; i<active_uniforms; ++i) {
-        var info = ctx.getActiveUniform(shaderProgram, i);
+        info = ctx.getActiveUniform(shaderProgram, i);
         if (array_name_regexp.test(info.name)) {
             var array_name = info.name.substr(0, info.name.length-3);
             shaderProgram[array_name] = ctx.getUniformLocation(shaderProgram, array_name);
@@ -39,7 +40,7 @@ Facet.program = function(vs_src, fs_src)
     }
     var active_attributes = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_ATTRIBUTES);
     for (i=0; i<active_attributes; ++i) {
-        var info = ctx.getActiveAttrib(shaderProgram, i);
+        info = ctx.getActiveAttrib(shaderProgram, i);
         shaderProgram[info.name] = ctx.getAttribLocation(shaderProgram, info.name);
     }
     return shaderProgram;    

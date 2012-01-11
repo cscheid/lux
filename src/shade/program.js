@@ -194,10 +194,10 @@ Shade.Optimizer.vec_at_constant_index = function(exp)
 Shade.Optimizer.replace_vec_at_constant_with_swizzle = function(exp)
 {
     var v = exp.parents[1].constant_value();
-    if (v == 0) return exp.parents[0].swizzle("x");
-    if (v == 1) return exp.parents[0].swizzle("y");
-    if (v == 2) return exp.parents[0].swizzle("z");
-    if (v == 3) return exp.parents[0].swizzle("w");
+    if (v === 0) return exp.parents[0].swizzle("x");
+    if (v === 1) return exp.parents[0].swizzle("y");
+    if (v === 2) return exp.parents[0].swizzle("z");
+    if (v === 3) return exp.parents[0].swizzle("w");
     throw "internal error on Shade.Optimizer.replace_vec_at_constant_with_swizzle";
 };
 
@@ -293,19 +293,19 @@ Shade.program = function(program_obj)
                 throw "color attribute must be of type vec4, got " +
                     v.type.repr() + " instead";
             }
-            fp_obj['gl_FragColor'] = v;
+            fp_obj.gl_FragColor = v;
         } else if (k === 'gl_Position') {
             if (!v.type.equals(Shade.Types.vec4)) {
                 throw "position attribute must be of type vec4, got " +
                     v.type.repr() + " instead";
             }
-            vp_obj['gl_Position'] = v;
+            vp_obj.gl_Position = v;
         } else if (k === 'gl_PointSize') {
             if (!v.type.equals(Shade.Types.float_t)) {
                 throw "color attribute must be of type float, got " +
                     v.type.repr() + " instead";
             }
-            vp_obj['gl_PointSize'] = v;
+            vp_obj.gl_PointSize = v;
         } else if (k.substr(0, 3) === 'gl_') {
             // FIXME: Can we sensibly work around these?
             throw "gl_* are reserved GLSL names";
@@ -333,7 +333,7 @@ Shade.program = function(program_obj)
         vp_obj[varying_name] = exp;
         varying_names.push(varying_name);
         return Shade.varying(varying_name, exp.type);
-    };
+    }
 
     // explicit per-vertex hoisting must happen before is_attribute hoisting,
     // otherwise we might end up reading from a varying in the vertex program,
@@ -374,7 +374,7 @@ Shade.program = function(program_obj)
         used_varying_names.push.apply(used_varying_names,
                                       _.map(v.find_if(is_varying),
                                             function (v) { 
-                                                return v.eval();
+                                                return v.evaluate();
                                             }));
         fp_exprs.push(Shade.set(v, k));
     });

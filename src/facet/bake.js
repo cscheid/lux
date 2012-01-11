@@ -82,7 +82,7 @@ function draw_it(batch)
     }
 
     batch.draw_chunk();
-};
+}
 
 var largest_batch_id = 1;
 
@@ -97,7 +97,7 @@ Facet.bake = function(model, appearance)
         return _.build(_.map(
             prog.attribute_buffers, function(v) { return [v._shade_name, v]; }
         ));
-    };
+    }
 
     function process_appearance(val_key_function) {
         var result = {};
@@ -152,8 +152,8 @@ Facet.bake = function(model, appearance)
     function create_unproject_program() {
         return process_appearance(function(value, key) {
             if (key === 'gl_FragColor') {
-                var position_z = appearance['gl_Position'].swizzle('z'),
-                    position_w = appearance['gl_Position'].swizzle('w');
+                var position_z = appearance.gl_Position.swizzle('z'),
+                    position_w = appearance.gl_Position.swizzle('w');
                 var normalized_z = position_z.div(position_w).add(1).div(2);
 
                 // normalized_z ranges from 0 to 1.

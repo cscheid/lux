@@ -78,7 +78,7 @@ Shade.CompilationContext = function(compile_type) {
             this.strings.push("void main() {\n");
             for (i=0; i<this.initialization_exprs.length; ++i)
                 this.strings.push("    ", this.initialization_exprs[i], ";\n");
-            this.strings.push("    ", fun.eval(), ";\n", "}\n");
+            this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
         },
         add_initialization: function(expr) {
             this.initialization_exprs.push(expr);

@@ -26,10 +26,10 @@ Shade.set = function(exp, name)
             if (name !== "gl_FragColor" &&
                 name !== "gl_Position" &&
                 name !== "gl_PointSize" &&
-                !(name.substring(0, 11) == "gl_FragData")) {
+                name.substring(0, 11) !== "gl_FragData") {
                 ctx.declare_varying(name, type);
             }
-            ctx.void_function(this, "(", name, "=", this.parents[0].eval(), ")");
+            ctx.void_function(this, "(", name, "=", this.parents[0].evaluate(), ")");
         },
         type: Shade.basic('void'),
         parents: [exp]

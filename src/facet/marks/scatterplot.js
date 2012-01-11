@@ -6,7 +6,7 @@ Facet.Marks.scatterplot = function(opts)
         xy_scale: function (x) { return x; }
     });
 
-    function to_opengl(x) { return x.mul(2).sub(1); };
+    function to_opengl(x) { return x.mul(2).sub(1); }
     var S = Shade;
     
     var x_scale = opts.x_scale;
@@ -19,7 +19,7 @@ Facet.Marks.scatterplot = function(opts)
                          to_opengl(opts.y_scale(opts.y)));
     } else if (opts.xy) {
         position = opts.xy_scale(opts.xy).mul(2).sub(S.vec(1,1));
-    };
+    }
 
     if (opts.model) {
         elements = opts.model.elements;

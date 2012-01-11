@@ -6,16 +6,16 @@ Facet.Models.mesh = function(u_secs, v_secs) {
     if (u_secs <= 0) throw "u_secs must be positive";
     v_secs = Math.floor(v_secs);
     u_secs = Math.floor(u_secs);
-    
-    for (var i=0; i<=v_secs; ++i) {
+    var i, j;    
+    for (i=0; i<=v_secs; ++i) {
         var v = (i / v_secs);
-        for (var j=0; j<=u_secs; ++j) {
+        for (j=0; j<=u_secs; ++j) {
             var u = (j / u_secs);
             verts.push(u, v);
         }
     }
     for (i=0; i<v_secs; ++i) {
-        for (var j=0; j<=u_secs; ++j) {
+        for (j=0; j<=u_secs; ++j) {
             elements.push(i * (u_secs + 1) + j,
                           (i + 1) * (u_secs + 1) + j);
         }

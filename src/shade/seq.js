@@ -6,8 +6,8 @@ Shade.seq = function(parents)
     return Shade._create_concrete_exp({
         expression_name: "seq",
         parents: parents,
-        eval: function(glsl_name) {
-            return this.parents.map(function (n) { return n.eval(); }).join("; ");
+        evaluate: function(glsl_name) {
+            return this.parents.map(function (n) { return n.evaluate(); }).join("; ");
         },
         type: Shade.basic('void'),
         compile: function (ctx) {}

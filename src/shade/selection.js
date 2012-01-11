@@ -14,9 +14,9 @@ Shade.selection = function(condition, if_true, if_false)
         type: if_true.type,
         expression_type: "selection",
         value: function() {
-            return "(" + this.parents[0].eval() + "?"
-                + this.parents[1].eval() + ":"
-                + this.parents[2].eval() + ")";
+            return "(" + this.parents[0].evaluate() + "?"
+                + this.parents[1].evaluate() + ":"
+                + this.parents[2].evaluate() + ")";
         },
         constant_value: function() {
             return (this.parents[0].constant_value() ?

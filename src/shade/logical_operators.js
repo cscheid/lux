@@ -10,8 +10,8 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evalu
         type: Shade.Types.bool_t,
         expression_type: "operator" + operator_name,
         value: function() {
-            return "(" + this.parents[0].eval() + " " + operator_name + " " +
-                this.parents[1].eval() + ")";
+            return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
+                this.parents[1].evaluate() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return constant_evaluator(this);
@@ -58,7 +58,7 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
 
 Shade.or = logical_operator_exp(
     "||", lift_binfun_to_evaluator(function(a, b) { return a || b; }),
-    function(i) { return i == 0; }
+    function(i) { return i === 0; }
 );
 
 Shade.Exp.or = function(other)
@@ -68,7 +68,7 @@ Shade.Exp.or = function(other)
 
 Shade.and = logical_operator_exp(
     "&&", lift_binfun_to_evaluator(function(a, b) { return a && b; }),
-    function(i) { return i == 0; }
+    function(i) { return i === 0; }
 );
 
 Shade.Exp.and = function(other)
@@ -94,7 +94,7 @@ Shade.not = function(exp)
         type: Shade.Types.bool_t,
         expression_type: "operator!",
         value: function() {
-            return "(!" + this.parents[0].eval() + ")";
+            return "(!" + this.parents[0].evaluate() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return !this.parents[0].constant_value();

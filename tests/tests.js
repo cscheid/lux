@@ -96,7 +96,7 @@ test("Shade expressions", function() {
 });
 
 test("Shade compilation", function() {
-    ok(Shade.constant(vec.make([1,2,3,4])).eval());
+    ok(Shade.constant(vec.make([1,2,3,4])).evaluate());
 
     // this is a little finicky because the unique names might get
     // incremented, but I don't know any easy way around it.

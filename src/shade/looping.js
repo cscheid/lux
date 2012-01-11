@@ -23,7 +23,7 @@ Shade.variable = function(type)
     return Shade._create_concrete_exp( {
         parents: [],
         type: type,
-        eval: function() {
+        evaluate: function() {
             return this.glsl_name;
         },
         compile: function() {}
@@ -66,7 +66,7 @@ Shade.range = function(range_begin, range_end)
                 parents: [this.begin, this.end, 
                           index_variable, accumulator_value, stream_value],
                 type: average_type,
-                eval: function() {
+                evaluate: function() {
                     return this.glsl_name + "()";
                 },
                 element: Shade.memoize_on_field("_element", function(i) {
@@ -88,17 +88,17 @@ Shade.range = function(range_begin, range_end)
                     ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
                       accumulator_value.type.zero, ";\n");
                     ctx.strings.push("    for (int",
-                      index_variable.eval(),"=",beg.eval(),";",
-                      index_variable.eval(),"<",end.eval(),";",
-                      "++",index_variable.eval(),") {\n");
+                      index_variable.evaluate(),"=",beg.evaluate(),";",
+                      index_variable.evaluate(),"<",end.evaluate(),";",
+                      "++",index_variable.evaluate(),") {\n");
                     ctx.strings.push("        ",
-                      accumulator_value.eval(),"=",
-                      accumulator_value.eval(),"+",
-                      stream_value.eval(),";\n");
+                      accumulator_value.evaluate(),"=",
+                      accumulator_value.evaluate(),"+",
+                      stream_value.evaluate(),";\n");
                     ctx.strings.push("    }\n");
                     ctx.strings.push("    return", 
-                                     this.type.repr(), "(", accumulator_value.eval(), ")/float(",
-                      end.eval(), "-", beg.eval(), ");\n");
+                                     this.type.repr(), "(", accumulator_value.evaluate(), ")/float(",
+                      end.evaluate(), "-", beg.evaluate(), ");\n");
                     ctx.strings.push("}\n");
                 }
             });

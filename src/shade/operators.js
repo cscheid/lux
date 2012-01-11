@@ -10,8 +10,8 @@ var operator = function(exp1, exp2,
         type: resulting_type,
         expression_type: "operator" + operator_name,
         value: function () {
-            return "(" + this.parents[0].eval() + " " + operator_name + " " +
-                this.parents[1].eval() + ")";
+            return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
+                this.parents[1].evaluate() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return constant_evaluator(this);
@@ -69,7 +69,7 @@ Shade.add = function() {
                 return type_list[i][2];
         throw ("type mismatch on add: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
-    };
+    }
     var current_result = Shade.make(arguments[0]);
     function evaluator(exp) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
@@ -139,7 +139,7 @@ Shade.sub = function() {
                 return type_list[i][2];
         throw ("type mismatch on sub: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
-    };
+    }
     function evaluator(exp) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
         var vt;
@@ -210,7 +210,7 @@ Shade.div = function() {
                 return type_list[i][2];
         throw ("type mismatch on div: unexpected types '"
                    + t1.repr() + "' and '" + t2.repr() + "'");
-    };
+    }
     function evaluator(exp) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];
@@ -223,7 +223,7 @@ Shade.div = function() {
         } else if (exp2.type.is_array()) {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
-        };
+        }
         var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { return x / y; },
@@ -245,15 +245,15 @@ Shade.div = function() {
                           });
                       },
                       matrix: function (x, y) {
-                          throw "internal error, can't eval vector/matrix";
+                          throw "internal error, can't evaluate vector/matrix";
                       }
                     },
             matrix: { number: function (x, y) { return mt.scaling(x, 1/y); },
                       vector: function (x, y) { 
-                          throw "internal error, can't eval matrix/vector";
+                          throw "internal error, can't evaluate matrix/vector";
                       },
                       matrix: function (x, y) { 
-                          throw "internal error, can't eval matrix/matrix";
+                          throw "internal error, can't evaluate matrix/matrix";
                       }
                     }
         };
@@ -314,7 +314,7 @@ Shade.mul = function() {
                 return type_list[i][2];
         throw ("type mismatch on mul: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
-    };
+    }
     function evaluator(exp) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];

@@ -12,4 +12,4 @@ Shade.memoize_on_field = function(field_name, fun)
         }
         return this._caches[field_name][arguments[0]];
     };
-}
+};

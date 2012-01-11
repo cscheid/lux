@@ -17,20 +17,20 @@ Shade.gl_fog = function(opts)
     var fog_color = Shade.make(opts.fog_color);
     var color = opts.color;
     var z = Shade.make(opts.z);
-    var f;
+    var f, density, start;
 
     if (opts.mode === "exp") {
-        var density = Shade.make(opts.density);
-        var start = Shade.make(opts.start);
+        density = Shade.make(opts.density);
+        start = Shade.make(opts.start);
         f = z.sub(start).mul(density).exp();
     } else if (mode === "exp2") {
-        var density = Shade.make(opts.density);
-        var start = Shade.make(opts.start);
+        density = Shade.make(opts.density);
+        start = Shade.make(opts.start);
         f = z.sub(start).min(0).mul(density);
         f = f.mul(f);
         f = f.neg().exp();
     } else if (mode === "linear") {
-        var start = Shade.make(opts.start);
+        start = Shade.make(opts.start);
         var end = Shade.make(opts.end);
         end = Shade.make(end);
         start = Shade.make(start);

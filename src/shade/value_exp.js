@@ -5,7 +5,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         });
     }),
     _must_be_function_call: false,
-    eval: function() {
+    evaluate: function() {
         if (this._must_be_function_call)
             return this.glsl_name + "()";
         if (this.children_count <= 1)
@@ -48,7 +48,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                     ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
                     ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                 } else {
-                    // don't emit anything, all is taken care by eval()
+                    // don't emit anything, all is taken care by evaluate()
                 }
             } else {
                 if (this.children_count > 1) {
@@ -63,7 +63,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                                        + this.precomputed_value_glsl_name + "="
                                        + this.value() + ")))");
                 } else {
-                    // don't emit anything, all is taken care by eval()
+                    // don't emit anything, all is taken care by evaluate()
                 }
             }
         }

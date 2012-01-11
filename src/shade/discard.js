@@ -90,8 +90,8 @@ Shade.discard_if = function(exp, condition)
         },
         compile: function(ctx) {
             ctx.strings.push(exp.type.repr(), this.glsl_name, "(void) {\n",
-                             "    if (",this.parents[0].eval(),") discard;\n",
-                             "    return ", this.parents[1].eval(), ";\n}\n");
+                             "    if (",this.parents[0].evaluate(),") discard;\n",
+                             "    return ", this.parents[1].evaluate(), ";\n}\n");
         },
         constant_value: function() {
             return exp.constant_value();

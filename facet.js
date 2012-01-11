@@ -2891,7 +2891,7 @@ mat4.lookAt = function(eye, center, up)
 	x0 /= len;
 	x1 /= len;
 	x2 /= len;
-    };
+    }
     
     //vec3.normalize(vec3.cross(z, x, y));
     y0 = z1*x2 - z2*x1;
@@ -3057,7 +3057,7 @@ function to_dim(l)
     case 16: return 4;
     }
     throw "bad length";
-};
+}
 
 mat.make = function(v)
 {
@@ -3243,7 +3243,7 @@ function draw_it(batch)
     }
 
     batch.draw_chunk();
-};
+}
 
 var largest_batch_id = 1;
 
@@ -3258,7 +3258,7 @@ Facet.bake = function(model, appearance)
         return _.build(_.map(
             prog.attribute_buffers, function(v) { return [v._shade_name, v]; }
         ));
-    };
+    }
 
     function process_appearance(val_key_function) {
         var result = {};
@@ -3313,8 +3313,8 @@ Facet.bake = function(model, appearance)
     function create_unproject_program() {
         return process_appearance(function(value, key) {
             if (key === 'gl_FragColor') {
-                var position_z = appearance['gl_Position'].swizzle('z'),
-                    position_w = appearance['gl_Position'].swizzle('w');
+                var position_z = appearance.gl_Position.swizzle('z'),
+                    position_w = appearance.gl_Position.swizzle('w');
                 var normalized_z = position_z.div(position_w).add(1).div(2);
 
                 // normalized_z ranges from 0 to 1.
@@ -3522,11 +3522,12 @@ Facet.Camera.ortho = function(opts)
     {
         var view_ratio = (right - left) / (top - bottom);
         var l, r, t, b;
+        var half_width, half_height;
         if (view_ratio > screen_ratio) {
             // fat view rectangle, "letterbox" the projection
             var cy = (top + bottom) / 2;
-            var half_width = (right - left) / 2;
-            var half_height = half_width / screen_ratio;
+            half_width = (right - left) / 2;
+            half_height = half_width / screen_ratio;
             l = left;
             r = right;
             t = cy + half_height;
@@ -3534,8 +3535,8 @@ Facet.Camera.ortho = function(opts)
         } else {
             // tall view rectangle, "pillarbox" the projection
             var cx = (right + left) / 2;
-            var half_height = (top - bottom) / 2;
-            var half_width = half_height * screen_ratio;
+            half_height = (top - bottom) / 2;
+            half_width = half_height * screen_ratio;
             l = cx - half_width;
             r = cx + half_width;
             t = top;
@@ -3684,10 +3685,10 @@ Facet.init = function(canvas, opts)
         if (!gl)
             throw "failed context creation";
         if (opts.debugging) {
-            function throwOnGLError(err, funcName, args) {
+            var throwOnGLError = function(err, funcName, args) {
                 throw WebGLDebugUtils.glEnumToString(err) + 
                     " was caused by call to " + funcName;
-            }
+            };
             gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
         gl.viewportWidth = canvas.width;
@@ -3860,6 +3861,14 @@ Facet.model = function(input)
 {
     var result = {};
     var n_elements;
+    function push_into(array, dimension) {
+        return function(el) {
+            var v = el.constant_value();
+            for (var i=0; i<dimension; ++i)
+                array.push(v[i]);
+        };
+    }
+
     for (var k in input) {
         var v = input[k];
         // First we handle the mandatory keys: "type" and "elements"
@@ -3883,18 +3892,15 @@ Facet.model = function(input)
             result[k] = Shade.make(v);
             n_elements = v.numItems;
         } else if (facet_typeOf(v) === "array") { // ... or a list of per-vertex things
+            var buffer;
             // These things can be shade vecs
             if (facet_typeOf(v[0]) !== "array") {
                 // example: 'color: [Shade.color('white'), Shade.color('blue'), ...]
                 // assume it's a list of shade vecs, assume they all have the same dimension
                 var dimension = v[0].type.vec_dimension();
                 var new_v = [];
-                _.each(v, function(el) {
-                    var v = el.constant_value();
-                    for (var i=0; i<dimension; ++i)
-                        new_v.push(v[i]);
-                });
-                var buffer = Facet.attribute_buffer(new_v, dimension);
+                _.each(v, push_into(new_v, dimension));
+                buffer = Facet.attribute_buffer(new_v, dimension);
                 result[k] = Shade.make(buffer);
                 n_elements = buffer.numItems;
             } else {
@@ -3902,7 +3908,7 @@ Facet.model = function(input)
                 // a pair, the first element being the list, the second 
                 // being the per-element size
                 // example: 'color: [[1,0,0, 0,1,0, 0,0,1], 3]'
-                var buffer = Facet.attribute_buffer(v[0], v[1]);
+                buffer = Facet.attribute_buffer(v[0], v[1]);
                 result[k] = Shade.make(buffer);
                 n_elements = buffer.numItems;
             }
@@ -4008,8 +4014,9 @@ Facet.program = function(vs_src, fs_src)
 
     var active_uniforms = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
     var array_name_regexp = /.*\[0\]/;
+    var info;
     for (var i=0; i<active_uniforms; ++i) {
-        var info = ctx.getActiveUniform(shaderProgram, i);
+        info = ctx.getActiveUniform(shaderProgram, i);
         if (array_name_regexp.test(info.name)) {
             var array_name = info.name.substr(0, info.name.length-3);
             shaderProgram[array_name] = ctx.getUniformLocation(shaderProgram, array_name);
@@ -4019,7 +4026,7 @@ Facet.program = function(vs_src, fs_src)
     }
     var active_attributes = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_ATTRIBUTES);
     for (i=0; i<active_attributes; ++i) {
-        var info = ctx.getActiveAttrib(shaderProgram, i);
+        info = ctx.getActiveAttrib(shaderProgram, i);
         shaderProgram[info.name] = ctx.getAttribLocation(shaderProgram, info.name);
     }
     return shaderProgram;    
@@ -4050,19 +4057,15 @@ Facet.render_buffer = function(opts)
         case ctx.FRAMEBUFFER_COMPLETE:
             break;
         case ctx.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            throw("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
         case ctx.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            throw("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
         case ctx.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-            throw("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
         case ctx.FRAMEBUFFER_UNSUPPORTED:
-            throw("incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED";
         default:
-            throw("incomplete framebuffer: " + status);
+            throw "incomplete framebuffer: " + status;
     }
 
     ctx.bindTexture(ctx.TEXTURE_2D, null);
@@ -4264,21 +4267,21 @@ Facet.Net.buffer_ajax = function(url, handler)
     var xhr = new window.XMLHttpRequest();
     var ready = false;
     xhr.onreadystatechange = function() {
-	if (xhr.readyState == 4 && xhr.status == 200
-	    && ready!=true) {
-	    if (xhr.responseType=="arraybuffer") {
+        if (xhr.readyState === 4 && xhr.status === 200
+            && ready !== true) {
+            if (xhr.responseType === "arraybuffer") {
                 handler(xhr.response, url);
-            } else if (xhr.mozResponseArrayBuffer != null) {
+            } else if (xhr.mozResponseArrayBuffer !== null) {
                 handler(xhr.mozResponseArrayBuffer, url);
-            } else if (xhr.responseText != null) {
-	        var data = new String(xhr.responseText);
-	        var ary = new Array(data.length);
-	        for (var i = 0; i <data.length; i++) {
+            } else if (xhr.responseText !== null) {
+                var data = String(xhr.responseText);
+                var ary = new Array(data.length);
+                for (var i = 0; i <data.length; i++) {
                     ary[i] = data.charCodeAt(i) & 0xff;
                 }
-	        var uint8ay = new Uint8Array(ary);
+                var uint8ay = new Uint8Array(ary);
                 handler(uint8ay.buffer, url);
-	    }
+            }
             ready = true;
         }
     };
@@ -4451,153 +4454,153 @@ Shade.debug = false;
 (function() {
 
 var css_colors = {
-    "aliceblue":	    "#F0F8FF",
-    "antiquewhite":	    "#FAEBD7",
-    "aqua":		    "#00FFFF",
-    "aquamarine":	    "#7FFFD4",
-    "azure":		    "#F0FFFF",
-    "beige":		    "#F5F5DC",
-    "bisque":		    "#FFE4C4",
-    "black":		    "#000000",
+    "aliceblue":            "#F0F8FF",
+    "antiquewhite":         "#FAEBD7",
+    "aqua":                 "#00FFFF",
+    "aquamarine":           "#7FFFD4",
+    "azure":                "#F0FFFF",
+    "beige":                "#F5F5DC",
+    "bisque":               "#FFE4C4",
+    "black":                "#000000",
     "blanchedalmond":       "#FFEBCD",
-    "blue":		    "#0000FF",
-    "blueviolet":	    "#8A2BE2",
-    "brown":		    "#A52A2A",
-    "burlywood":	    "#DEB887",
-    "cadetblue":	    "#5F9EA0",
-    "chartreuse":	    "#7FFF00",
-    "chocolate":	    "#D2691E",
-    "coral":		    "#FF7F50",
+    "blue":                 "#0000FF",
+    "blueviolet":           "#8A2BE2",
+    "brown":                "#A52A2A",
+    "burlywood":            "#DEB887",
+    "cadetblue":            "#5F9EA0",
+    "chartreuse":           "#7FFF00",
+    "chocolate":            "#D2691E",
+    "coral":                "#FF7F50",
     "cornflowerblue":       "#6495ED",
     "cornsilk":             "#FFF8DC",
-    "crimson":		    "#DC143C",
-    "cyan":		    "#00FFFF",
+    "crimson":              "#DC143C",
+    "cyan":                 "#00FFFF",
     "darkblue":             "#00008B",
     "darkcyan":             "#008B8B",
-    "darkgoldenrod":	    "#B8860B",
+    "darkgoldenrod":        "#B8860B",
     "darkgray":             "#A9A9A9",
     "darkgrey":             "#A9A9A9",
-    "darkgreen":	    "#006400",
-    "darkkhaki":	    "#BDB76B",
-    "darkmagenta":	    "#8B008B",
+    "darkgreen":            "#006400",
+    "darkkhaki":            "#BDB76B",
+    "darkmagenta":          "#8B008B",
     "darkolivegreen":       "#556B2F",
-    "darkorange":	    "#FF8C00",
-    "darkorchid":	    "#9932CC",
-    "darkred":		    "#8B0000",
-    "darksalmon":	    "#E9967A",
-    "darkseagreen":	    "#8FBC8F",
-    "darkslateblue":	    "#483D8B",
-    "darkslategray":	    "#2F4F4F",
-    "darkslategrey":	    "#2F4F4F",
-    "darkturquoise":	    "#00CED1",
-    "darkviolet":	    "#9400D3",
+    "darkorange":           "#FF8C00",
+    "darkorchid":           "#9932CC",
+    "darkred":              "#8B0000",
+    "darksalmon":           "#E9967A",
+    "darkseagreen":         "#8FBC8F",
+    "darkslateblue":        "#483D8B",
+    "darkslategray":        "#2F4F4F",
+    "darkslategrey":        "#2F4F4F",
+    "darkturquoise":        "#00CED1",
+    "darkviolet":           "#9400D3",
     "deeppink":             "#FF1493",
-    "deepskyblue":	    "#00BFFF",
-    "dimgray":		    "#696969",
-    "dimgrey":		    "#696969",
-    "dodgerblue":	    "#1E90FF",
-    "firebrick":	    "#B22222",
-    "floralwhite":	    "#FFFAF0",
-    "forestgreen":	    "#228B22",
-    "fuchsia":		    "#FF00FF",
-    "gainsboro":	    "#DCDCDC",
-    "ghostwhite":	    "#F8F8FF",
-    "gold":		    "#FFD700",
-    "goldenrod":	    "#DAA520",
-    "gray":		    "#808080",
-    "grey":		    "#808080",
-    "green":		    "#008000",
-    "greenyellow":	    "#ADFF2F",
+    "deepskyblue":          "#00BFFF",
+    "dimgray":              "#696969",
+    "dimgrey":              "#696969",
+    "dodgerblue":           "#1E90FF",
+    "firebrick":            "#B22222",
+    "floralwhite":          "#FFFAF0",
+    "forestgreen":          "#228B22",
+    "fuchsia":              "#FF00FF",
+    "gainsboro":            "#DCDCDC",
+    "ghostwhite":           "#F8F8FF",
+    "gold":                 "#FFD700",
+    "goldenrod":            "#DAA520",
+    "gray":                 "#808080",
+    "grey":                 "#808080",
+    "green":                "#008000",
+    "greenyellow":          "#ADFF2F",
     "honeydew":             "#F0FFF0",
-    "hotpink":		    "#FF69B4",
-    "indianred":	    "#CD5C5C",
-    "indigo":		    "#4B0082",
-    "ivory":		    "#FFFFF0",
-    "khaki":		    "#F0E68C",
+    "hotpink":              "#FF69B4",
+    "indianred":            "#CD5C5C",
+    "indigo":               "#4B0082",
+    "ivory":                "#FFFFF0",
+    "khaki":                "#F0E68C",
     "lavender":             "#E6E6FA",
-    "lavenderblush":	    "#FFF0F5",
-    "lawngreen":	    "#7CFC00",
-    "lemonchiffon":	    "#FFFACD",
-    "lightblue":	    "#ADD8E6",
-    "lightcoral":	    "#F08080",
-    "lightcyan":	    "#E0FFFF",
+    "lavenderblush":        "#FFF0F5",
+    "lawngreen":            "#7CFC00",
+    "lemonchiffon":         "#FFFACD",
+    "lightblue":            "#ADD8E6",
+    "lightcoral":           "#F08080",
+    "lightcyan":            "#E0FFFF",
     "lightgoldenrodyellow": "#FAFAD2",
-    "lightgray":	    "#D3D3D3",
-    "lightgrey":	    "#D3D3D3",
-    "lightgreen":	    "#90EE90",
-    "lightpink":	    "#FFB6C1",
-    "lightsalmon":	    "#FFA07A",
-    "lightseagreen":	    "#20B2AA",
-    "lightskyblue":	    "#87CEFA",
+    "lightgray":            "#D3D3D3",
+    "lightgrey":            "#D3D3D3",
+    "lightgreen":           "#90EE90",
+    "lightpink":            "#FFB6C1",
+    "lightsalmon":          "#FFA07A",
+    "lightseagreen":        "#20B2AA",
+    "lightskyblue":         "#87CEFA",
     "lightslategray":       "#778899",
     "lightslategrey":       "#778899",
     "lightsteelblue":       "#B0C4DE",
-    "lightyellow":	    "#FFFFE0",
-    "lime":		    "#00FF00",
-    "limegreen":	    "#32CD32",
-    "linen":		    "#FAF0E6",
-    "magenta":		    "#FF00FF",
-    "maroon":		    "#800000",
+    "lightyellow":          "#FFFFE0",
+    "lime":                 "#00FF00",
+    "limegreen":            "#32CD32",
+    "linen":                "#FAF0E6",
+    "magenta":              "#FF00FF",
+    "maroon":               "#800000",
     "mediumaquamarine":     "#66CDAA",
-    "mediumblue":	    "#0000CD",
-    "mediumorchid":	    "#BA55D3",
-    "mediumpurple":	    "#9370D8",
+    "mediumblue":           "#0000CD",
+    "mediumorchid":         "#BA55D3",
+    "mediumpurple":         "#9370D8",
     "mediumseagreen":       "#3CB371",
     "mediumslateblue":      "#7B68EE",
     "mediumspringgreen":    "#00FA9A",
     "mediumturquoise":      "#48D1CC",
     "mediumvioletred":      "#C71585",
-    "midnightblue":	    "#191970",
-    "mintcream":	    "#F5FFFA",
-    "mistyrose":	    "#FFE4E1",
+    "midnightblue":         "#191970",
+    "mintcream":            "#F5FFFA",
+    "mistyrose":            "#FFE4E1",
     "moccasin":             "#FFE4B5",
-    "navajowhite":	    "#FFDEAD",
-    "navy":		    "#000080",
-    "oldlace":		    "#FDF5E6",
-    "olive":		    "#808000",
-    "olivedrab":	    "#6B8E23",
-    "orange":		    "#FFA500",
-    "orangered":	    "#FF4500",
-    "orchid":		    "#DA70D6",
-    "palegoldenrod":	    "#EEE8AA",
-    "palegreen":	    "#98FB98",
-    "paleturquoise":	    "#AFEEEE",
-    "palevioletred":	    "#D87093",
-    "papayawhip":	    "#FFEFD5",
-    "peachpuff":	    "#FFDAB9",
-    "peru":		    "#CD853F",
-    "pink":		    "#FFC0CB",
-    "plum":		    "#DDA0DD",
-    "powderblue":	    "#B0E0E6",
-    "purple":		    "#800080",
-    "red":		    "#FF0000",
-    "rosybrown":	    "#BC8F8F",
-    "royalblue":	    "#4169E1",
-    "saddlebrown":	    "#8B4513",
-    "salmon":		    "#FA8072",
-    "sandybrown":	    "#F4A460",
+    "navajowhite":          "#FFDEAD",
+    "navy":                 "#000080",
+    "oldlace":              "#FDF5E6",
+    "olive":                "#808000",
+    "olivedrab":            "#6B8E23",
+    "orange":               "#FFA500",
+    "orangered":            "#FF4500",
+    "orchid":               "#DA70D6",
+    "palegoldenrod":        "#EEE8AA",
+    "palegreen":            "#98FB98",
+    "paleturquoise":        "#AFEEEE",
+    "palevioletred":        "#D87093",
+    "papayawhip":           "#FFEFD5",
+    "peachpuff":            "#FFDAB9",
+    "peru":                 "#CD853F",
+    "pink":                 "#FFC0CB",
+    "plum":                 "#DDA0DD",
+    "powderblue":           "#B0E0E6",
+    "purple":               "#800080",
+    "red":                  "#FF0000",
+    "rosybrown":            "#BC8F8F",
+    "royalblue":            "#4169E1",
+    "saddlebrown":          "#8B4513",
+    "salmon":               "#FA8072",
+    "sandybrown":           "#F4A460",
     "seagreen":             "#2E8B57",
     "seashell":             "#FFF5EE",
-    "sienna":		    "#A0522D",
-    "silver":		    "#C0C0C0",
-    "skyblue":		    "#87CEEB",
-    "slateblue":	    "#6A5ACD",
-    "slategray":	    "#708090",
-    "slategrey":	    "#708090",
-    "snow":		    "#FFFAFA",
-    "springgreen":	    "#00FF7F",
-    "steelblue":	    "#4682B4",
-    "tan":		    "#D2B48C",
-    "teal":		    "#008080",
-    "thistle":		    "#D8BFD8",
-    "tomato":		    "#FF6347",
-    "turquoise":	    "#40E0D0",
-    "violet":		    "#EE82EE",
-    "wheat":		    "#F5DEB3",
-    "white":		    "#FFFFFF",
-    "whitesmoke":	    "#F5F5F5",
-    "yellow":		    "#FFFF00",
-    "yellowgreen":	    "#9ACD32"
+    "sienna":               "#A0522D",
+    "silver":               "#C0C0C0",
+    "skyblue":              "#87CEEB",
+    "slateblue":            "#6A5ACD",
+    "slategray":            "#708090",
+    "slategrey":            "#708090",
+    "snow":                 "#FFFAFA",
+    "springgreen":          "#00FF7F",
+    "steelblue":            "#4682B4",
+    "tan":                  "#D2B48C",
+    "teal":                 "#008080",
+    "thistle":              "#D8BFD8",
+    "tomato":               "#FF6347",
+    "turquoise":            "#40E0D0",
+    "violet":               "#EE82EE",
+    "wheat":                "#F5DEB3",
+    "white":                "#FFFFFF",
+    "whitesmoke":           "#F5F5F5",
+    "yellow":               "#FFFF00",
+    "yellowgreen":          "#9ACD32"
 };
 
 var rgb_re = / *rgb *\( *(\d+) *, *(\d+) *, *(\d+) *\) */;
@@ -4619,9 +4622,9 @@ Shade.color = function(spec, alpha)
     }
     var m = rgb_re.exec(spec);
     if (m) {
-        return Shade.vec(parseInt(m[1]) / 255,
-                         parseInt(m[2]) / 255,
-                         parseInt(m[3]) / 255, alpha);
+        return Shade.vec(parseInt(m[1], 10) / 255,
+                         parseInt(m[2], 10) / 255,
+                         parseInt(m[3], 10) / 255, alpha);
     }
     if (spec in css_colors)
         return Shade.color(css_colors[spec], alpha);
@@ -4653,7 +4656,7 @@ Shade.variable = function(type)
     return Shade._create_concrete_exp( {
         parents: [],
         type: type,
-        eval: function() {
+        evaluate: function() {
             return this.glsl_name;
         },
         compile: function() {}
@@ -4696,7 +4699,7 @@ Shade.range = function(range_begin, range_end)
                 parents: [this.begin, this.end, 
                           index_variable, accumulator_value, stream_value],
                 type: average_type,
-                eval: function() {
+                evaluate: function() {
                     return this.glsl_name + "()";
                 },
                 element: Shade.memoize_on_field("_element", function(i) {
@@ -4718,17 +4721,17 @@ Shade.range = function(range_begin, range_end)
                     ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
                       accumulator_value.type.zero, ";\n");
                     ctx.strings.push("    for (int",
-                      index_variable.eval(),"=",beg.eval(),";",
-                      index_variable.eval(),"<",end.eval(),";",
-                      "++",index_variable.eval(),") {\n");
+                      index_variable.evaluate(),"=",beg.evaluate(),";",
+                      index_variable.evaluate(),"<",end.evaluate(),";",
+                      "++",index_variable.evaluate(),") {\n");
                     ctx.strings.push("        ",
-                      accumulator_value.eval(),"=",
-                      accumulator_value.eval(),"+",
-                      stream_value.eval(),";\n");
+                      accumulator_value.evaluate(),"=",
+                      accumulator_value.evaluate(),"+",
+                      stream_value.evaluate(),";\n");
                     ctx.strings.push("    }\n");
                     ctx.strings.push("    return", 
-                                     this.type.repr(), "(", accumulator_value.eval(), ")/float(",
-                      end.eval(), "-", beg.eval(), ");\n");
+                                     this.type.repr(), "(", accumulator_value.evaluate(), ")/float(",
+                      end.evaluate(), "-", beg.evaluate(), ");\n");
                     ctx.strings.push("}\n");
                 }
             });
@@ -4782,7 +4785,7 @@ Shade._create_concrete = function(base, requirements)
         return Shade._create(base, new_obj);
     }
     return create_it;
-}
+};
 
 // only memoizes on value of first argument, so will fail if function
 // takes more than one argument!!
@@ -4797,7 +4800,7 @@ Shade.memoize_on_field = function(field_name, fun)
         }
         return this._caches[field_name][arguments[0]];
     };
-}
+};
 Shade.Types = {};
 Shade.Types.base_t = {
     is_floating: function() { return false; },
@@ -4853,11 +4856,11 @@ Shade.basic = function(repr) {
              Number(repr[4]) < 5)) return true;
         // if (repr === '__auto__') return true;
         return false;
-    };
+    }
 
     if (!is_valid_basic_type(repr)) {
         throw "invalid basic type '" + repr + "'";
-    };
+    }
     
     return Shade._create(Shade.Types.base_t, {
         declare: function(glsl_name) { return repr + " " + glsl_name; },
@@ -4885,7 +4888,7 @@ Shade.basic = function(repr) {
                 break;
             default:
                 throw "internal error on swizzle";
-            };
+            }
             if (!pattern.match(valid_re)) {
                 throw "invalid swizzle pattern '" + pattern + "'";
             }
@@ -4926,10 +4929,10 @@ Shade.basic = function(repr) {
         vec_dimension: function() {
             var repr = this.repr();
             if (repr.substring(0, 3) === "vec")
-                return parseInt(repr[3]);
+                return parseInt(repr[3], 10);
             if (repr.substring(0, 4) === "ivec" ||
                 repr.substring(0, 4) === "bvec")
-                return parseInt(repr[4]);
+                return parseInt(repr[4], 10);
             if (this.repr() === 'float'
                 || this.repr() === 'int'
                 || this.repr() === 'bool')
@@ -4984,7 +4987,7 @@ Shade.basic = function(repr) {
                 return this.vec_dimension();
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")  
-                return parseInt(repr[3]);
+                return parseInt(repr[3], 10);
             throw "datatype not array";
         },
         is_floating: function() {
@@ -5212,7 +5215,7 @@ Shade.CompilationContext = function(compile_type) {
             this.strings.push("void main() {\n");
             for (i=0; i<this.initialization_exprs.length; ++i)
                 this.strings.push("    ", this.initialization_exprs[i], ";\n");
-            this.strings.push("    ", fun.eval(), ";\n", "}\n");
+            this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
         },
         add_initialization: function(expr) {
             this.initialization_exprs.push(expr);
@@ -5257,7 +5260,7 @@ Shade.Exp = {
             console.log(str + ')');
         }
     },
-    eval: function() {
+    evaluate: function() {
         return this.glsl_name + "()";
     },
     parent_is_unconditional: function(i) {
@@ -5286,7 +5289,7 @@ Shade.Exp = {
             }
             var parents = exp.parents;
             if (_.isUndefined(parents)) {
-                throw "Internal error: expression " + exp.eval()
+                throw "Internal error: expression " + exp.evaluate()
                     + " has undefined parents.";
             }
             for (var i=0; i<parents.length; ++i) {
@@ -5387,7 +5390,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.int_t,
-            value: function() { return "int(" + this.parents[0].eval() + ")"; },
+            value: function() { return "int(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -5403,7 +5406,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.bool_t,
-            value: function() { return "bool(" + this.parents[0].eval() + ")"; },
+            value: function() { return "bool(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -5419,7 +5422,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.float_t,
-            value: function() { return "float(" + this.parents[0].eval() + ")"; },
+            value: function() { return "float(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -5446,7 +5449,7 @@ Shade.Exp = {
                 case 'q': return 3;
                 default: throw "invalid swizzle pattern";
                 }
-            };
+            }
             var result = [];
             for (var i=0; i<pattern.length; ++i) {
                 result.push(to_index(pattern[i]));
@@ -5460,7 +5463,7 @@ Shade.Exp = {
             parents: [parent],
             type: parent.type.swizzle(pattern),
             expression_type: "swizzle",
-            eval: function() { return this.parents[0].eval() + "." + pattern; },
+            evaluate: function() { return this.parents[0].evaluate() + "." + pattern; },
             is_constant: Shade.memoize_on_field("_is_constant", function () {
                 var that = this;
                 return _.all(indices, function(i) {
@@ -5512,13 +5515,13 @@ Shade.Exp = {
             parents: [parent, index],
             type: parent.type.array_base(),
             expression_type: "index",
-            eval: function() { 
+            evaluate: function() { 
                 if (this.parents[1].type.is_integral()) {
-                    return this.parents[0].eval() + 
-                        "[" + this.parents[1].eval() + "]"; 
+                    return this.parents[0].evaluate() + 
+                        "[" + this.parents[1].evaluate() + "]"; 
                 } else {
-                    return this.parents[0].eval() + 
-                        "[int(" + this.parents[1].eval() + ")]"; 
+                    return this.parents[0].evaluate() + 
+                        "[int(" + this.parents[1].evaluate() + ")]"; 
                 }
             },
             is_constant: function() {
@@ -5645,7 +5648,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         });
     }),
     _must_be_function_call: false,
-    eval: function() {
+    evaluate: function() {
         if (this._must_be_function_call)
             return this.glsl_name + "()";
         if (this.children_count <= 1)
@@ -5688,7 +5691,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                     ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
                     ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                 } else {
-                    // don't emit anything, all is taken care by eval()
+                    // don't emit anything, all is taken care by evaluate()
                 }
             } else {
                 if (this.children_count > 1) {
@@ -5703,7 +5706,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                                        + this.precomputed_value_glsl_name + "="
                                        + this.value() + ")))");
                 } else {
-                    // don't emit anything, all is taken care by eval()
+                    // don't emit anything, all is taken care by evaluate()
                 }
             }
         }
@@ -5762,7 +5765,7 @@ Shade.constant = function(v, type)
         }
 
         return Shade._create_concrete_exp( {
-            eval: function(glsl_name) {
+            evaluate: function(glsl_name) {
                 return to_glsl(this.type.repr(), args);
             },
             expression_type: "constant{" + args + "}",
@@ -5820,7 +5823,7 @@ Shade.constant = function(v, type)
         if (t === 'array') {
             var new_v = v.map(Shade.make);
             var array_size = new_v.length;
-            if (array_size == 0) {
+            if (array_size === 0) {
                 throw "array constant must be non-empty";
             }
 
@@ -5836,15 +5839,15 @@ Shade.constant = function(v, type)
                 parents: new_v,
                 type: array_type,
                 expression_type: "constant",
-                eval: function() { return this.glsl_name; },
+                evaluate: function() { return this.glsl_name; },
                 compile: function (ctx) {
                     this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
                     ctx.strings.push(this.type.declare(this.glsl_name), ";\n");
                     ctx.strings.push("void", this.array_initializer_glsl_name, "(void) {\n");
                     for (var i=0; i<this.parents.length; ++i) {
                         ctx.strings.push("    ", this.glsl_name, "[", i, "] =",
-                                         this.parents[i].eval(), ";\n");
-                    };
+                                         this.parents[i].evaluate(), ";\n");
+                    }
                     ctx.strings.push("}\n");
                     ctx.add_initialization(this.array_initializer_glsl_name + "()");
                 },
@@ -5878,8 +5881,9 @@ Shade.constant = function(v, type)
                    type.repr());
         return constant_tuple_fun(Shade.Types.bool_t, [v]);
     }
+    var d, computed_t;
     if (t === 'vector') {
-        var d = v.length;
+        d = v.length;
         if (d < 2 && d > 4)
             throw "invalid length for constant vector: " + v;
         var el_ts = _.map(v, function(t) { return facet_typeOf(t); });
@@ -5887,7 +5891,7 @@ Shade.constant = function(v, type)
             throw "not all constant params have the same types";
         }
         if (el_ts[0] === "number") {
-            var computed_t = Shade.basic('vec' + d);
+            computed_t = Shade.basic('vec' + d);
             if (type && !computed_t.equals(type)) {
                 throw "passed constant must have type " + computed_t.repr()
                     + ", but was request to have incompatible type " 
@@ -5899,8 +5903,8 @@ Shade.constant = function(v, type)
             throw "bad datatype for constant: " + el_ts[0];
     }
     if (t === 'matrix') {
-        var d = mat_length_to_dimension[v.length];
-        var computed_t = Shade.basic('mat' + d);
+        d = mat_length_to_dimension[v.length];
+        computed_t = Shade.basic('mat' + d);
         if (type && !computed_t.equals(type)) {
             throw "passed constant must have type " + computed_t.repr()
                 + ", but was request to have incompatible type " 
@@ -5943,10 +5947,10 @@ Shade.set = function(exp, name)
             if (name !== "gl_FragColor" &&
                 name !== "gl_Position" &&
                 name !== "gl_PointSize" &&
-                !(name.substring(0, 11) == "gl_FragData")) {
+                name.substring(0, 11) !== "gl_FragData") {
                 ctx.declare_varying(name, type);
             }
-            ctx.void_function(this, "(", name, "=", this.parents[0].eval(), ")");
+            ctx.void_function(this, "(", name, "=", this.parents[0].evaluate(), ")");
         },
         type: Shade.basic('void'),
         parents: [exp]
@@ -5981,7 +5985,7 @@ Shade.uniform = function(type, v)
         parents: [],
         type: type,
         expression_type: 'uniform',
-        eval: function() {
+        evaluate: function() {
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
             } else
@@ -6075,7 +6079,7 @@ Shade.attribute = function(name, type)
             } else
                 return this.at(i);
         }),
-        eval: function() { 
+        evaluate: function() { 
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
             } else
@@ -6121,7 +6125,7 @@ Shade.varying = function(name, type)
             } else
                 return this.at(i);
         }),
-        eval: function() { return name; },
+        evaluate: function() { return name; },
         compile: function(ctx) {
             ctx.declare_varying(name, this.type);
         }
@@ -6133,7 +6137,7 @@ Shade.pointCoord = function() {
         expression_type: "builtin_input{gl_PointCoord}",
         parents: [],
         type: Shade.Types.vec2,
-        eval: function() { return "gl_PointCoord"; },
+        evaluate: function() { return "gl_PointCoord"; },
         compile: function(ctx) {
         }
     });
@@ -6154,8 +6158,8 @@ var operator = function(exp1, exp2,
         type: resulting_type,
         expression_type: "operator" + operator_name,
         value: function () {
-            return "(" + this.parents[0].eval() + " " + operator_name + " " +
-                this.parents[1].eval() + ")";
+            return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
+                this.parents[1].evaluate() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return constant_evaluator(this);
@@ -6213,7 +6217,7 @@ Shade.add = function() {
                 return type_list[i][2];
         throw ("type mismatch on add: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
-    };
+    }
     var current_result = Shade.make(arguments[0]);
     function evaluator(exp) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
@@ -6283,7 +6287,7 @@ Shade.sub = function() {
                 return type_list[i][2];
         throw ("type mismatch on sub: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
-    };
+    }
     function evaluator(exp) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
         var vt;
@@ -6354,7 +6358,7 @@ Shade.div = function() {
                 return type_list[i][2];
         throw ("type mismatch on div: unexpected types '"
                    + t1.repr() + "' and '" + t2.repr() + "'");
-    };
+    }
     function evaluator(exp) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];
@@ -6367,7 +6371,7 @@ Shade.div = function() {
         } else if (exp2.type.is_array()) {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
-        };
+        }
         var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { return x / y; },
@@ -6389,15 +6393,15 @@ Shade.div = function() {
                           });
                       },
                       matrix: function (x, y) {
-                          throw "internal error, can't eval vector/matrix";
+                          throw "internal error, can't evaluate vector/matrix";
                       }
                     },
             matrix: { number: function (x, y) { return mt.scaling(x, 1/y); },
                       vector: function (x, y) { 
-                          throw "internal error, can't eval matrix/vector";
+                          throw "internal error, can't evaluate matrix/vector";
                       },
                       matrix: function (x, y) { 
-                          throw "internal error, can't eval matrix/matrix";
+                          throw "internal error, can't evaluate matrix/matrix";
                       }
                     }
         };
@@ -6458,7 +6462,7 @@ Shade.mul = function() {
                 return type_list[i][2];
         throw ("type mismatch on mul: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
-    };
+    }
     function evaluator(exp) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];
@@ -6593,7 +6597,7 @@ Shade.vec = function()
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) {
-                    return t.eval();
+                    return t.evaluate();
                 }).join(", ") + ")";
         }
     });
@@ -6651,7 +6655,7 @@ Shade.mat = function()
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) { 
-                    return t.eval(); 
+                    return t.evaluate(); 
                 }).join(", ") + ")";
         }
     });
@@ -6684,7 +6688,7 @@ Shade.per_vertex = function(exp)
         parents: [exp],
         type: exp.type,
         stage: "vertex",
-        eval: function() { return this.parents[0].eval(); },
+        evaluate: function() { return this.parents[0].evaluate(); },
         compile: function () {}
     });
 };
@@ -6760,7 +6764,7 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
                 value: function() {
                     return [name, "(",
                             this.parents.map(function(t) { 
-                                return t.eval(); 
+                                return t.evaluate(); 
                             }).join(", "),
                             ")"].join(" ");
                 },
@@ -6787,7 +6791,7 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
                 value: function() {
                     return [name, "(",
                             this.parents.map(function(t) { 
-                                return t.eval(); 
+                                return t.evaluate(); 
                             }).join(", "),
                             ")"].join(" ");
                 },
@@ -6795,7 +6799,7 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
             });
         };
     }
-};
+}
 
 function common_fun_1op(fun_name, constant_evaluator) {
     return builtin_glsl_function(fun_name, [
@@ -6848,7 +6852,7 @@ _.each(funcs_1op, function (constant_evaluator_1, fun_name) {
             var c = exp.parents[0].constant_value();
             return vec.map(c, constant_evaluator_1);
         }
-    };
+    }
     Shade[fun_name] = common_fun_1op(fun_name, constant_evaluator);
     Shade.Exp[fun_name] = function(fun) {
         return function() {
@@ -6961,7 +6965,8 @@ function clamp_constant_evaluator(exp)
             return clamp(v, v2, v3);
         });
     }
-};
+}
+
 var clamp = builtin_glsl_function("clamp", [
     [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
     [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
@@ -7329,8 +7334,8 @@ Shade.seq = function(parents)
     return Shade._create_concrete_exp({
         expression_name: "seq",
         parents: parents,
-        eval: function(glsl_name) {
-            return this.parents.map(function (n) { return n.eval(); }).join("; ");
+        evaluate: function(glsl_name) {
+            return this.parents.map(function (n) { return n.evaluate(); }).join("; ");
         },
         type: Shade.basic('void'),
         compile: function (ctx) {}
@@ -7532,10 +7537,10 @@ Shade.Optimizer.vec_at_constant_index = function(exp)
 Shade.Optimizer.replace_vec_at_constant_with_swizzle = function(exp)
 {
     var v = exp.parents[1].constant_value();
-    if (v == 0) return exp.parents[0].swizzle("x");
-    if (v == 1) return exp.parents[0].swizzle("y");
-    if (v == 2) return exp.parents[0].swizzle("z");
-    if (v == 3) return exp.parents[0].swizzle("w");
+    if (v === 0) return exp.parents[0].swizzle("x");
+    if (v === 1) return exp.parents[0].swizzle("y");
+    if (v === 2) return exp.parents[0].swizzle("z");
+    if (v === 3) return exp.parents[0].swizzle("w");
     throw "internal error on Shade.Optimizer.replace_vec_at_constant_with_swizzle";
 };
 
@@ -7631,19 +7636,19 @@ Shade.program = function(program_obj)
                 throw "color attribute must be of type vec4, got " +
                     v.type.repr() + " instead";
             }
-            fp_obj['gl_FragColor'] = v;
+            fp_obj.gl_FragColor = v;
         } else if (k === 'gl_Position') {
             if (!v.type.equals(Shade.Types.vec4)) {
                 throw "position attribute must be of type vec4, got " +
                     v.type.repr() + " instead";
             }
-            vp_obj['gl_Position'] = v;
+            vp_obj.gl_Position = v;
         } else if (k === 'gl_PointSize') {
             if (!v.type.equals(Shade.Types.float_t)) {
                 throw "color attribute must be of type float, got " +
                     v.type.repr() + " instead";
             }
-            vp_obj['gl_PointSize'] = v;
+            vp_obj.gl_PointSize = v;
         } else if (k.substr(0, 3) === 'gl_') {
             // FIXME: Can we sensibly work around these?
             throw "gl_* are reserved GLSL names";
@@ -7671,7 +7676,7 @@ Shade.program = function(program_obj)
         vp_obj[varying_name] = exp;
         varying_names.push(varying_name);
         return Shade.varying(varying_name, exp.type);
-    };
+    }
 
     // explicit per-vertex hoisting must happen before is_attribute hoisting,
     // otherwise we might end up reading from a varying in the vertex program,
@@ -7712,7 +7717,7 @@ Shade.program = function(program_obj)
         used_varying_names.push.apply(used_varying_names,
                                       _.map(v.find_if(is_varying),
                                             function (v) { 
-                                                return v.eval();
+                                                return v.evaluate();
                                             }));
         fp_exprs.push(Shade.set(v, k));
     });
@@ -7852,20 +7857,20 @@ Shade.gl_fog = function(opts)
     var fog_color = Shade.make(opts.fog_color);
     var color = opts.color;
     var z = Shade.make(opts.z);
-    var f;
+    var f, density, start;
 
     if (opts.mode === "exp") {
-        var density = Shade.make(opts.density);
-        var start = Shade.make(opts.start);
+        density = Shade.make(opts.density);
+        start = Shade.make(opts.start);
         f = z.sub(start).mul(density).exp();
     } else if (mode === "exp2") {
-        var density = Shade.make(opts.density);
-        var start = Shade.make(opts.start);
+        density = Shade.make(opts.density);
+        start = Shade.make(opts.start);
         f = z.sub(start).min(0).mul(density);
         f = f.mul(f);
         f = f.neg().exp();
     } else if (mode === "linear") {
-        var start = Shade.make(opts.start);
+        start = Shade.make(opts.start);
         var end = Shade.make(opts.end);
         end = Shade.make(end);
         start = Shade.make(start);
@@ -7900,8 +7905,8 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evalu
         type: Shade.Types.bool_t,
         expression_type: "operator" + operator_name,
         value: function() {
-            return "(" + this.parents[0].eval() + " " + operator_name + " " +
-                this.parents[1].eval() + ")";
+            return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
+                this.parents[1].evaluate() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return constant_evaluator(this);
@@ -7948,7 +7953,7 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
 
 Shade.or = logical_operator_exp(
     "||", lift_binfun_to_evaluator(function(a, b) { return a || b; }),
-    function(i) { return i == 0; }
+    function(i) { return i === 0; }
 );
 
 Shade.Exp.or = function(other)
@@ -7958,7 +7963,7 @@ Shade.Exp.or = function(other)
 
 Shade.and = logical_operator_exp(
     "&&", lift_binfun_to_evaluator(function(a, b) { return a && b; }),
-    function(i) { return i == 0; }
+    function(i) { return i === 0; }
 );
 
 Shade.Exp.and = function(other)
@@ -7984,7 +7989,7 @@ Shade.not = function(exp)
         type: Shade.Types.bool_t,
         expression_type: "operator!",
         value: function() {
-            return "(!" + this.parents[0].eval() + ")";
+            return "(!" + this.parents[0].evaluate() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return !this.parents[0].constant_value();
@@ -8095,9 +8100,9 @@ Shade.selection = function(condition, if_true, if_false)
         type: if_true.type,
         expression_type: "selection",
         value: function() {
-            return "(" + this.parents[0].eval() + "?"
-                + this.parents[1].eval() + ":"
-                + this.parents[2].eval() + ")";
+            return "(" + this.parents[0].evaluate() + "?"
+                + this.parents[1].evaluate() + ":"
+                + this.parents[2].evaluate() + ")";
         },
         constant_value: function() {
             return (this.parents[0].constant_value() ?
@@ -8259,8 +8264,8 @@ Shade.discard_if = function(exp, condition)
         },
         compile: function(ctx) {
             ctx.strings.push(exp.type.repr(), this.glsl_name, "(void) {\n",
-                             "    if (",this.parents[0].eval(),") discard;\n",
-                             "    return ", this.parents[1].eval(), ";\n}\n");
+                             "    if (",this.parents[0].evaluate(),") discard;\n",
+                             "    return ", this.parents[1].evaluate(), ";\n}\n");
         },
         constant_value: function() {
             return exp.constant_value();
@@ -8383,7 +8388,7 @@ Facet.Marks.scatterplot = function(opts)
         xy_scale: function (x) { return x; }
     });
 
-    function to_opengl(x) { return x.mul(2).sub(1); };
+    function to_opengl(x) { return x.mul(2).sub(1); }
     var S = Shade;
     
     var x_scale = opts.x_scale;
@@ -8396,7 +8401,7 @@ Facet.Marks.scatterplot = function(opts)
                          to_opengl(opts.y_scale(opts.y)));
     } else if (opts.xy) {
         position = opts.xy_scale(opts.xy).mul(2).sub(S.vec(1,1));
-    };
+    }
 
     if (opts.model) {
         elements = opts.model.elements;
@@ -8419,16 +8424,17 @@ function spherical_mercator_patch(tess)
 {
     var uv = [];
     var elements = [];
+    var i, j;
 
-    for (var i=0; i<=tess; ++i)
-        for (var j=0; j<=tess; ++j)
+    for (i=0; i<=tess; ++i)
+        for (j=0; j<=tess; ++j)
             uv.push(i/tess, j/tess);
 
     for (i=0; i<tess; ++i)
-        for (var j=0; j<tess; ++j) {
+        for (j=0; j<tess; ++j) {
             var ix = (tess + 1) * i + j;
             elements.push(ix, ix+1, ix+tess+2, ix, ix+tess+2, ix+tess+1);
-        };
+        }
 
     return Facet.model({
         type: "triangles",
@@ -8441,7 +8447,7 @@ function spherical_mercator_patch(tess)
             return Shade.mix(min, max, this.uv).div(Math.PI * 2).add(Shade.vec(0, 0.5));
         }
     });
-};
+}
 
 function latlong_to_mercator(lat, lon)
 {
@@ -8488,6 +8494,7 @@ Facet.Marks.globe = function(opts)
         gl_FragColor: Shade.texture2D(sampler, sphere.transformed_uv(min, max))
     });
 
+    var display = function() { gl.display(); };
     for (var i=0; i<8; ++i)
         for (var j=0; j<8; ++j)
             Facet.load_image_into_texture({
@@ -8497,7 +8504,7 @@ Facet.Marks.globe = function(opts)
                 crossOrigin: "anonymous",
                 x_offset: ((i + 4) % 8)  * 256,
                 y_offset: 2048 - (j+1) * 256,
-                onload: function() { gl.display(); }
+                onload: display
             });
 
     return {
@@ -8595,10 +8602,9 @@ Facet.Marks.globe = function(opts)
                 max_x.set(mx_x);
                 sphere_drawable.draw();
             }
-            
         }
     };
-}
+};
 Facet.Models = {};
 Facet.Models.flat_cube = function() {
     return Facet.model({
@@ -8637,16 +8643,16 @@ Facet.Models.mesh = function(u_secs, v_secs) {
     if (u_secs <= 0) throw "u_secs must be positive";
     v_secs = Math.floor(v_secs);
     u_secs = Math.floor(u_secs);
-    
-    for (var i=0; i<=v_secs; ++i) {
+    var i, j;    
+    for (i=0; i<=v_secs; ++i) {
         var v = (i / v_secs);
-        for (var j=0; j<=u_secs; ++j) {
+        for (j=0; j<=u_secs; ++j) {
             var u = (j / u_secs);
             verts.push(u, v);
         }
     }
     for (i=0; i<v_secs; ++i) {
-        for (var j=0; j<=u_secs; ++j) {
+        for (j=0; j<=u_secs; ++j) {
             elements.push(i * (u_secs + 1) + j,
                           (i + 1) * (u_secs + 1) + j);
         }
@@ -8680,16 +8686,16 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
     if (long_secs <= 0) throw "long_secs must be positive";
     lat_secs = Math.floor(lat_secs);
     long_secs = Math.floor(long_secs);
-    
-    for (var i=0; i<=lat_secs; ++i) {
-        var phi = (i / lat_secs);
-        for (var j=0; j<long_secs; ++j) {
-            var theta = (j / long_secs);
+    var i, j, phi, theta;    
+    for (i=0; i<=lat_secs; ++i) {
+        phi = (i / lat_secs);
+        for (j=0; j<long_secs; ++j) {
+            theta = (j / long_secs);
             verts.push(theta, phi);
         }
     }
     for (i=0; i<lat_secs; ++i) {
-        for (var j=0; j<long_secs; ++j) {
+        for (j=0; j<long_secs; ++j) {
             elements.push(i * long_secs + j,
                           i * long_secs + ((j + 1) % long_secs),
                           (i + 1) * long_secs + j,
@@ -8701,8 +8707,8 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
 
     var S = Shade;
     var uv_attr = Facet.attribute_buffer(verts, 2);
-    var phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
-    var theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
+    phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
+    theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
     var cosphi = S.cos(phi);
     return Facet.model({
         type: "triangles",
@@ -8711,7 +8717,7 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
                       S.sin(phi),
                       S.cos(theta).mul(cosphi), 1)
     });
-}
+};
 Facet.Models.square = function() {
     var uv = Shade.make(Facet.attribute_buffer([0, 0, 1, 0, 0, 1, 1, 1], 2));
     return Facet.model({

@@ -38,4 +38,4 @@ Shade._create_concrete = function(base, requirements)
         return Shade._create(base, new_obj);
     }
     return create_it;
-}
+};

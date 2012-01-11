@@ -19,11 +19,11 @@ Shade.basic = function(repr) {
              Number(repr[4]) < 5)) return true;
         // if (repr === '__auto__') return true;
         return false;
-    };
+    }
 
     if (!is_valid_basic_type(repr)) {
         throw "invalid basic type '" + repr + "'";
-    };
+    }
     
     return Shade._create(Shade.Types.base_t, {
         declare: function(glsl_name) { return repr + " " + glsl_name; },
@@ -51,7 +51,7 @@ Shade.basic = function(repr) {
                 break;
             default:
                 throw "internal error on swizzle";
-            };
+            }
             if (!pattern.match(valid_re)) {
                 throw "invalid swizzle pattern '" + pattern + "'";
             }
@@ -92,10 +92,10 @@ Shade.basic = function(repr) {
         vec_dimension: function() {
             var repr = this.repr();
             if (repr.substring(0, 3) === "vec")
-                return parseInt(repr[3]);
+                return parseInt(repr[3], 10);
             if (repr.substring(0, 4) === "ivec" ||
                 repr.substring(0, 4) === "bvec")
-                return parseInt(repr[4]);
+                return parseInt(repr[4], 10);
             if (this.repr() === 'float'
                 || this.repr() === 'int'
                 || this.repr() === 'bool')
@@ -150,7 +150,7 @@ Shade.basic = function(repr) {
                 return this.vec_dimension();
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")  
-                return parseInt(repr[3]);
+                return parseInt(repr[3], 10);
             throw "datatype not array";
         },
         is_floating: function() {

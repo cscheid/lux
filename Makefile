@@ -134,6 +134,9 @@ facet.js: Makefile
 	echo $^
 	@rm -f $@
 	cat $(filter %.js,$^) > $@
+ifeq ($(CHECK),1) 
+	jshint $(filter %.js,$(filter-out lib/%.js,$(filter-out %/_begin.js,$(filter-out %/_end.js, $^))))
+endif
 	chmod -w $@ 
 
 data.js: Makefile

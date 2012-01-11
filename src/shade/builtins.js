@@ -70,7 +70,7 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
                 value: function() {
                     return [name, "(",
                             this.parents.map(function(t) { 
-                                return t.eval(); 
+                                return t.evaluate(); 
                             }).join(", "),
                             ")"].join(" ");
                 },
@@ -97,7 +97,7 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
                 value: function() {
                     return [name, "(",
                             this.parents.map(function(t) { 
-                                return t.eval(); 
+                                return t.evaluate(); 
                             }).join(", "),
                             ")"].join(" ");
                 },
@@ -105,7 +105,7 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
             });
         };
     }
-};
+}
 
 function common_fun_1op(fun_name, constant_evaluator) {
     return builtin_glsl_function(fun_name, [
@@ -158,7 +158,7 @@ _.each(funcs_1op, function (constant_evaluator_1, fun_name) {
             var c = exp.parents[0].constant_value();
             return vec.map(c, constant_evaluator_1);
         }
-    };
+    }
     Shade[fun_name] = common_fun_1op(fun_name, constant_evaluator);
     Shade.Exp[fun_name] = function(fun) {
         return function() {
@@ -271,7 +271,8 @@ function clamp_constant_evaluator(exp)
             return clamp(v, v2, v3);
         });
     }
-};
+}
+
 var clamp = builtin_glsl_function("clamp", [
     [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
     [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
