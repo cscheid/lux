@@ -136,7 +136,7 @@ var equality_type_checker = function(name) {
                    " requires same types, got " +
                    t1.repr() + " and " + t2.repr() +
                    " instead.");
-        if (t1.is_array() && !t1.is_vec())
+        if (t1.is_array() && !t1.is_vec() && !t1.is_mat())
             throw ("operator" + name +
                    " does not support arrays");
     };
@@ -167,6 +167,12 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
             return _.all(_.map(_.zip(a, b),
                                function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
+        if (facet_constant_type(a) === 'vector') {
+            return vec.equal(a, b);
+        }
+        if (facet_constant_type(a) === 'matrix') {
+            return mat.equal(a, b);
+        }
         throw "internal error: unrecognized type " + facet_typeOf(a) + 
             " " + facet_constant_type(a);
     }));

@@ -5,6 +5,7 @@ Shade.Types.base_t = {
     // POD = plain old data (ints, bools, floats)
     is_pod: function()      { return false; },
     is_vec: function()      { return false; },
+    is_mat: function()      { return false; },
     vec_dimension: function() { 
         throw "is_vec() === false, cannot call vec_dimension";
     },
