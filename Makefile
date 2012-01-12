@@ -114,6 +114,7 @@ facet.js:					\
 	src/shade/colors/_begin.js		\
 	src/shade/colors/alpha.js		\
 	src/shade/colors/convert.js		\
+	src/shade/colors/convert_shade.js	\
 	src/facet/marks/_begin.js		\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\

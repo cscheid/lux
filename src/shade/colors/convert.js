@@ -177,16 +177,15 @@ table.srgb.hsv = _.compose(table.rgb.hsv, table.srgb.rgb);
 
 table.xyz.luv = function(xyz)
 {
-    var u, v, un, vn, y;
+    var un, vn, y;
     var t1 = xyz_to_uv(xyz.x, xyz.y, xyz.z);
-    // var t2 = xyz_to_uv(xyz.x, xyz.y, xyz.z, u, v);
     y = xyz.y / white_point.y;
     var l = (y > 0.008856 ? 
              116 * Math.pow(y, 1.0/3.0) - 16 :
              903.3 * y);
     return table.luv.create(l, 
-                            13 * l * (u - white_point_uv[0]),
-                            13 * l * (v - white_point_uv[1]));
+                            13 * l * (t1[0] - white_point_uv[0]),
+                            13 * l * (t1[1] - white_point_uv[1]));
 };
 
 // now I can define these
@@ -225,12 +224,11 @@ table.xyz.hcl = _.compose(table.rgb.hcl, table.xyz.rgb);
 
 table.luv.hcl = function(luv)
 {
-    var l = luv.values[0], u = luv.values[1], v = luv.values[2];
     var c = Math.sqrt(luv.u * luv.u + luv.v * luv.v);    
     var h = Math.atan2(luv.v, luv.u);
     while (h > Math.PI * 2) { h -= Math.PI * 2; }
     while (h < 0) { h += Math.PI * 2; }
-    return table.hcl.create(h, c, l);
+    return table.hcl.create(h, c, luv.l);
 };
 
 table.luv.xyz = function(luv)
@@ -275,7 +273,7 @@ table.hcl.xyz  = _.compose(table.luv.xyz,  table.hcl.luv);
 
 table.hls.rgb = function(hls)
 {
-    var p1 = NaN, p2 = NaN;
+    var p1, p2;
     if (hls.l <= 0.5)
         p2 = hls.l * (1 + hls.s);
     else
