@@ -111,16 +111,19 @@ test("Shade compilation", function() {
         var cc = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE);
         cc.compile(root);
         equal(cc.source(), "precision highp float;\n" +
-              " uniform float _unique_name_2;\n" +
-              " uniform vec4 _unique_name_1;\n" +
-              " vec4 glsl_name_8 ;\n" +
-              " bool glsl_name_9 ;\n" +
-              " vec4 glsl_name_4 (void) {\n" +
-              "     return  (glsl_name_9?glsl_name_8: ((glsl_name_9=true),(glsl_name_8=exp ( _unique_name_1 )))) ;\n" +
-              "}\n" +
-              " void main() {\n" +
-              "      glsl_name_9 = false ;\n" +
-              "      ((_unique_name_2 > float(0.0))?cos ( glsl_name_4() ):sin ( glsl_name_4() )) ;\n"+
+              " uniform float _unique_name_2;\n" + 
+              " uniform vec4 _unique_name_1;\n" + 
+              " vec4 glsl_name_8 ;\n" + 
+              " bool glsl_name_9 ;\n" + 
+              " vec4 glsl_name_4 (void) {\n" + 
+              "     return  (glsl_name_9?glsl_name_8: ((glsl_name_9=true),(glsl_name_8=exp ( _unique_name_1 )))) ;\n" + 
+              "}\n" + 
+              " vec4 glsl_name_7 (void) {\n" + 
+              "     return  ((_unique_name_2 > float(0.0))?cos ( glsl_name_4() ):sin ( glsl_name_4() )) ;\n" + 
+              "}\n" + 
+              " void main() {\n" + 
+              "      glsl_name_9 = false ;\n" + 
+              "      glsl_name_7() ;\n" + 
               " }\n");
     })();
 
@@ -179,7 +182,7 @@ test("Shade constant folding", function() {
     raises(function() {
         var x = Shade.constant([1,2,3,4,5]);
         var y = Shade.constant([1,2,3,4,5]);
-        Shade.eq(x, y).constant_value();
+        x.eq(y);
     }, function(e) {
         return e === "operator== does not support arrays";
     }, "operator== does not support arrays");
@@ -314,6 +317,49 @@ test("Shade constant folding", function() {
                                           Shade.color('red'),
                                           Shade.texture2D(tex, texcoord)),
                           Shade.color('black')).is_constant(), false, "11052011 Marks.dots issue");
+
+    ok(Shade.vec(1,0,0).eq(Shade.vec(0,1,0)).constant_value() === false, 
+       "equality comparison on vectors");
+    ok(Shade.mat(Shade.vec(1,1),
+                 Shade.vec(1,1)).eq(Shade.mat(Shade.vec(1,1),
+                                              Shade.vec(1,1))).constant_value() === true, 
+       "equality comparison on matrices");
+
+    //////////////////////////////////////////////////////////////////////////
+    // constant folding on selections:
+    var uniform_logical = Shade.uniform("bool"), 
+        uniform_float = Shade.uniform("float");
+
+    ok(Shade.selection(uniform_logical, 3, 3).is_constant() === true,
+       "selection is_constant() when both sides are the same");
+
+    equal(Shade.selection(uniform_logical, 3, 3).constant_value(), 3,
+       "selection constant_value() when both sides are the same");
+
+    ok(Shade.selection(uniform_logical, uniform_float, 3).is_constant() === false,
+       "selection is_constant() when both sides are the same");
+
+    equal(Shade.selection(uniform_logical, 
+                       Shade.vec(uniform_float, 5, uniform_float, uniform_float),
+                       Shade.vec(uniform_float, 5, uniform_float, uniform_float))
+          .element_is_constant(1), true,
+          "selection element_is_constant when both sides are the same");
+
+    equal(Shade.selection(uniform_logical, 
+                       Shade.vec(uniform_float, 5, uniform_float, uniform_float),
+                       Shade.vec(uniform_float, 6, uniform_float, uniform_float))
+          .element_is_constant(1), false,
+          "selection element_is_constant when both sides aren't the same");
+
+    equal(Shade.selection(uniform_logical, 
+                       Shade.vec(uniform_float, 5, uniform_float, uniform_float),
+                       Shade.vec(uniform_float, 5, uniform_float, uniform_float))
+          .element_constant_value(1), 5,
+          "selection element_constant_value when both sides are the same");
+
+    ok(Shade.vec(Shade.max(0, 1), 1, 1).element(0).constant_value() === 1,
+       "element() on built-in expressions");
+
 });
 
 test("Shade optimizer", function() {
@@ -407,4 +453,66 @@ test("Shade loops", function() {
         point_size: avg
     });
     ok(p, "Basic looping program");
+});
+
+test("color conversion", function() {
+
+    /* The serious tests will be: Javascript and shade expressions
+    // must behave identically (up to floating-point issues);
+    // 
+    // Javascript and shade expressions must have appropriate inverses
+     */
+
+    function match(c1, c2) {
+        c1 = c1.values();
+        c2 = c2.values();
+        var result = _.all(_.range(c1.length), function(i) { 
+            return Math.abs(c1[i] - c2[i]) < 1e-5;
+        });
+        return result;
+    }
+
+    function check(v1, v2, v3, source, target) {
+        var shade_source  = Shade.Colors.shadetable[source].create(v1, v2, v3);
+        var js_source     = Shade.Colors.jstable[source].create(v1, v2, v3);
+        
+        var shade_target  = shade_source[target]();
+        var js_target     = js_source[target]();
+
+        var shade_source2 = shade_target[source]();
+        var js_source2    = js_target[source]();
+
+        if (!match(shade_source2, shade_source)) {
+            console.log("source",  shade_source,shade_source.values(),  js_source,js_source.values());
+            console.log("target",  shade_target,shade_target.values(),  js_target,js_target.values());
+            console.log("source2", shade_source2,shade_source2.values(), js_source2,js_source2.values());
+            console.log("---");
+        };
+
+        ok(match(shade_source, js_source), "constructors match");
+        ok(match(shade_target, js_target), source + "->" + target + " match");
+        ok(match(shade_source2, js_source2), source+"->"+target+"->"+source + " match");
+        ok(match(shade_source, shade_source2), source+"->"+target+"->"+source+" inverse shade");
+        ok(match(js_source, js_source2), source+"->"+target+"->"+source+" inverse js");
+    }
+
+    var test_count = 10;
+
+    for (var i=0; i<test_count; ++i) {
+        var r = Math.random(), g = Math.random(), b = Math.random();
+        check(r, g, b, "rgb", "hls");
+        check(r, g, b, "rgb", "srgb");
+        check(r, g, b, "rgb", "hsv");
+    }
+
+    // (function() {
+    //     var rgb = Shade.Colors.shadetable.rgb.create(1,0,0);
+    //     ok(rgb.vec.eq(Shade.vec(1,0,0)).constant_value(), "rgb creation");
+    //     var hls = rgb.hls();
+    //     ok(!_.isUndefined(hls.vec), "rgb->hls returns something");
+    //     var rgb2 = hls.rgb();
+    //     ok(!_.isUndefined(rgb2.vec), "hls->rgb returns something");
+    //     ok(rgb2.as_shade(1).eq(Shade.vec(1,0,0,1)).constant_value(),
+    //        "rgb->hls->rgb");
+    // })();
 });
