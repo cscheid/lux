@@ -200,7 +200,7 @@ table.xyz.luv = function(xyz)
     var l = _if(y.gt(0.008856), 
                 Shade.mul(116, Shade.pow(y, 1.0/3.0).sub(16)),
                 Shade.mul(903.3, y));
-    table.luv.create(Shade.vec(l, l.mul(t1.sub(white_point_uv)).mul(13)));
+    return table.luv.create(Shade.vec(l, l.mul(t1.sub(white_point_uv)).mul(13)));
 };
 
 // now I can define these
@@ -250,7 +250,7 @@ table.luv.hcl = function(luv)
 
 table.luv.xyz = function(luv)
 {
-    var uv = luv.swizzle("gb").div(luv.l.mul(13)).add(white_point_uv);
+    var uv = luv.vec.swizzle("gb").div(luv.l.mul(13)).add(white_point_uv);
     var u = uv.swizzle("r"), v = uv.swizzle("g");
     var y = white_point.y.mul(_if(luv.l.gt(7.999592),
                                   Shade.pow(luv.l.add(16).div(116), 3),
