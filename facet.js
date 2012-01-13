@@ -6227,17 +6227,12 @@ var operator = function(exp1, exp2,
         }),
         element: Shade.memoize_on_field("_element", function(i) {
             return element_evaluator(this, i);
-            // return operator(this.parents[0].element(i),
-            //                 this.parents[1].element(i),
-            //                 operator_name, type_resolver,
-            //                 constant_evaluator);
         }),
         element_constant_value: Shade.memoize_on_field("_element_constant_value", function(i) {
             return this.element(i).constant_value();
         }),
         element_is_constant: Shade.memoize_on_field("_element_is_constant", function(i) {
-            return (this.parents[0].element_is_constant(i) &&
-                    this.parents[1].element_is_constant(i));
+            return this.element(i).is_constant();
         })
     });
 };
@@ -8567,6 +8562,15 @@ Shade.Exp.alpha = function(alpha)
 };
 (function() {
 
+function compose(g, f)
+{
+    if (_.isUndefined(f) || _.isUndefined(g))
+        throw "Undefined!";
+    return function(x) {
+        return g(f(x));
+    };
+}
+
 var table = {};
 var colorspaces = ["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz"];
 _.each(colorspaces, function(space) {
@@ -8597,7 +8601,7 @@ _.each(colorspaces, function(space) {
         result[field_1] = v1;
         result[field_2] = v2;
         _.each(colorspaces, function(other_space) {
-            result[other_space] = function() { return table[space][other_space](this); };
+            result[other_space] = function() { return table[space][other_space](result); };
         });
         return result;
     };
@@ -8612,10 +8616,6 @@ function xyz_to_uv(xyz)
     return [2 * x / (6 * y - x + 1.5),
             4.5 * y / (6 * y - x + 1.5)];
 };
-
-// currently we assume a D65 white point, but this could be configurable
-var white_point = table.xyz.create(95.047, 100.000, 108.883);
-var white_point_uv = xyz_to_uv(white_point);
 
 // qtrans takes hue varying from 0 to 1!
 function qtrans(q1, q2, hue)
@@ -8634,14 +8634,22 @@ function qtrans(q1, q2, hue)
 
 function gtrans(u, gamma)
 {
-    if (u < 0) return u;
-    return Math.pow(u, 1.0 / gamma);
+    if (u > 0.00304)
+        return 1.055 * Math.pow(u, 1 / gamma) - 0.055;
+    else
+        return 12.92 * u;
+    // if (u < 0) return u;
+    // return Math.pow(u, 1.0 / gamma);
 }
 
 function ftrans(u, gamma)
 {
-    if (u < 0) return u;
-    return Math.pow(u, gamma);
+    if (u > 0.03928)
+        return Math.pow((u + 0.055) / 1.055, gamma);
+    else
+        return u / 12.92;
+    // if (u < 0) return u;
+    // return Math.pow(u, gamma);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -8704,13 +8712,13 @@ table.rgb.xyz = function(rgb)
 
 table.rgb.srgb = function(rgb)
 {
-    return table.srgb.create(gtrans(rgb.r, 2.2),
-                               gtrans(rgb.g, 2.2),
-                               gtrans(rgb.b, 2.2));
+    return table.srgb.create(gtrans(rgb.r, 2.4),
+                             gtrans(rgb.g, 2.4),
+                             gtrans(rgb.b, 2.4));
 };
 
-// table.rgb.luv = _.compose(table.xyz.luv, table.rgb.xyz);
-// table.rgb.hcl = _.compose(table.luv.hcl, table.rgb.luv);
+// table.rgb.luv = compose(table.xyz.luv, table.rgb.xyz);
+// table.rgb.hcl = compose(table.luv.hcl, table.rgb.luv);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.srgb.*
@@ -8718,9 +8726,9 @@ table.rgb.srgb = function(rgb)
 table.srgb.xyz = function(srgb)
 {
     var yn = white_point.y;
-    var r = ftrans(srgb.r, 2.2),
-        g = ftrans(srgb.g, 2.2),
-        b = ftrans(srgb.b, 2.2);
+    var r = ftrans(srgb.r, 2.4),
+        g = ftrans(srgb.g, 2.4),
+        b = ftrans(srgb.b, 2.4);
     return table.xyz.create(
         yn * (0.412453 * r + 0.357580 * g + 0.180423 * b),
         yn * (0.212671 * r + 0.715160 * g + 0.072169 * b),
@@ -8729,24 +8737,24 @@ table.srgb.xyz = function(srgb)
 
 table.srgb.rgb = function(srgb)
 {
-    var result = table.rgb.create(ftrans(srgb.r, 2.2),
-                                  ftrans(srgb.g, 2.2),
-                                  ftrans(srgb.b, 2.2));
+    var result = table.rgb.create(ftrans(srgb.r, 2.4),
+                                  ftrans(srgb.g, 2.4),
+                                  ftrans(srgb.b, 2.4));
     return result;
 };
 
-table.srgb.hls = _.compose(table.rgb.hls, table.srgb.rgb);
-table.srgb.hsv = _.compose(table.rgb.hsv, table.srgb.rgb);
-// table.srgb.luv = _.compose(table.rgb.luv, table.srgb.rgb);
-// table.srgb.hcl = _.compose(table.rgb.hcl, table.srgb.rgb);
+table.srgb.hls = compose(table.rgb.hls, table.srgb.rgb);
+table.srgb.hsv = compose(table.rgb.hsv, table.srgb.rgb);
+// table.srgb.luv = compose(table.rgb.luv, table.srgb.rgb);
+// table.srgb.hcl = compose(table.rgb.hcl, table.srgb.rgb);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.xyz.*
 
 table.xyz.luv = function(xyz)
 {
-    var un, vn, y;
-    var t1 = xyz_to_uv(xyz.x, xyz.y, xyz.z);
+    var y;
+    var t1 = xyz_to_uv(xyz);
     y = xyz.y / white_point.y;
     var l = (y > 0.008856 ? 
              116 * Math.pow(y, 1.0/3.0) - 16 :
@@ -8755,12 +8763,9 @@ table.xyz.luv = function(xyz)
                             13 * l * (t1[0] - white_point_uv[0]),
                             13 * l * (t1[1] - white_point_uv[1]));
 };
-
 // now I can define these
-table.rgb.luv = _.compose(table.xyz.luv, table.rgb.xyz);
-table.rgb.hcl = _.compose(table.luv.hcl, table.rgb.luv);
-table.srgb.luv = _.compose(table.rgb.luv, table.srgb.rgb);
-table.srgb.hcl = _.compose(table.rgb.hcl, table.srgb.rgb);
+table.rgb.luv = compose(table.xyz.luv, table.rgb.xyz);
+table.srgb.luv = compose(table.rgb.luv, table.srgb.rgb);
 
 table.xyz.rgb = function(xyz)
 {
@@ -8771,21 +8776,20 @@ table.xyz.rgb = function(xyz)
         ( 0.055648 * xyz.x - 0.204043 * xyz.y + 1.057311 * xyz.z) / yn
     );
 };
+table.xyz.hls = compose(table.rgb.hls, table.xyz.rgb);
+table.xyz.hsv = compose(table.rgb.hsv, table.xyz.rgb);
 
 table.xyz.srgb = function(xyz)
 {
     var yn = white_point.y;
     return table.srgb.create(
-        gtrans(( 3.240479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn, 2.2),
-        gtrans((-0.969256 * xyz.x + 1.875992 * xyz.y + 0.041556 * xyz.z) / yn, 2.2),
-        gtrans(( 0.055648 * xyz.x - 0.204043 * xyz.y + 1.057311 * xyz.z) / yn, 2.2)
+        gtrans(( 3.240479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn, 2.4),
+        gtrans((-0.969256 * xyz.x + 1.875992 * xyz.y + 0.041556 * xyz.z) / yn, 2.4),
+        gtrans(( 0.055648 * xyz.x - 0.204043 * xyz.y + 1.057311 * xyz.z) / yn, 2.4)
     );
 };
 
-table.xyz.hls = _.compose(table.rgb.hls, table.xyz.rgb);
-table.xyz.hsv = _.compose(table.rgb.hsv, table.xyz.rgb);
-table.xyz.luv = _.compose(table.rgb.luv, table.xyz.rgb);
-table.xyz.hcl = _.compose(table.rgb.hcl, table.xyz.rgb);
+// table.xyz.hcl = compose(table.rgb.hcl, table.xyz.rgb);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.luv.*
@@ -8798,6 +8802,9 @@ table.luv.hcl = function(luv)
     while (h < 0) { h += Math.PI * 2; }
     return table.hcl.create(h, c, luv.l);
 };
+table.rgb.hcl  = compose(table.luv.hcl,  table.rgb.luv);
+table.srgb.hcl = compose(table.luv.hcl,  table.srgb.luv);
+table.xyz.hcl  = compose(table.rgb.hcl, table.xyz.rgb);
 
 table.luv.xyz = function(luv)
 {
@@ -8815,11 +8822,11 @@ table.luv.xyz = function(luv)
     }
     return table.xyz.create(x, y, z);
 };
+table.luv.rgb  = compose(table.xyz.rgb,  table.luv.xyz);
+table.luv.hls  = compose(table.rgb.hls,  table.luv.rgb);
+table.luv.hsv  = compose(table.rgb.hsv,  table.luv.rgb);
+table.luv.srgb = compose(table.rgb.srgb, table.luv.rgb);
 
-table.luv.rgb  = _.compose(table.xyz.rgb,  table.luv.xyz);
-table.luv.hls  = _.compose(table.rgb.hls,  table.luv.rgb);
-table.luv.hsv  = _.compose(table.rgb.hsv,  table.luv.rgb);
-table.luv.srgb = _.compose(table.rgb.srgb, table.luv.rgb);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.hcl.*
@@ -8830,11 +8837,11 @@ table.hcl.luv = function(hcl)
         hcl.l, hcl.c * Math.cos(hcl.h), hcl.c * Math.sin(hcl.h));
 };
 
-table.hcl.rgb  = _.compose(table.luv.rgb,  table.hcl.luv);
-table.hcl.srgb = _.compose(table.luv.srgb, table.hcl.luv);
-table.hcl.hsv  = _.compose(table.luv.hsv,  table.hcl.luv);
-table.hcl.hls  = _.compose(table.luv.hls,  table.hcl.luv);
-table.hcl.xyz  = _.compose(table.luv.xyz,  table.hcl.luv);
+table.hcl.rgb  = compose(table.luv.rgb,  table.hcl.luv);
+table.hcl.srgb = compose(table.luv.srgb, table.hcl.luv);
+table.hcl.hsv  = compose(table.luv.hsv,  table.hcl.luv);
+table.hcl.hls  = compose(table.luv.hls,  table.hcl.luv);
+table.hcl.xyz  = compose(table.luv.xyz,  table.hcl.luv);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.hls.*
@@ -8857,11 +8864,11 @@ table.hls.rgb = function(hls)
     }
 };
 
-table.hls.srgb = _.compose(table.rgb.srgb, table.hls.rgb);
-table.hls.hsv  = _.compose(table.rgb.hsv,  table.hls.rgb);
-table.hls.xyz  = _.compose(table.rgb.xyz,  table.hls.rgb);
-table.hls.luv  = _.compose(table.rgb.luv,  table.hls.rgb);
-table.hls.hcl  = _.compose(table.rgb.hcl,  table.hls.rgb);
+table.hls.srgb = compose(table.rgb.srgb, table.hls.rgb);
+table.hls.hsv  = compose(table.rgb.hsv,  table.hls.rgb);
+table.hls.xyz  = compose(table.rgb.xyz,  table.hls.rgb);
+table.hls.luv  = compose(table.rgb.luv,  table.hls.rgb);
+table.hls.hcl  = compose(table.rgb.hcl,  table.hls.rgb);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.hsv.*
@@ -8893,16 +8900,29 @@ table.hsv.rgb = function(hsv)
     }
 };
 
-table.hsv.srgb = _.compose(table.rgb.srgb, table.hsv.rgb);
-table.hsv.hls  = _.compose(table.rgb.hls,  table.hsv.rgb);
-table.hsv.xyz  = _.compose(table.rgb.xyz,  table.hsv.rgb);
-table.hsv.luv  = _.compose(table.rgb.luv,  table.hsv.rgb);
-table.hsv.hcl  = _.compose(table.rgb.hcl,  table.hsv.rgb);
+table.hsv.srgb = compose(table.rgb.srgb, table.hsv.rgb);
+table.hsv.hls  = compose(table.rgb.hls,  table.hsv.rgb);
+table.hsv.xyz  = compose(table.rgb.xyz,  table.hsv.rgb);
+table.hsv.luv  = compose(table.rgb.luv,  table.hsv.rgb);
+table.hsv.hcl  = compose(table.rgb.hcl,  table.hsv.rgb);
+
+// currently we assume a D65 white point, but this could be configurable
+var white_point = table.xyz.create(95.047, 100.000, 108.883);
+var white_point_uv = xyz_to_uv(white_point);
 
 Shade.Colors.jstable = table;
 
 })();
 (function() {
+
+function compose(g, f)
+{
+    if (_.isUndefined(f) || _.isUndefined(g))
+        throw "Undefined!";
+    return function(x) {
+        return g(f(x));
+    };
+}
 
 var _if = Shade.selection; // This is probably a good name for it...
 
@@ -8949,7 +8969,7 @@ _.each(colorspaces, function(space) {
         result[field_1] = vec.swizzle("g");
         result[field_2] = vec.swizzle("b");
         _.each(colorspaces, function(other_space) {
-            result[other_space] = function() { return table[space][other_space](this); };
+            result[other_space] = function() { return table[space][other_space](result); };
         });
         return result;
     };
@@ -8965,10 +8985,6 @@ function xyz_to_uv(xyz)
                      y.mul(4.5).div(y.mul(6).sub(x).add(1.5)));
 };
 
-// currently we assume a D65 white point, but this could be configurable
-var white_point = table.xyz.create(95.047, 100.000, 108.883);
-var white_point_uv = xyz_to_uv(white_point);
-
 // qtrans takes hue varying from 0 to 1!
 function qtrans(q1, q2, hue)
 {
@@ -8983,12 +8999,18 @@ function qtrans(q1, q2, hue)
 
 function gtrans(u, gamma)
 {
-    return Shade.selection(u.lt(0), u, Shade.pow(u, Shade.div(1, gamma)));
+    return _if(u.gt(0.00304),
+               Shade.mul(1.055, Shade.pow(u, Shade.div(1, gamma))).sub(0.055),
+               u.mul(12.92));
+    // return Shade.selection(u.lt(0), u, Shade.pow(u, Shade.div(1, gamma)));
 }
 
 function ftrans(u, gamma)
 {
-    return Shade.selection(u.lt(0), u, Shade.pow(u, gamma));
+    return _if(u.gt(0.03928),
+               Shade.pow(u.add(0.055).div(1.055), gamma),
+               u.div(12.92));
+    // return Shade.selection(u.lt(0), u, Shade.pow(u, gamma));
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -9056,13 +9078,13 @@ table.rgb.xyz = function(rgb)
 
 table.rgb.srgb = function(rgb)
 {
-    return table.srgb.create(gtrans(rgb.r, 2.2),
-                             gtrans(rgb.g, 2.2),
-                             gtrans(rgb.b, 2.2));
+    return table.srgb.create(gtrans(rgb.r, 2.4),
+                             gtrans(rgb.g, 2.4),
+                             gtrans(rgb.b, 2.4));
 };
 
-// table.rgb.luv = _.compose(table.xyz.luv, table.rgb.xyz);
-// table.rgb.hcl = _.compose(table.luv.hcl, table.rgb.luv);
+// table.rgb.luv = compose(table.xyz.luv, table.rgb.xyz);
+// table.rgb.hcl = compose(table.luv.hcl, table.rgb.luv);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.srgb.*
@@ -9070,9 +9092,9 @@ table.rgb.srgb = function(rgb)
 table.srgb.xyz = function(srgb)
 {
     var yn = white_point.y;
-    var r = ftrans(srgb.r, 2.2),
-        g = ftrans(srgb.g, 2.2),
-        b = ftrans(srgb.b, 2.2);
+    var r = ftrans(srgb.r, 2.4),
+        g = ftrans(srgb.g, 2.4),
+        b = ftrans(srgb.b, 2.4);
     return table.xyz.create(
         yn.mul(r.mul(0.412453).add(g.mul(0.357580)).add(b.mul(0.180423))),
         yn.mul(r.mul(0.212671).add(g.mul(0.715160)).add(b.mul(0.072169))),
@@ -9081,37 +9103,34 @@ table.srgb.xyz = function(srgb)
 
 table.srgb.rgb = function(srgb)
 {
-    var result = table.rgb.create(ftrans(srgb.r, 2.2),
-                                  ftrans(srgb.g, 2.2),
-                                  ftrans(srgb.b, 2.2));
+    var result = table.rgb.create(ftrans(srgb.r, 2.4),
+                                  ftrans(srgb.g, 2.4),
+                                  ftrans(srgb.b, 2.4));
     
     return result;
 };
 
-table.srgb.hls = _.compose(table.rgb.hls, table.srgb.rgb);
-table.srgb.hsv = _.compose(table.rgb.hsv, table.srgb.rgb);
-// table.srgb.luv = _.compose(table.rgb.luv, table.srgb.rgb);
-// table.srgb.hcl = _.compose(table.rgb.hcl, table.srgb.rgb);
+table.srgb.hls = compose(table.rgb.hls, table.srgb.rgb);
+table.srgb.hsv = compose(table.rgb.hsv, table.srgb.rgb);
+// table.srgb.luv = compose(table.rgb.luv, table.srgb.rgb);
+// table.srgb.hcl = compose(table.rgb.hcl, table.srgb.rgb);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.xyz.*
 
 table.xyz.luv = function(xyz)
 {
-    var un, vn, y;
+    var y;
     var t1 = xyz_to_uv(xyz);
     y = xyz.y.div(white_point.y);
     var l = _if(y.gt(0.008856), 
-                Shade.mul(116, Shade.pow(y, 1.0/3.0).sub(16)),
+                Shade.mul(116, Shade.pow(y, 1.0/3.0)).sub(16),
                 Shade.mul(903.3, y));
     return table.luv.create(Shade.vec(l, l.mul(t1.sub(white_point_uv)).mul(13)));
 };
-
 // now I can define these
-table.rgb.luv = _.compose(table.xyz.luv, table.rgb.xyz);
-table.rgb.hcl = _.compose(table.luv.hcl, table.rgb.luv);
-table.srgb.luv = _.compose(table.rgb.luv, table.srgb.rgb);
-table.srgb.hcl = _.compose(table.rgb.hcl, table.srgb.rgb);
+table.rgb.luv = compose(table.xyz.luv, table.rgb.xyz);
+table.srgb.luv = compose(table.rgb.luv, table.srgb.rgb);
 
 table.xyz.rgb = function(xyz)
 {
@@ -9122,35 +9141,37 @@ table.xyz.rgb = function(xyz)
         (xyz.x.mul( 0.055648).sub(xyz.y.mul(0.204043)).add(xyz.z.mul(1.057311))).div(yn)
     );
 };
+table.xyz.hls = compose(table.rgb.hls, table.xyz.rgb);
+table.xyz.hsv = compose(table.rgb.hsv, table.xyz.rgb);
 
 table.xyz.srgb = function(xyz)
 {
     var yn = white_point.y;
     return table.srgb.create(
-        gtrans((xyz.x.mul( 3.240479).sub(xyz.y.mul(1.537150)).sub(xyz.z.mul(0.498535))).div(yn), 2.2),
-        gtrans((xyz.x.mul(-0.969256).add(xyz.y.mul(1.875992)).add(xyz.z.mul(0.041556))).div(yn), 2.2),
-        gtrans((xyz.x.mul( 0.055648).sub(xyz.y.mul(0.204043)).add(xyz.z.mul(1.057311))).div(yn), 2.2)
+        gtrans((xyz.x.mul( 3.240479).sub(xyz.y.mul(1.537150)).sub(xyz.z.mul(0.498535))).div(yn), 2.4),
+        gtrans((xyz.x.mul(-0.969256).add(xyz.y.mul(1.875992)).add(xyz.z.mul(0.041556))).div(yn), 2.4),
+        gtrans((xyz.x.mul( 0.055648).sub(xyz.y.mul(0.204043)).add(xyz.z.mul(1.057311))).div(yn), 2.4)
     );
 };
 
-table.xyz.hls = _.compose(table.rgb.hls, table.xyz.rgb);
-table.xyz.hsv = _.compose(table.rgb.hsv, table.xyz.rgb);
-table.xyz.luv = _.compose(table.rgb.luv, table.xyz.rgb);
-table.xyz.hcl = _.compose(table.rgb.hcl, table.xyz.rgb);
+// table.xyz.hcl = compose(table.rgb.hcl, table.xyz.rgb);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.luv.*
 
 table.luv.hcl = function(luv)
 {
-    var c = Shade.length(luv.swizzle("gb"));
-    var h = Shade.atan2(luv.v, luv.u);
+    var c = Shade.length(luv.vec.swizzle("gb"));
+    var h = Shade.atan(luv.v, luv.u);
     h = _if(h.gt(Math.PI*2), h.sub(Math.PI*2),
         _if(h.lt(0), h.add(Math.PI*2), h));
     while (h > Math.PI * 2) { h -= Math.PI * 2; }
     while (h < 0) { h += Math.PI * 2; }
     return table.hcl.create(h, c, luv.l);
 };
+table.rgb.hcl  = compose(table.luv.hcl,  table.rgb.luv);
+table.srgb.hcl = compose(table.luv.hcl,  table.srgb.luv);
+table.xyz.hcl  = compose(table.rgb.hcl, table.xyz.rgb);
 
 table.luv.xyz = function(luv)
 {
@@ -9165,11 +9186,10 @@ table.luv.xyz = function(luv)
                                 Shade.vec(0,0,0),
                                 Shade.vec(x,y,z)));
 };
-
-table.luv.rgb  = _.compose(table.xyz.rgb,  table.luv.xyz);
-table.luv.hls  = _.compose(table.rgb.hls,  table.luv.rgb);
-table.luv.hsv  = _.compose(table.rgb.hsv,  table.luv.rgb);
-table.luv.srgb = _.compose(table.rgb.srgb, table.luv.rgb);
+table.luv.rgb  = compose(table.xyz.rgb,  table.luv.xyz);
+table.luv.hls  = compose(table.rgb.hls,  table.luv.rgb);
+table.luv.hsv  = compose(table.rgb.hsv,  table.luv.rgb);
+table.luv.srgb = compose(table.rgb.srgb, table.luv.rgb);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.hcl.*
@@ -9180,11 +9200,11 @@ table.hcl.luv = function(hcl)
         hcl.l, hcl.c.mul(hcl.h.cos()), hcl.c.mul(hcl.h.sin()));
 };
 
-table.hcl.rgb  = _.compose(table.luv.rgb,  table.hcl.luv);
-table.hcl.srgb = _.compose(table.luv.srgb, table.hcl.luv);
-table.hcl.hsv  = _.compose(table.luv.hsv,  table.hcl.luv);
-table.hcl.hls  = _.compose(table.luv.hls,  table.hcl.luv);
-table.hcl.xyz  = _.compose(table.luv.xyz,  table.hcl.luv);
+table.hcl.rgb  = compose(table.luv.rgb,  table.hcl.luv);
+table.hcl.srgb = compose(table.luv.srgb, table.hcl.luv);
+table.hcl.hsv  = compose(table.luv.hsv,  table.hcl.luv);
+table.hcl.hls  = compose(table.luv.hls,  table.hcl.luv);
+table.hcl.xyz  = compose(table.luv.xyz,  table.hcl.luv);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.hls.*
@@ -9203,11 +9223,11 @@ table.hls.rgb = function(hls)
                       qtrans(p1, p2, hls.h.sub(Math.PI * 2/3).div(Math.PI * 2)))));
 };
 
-table.hls.srgb = _.compose(table.rgb.srgb, table.hls.rgb);
-table.hls.hsv  = _.compose(table.rgb.hsv,  table.hls.rgb);
-table.hls.xyz  = _.compose(table.rgb.xyz,  table.hls.rgb);
-table.hls.luv  = _.compose(table.rgb.luv,  table.hls.rgb);
-table.hls.hcl  = _.compose(table.rgb.hcl,  table.hls.rgb);
+table.hls.srgb = compose(table.rgb.srgb, table.hls.rgb);
+table.hls.hsv  = compose(table.rgb.hsv,  table.hls.rgb);
+table.hls.xyz  = compose(table.rgb.xyz,  table.hls.rgb);
+table.hls.luv  = compose(table.rgb.luv,  table.hls.rgb);
+table.hls.hcl  = compose(table.rgb.hcl,  table.hls.rgb);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.hsv.*
@@ -9232,11 +9252,15 @@ table.hsv.rgb = function(hsv)
                                          Shade.vec(v, n, m))))))));
 };
 
-table.hsv.srgb = _.compose(table.rgb.srgb, table.hsv.rgb);
-table.hsv.hls  = _.compose(table.rgb.hls,  table.hsv.rgb);
-table.hsv.xyz  = _.compose(table.rgb.xyz,  table.hsv.rgb);
-table.hsv.luv  = _.compose(table.rgb.luv,  table.hsv.rgb);
-table.hsv.hcl  = _.compose(table.rgb.hcl,  table.hsv.rgb);
+table.hsv.srgb = compose(table.rgb.srgb, table.hsv.rgb);
+table.hsv.hls  = compose(table.rgb.hls,  table.hsv.rgb);
+table.hsv.xyz  = compose(table.rgb.xyz,  table.hsv.rgb);
+table.hsv.luv  = compose(table.rgb.luv,  table.hsv.rgb);
+table.hsv.hcl  = compose(table.rgb.hcl,  table.hsv.rgb);
+
+// currently we assume a D65 white point, but this could be configurable
+var white_point = table.xyz.create(95.047, 100.000, 108.883);
+var white_point_uv = xyz_to_uv(white_point);
 
 Shade.Colors.shadetable = table;
 
