@@ -10,9 +10,9 @@ _.each(colorspaces, function(space) {
     table[space].create = function() {
         var vec;
         if (arguments.length === 1) {
+            vec = arguments[0];
             if (!vec.type.equals(Shade.Types.vec3))
                 throw "create with 1 parameter requires a vec3";
-            vec = arguments[0];
         } else if (arguments.length === 3) {
             vec = Shade.vec(arguments[0], arguments[1], arguments[2]);
             if (!vec.type.equals(Shade.Types.vec3))
@@ -37,7 +37,8 @@ _.each(colorspaces, function(space) {
             as_shade: function(alpha) {
                 if (_.isUndefined(alpha))
                     alpha = Shade.make(1);
-                return Shade.vec(this.rgb(), alpha);
+                var result = this.rgb().vec;
+                return Shade.vec(this.rgb().vec, alpha);
             }
         };
         result[field_0] = vec.swizzle("r");
@@ -68,7 +69,7 @@ var white_point_uv = xyz_to_uv(white_point);
 function qtrans(q1, q2, hue)
 {
     hue = _if(hue.gt(1), hue.sub(1), hue);
-    hue = _if(hue.lt(0), hue.add(0), hue);
+    hue = _if(hue.lt(0), hue.add(1), hue);
     return _if(hue.lt(1/6), q1.add(q2.sub(q1).mul(hue.mul(6))),
            _if(hue.lt(1/2), q2,
            _if(hue.lt(2/3), q1.add(q2.sub(q1).mul(Shade.make(2/3)
@@ -78,12 +79,12 @@ function qtrans(q1, q2, hue)
 
 function gtrans(u, gamma)
 {
-    return Shade.selection(u.lt(0), u, Shade.pow(1, Shade.div(1, gamma)));
+    return Shade.selection(u.lt(0), u, Shade.pow(u, Shade.div(1, gamma)));
 }
 
 function ftrans(u, gamma)
 {
-    return Shade.selection(u.lt(0), u, Shade.pow(1, gamma));
+    return Shade.selection(u.lt(0), u, Shade.pow(u, gamma));
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -111,7 +112,7 @@ table.rgb.hsv = function(rgb)
     return table.hsv.create(_if(
         y.eq(x), 
         Shade.vec(0,0,y),
-        Shade.vec(Shade.mul(1/6, i.sub(f.div(y.sub(x)))),
+        Shade.vec(Shade.mul(Math.PI/3, i.sub(f.div(y.sub(x)))),
                   y.sub(x).div(y),
                   y)));
 };
@@ -121,19 +122,22 @@ table.rgb.hls = function(rgb)
     var min = min3(rgb);
     var max = max3(rgb);
     var l = max.add(min).div(2), s, h;
+    var mx_ne_mn = max.ne(min);
     
-    s = _if(max.ne(min),
-            _if(l.lt(0.5, max.sub(min).div(max.add(min)),
-                          max.sub(min).div(Shade.sub(2.0, max).sub(min)))),
+    s = _if(mx_ne_mn,
+            _if(l.lt(0.5), 
+                max.sub(min).div(max.add(min)),
+                max.sub(min).div(Shade.sub(2.0, max).sub(min))),
             0);
-    h = _if(max.ne(min),
+    h = _if(mx_ne_mn,
             _if(rgb.r.eq(max),                rgb.g.sub(rgb.b).div(max.sub(min)),
             _if(rgb.g.eq(max), Shade.add(2.0, rgb.b.sub(rgb.r).div(max.sub(min))),
-                               Shade.add(4.0, rgb.r.sub(rgb.b).div(max.sub(min))))),
+                               Shade.add(4.0, rgb.r.sub(rgb.g).div(max.sub(min))))),
             0);
     h = h.mul(Math.PI / 3);
     h = _if(h.lt(0),           h.add(Math.PI * 2),
-        _if(h.gt(Math.PI * 2), h.sub(Math.PI * 2)));
+        _if(h.gt(Math.PI * 2), h.sub(Math.PI * 2), 
+                               h));
     return table.hls.create(h, l, s);
 };
 
@@ -148,9 +152,9 @@ table.rgb.xyz = function(rgb)
 
 table.rgb.srgb = function(rgb)
 {
-    return table.rgb.create(gtrans(rgb.r, 2.2),
-                            gtrans(rgb.g, 2.2),
-                            gtrans(rgb.b, 2.2));
+    return table.srgb.create(gtrans(rgb.r, 2.2),
+                             gtrans(rgb.g, 2.2),
+                             gtrans(rgb.b, 2.2));
 };
 
 // table.rgb.luv = _.compose(table.xyz.luv, table.rgb.xyz);
@@ -173,9 +177,11 @@ table.srgb.xyz = function(srgb)
 
 table.srgb.rgb = function(srgb)
 {
-    return table.rgb.create(ftrans(srgb.r, 2.2),
-                            ftrans(srgb.b, 2.2),
-                            ftrans(srgb.b, 2.2));
+    var result = table.rgb.create(ftrans(srgb.r, 2.2),
+                                  ftrans(srgb.g, 2.2),
+                                  ftrans(srgb.b, 2.2));
+    
+    return result;
 };
 
 table.srgb.hls = _.compose(table.rgb.hls, table.srgb.rgb);
@@ -254,7 +260,6 @@ table.luv.xyz = function(luv)
     return table.xyz.create(_if(luv.l.le(0).and(luv.u.eq(0).and(luv.v.eq(0))),
                                 Shade.vec(0,0,0),
                                 Shade.vec(x,y,z)));
-    return table.xyz.create(x, y, z);
 };
 
 table.luv.rgb  = _.compose(table.xyz.rgb,  table.luv.xyz);
@@ -288,7 +293,7 @@ table.hls.rgb = function(hls)
     var p1 = hls.l.mul(2).sub(p2);
     return table.rgb.create(
         _if(hls.s.eq(0),
-            Shade.vec(hls.swizzle("ggg")),
+            Shade.vec(hls.vec.swizzle("ggg")),
             Shade.vec(qtrans(p1, p2, hls.h.add(Math.PI * 2/3).div(Math.PI * 2)),
                       qtrans(p1, p2, hls.h.div(Math.PI * 2)),
                       qtrans(p1, p2, hls.h.sub(Math.PI * 2/3).div(Math.PI * 2)))));
@@ -306,7 +311,7 @@ table.hls.hcl  = _.compose(table.rgb.hcl,  table.hls.rgb);
 table.hsv.rgb = function(hsv)
 {
     var v = hsv.v;
-    var h = hsv.h.div(Math.PI * 3);
+    var h = hsv.h.div(Math.PI).mul(3);
     var i = h.floor();
     var f = h.sub(i);
     f = _if(i.div(2).floor().eq(i.div(2)),

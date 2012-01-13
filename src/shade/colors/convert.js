@@ -90,7 +90,7 @@ table.rgb.hsv = function(rgb)
                                  rgb.r - rgb.g);
         var i = ((rgb.r === x) ? 3 :
                  (rgb.g === x) ? 5 : 1);
-        return table.hsv.create(1/6 * (i - f / (y - x)),
+        return table.hsv.create((Math.PI/3) * (i - f / (y - x)),
                                 (y - x) / y,
                                 y);
     } else {
@@ -137,9 +137,9 @@ table.rgb.xyz = function(rgb)
 
 table.rgb.srgb = function(rgb)
 {
-    return table.rgb.create(gtrans(rgb.r, 2.2),
-                            gtrans(rgb.g, 2.2),
-                            gtrans(rgb.b, 2.2));
+    return table.srgb.create(gtrans(rgb.r, 2.2),
+                               gtrans(rgb.g, 2.2),
+                               gtrans(rgb.b, 2.2));
 };
 
 // table.rgb.luv = _.compose(table.xyz.luv, table.rgb.xyz);
@@ -162,9 +162,10 @@ table.srgb.xyz = function(srgb)
 
 table.srgb.rgb = function(srgb)
 {
-    return table.rgb.create(ftrans(srgb.r, 2.2),
-                            ftrans(srgb.b, 2.2),
-                            ftrans(srgb.b, 2.2));
+    var result = table.rgb.create(ftrans(srgb.r, 2.2),
+                                  ftrans(srgb.g, 2.2),
+                                  ftrans(srgb.b, 2.2));
+    return result;
 };
 
 table.srgb.hls = _.compose(table.rgb.hls, table.srgb.rgb);
@@ -283,9 +284,9 @@ table.hls.rgb = function(hls)
         return table.rgb.create(hls.l, hls.l, hls.l);
     } else {
         return table.rgb.create(
-            qtrans(p1, p2, (hls.h + Math.PI * 2/3) / Math.PI * 2),
-            qtrans(p1, p2, hls.h / Math.PI * 2),
-            qtrans(p1, p2, (hls.h - Math.PI * 2/3) / Math.PI * 2));
+            qtrans(p1, p2, (hls.h + Math.PI * 2/3) / (Math.PI * 2)),
+            qtrans(p1, p2, hls.h / (Math.PI * 2)),
+            qtrans(p1, p2, (hls.h - Math.PI * 2/3) / (Math.PI * 2)));
     }
 };
 
