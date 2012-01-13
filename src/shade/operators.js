@@ -2,7 +2,8 @@
 
 var operator = function(exp1, exp2, 
                         operator_name, type_resolver,
-                        constant_evaluator)
+                        constant_evaluator,
+                        element_evaluator)
 {
     var resulting_type = type_resolver(exp1.type, exp2.type);
     return Shade._create_concrete_value_exp( {
@@ -17,10 +18,11 @@ var operator = function(exp1, exp2,
             return constant_evaluator(this);
         }),
         element: Shade.memoize_on_field("_element", function(i) {
-            return operator(this.parents[0].element(i),
-                            this.parents[1].element(i),
-                            operator_name, type_resolver,
-                            constant_evaluator);
+            return element_evaluator(this, i);
+            // return operator(this.parents[0].element(i),
+            //                 this.parents[1].element(i),
+            //                 operator_name, type_resolver,
+            //                 constant_evaluator);
         }),
         element_constant_value: Shade.memoize_on_field("_element_constant_value", function(i) {
             return this.element(i).constant_value();
@@ -95,9 +97,30 @@ Shade.add = function() {
             });
         return vt.plus(v1, v2);
     }
+    function element_evaluator(exp, i) {
+        var e1 = exp.parents[0], e2 = exp.parents[1];
+        var v1, v2;
+        var t1 = e1.type, t2 = e2.type;
+        if (t1.is_pod() && t2.is_pod()) {
+            if (i === 0)
+                return exp;
+            else
+                throw "i > 0 in pod element";
+        }
+        if (e1.type.is_vec() || e1.type.is_mat())
+            v1 = e1.element(i);
+        else
+            v1 = e1;
+        if (e2.type.is_vec() || e2.type.is_vec())
+            v2 = e2.element(i);
+        else
+            v2 = e2;
+        return operator(v1, v2, "+", add_type_resolver, evaluator, element_evaluator);
+    }
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "+", add_type_resolver, evaluator);
+                                  "+", add_type_resolver, evaluator,
+                                  element_evaluator);
     }
     return current_result;
 };
@@ -164,10 +187,31 @@ Shade.sub = function() {
             });
         return vt.minus(v1, v2);
     }
+    function element_evaluator(exp, i) {
+        var e1 = exp.parents[0], e2 = exp.parents[1];
+        var v1, v2;
+        var t1 = e1.type, t2 = e2.type;
+        if (t1.is_pod() && t2.is_pod()) {
+            if (i === 0)
+                return exp;
+            else
+                throw "i > 0 in pod element";
+        }
+        if (e1.type.is_vec() || e1.type.is_mat())
+            v1 = e1.element(i);
+        else
+            v1 = e1;
+        if (e2.type.is_vec() || e2.type.is_vec())
+            v2 = e2.element(i);
+        else
+            v2 = e2;
+        return operator(v1, v2, "-", sub_type_resolver, evaluator, element_evaluator);
+    }
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "-", sub_type_resolver, evaluator);
+                                  "-", sub_type_resolver, evaluator,
+                                  element_evaluator);
     }
     return current_result;
 };
@@ -259,10 +303,30 @@ Shade.div = function() {
         };
         return dispatch[t1][t2](v1, v2);
     }
+    function element_evaluator(exp, i) {
+        var e1 = exp.parents[0], e2 = exp.parents[1];
+        var v1, v2;
+        var t1 = e1.type, t2 = e2.type;
+        if (t1.is_pod() && t2.is_pod()) {
+            if (i === 0)
+                return exp;
+            else
+                throw "i > 0 in pod element";
+        }
+        if (e1.type.is_vec() || e1.type.is_mat())
+            v1 = e1.element(i);
+        else
+            v1 = e1;
+        if (e2.type.is_vec() || e2.type.is_vec())
+            v2 = e2.element(i);
+        else
+            v2 = e2;
+        return operator(v1, v2, "/", div_type_resolver, evaluator, element_evaluator);
+    }
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "/", div_type_resolver, evaluator);
+                                  "/", div_type_resolver, evaluator, element_evaluator);
     }
     return current_result;
 };
@@ -349,10 +413,30 @@ Shade.mul = function() {
         };
         return dispatch[t1][t2](v1, v2);
     }
+    function element_evaluator(exp, i) {
+        var e1 = exp.parents[0], e2 = exp.parents[1];
+        var v1, v2;
+        var t1 = e1.type, t2 = e2.type;
+        if (t1.is_pod() && t2.is_pod()) {
+            if (i === 0)
+                return exp;
+            else
+                throw "i > 0 in pod element";
+        }
+        if (e1.type.is_vec() || e1.type.is_mat())
+            v1 = e1.element(i);
+        else
+            v1 = e1;
+        if (e2.type.is_vec() || e2.type.is_vec())
+            v2 = e2.element(i);
+        else
+            v2 = e2;
+        return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+    }
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "*", mul_type_resolver, evaluator);
+                                  "*", mul_type_resolver, evaluator, element_evaluator);
     }
     return current_result;
 };
