@@ -1,20 +1,37 @@
 Shade.Exp = {
-    debug_print: function(indent) {
-        if (_.isUndefined(indent)) indent = 0;
-        var str = "";
-        for (var i=0; i<indent; ++i) { str = str + ' '; }
-        if (this.parents.length === 0) 
-            console.log(str + "[" + this.expression_type + ":" + this.guid + "]"
-                        // + "[is_constant: " + this.is_constant() + "]"
-                        + "()");
-        else {
-            console.log(str + "[" + this.expression_type + ":" + this.guid + "]"
-                        // + "[is_constant: " + this.is_constant() + "]"
-                        + "(");
-            for (i=0; i<this.parents.length; ++i)
-                this.parents[i].debug_print(indent + 2);
-            console.log(str + ')');
-        }
+    debug_print: function(do_what) {
+        var lst = [];
+        var refs = {};
+        function _debug_print(which, indent) {
+            var i;
+            var str = new Array(indent+2).join(" "); // This is python's '" " * indent'
+            // var str = "";
+            // for (var i=0; i<indent; ++i) { str = str + ' '; }
+            if (which.parents.length === 0) 
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " ()");
+            else {
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " (");
+                for (i=0; i<which.parents.length; ++i) {
+                    if (refs[which.parents[i].guid])
+                        lst.push(str + "  {{" + which.parents[i].guid + "}}");
+                    else {
+                        _debug_print(which.parents[i], indent + 2);
+                        refs[which.parents[i].guid] = 1;
+                    }
+                }
+                lst.push(str + ')');
+            }
+        };
+        _debug_print(this, 0);
+        do_what = do_what || function(l) {
+            var s = l.join("\n");
+            console.log(s);
+        };
+        do_what(lst);
     },
     evaluate: function() {
         return this.glsl_name + "()";
@@ -218,7 +235,7 @@ Shade.Exp = {
         return Shade._create_concrete_exp( {
             parents: [parent],
             type: parent.type.swizzle(pattern),
-            expression_type: "swizzle",
+            expression_type: "swizzle{" + pattern + "}",
             evaluate: function() { return this.parents[0].evaluate() + "." + pattern; },
             is_constant: Shade.memoize_on_field("_is_constant", function () {
                 var that = this;
