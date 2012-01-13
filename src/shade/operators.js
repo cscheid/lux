@@ -19,17 +19,12 @@ var operator = function(exp1, exp2,
         }),
         element: Shade.memoize_on_field("_element", function(i) {
             return element_evaluator(this, i);
-            // return operator(this.parents[0].element(i),
-            //                 this.parents[1].element(i),
-            //                 operator_name, type_resolver,
-            //                 constant_evaluator);
         }),
         element_constant_value: Shade.memoize_on_field("_element_constant_value", function(i) {
             return this.element(i).constant_value();
         }),
         element_is_constant: Shade.memoize_on_field("_element_is_constant", function(i) {
-            return (this.parents[0].element_is_constant(i) &&
-                    this.parents[1].element_is_constant(i));
+            return this.element(i).is_constant();
         })
     });
 };
