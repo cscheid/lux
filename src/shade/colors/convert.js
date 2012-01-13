@@ -46,10 +46,6 @@ function xyz_to_uv(xyz)
             4.5 * y / (6 * y - x + 1.5)];
 };
 
-// currently we assume a D65 white point, but this could be configurable
-var white_point = table.xyz.create(95.047, 100.000, 108.883);
-var white_point_uv = xyz_to_uv(white_point);
-
 // qtrans takes hue varying from 0 to 1!
 function qtrans(q1, q2, hue)
 {
@@ -67,14 +63,22 @@ function qtrans(q1, q2, hue)
 
 function gtrans(u, gamma)
 {
-    if (u < 0) return u;
-    return Math.pow(u, 1.0 / gamma);
+    if (u > 0.00304)
+        return 1.055 * Math.pow(u, 1 / gamma) - 0.055;
+    else
+        return 12.92 * u;
+    // if (u < 0) return u;
+    // return Math.pow(u, 1.0 / gamma);
 }
 
 function ftrans(u, gamma)
 {
-    if (u < 0) return u;
-    return Math.pow(u, gamma);
+    if (u > 0.03928)
+        return Math.pow((u + 0.055) / 1.055, gamma);
+    else
+        return u / 12.92;
+    // if (u < 0) return u;
+    // return Math.pow(u, gamma);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -137,9 +141,9 @@ table.rgb.xyz = function(rgb)
 
 table.rgb.srgb = function(rgb)
 {
-    return table.srgb.create(gtrans(rgb.r, 2.2),
-                               gtrans(rgb.g, 2.2),
-                               gtrans(rgb.b, 2.2));
+    return table.srgb.create(gtrans(rgb.r, 2.4),
+                             gtrans(rgb.g, 2.4),
+                             gtrans(rgb.b, 2.4));
 };
 
 // table.rgb.luv = _.compose(table.xyz.luv, table.rgb.xyz);
@@ -151,9 +155,9 @@ table.rgb.srgb = function(rgb)
 table.srgb.xyz = function(srgb)
 {
     var yn = white_point.y;
-    var r = ftrans(srgb.r, 2.2),
-        g = ftrans(srgb.g, 2.2),
-        b = ftrans(srgb.b, 2.2);
+    var r = ftrans(srgb.r, 2.4),
+        g = ftrans(srgb.g, 2.4),
+        b = ftrans(srgb.b, 2.4);
     return table.xyz.create(
         yn * (0.412453 * r + 0.357580 * g + 0.180423 * b),
         yn * (0.212671 * r + 0.715160 * g + 0.072169 * b),
@@ -162,9 +166,9 @@ table.srgb.xyz = function(srgb)
 
 table.srgb.rgb = function(srgb)
 {
-    var result = table.rgb.create(ftrans(srgb.r, 2.2),
-                                  ftrans(srgb.g, 2.2),
-                                  ftrans(srgb.b, 2.2));
+    var result = table.rgb.create(ftrans(srgb.r, 2.4),
+                                  ftrans(srgb.g, 2.4),
+                                  ftrans(srgb.b, 2.4));
     return result;
 };
 
@@ -178,8 +182,8 @@ table.srgb.hsv = _.compose(table.rgb.hsv, table.srgb.rgb);
 
 table.xyz.luv = function(xyz)
 {
-    var un, vn, y;
-    var t1 = xyz_to_uv(xyz.x, xyz.y, xyz.z);
+    var y;
+    var t1 = xyz_to_uv(xyz);
     y = xyz.y / white_point.y;
     var l = (y > 0.008856 ? 
              116 * Math.pow(y, 1.0/3.0) - 16 :
@@ -209,9 +213,9 @@ table.xyz.srgb = function(xyz)
 {
     var yn = white_point.y;
     return table.srgb.create(
-        gtrans(( 3.240479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn, 2.2),
-        gtrans((-0.969256 * xyz.x + 1.875992 * xyz.y + 0.041556 * xyz.z) / yn, 2.2),
-        gtrans(( 0.055648 * xyz.x - 0.204043 * xyz.y + 1.057311 * xyz.z) / yn, 2.2)
+        gtrans(( 3.240479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn, 2.4),
+        gtrans((-0.969256 * xyz.x + 1.875992 * xyz.y + 0.041556 * xyz.z) / yn, 2.4),
+        gtrans(( 0.055648 * xyz.x - 0.204043 * xyz.y + 1.057311 * xyz.z) / yn, 2.4)
     );
 };
 
@@ -331,6 +335,10 @@ table.hsv.hls  = _.compose(table.rgb.hls,  table.hsv.rgb);
 table.hsv.xyz  = _.compose(table.rgb.xyz,  table.hsv.rgb);
 table.hsv.luv  = _.compose(table.rgb.luv,  table.hsv.rgb);
 table.hsv.hcl  = _.compose(table.rgb.hcl,  table.hsv.rgb);
+
+// currently we assume a D65 white point, but this could be configurable
+var white_point = table.xyz.create(95.047, 100.000, 108.883);
+var white_point_uv = xyz_to_uv(white_point);
 
 Shade.Colors.jstable = table;
 
