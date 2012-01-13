@@ -201,6 +201,14 @@ Shade.basic = function(repr) {
             } else
                 // FIXME implement this
                 throw "unimplemented for mats";
+        },
+        constant_equal: function(v1, v2) {
+            if (this.is_pod())
+                return v1 === v2;
+            if (this.is_vec() || this.is_mat())
+                return _.all(_.range(v1.length), function(i) { return v1[i] === v2[i]; });
+            else
+                throw "bad type for equality comparison: " + this.repr();
         }
     });
 };
