@@ -9616,15 +9616,11 @@ Facet.Models.mesh = function(u_secs, v_secs) {
         }
     }
 
-    var S = Shade;
-    var uv_attr = Facet.attribute_buffer(verts, 2);
-    var phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
-    var theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
-    var cosphi = S.cos(phi);
+    var uv_attr = Shade.make(Facet.attribute_buffer(verts, 2));
     return Facet.model({
         type: "triangle_strip",
         tex_coord: uv_attr,
-        vertex: Shade.mul(uv_attr, 2).sub(Shade.vec(1, 1)),
+        vertex: uv_attr.mul(2).sub(1),
         elements: Facet.element_buffer(elements)
     });
 };
