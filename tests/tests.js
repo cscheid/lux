@@ -368,8 +368,15 @@ test("Shade constant folding", function() {
     ok(Shade.vec(Shade.max(0, 1), 1, 1).element(0).constant_value() === 1,
        "element() on built-in expressions");
 
+    ok(Shade.add(2, Shade.vec(1, 2)).element_is_constant(1),
+       "operator element_is_constant");
+
     // equal(Shade.max(Shade.vec(x,1,x), 2).element(1).constant_value(), 2,
     //       "partially-constant float-vec max-min-mod built-ins");
+
+    ok(Shade.div(Shade.vec(1,2,3).swizzle("gb"),
+                 Shade.mul(Shade.vec(1,2,3).swizzle("r"), 13)).element_is_constant(1),
+       "operator element_is_constant");
 });
 
 test("Shade optimizer", function() {
@@ -531,15 +538,45 @@ test("color conversion", function() {
         check(luv.l, luv.u, luv.v, "luv", "hcl");
     }
 
+    // with the basic conversions verified, check the compound ones just
+    // to prevent typos
 
-    // (function() {
-    //     var rgb = Shade.Colors.shadetable.rgb.create(1,0,0);
-    //     ok(rgb.vec.eq(Shade.vec(1,0,0)).constant_value(), "rgb creation");
-    //     var hls = rgb.hls();
-    //     ok(!_.isUndefined(hls.vec), "rgb->hls returns something");
-    //     var rgb2 = hls.rgb();
-    //     ok(!_.isUndefined(rgb2.vec), "hls->rgb returns something");
-    //     ok(rgb2.as_shade(1).eq(Shade.vec(1,0,0,1)).constant_value(),
-    //        "rgb->hls->rgb");
-    // })();
+    (function() {
+        var r = Math.random(), g = Math.random(), b = Math.random();
+        var rgb = Shade.Colors.jstable.rgb.create(r, g, b);
+        var srgb = rgb.srgb();
+        var xyz = rgb.xyz();
+        var luv = xyz.luv();
+        var hcl = luv.hcl();
+        var hsv = rgb.hsv();
+        var hls = rgb.hls();
+        // check(r, g, b, "rgb", "luv");
+        // check(r, g, b, "rgb", "hcl");
+        // check(srgb.r, srgb.g, srgb.b, "srgb", "hls");
+        // check(srgb.r, srgb.g, srgb.b, "srgb", "hsv");
+        // check(srgb.r, srgb.g, srgb.b, "srgb", "luv");
+        // check(srgb.r, srgb.g, srgb.b, "srgb", "hcl");
+        // check(xyz.x, xyz.y, xyz.z,    "xyz",  "hcl");
+        // check(xyz.x, xyz.y, xyz.z,    "xyz",  "hsv");
+        // check(xyz.x, xyz.y, xyz.z,    "xyz",  "hls");
+        check(luv.l, luv.u, luv.v,    "luv",  "rgb");
+        check(luv.l, luv.u, luv.v,    "luv",  "srgb");
+        // check(luv.l, luv.u, luv.v,    "luv",  "hls");
+        // check(luv.l, luv.u, luv.v,    "luv",  "hsv");
+        check(hcl.h, hcl.c, hcl.l,    "hcl",  "xyz");
+        check(hcl.h, hcl.c, hcl.l,    "hcl",  "rgb");
+        check(hcl.h, hcl.c, hcl.l,    "hcl",  "srgb");
+        check(hcl.h, hcl.c, hcl.l,    "hcl",  "hsv");
+        check(hcl.h, hcl.c, hcl.l,    "hcl",  "hls");
+        check(hls.h, hls.l, hls.s,    "hls",  "hsv");
+        check(hls.h, hls.l, hls.s,    "hls",  "srgb");
+        check(hls.h, hls.l, hls.s,    "hls",  "xyz");
+        check(hls.h, hls.l, hls.s,    "hls",  "luv");
+        // check(hls.h, hls.l, hls.s,    "hls",  "hcl");
+        // check(hsv.h, hsv.s, hsv.v,    "hsv",  "hls");
+        check(hsv.h, hsv.s, hsv.v,    "hsv",  "srgb");
+        check(hsv.h, hsv.s, hsv.v,    "hsv",  "xyz");
+        check(hsv.h, hsv.s, hsv.v,    "hsv",  "luv");
+        // check(hsv.h, hsv.s, hsv.v,    "hsv",  "hcl");
+    })();
 });
