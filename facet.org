@@ -3,6 +3,7 @@ The Big List of Facet TODOs
 * BUGS
 ** OpenStreetMap globe is broken on MacBook Air 11" (is it a precision problem?)
 ** Grand Tour demo is broken on MacBook Air 11" as well
+** Fix the element evaluator for matrix-matrix and matrix-vector multiplication
 * Optimizer
 ** TODO Common subexpression elimination
     
