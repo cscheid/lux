@@ -4,6 +4,12 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             return v.is_constant();
         });
     }),
+    element_is_constant: Shade.memoize_on_field("_element_is_constant", function(i) {
+        return this.is_constant();
+    }),
+    element_constant_value: Shade.memoize_on_field("_element_constant_value", function (i) {
+        return this.element(i).constant_value();
+    }),
     _must_be_function_call: false,
     evaluate: function() {
         if (this._must_be_function_call)
@@ -14,6 +20,15 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             return this.precomputed_value_glsl_name;
         else
             return this.glsl_name + "()";
+    },
+    element: function(i) {
+        if (this.type.is_pod()) {
+            if (i === 0)
+                return this;
+            else
+                throw this.type.repr() + " is an atomic type, got this: " + i;
+        }
+        return this.at(i);
     },
     compile: function(ctx) {
         if (this._must_be_function_call) {
