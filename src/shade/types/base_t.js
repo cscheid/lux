@@ -31,4 +31,9 @@ Shade.Types.base_t = {
     // function_return_type
     // function_parameter
     // function_parameter_count
+
+    // constant_equal
+    //   constant_equal is a function that takes two parameters as produced
+    //   by the constant_value() method of an object with the given type,
+    //   and tests their equality.
 };
