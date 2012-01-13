@@ -4813,6 +4813,7 @@ Shade.Types.base_t = {
     // POD = plain old data (ints, bools, floats)
     is_pod: function()      { return false; },
     is_vec: function()      { return false; },
+    is_mat: function()      { return false; },
     vec_dimension: function() { 
         throw "is_vec() === false, cannot call vec_dimension";
     },
@@ -4838,6 +4839,11 @@ Shade.Types.base_t = {
     // function_return_type
     // function_parameter
     // function_parameter_count
+
+    // constant_equal
+    //   constant_equal is a function that takes two parameters as produced
+    //   by the constant_value() method of an object with the given type,
+    //   and tests their equality.
 };
 Shade.basic = function(repr) { 
     function is_valid_basic_type(repr) {
@@ -5042,6 +5048,14 @@ Shade.basic = function(repr) {
             } else
                 // FIXME implement this
                 throw "unimplemented for mats";
+        },
+        constant_equal: function(v1, v2) {
+            if (this.is_pod())
+                return v1 === v2;
+            if (this.is_vec() || this.is_mat())
+                return _.all(_.range(v1.length), function(i) { return v1[i] === v2[i]; });
+            else
+                throw "bad type for equality comparison: " + this.repr();
         }
     });
 };
@@ -5247,22 +5261,39 @@ Shade.CompilationContext = function(compile_type) {
     };
 };
 Shade.Exp = {
-    debug_print: function(indent) {
-        if (_.isUndefined(indent)) indent = 0;
-        var str = "";
-        for (var i=0; i<indent; ++i) { str = str + ' '; }
-        if (this.parents.length === 0) 
-            console.log(str + "[" + this.expression_type + ":" + this.guid + "]"
-                        // + "[is_constant: " + this.is_constant() + "]"
-                        + "()");
-        else {
-            console.log(str + "[" + this.expression_type + ":" + this.guid + "]"
-                        // + "[is_constant: " + this.is_constant() + "]"
-                        + "(");
-            for (i=0; i<this.parents.length; ++i)
-                this.parents[i].debug_print(indent + 2);
-            console.log(str + ')');
-        }
+    debug_print: function(do_what) {
+        var lst = [];
+        var refs = {};
+        function _debug_print(which, indent) {
+            var i;
+            var str = new Array(indent+2).join(" "); // This is python's '" " * indent'
+            // var str = "";
+            // for (var i=0; i<indent; ++i) { str = str + ' '; }
+            if (which.parents.length === 0) 
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " ()");
+            else {
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " (");
+                for (i=0; i<which.parents.length; ++i) {
+                    if (refs[which.parents[i].guid])
+                        lst.push(str + "  {{" + which.parents[i].guid + "}}");
+                    else {
+                        _debug_print(which.parents[i], indent + 2);
+                        refs[which.parents[i].guid] = 1;
+                    }
+                }
+                lst.push(str + ')');
+            }
+        };
+        _debug_print(this, 0);
+        do_what = do_what || function(l) {
+            var s = l.join("\n");
+            console.log(s);
+        };
+        do_what(lst);
     },
     evaluate: function() {
         return this.glsl_name + "()";
@@ -5466,7 +5497,7 @@ Shade.Exp = {
         return Shade._create_concrete_exp( {
             parents: [parent],
             type: parent.type.swizzle(pattern),
-            expression_type: "swizzle",
+            expression_type: "swizzle{" + pattern + "}",
             evaluate: function() { return this.parents[0].evaluate() + "." + pattern; },
             is_constant: Shade.memoize_on_field("_is_constant", function () {
                 var that = this;
@@ -5651,6 +5682,12 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             return v.is_constant();
         });
     }),
+    element_is_constant: Shade.memoize_on_field("_element_is_constant", function(i) {
+        return this.is_constant();
+    }),
+    element_constant_value: Shade.memoize_on_field("_element_constant_value", function (i) {
+        return this.element(i).constant_value();
+    }),
     _must_be_function_call: false,
     evaluate: function() {
         if (this._must_be_function_call)
@@ -5661,6 +5698,15 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             return this.precomputed_value_glsl_name;
         else
             return this.glsl_name + "()";
+    },
+    element: function(i) {
+        if (this.type.is_pod()) {
+            if (i === 0)
+                return this;
+            else
+                throw this.type.repr() + " is an atomic type, got this: " + i;
+        }
+        return this.at(i);
     },
     compile: function(ctx) {
         if (this._must_be_function_call) {
@@ -5779,8 +5825,8 @@ Shade.constant = function(v, type)
                     if (i === 0)
                         return this;
                     else
-                        throw "float is an atomic type, got this: " + i;
-                } if (this.type.is_vec()) {
+                        throw this.type.repr() + " is an atomic type, got this: " + i;
+                } else if (this.type.is_vec()) {
                     return Shade.constant(args[i]);
                 } else {
                     return Shade.vec.apply(matrix_row(i));
@@ -8045,7 +8091,7 @@ var equality_type_checker = function(name) {
                    " requires same types, got " +
                    t1.repr() + " and " + t2.repr() +
                    " instead.");
-        if (t1.is_array() && !t1.is_vec())
+        if (t1.is_array() && !t1.is_vec() && !t1.is_mat())
             throw ("operator" + name +
                    " does not support arrays");
     };
@@ -8076,6 +8122,12 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
             return _.all(_.map(_.zip(a, b),
                                function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
+        if (facet_constant_type(a) === 'vector') {
+            return vec.equal(a, b);
+        }
+        if (facet_constant_type(a) === 'matrix') {
+            return mat.equal(a, b);
+        }
         throw "internal error: unrecognized type " + facet_typeOf(a) + 
             " " + facet_constant_type(a);
     }));
@@ -8121,10 +8173,73 @@ Shade.selection = function(condition, if_true, if_false)
                 + this.parents[2].evaluate() + ")";
         },
         constant_value: function() {
-            return (this.parents[0].constant_value() ?
-                    this.parents[1].constant_value() :
-                    this.parents[2].constant_value());
-        }, 
+            if (!this.parents[0].is_constant()) {
+                // This only gets called when this.is_constant() holds, so
+                // it must be that this.parents[1].constant_value() == 
+                // this.parents[2].constant_value(); we return either
+                return this.parents[1].constant_value();
+            } else {
+                return (this.parents[0].constant_value() ?
+                        this.parents[1].constant_value() :
+                        this.parents[2].constant_value());
+            }
+        },
+        is_constant: function() {
+            if (!this.parents[0].is_constant()) {
+                // if condition is not constant, 
+                // then expression is only constant if sides always
+                // evaluate to same values.
+                if (this.parents[1].is_constant() && 
+                    this.parents[2].is_constant()) {
+                    var v1 = this.parents[1].constant_value();
+                    var v2 = this.parents[2].constant_value();
+                    return this.type.constant_equal(v1, v2);
+                } else {
+                    return false;
+                }
+            } else {
+                // if condition is constant, then
+                // the expression is constant if the appropriate
+                // side of the evaluation is constant.
+                return (this.parents[0].constant_value() ?
+                        this.parents[1].is_constant() :
+                        this.parents[2].is_constant());
+            }
+        },
+        element_constant_value: function(i) {
+            if (!this.parents[0].is_constant()) {
+                // This only gets called when this.is_constant() holds, so
+                // it must be that this.parents[1].constant_value() == 
+                // this.parents[2].constant_value(); we return either
+                return this.parents[1].element_constant_value(i);
+            } else {
+                return (this.parents[0].constant_value() ?
+                        this.parents[1].element_constant_value(i) :
+                        this.parents[2].element_constant_value(i));
+            }
+        },
+        element_is_constant: function(i) {
+            if (!this.parents[0].is_constant()) {
+                // if condition is not constant, 
+                // then expression is only constant if sides always
+                // evaluate to same values.
+                if (this.parents[1].element_is_constant(i) && 
+                    this.parents[2].element_is_constant(i)) {
+                    var v1 = this.parents[1].element_constant_value(i);
+                    var v2 = this.parents[2].element_constant_value(i);
+                    return this.type.element_type(i).constant_equal(v1, v2);
+                } else {
+                    return false;
+                }
+            } else {
+                // if condition is constant, then
+                // the expression is constant if the appropriate
+                // side of the evaluation is constant.
+                return (this.parents[0].constant_value() ?
+                        this.parents[1].element_is_constant(i) :
+                        this.parents[2].element_is_constant(i));
+            }
+        },
         parent_is_unconditional: function(i) {
             return i === 0;
         }
@@ -8423,7 +8538,7 @@ table.rgb.hsv = function(rgb)
                                  rgb.r - rgb.g);
         var i = ((rgb.r === x) ? 3 :
                  (rgb.g === x) ? 5 : 1);
-        return table.hsv.create(1/6 * (i - f / (y - x)),
+        return table.hsv.create((Math.PI/3) * (i - f / (y - x)),
                                 (y - x) / y,
                                 y);
     } else {
@@ -8470,9 +8585,9 @@ table.rgb.xyz = function(rgb)
 
 table.rgb.srgb = function(rgb)
 {
-    return table.rgb.create(gtrans(rgb.r, 2.2),
-                            gtrans(rgb.g, 2.2),
-                            gtrans(rgb.b, 2.2));
+    return table.srgb.create(gtrans(rgb.r, 2.2),
+                               gtrans(rgb.g, 2.2),
+                               gtrans(rgb.b, 2.2));
 };
 
 // table.rgb.luv = _.compose(table.xyz.luv, table.rgb.xyz);
@@ -8495,9 +8610,10 @@ table.srgb.xyz = function(srgb)
 
 table.srgb.rgb = function(srgb)
 {
-    return table.rgb.create(ftrans(srgb.r, 2.2),
-                            ftrans(srgb.b, 2.2),
-                            ftrans(srgb.b, 2.2));
+    var result = table.rgb.create(ftrans(srgb.r, 2.2),
+                                  ftrans(srgb.g, 2.2),
+                                  ftrans(srgb.b, 2.2));
+    return result;
 };
 
 table.srgb.hls = _.compose(table.rgb.hls, table.srgb.rgb);
@@ -8616,9 +8732,9 @@ table.hls.rgb = function(hls)
         return table.rgb.create(hls.l, hls.l, hls.l);
     } else {
         return table.rgb.create(
-            qtrans(p1, p2, (hls.h + Math.PI * 2/3) / Math.PI * 2),
-            qtrans(p1, p2, hls.h / Math.PI * 2),
-            qtrans(p1, p2, (hls.h - Math.PI * 2/3) / Math.PI * 2));
+            qtrans(p1, p2, (hls.h + Math.PI * 2/3) / (Math.PI * 2)),
+            qtrans(p1, p2, hls.h / (Math.PI * 2)),
+            qtrans(p1, p2, (hls.h - Math.PI * 2/3) / (Math.PI * 2)));
     }
 };
 
@@ -8679,9 +8795,9 @@ _.each(colorspaces, function(space) {
     table[space].create = function() {
         var vec;
         if (arguments.length === 1) {
+            vec = arguments[0];
             if (!vec.type.equals(Shade.Types.vec3))
                 throw "create with 1 parameter requires a vec3";
-            vec = arguments[0];
         } else if (arguments.length === 3) {
             vec = Shade.vec(arguments[0], arguments[1], arguments[2]);
             if (!vec.type.equals(Shade.Types.vec3))
@@ -8706,7 +8822,8 @@ _.each(colorspaces, function(space) {
             as_shade: function(alpha) {
                 if (_.isUndefined(alpha))
                     alpha = Shade.make(1);
-                return Shade.vec(this.rgb(), alpha);
+                var result = this.rgb().vec;
+                return Shade.vec(this.rgb().vec, alpha);
             }
         };
         result[field_0] = vec.swizzle("r");
@@ -8737,7 +8854,7 @@ var white_point_uv = xyz_to_uv(white_point);
 function qtrans(q1, q2, hue)
 {
     hue = _if(hue.gt(1), hue.sub(1), hue);
-    hue = _if(hue.lt(0), hue.add(0), hue);
+    hue = _if(hue.lt(0), hue.add(1), hue);
     return _if(hue.lt(1/6), q1.add(q2.sub(q1).mul(hue.mul(6))),
            _if(hue.lt(1/2), q2,
            _if(hue.lt(2/3), q1.add(q2.sub(q1).mul(Shade.make(2/3)
@@ -8747,12 +8864,12 @@ function qtrans(q1, q2, hue)
 
 function gtrans(u, gamma)
 {
-    return Shade.selection(u.lt(0), u, Shade.pow(1, Shade.div(1, gamma)));
+    return Shade.selection(u.lt(0), u, Shade.pow(u, Shade.div(1, gamma)));
 }
 
 function ftrans(u, gamma)
 {
-    return Shade.selection(u.lt(0), u, Shade.pow(1, gamma));
+    return Shade.selection(u.lt(0), u, Shade.pow(u, gamma));
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -8780,7 +8897,7 @@ table.rgb.hsv = function(rgb)
     return table.hsv.create(_if(
         y.eq(x), 
         Shade.vec(0,0,y),
-        Shade.vec(Shade.mul(1/6, i.sub(f.div(y.sub(x)))),
+        Shade.vec(Shade.mul(Math.PI/3, i.sub(f.div(y.sub(x)))),
                   y.sub(x).div(y),
                   y)));
 };
@@ -8790,19 +8907,22 @@ table.rgb.hls = function(rgb)
     var min = min3(rgb);
     var max = max3(rgb);
     var l = max.add(min).div(2), s, h;
+    var mx_ne_mn = max.ne(min);
     
-    s = _if(max.ne(min),
-            _if(l.lt(0.5, max.sub(min).div(max.add(min)),
-                          max.sub(min).div(Shade.sub(2.0, max).sub(min)))),
+    s = _if(mx_ne_mn,
+            _if(l.lt(0.5), 
+                max.sub(min).div(max.add(min)),
+                max.sub(min).div(Shade.sub(2.0, max).sub(min))),
             0);
-    h = _if(max.ne(min),
+    h = _if(mx_ne_mn,
             _if(rgb.r.eq(max),                rgb.g.sub(rgb.b).div(max.sub(min)),
             _if(rgb.g.eq(max), Shade.add(2.0, rgb.b.sub(rgb.r).div(max.sub(min))),
-                               Shade.add(4.0, rgb.r.sub(rgb.b).div(max.sub(min))))),
+                               Shade.add(4.0, rgb.r.sub(rgb.g).div(max.sub(min))))),
             0);
     h = h.mul(Math.PI / 3);
     h = _if(h.lt(0),           h.add(Math.PI * 2),
-        _if(h.gt(Math.PI * 2), h.sub(Math.PI * 2)));
+        _if(h.gt(Math.PI * 2), h.sub(Math.PI * 2), 
+                               h));
     return table.hls.create(h, l, s);
 };
 
@@ -8817,9 +8937,9 @@ table.rgb.xyz = function(rgb)
 
 table.rgb.srgb = function(rgb)
 {
-    return table.rgb.create(gtrans(rgb.r, 2.2),
-                            gtrans(rgb.g, 2.2),
-                            gtrans(rgb.b, 2.2));
+    return table.srgb.create(gtrans(rgb.r, 2.2),
+                             gtrans(rgb.g, 2.2),
+                             gtrans(rgb.b, 2.2));
 };
 
 // table.rgb.luv = _.compose(table.xyz.luv, table.rgb.xyz);
@@ -8842,9 +8962,11 @@ table.srgb.xyz = function(srgb)
 
 table.srgb.rgb = function(srgb)
 {
-    return table.rgb.create(ftrans(srgb.r, 2.2),
-                            ftrans(srgb.b, 2.2),
-                            ftrans(srgb.b, 2.2));
+    var result = table.rgb.create(ftrans(srgb.r, 2.2),
+                                  ftrans(srgb.g, 2.2),
+                                  ftrans(srgb.b, 2.2));
+    
+    return result;
 };
 
 table.srgb.hls = _.compose(table.rgb.hls, table.srgb.rgb);
@@ -8923,7 +9045,6 @@ table.luv.xyz = function(luv)
     return table.xyz.create(_if(luv.l.le(0).and(luv.u.eq(0).and(luv.v.eq(0))),
                                 Shade.vec(0,0,0),
                                 Shade.vec(x,y,z)));
-    return table.xyz.create(x, y, z);
 };
 
 table.luv.rgb  = _.compose(table.xyz.rgb,  table.luv.xyz);
@@ -8957,7 +9078,7 @@ table.hls.rgb = function(hls)
     var p1 = hls.l.mul(2).sub(p2);
     return table.rgb.create(
         _if(hls.s.eq(0),
-            Shade.vec(hls.swizzle("ggg")),
+            Shade.vec(hls.vec.swizzle("ggg")),
             Shade.vec(qtrans(p1, p2, hls.h.add(Math.PI * 2/3).div(Math.PI * 2)),
                       qtrans(p1, p2, hls.h.div(Math.PI * 2)),
                       qtrans(p1, p2, hls.h.sub(Math.PI * 2/3).div(Math.PI * 2)))));
@@ -8975,7 +9096,7 @@ table.hls.hcl  = _.compose(table.rgb.hcl,  table.hls.rgb);
 table.hsv.rgb = function(hsv)
 {
     var v = hsv.v;
-    var h = hsv.h.div(Math.PI * 3);
+    var h = hsv.h.div(Math.PI).mul(3);
     var i = h.floor();
     var f = h.sub(i);
     f = _if(i.div(2).floor().eq(i.div(2)),
