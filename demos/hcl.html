@@ -1,20 +1,41 @@
 <html>
-<head><title>HCL tests</title>
+<head><title>HCL color space</title>
   <link rel="stylesheet" href="style.css"/>
+  <link type="text/css" href="../lib/ui-lightness/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
   <link rel="stylesheet" href="css/mchighlight-javascript.css"/>
   <script src="../lib/jquery-1.6.2.min.js"></script>
+  <script src="../lib/jquery-ui-1.8.16.custom.min.js"></script>
   <script src="../facet.js"></script>
   <script src="js/mclexer.js"></script>
   <script src="js/mchighlight.js"></script>
   <script src="js/mchighlight-javascript.js"></script>
   <script src="hcl.js"></script>
 </head>
+<style>
+.ui-slider .ui-slider-handle { 
+    width: 18px; 
+    height: 18px;
+}
+
+#luminance {
+   top: 4px;
+   width: 300px;
+   height: 10px;
+   float: left;
+   clear: left;
+   margin-right: 18px;
+}
+</style>
 <body>
 <div class="body">
 <div class="content">
-<h1>Lesson 5</h1>
+<h1>HCL color space</h1>
 <canvas id="webgl" width="720" height="480"></canvas>
 <div style="text-align: right">View the <a href="hcl.js">full source</a>.</div>
+
+<div style="margin:20px"></div>
+<div>  Luminance   <div id="luminance"></div>    </div>
+</div>
 
 <p>Back to the <a href="index.html">index</a>.</p>
 <script>
