@@ -56,8 +56,8 @@ Shade.constant = function(v, type)
                     if (i === 0)
                         return this;
                     else
-                        throw "float is an atomic type, got this: " + i;
-                } if (this.type.is_vec()) {
+                        throw this.type.repr() + " is an atomic type, got this: " + i;
+                } else if (this.type.is_vec()) {
                     return Shade.constant(args[i]);
                 } else {
                     return Shade.vec.apply(matrix_row(i));
