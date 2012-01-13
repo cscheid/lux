@@ -15,8 +15,12 @@ function zipWith3(f, v1, v2, v3)
 //////////////////////////////////////////////////////////////////////////////
 // common functions
 
-function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
+function builtin_glsl_function(opts)
 {
+    var name = opts.name;
+    var type_resolving_list = opts.type_resolving_list;
+    var constant_evaluator = opts.constant_evaluator;
+
     for (var i=0; i<type_resolving_list.length; ++i)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
             var t = type_resolving_list[i][j];
@@ -63,7 +67,7 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
             } catch (err) {
                 throw "type error on " + name + ": " + err;
             }
-            return Shade._create_concrete_value_exp( {
+            var obj = {
                 parents: canon_args,
                 type: type,
                 expression_type: "builtin_function{" + name + "}",
@@ -77,7 +81,8 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
                 constant_value: Shade.memoize_on_field("_constant_value", function() {
                     return constant_evaluator(this);
                 })
-            });
+            };
+            return Shade._create_concrete_value_exp(obj);
         };
     } else {
         return function() {
@@ -108,21 +113,29 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
 }
 
 function common_fun_1op(fun_name, constant_evaluator) {
-    return builtin_glsl_function(fun_name, [
-        [Shade.Types.float_t, Shade.Types.float_t],
-        [Shade.Types.vec2, Shade.Types.vec2],
-        [Shade.Types.vec3, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4]
-    ], constant_evaluator);
+    return builtin_glsl_function({
+        name: fun_name, 
+        type_resolving_list: [
+            [Shade.Types.float_t, Shade.Types.float_t],
+            [Shade.Types.vec2, Shade.Types.vec2],
+            [Shade.Types.vec3, Shade.Types.vec3],
+            [Shade.Types.vec4, Shade.Types.vec4]
+        ], 
+        constant_evaluator: constant_evaluator
+    });
 }
 
 function common_fun_2op(fun_name, constant_evaluator) {
-    return builtin_glsl_function(fun_name, [
-        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-        [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
-        [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
-    ], constant_evaluator);
+    return builtin_glsl_function({
+        name: fun_name, 
+        type_resolving_list: [
+            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
+            [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
+            [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
+            [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
+        ], 
+        constant_evaluator: constant_evaluator
+    });
 }
 
 // angle and trig, some common, some exponential,
@@ -236,17 +249,21 @@ _.each({
     "min": Math.min,
     "max": Math.max
 }, function(op, k) {
-    Shade[k] = builtin_glsl_function(k, [
-        [Shade.Types.int_t,    Shade.Types.int_t,   Shade.Types.int_t],
-        [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
-        [Shade.Types.vec2,     Shade.Types.vec2,    Shade.Types.vec2],
-        [Shade.Types.vec3,     Shade.Types.vec3,    Shade.Types.vec3],
-        [Shade.Types.vec4,     Shade.Types.vec4,    Shade.Types.vec4],
-        [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
-        [Shade.Types.vec2,     Shade.Types.float_t, Shade.Types.vec2],
-        [Shade.Types.vec3,     Shade.Types.float_t, Shade.Types.vec3],
-        [Shade.Types.vec4,     Shade.Types.float_t, Shade.Types.vec4]
-    ], mod_min_max_constant_evaluator(op));
+    Shade[k] = builtin_glsl_function({
+        name: k, 
+        type_resolving_list: [
+            [Shade.Types.int_t,    Shade.Types.int_t,   Shade.Types.int_t],
+            [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
+            [Shade.Types.vec2,     Shade.Types.vec2,    Shade.Types.vec2],
+            [Shade.Types.vec3,     Shade.Types.vec3,    Shade.Types.vec3],
+            [Shade.Types.vec4,     Shade.Types.vec4,    Shade.Types.vec4],
+            [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
+            [Shade.Types.vec2,     Shade.Types.float_t, Shade.Types.vec2],
+            [Shade.Types.vec3,     Shade.Types.float_t, Shade.Types.vec3],
+            [Shade.Types.vec4,     Shade.Types.float_t, Shade.Types.vec4]
+        ], 
+        constant_evaluator: mod_min_max_constant_evaluator(op)
+    });
 });
 
 function clamp_constant_evaluator(exp)
@@ -273,15 +290,18 @@ function clamp_constant_evaluator(exp)
     }
 }
 
-var clamp = builtin_glsl_function("clamp", [
-    [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-    [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
-    [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
-    [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
-    [Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec2],
-    [Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec3],
-    [Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4]], 
-                                  clamp_constant_evaluator);
+var clamp = builtin_glsl_function({
+    name: "clamp", 
+    type_resolving_list: [
+        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
+        [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
+        [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
+        [Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec2],
+        [Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec3],
+        [Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4]], 
+    constant_evaluator: clamp_constant_evaluator
+});
 
 Shade.clamp = clamp;
 
@@ -307,25 +327,31 @@ function mix_constant_evaluator(exp)
     }
 }
 
-var mix = builtin_glsl_function("mix", [
-    [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-    [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
-    [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
-    [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
-    [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.vec2],
-    [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.vec3],
-    [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.vec4]],
-                               mix_constant_evaluator);
+var mix = builtin_glsl_function({ 
+    name: "mix", 
+    type_resolving_list: [
+        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
+        [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
+        [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
+        [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.vec2],
+        [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.vec3],
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.vec4]],
+    constant_evaluator: mix_constant_evaluator
+});
 Shade.mix = mix;
 
-var step = builtin_glsl_function("step", [
-    [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-    [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
-    [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
-    [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
-    [Shade.Types.float_t, Shade.Types.vec2,    Shade.Types.vec2],
-    [Shade.Types.float_t, Shade.Types.vec3,    Shade.Types.vec3],
-    [Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]], function(exp) {
+var step = builtin_glsl_function({
+    name: "step", 
+    type_resolving_list: [
+        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
+        [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
+        [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
+        [Shade.Types.float_t, Shade.Types.vec2,    Shade.Types.vec2],
+        [Shade.Types.float_t, Shade.Types.vec3,    Shade.Types.vec3],
+        [Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]], 
+    constant_evaluator: function(exp) {
         function step(edge, x) {
             if (x < edge) return 0.0; else return 1.0;
         }
@@ -342,64 +368,64 @@ var step = builtin_glsl_function("step", [
                 return step(v1, v);
             });
         }
-    });
+    }});
 Shade.step = step;
 
-var smoothstep = builtin_glsl_function
-    ("smoothstep", [
+var smoothstep = builtin_glsl_function({
+    name: "smoothstep", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
         [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec2,    Shade.Types.vec2],
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec3,    Shade.Types.vec3],
-        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]
-    ], function(exp) {
+        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]], 
+    constant_evaluator: function(exp) {
         var edge0 = exp.parents[0];
         var edge1 = exp.parents[1];
         var x = exp.parents[2];
         var t = Shade.clamp(x.sub(edge0).div(edge1.sub(edge0)), 0, 1);
         return t.mul(t).mul(Shade.sub(3, t.mul(2))).constant_value();
-    });
+    }});
 Shade.smoothstep = smoothstep;
 
-var length = builtin_glsl_function(
-    "length", 
-    [
+var length = builtin_glsl_function({
+    name: "length", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.float_t],
-        [Shade.Types.vec4,    Shade.Types.float_t]
-    ], function(exp) {
+        [Shade.Types.vec4,    Shade.Types.float_t]], 
+    constant_evaluator: function(exp) {
         var v = exp.parents[0].constant_value();
         if (exp.parents[0].type.equals(Shade.Types.float_t))
             return v * v;
         else
             return vec.length(v);
-    });
+    }});
 Shade.length = length;
 
-var distance = builtin_glsl_function(
-    "distance", 
-    [
+var distance = builtin_glsl_function({
+    name: "distance", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t],
-        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]
-    ], function(exp) {
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]], 
+    constant_evaluator: function(exp) {
         return exp.parents[0].sub(exp.parents[1]).length().constant_value();
-    });
+    }});
 Shade.distance = distance;
 
-var dot = builtin_glsl_function(
-    "dot", 
-    [
+var dot = builtin_glsl_function({
+    name: "dot", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t],
-        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]
-    ],
-    function (exp) {
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]],
+    constant_evaluator: function (exp) {
         var v1 = exp.parents[0].constant_value(),
             v2 = exp.parents[1].constant_value();
         if (exp.parents[0].type.equals(Shade.Types.float_t)) {
@@ -407,39 +433,38 @@ var dot = builtin_glsl_function(
         } else {
             return vec.dot(v1, v2);
         }
-    });
+    }});
 Shade.dot = dot;
 
-var cross = builtin_glsl_function(
-    "cross", 
-    [
-        [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3]
-    ], function(exp) {
+var cross = builtin_glsl_function({
+    name: "cross", 
+    type_resolving_list: [[Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3]], 
+    constant_evaluator: function(exp) {
         return vec3.cross(exp.parents[0].constant_value(),
                           exp.parents[1].constant_value());
-    });
+    }});
 Shade.cross = cross;
 
-var normalize = builtin_glsl_function(
-    "normalize", 
-    [
+var normalize = builtin_glsl_function({
+    name: "normalize", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4]
-    ], function(exp) {
+        [Shade.Types.vec4, Shade.Types.vec4]], 
+    constant_evaluator: function(exp) {
         return exp.parents[0].div(exp.parents[0].length()).constant_value();
-    });
+    }});
 Shade.normalize = normalize;
 
-var faceforward = builtin_glsl_function(
-    "faceforward", 
-    [
+var faceforward = builtin_glsl_function({
+    name: "faceforward", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
-    ], function(exp) {
+        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]], 
+    constant_evaluator: function(exp) {
         var N = exp.parents[0];
         var I = exp.parents[1];
         var Nref = exp.parents[2];
@@ -447,31 +472,31 @@ var faceforward = builtin_glsl_function(
             return N.constant_value();
         else
             return Shade.sub(0, N).constant_value();
-    });
+    }});
 Shade.faceforward = faceforward;
 
-var reflect = builtin_glsl_function(
-    "reflect", 
-    [
+var reflect = builtin_glsl_function({
+    name: "reflect", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
-    ], function(exp) {
+        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]], 
+    constant_evaluator: function(exp) {
         var I = exp.parents[0];
         var N = exp.parents[1];
         return I.sub(Shade.mul(2, N.dot(I), N)).constant_value();
-    });
+    }});
 Shade.reflect = reflect;
 
-var refract = builtin_glsl_function(
-    "refract", 
-    [
+var refract = builtin_glsl_function({
+    name: "refract", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.float_t, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.float_t, Shade.Types.vec4]
-    ], function(exp) {
+        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.float_t, Shade.Types.vec4]],
+    constant_evaluator: function(exp) {
         var I = exp.parents[0];
         var N = exp.parents[1];
         var eta = exp.parents[2];
@@ -482,16 +507,18 @@ var refract = builtin_glsl_function(
         } else {
             return eta.mul(I).sub(eta.mul(N.dot(I)).add(k.sqrt()).mul(N)).constant_value();
         }
-    });
+    }});
 Shade.refract = refract;
 
-var texture2D = builtin_glsl_function("texture2D", [
-    [Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]
-]);
+var texture2D = builtin_glsl_function({
+    name: "texture2D", 
+    type_resolving_list: [[Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]]
+});
 Shade.texture2D = texture2D;
 
-Shade.equal = builtin_glsl_function(
-    "equal", [
+Shade.equal = builtin_glsl_function({
+    name: "equal", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bool_t],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bool_t],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bool_t],
@@ -500,17 +527,18 @@ Shade.equal = builtin_glsl_function(
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bool_t],
         [Shade.Types.bvec2, Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bvec3, Shade.Types.bool_t],
-        [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]
-    ], function(exp) {
+        [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return (_.all(zipWith(function (x, y) { return x === y; }),
                       left, right));
-    });
+    }});
 Shade.Exp.equal = function(other) { return Shade.equal(this, other); };
 
-Shade.notEqual = builtin_glsl_function(
-    "notEqual", [
+Shade.notEqual = builtin_glsl_function({
+    name: "notEqual", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bool_t],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bool_t],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bool_t],
@@ -519,113 +547,120 @@ Shade.notEqual = builtin_glsl_function(
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bool_t],
         [Shade.Types.bvec2, Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bvec3, Shade.Types.bool_t],
-        [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]
-    ], function(exp) {
+        [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return !(_.all(zipWith(function (x, y) { return x === y; }),
                        left, right));
-    });
+    }});
 Shade.Exp.notEqual = function(other) { return Shade.notEqual(this, other); };
 
-Shade.lessThan = builtin_glsl_function(
-    "lessThan", [
+Shade.lessThan = builtin_glsl_function({
+    name: "lessThan", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bvec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bvec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bvec4],
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
-        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]
-    ], function(exp) {
+        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x < right[i]; });
-    });
+    }});
 Shade.Exp.lessThan = function(other) { return Shade.lessThan(this, other); };
 
-Shade.lessThanEqual = builtin_glsl_function(
-    "lessThanEqual", [
+Shade.lessThanEqual = builtin_glsl_function({
+    name: "lessThanEqual", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bvec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bvec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bvec4],
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
-        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]
-    ], function(exp) {
+        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x <= right[i]; });
-    });
+    }});
 Shade.Exp.lessThanEqual = function(other) { 
     return Shade.lessThanEqual(this, other); 
 };
 
-Shade.greaterThan = builtin_glsl_function(
-    "greaterThan", [
+Shade.greaterThan = builtin_glsl_function({
+    name: "greaterThan", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bvec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bvec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bvec4],
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
-        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]
-    ], function(exp) {
+        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x > right[i]; });
-    });
+    }});
 Shade.Exp.greaterThan = function(other) {
     return Shade.greaterThan(this, other);
 };
 
-Shade.greaterThanEqual = builtin_glsl_function(
-    "greaterThanEqual", [
+Shade.greaterThanEqual = builtin_glsl_function({
+    name: "greaterThanEqual", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bvec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bvec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bvec4],
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
-        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]
-    ], function(exp) {
+        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x >= right[i]; });
-    });
+    }});
 Shade.Exp.greaterThanEqual = function(other) {
     return Shade.greaterThanEqual(this, other);
 };
 
-Shade.all = builtin_glsl_function(
-    "all", [
+Shade.all = builtin_glsl_function({
+    name: "all", 
+    type_resolving_list: [
         [Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bool_t],
-        [Shade.Types.bvec4, Shade.Types.bool_t]
-    ], function(exp) {
+        [Shade.Types.bvec4, Shade.Types.bool_t]], 
+    constant_evaluator: function(exp) {
         var v = exp.parents[0].constant_value();
         return _.all(v, function(x) { return x; });
-    });
+    }});
 Shade.Exp.all = function() { return Shade.all(this); };
 
-Shade.any = builtin_glsl_function(
-    "any", [
+Shade.any = builtin_glsl_function({
+    name: "any", 
+    type_resolving_list: [
         [Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bool_t],
-        [Shade.Types.bvec4, Shade.Types.bool_t]
-    ], function(exp) {
+        [Shade.Types.bvec4, Shade.Types.bool_t]], 
+    constant_evaluator: function(exp) {
         var v = exp.parents[0].constant_value();
         return _.any(v, function(x) { return x; });
-    });
+    }});
 Shade.Exp.any = function() { return Shade.any(this); };
 
-Shade.matrixCompMult = builtin_glsl_function(
-    "matrixCompMult", [
+Shade.matrixCompMult = builtin_glsl_function({
+    name: "matrixCompMult", 
+    type_resolving_list: [
         [Shade.Types.mat2, Shade.Types.mat2, Shade.Types.mat2],
         [Shade.Types.mat3, Shade.Types.mat3, Shade.Types.mat3],
-        [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4]
-    ], function(exp) {
+        [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4]], 
+    constant_evaluator: function(exp) {
         var v1 = exp.parents[0].constant_value();
         var v2 = exp.parents[1].constant_value();
         return mat.map(v1, function(x, i) { return x * v2[i]; });
-    }
+    }}
 );
 Shade.Exp.matrixCompMult = function(other) {
     return Shade.matrixCompMult(this, other);
