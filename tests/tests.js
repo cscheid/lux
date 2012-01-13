@@ -146,6 +146,14 @@ test("Shade compilation", function() {
 });
 
 test("Shade constant folding", function() {
+    var x = Shade.uniform("float");
+    equal(Shade.mul(2, Shade.vec(2, 2)).element(1).constant_value(), 4, 
+          "different dimensions on float-vec operations and element()");
+    equal(Shade.add(Shade.vec(2,2), 4).element(1).constant_value(), 6, 
+          "different dimensions on float-vec operations and element()");
+    equal(Shade.max(Shade.vec(3,1,2), 2).element(1).constant_value(), 2,
+          "different dimensions on float-vec max-min-mod built-ins");
+    
     equal(Shade.constant(1).constant_value(), 1);
     equal(Shade.add(4,5).constant_value(), 9);
     equal(Shade.mul(4,5).constant_value(), 20);
@@ -360,6 +368,8 @@ test("Shade constant folding", function() {
     ok(Shade.vec(Shade.max(0, 1), 1, 1).element(0).constant_value() === 1,
        "element() on built-in expressions");
 
+    equal(Shade.max(Shade.vec(x,1,x), 2).element(1).constant_value(), 2,
+          "partially-constant float-vec max-min-mod built-ins");
 });
 
 test("Shade optimizer", function() {
@@ -463,16 +473,17 @@ test("color conversion", function() {
     // Javascript and shade expressions must have appropriate inverses
      */
 
-    function match(c1, c2) {
+    function match(c1, c2, tol) {
+        tol = _.isUndefined(tol)?1e-5:tol;
         c1 = c1.values();
         c2 = c2.values();
         var result = _.all(_.range(c1.length), function(i) { 
-            return Math.abs(c1[i] - c2[i]) < 1e-5;
+            return Math.abs(c1[i] - c2[i]) < tol;
         });
         return result;
     }
 
-    function check(v1, v2, v3, source, target) {
+    function check(v1, v2, v3, source, target, tol) {
         var shade_source  = Shade.Colors.shadetable[source].create(v1, v2, v3);
         var js_source     = Shade.Colors.jstable[source].create(v1, v2, v3);
         
@@ -482,18 +493,18 @@ test("color conversion", function() {
         var shade_source2 = shade_target[source]();
         var js_source2    = js_target[source]();
 
-        if (!match(shade_source2, shade_source)) {
+        if (!match(shade_source2, shade_source, tol)) {
             console.log("source",  shade_source,shade_source.values(),  js_source,js_source.values());
             console.log("target",  shade_target,shade_target.values(),  js_target,js_target.values());
             console.log("source2", shade_source2,shade_source2.values(), js_source2,js_source2.values());
             console.log("---");
         };
 
-        ok(match(shade_source, js_source), "constructors match");
-        ok(match(shade_target, js_target), source + "->" + target + " match");
-        ok(match(shade_source2, js_source2), source+"->"+target+"->"+source + " match");
-        ok(match(shade_source, shade_source2), source+"->"+target+"->"+source+" inverse shade");
-        ok(match(js_source, js_source2), source+"->"+target+"->"+source+" inverse js");
+        ok(match(shade_source, js_source, tol), "constructors match");
+        ok(match(shade_target, js_target, tol), source + "->" + target + " match");
+        ok(match(shade_source2, js_source2, tol), source+"->"+target+"->"+source + " match");
+        ok(match(shade_source, shade_source2, tol), source+"->"+target+"->"+source+" inverse shade");
+        ok(match(js_source, js_source2, tol), source+"->"+target+"->"+source+" inverse js");
     }
 
     var test_count = 10;
@@ -503,7 +514,14 @@ test("color conversion", function() {
         check(r, g, b, "rgb", "hls");
         check(r, g, b, "rgb", "srgb");
         check(r, g, b, "rgb", "hsv");
+        check(r, g, b, "rgb", "xyz");
+
+        check(r, g, b, "srgb", "xyz", 1e-4);
+
+        var xyz = Shade.Colors.jstable.rgb.create(r, g, b).xyz();
+        check(xyz.x, xyz.y, xyz.z, "xyz", "luv");
     }
+
 
     // (function() {
     //     var rgb = Shade.Colors.shadetable.rgb.create(1,0,0);
