@@ -298,22 +298,15 @@ Shade.Exp = {
                 }
             },
             is_constant: function() {
-                return (this.parents[0].is_constant() && 
-                        this.parents[1].is_constant());
+                if (!this.parents[1].is_constant())
+                    return false;
+                var ix = Math.floor(this.parents[1].constant_value());
+                return (this.parents[1].is_constant() &&
+                        this.parents[0].element_is_constant(ix));
             },
             constant_value: Shade.memoize_on_field("_constant_value", function() {
-                var a = this.parents[0].constant_value();
-                if (facet_typeOf(a) === 'array') // this was a GLSL array of stuff
-                    return a[this.parents[1].constant_value()];
-                else { // this was a vec.
-                    if (a._type === 'vector') {
-                        return a[this.parents[1].constant_value()];
-                    } else {
-                        // FIXME: at constant_value for mats is broken.
-                        //  Lift and use matrix_row from constant.js
-                        throw "at constant_value for mats is currently broken";
-                    }
-                }
+                var ix = Math.floor(this.parents[1].constant_value());
+                return this.parents[0].element_constant_value(ix);
             }),
             // the reason for the (if x === this) checks here is that sometimes
             // the only appropriate description of an element() of an
