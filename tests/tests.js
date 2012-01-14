@@ -38,13 +38,13 @@ test("Shade types", function() {
     equal(Shade.basic('float').is_pod(), true,  "type check methods");
     raises(function() {
         var v = [];
-        Shade.constant(v);
+        Shade.array(v);
     }, function(e) { 
         return e === "array constant must be non-empty"; 
     });
     raises(function() {
         var v = [1, false];
-        Shade.constant(v);
+        Shade.array(v);
     }, function(e) {
         return e === "array elements must have identical types";
     });
@@ -89,7 +89,7 @@ test("Shade expressions", function() {
                                    Shade.vec(0,2,3))), "relational ops");
 
     raises(function() {
-        Shade.constant([1,2,3,4]).swizzle("a");
+        Shade.array([1,2,3,4]).swizzle("a");
     }, function(e) {
         return e === "type 'float[4]' does not support swizzling";
     }, "disallow swizzle on arrays");
@@ -185,11 +185,13 @@ test("Shade constant folding", function() {
     equal(v.element_is_constant(1), false, "constant element checks");
     equal(v.element_is_constant(2), true, "constant element checks");
     equal(v.element_is_constant(3), true, "constant element checks");
-    equal(Shade.constant([1,2,3,4,5,6]).is_constant(), true, 
+    equal(Shade.array([1,2,3,4,5,6]).is_constant(), false, 
           "constant checking for arrays");
+    equal(Shade.array([1,2,3,4,5,6]).at(2).is_constant(), true, 
+          "constant checking for array elements");
     raises(function() {
-        var x = Shade.constant([1,2,3,4,5]);
-        var y = Shade.constant([1,2,3,4,5]);
+        var x = Shade.array([1,2,3,4,5]);
+        var y = Shade.array([1,2,3,4,5]);
         x.eq(y);
     }, function(e) {
         return e === "operator== does not support arrays";
