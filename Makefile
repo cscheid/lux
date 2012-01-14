@@ -77,6 +77,7 @@ facet.js:					\
 	src/shade/value_exp.js			\
 	src/shade/swizzle.js			\
 	src/shade/constant.js			\
+	src/shade/array.js			\
 	src/shade/set.js			\
 	src/shade/uniform.js			\
 	src/shade/sampler2D_from_texture.js	\

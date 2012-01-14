@@ -9,7 +9,7 @@ Shade.Utils.lerp = function(lst) {
     new_lst.push(new_lst[new_lst.length-1]);
     // repeat last to make index calc easier
     return function(v) {
-        var colors_exp = Shade.constant(new_lst);
+        var colors_exp = Shade.array(new_lst);
         v = Shade.clamp(v, 0, 1).mul(new_lst.length-2);
         var u = v.fract();
         var ix = v.floor();

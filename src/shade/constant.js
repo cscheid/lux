@@ -99,55 +99,7 @@ Shade.constant = function(v, type)
     };
 
     var t = facet_constant_type(v);
-    if (t === 'other') {
-        t = facet_typeOf(v);
-        if (t === 'array') {
-            var new_v = v.map(Shade.make);
-            var array_size = new_v.length;
-            if (array_size === 0) {
-                throw "array constant must be non-empty";
-            }
-
-            var new_types = new_v.map(function(t) { return t.type; });
-            var array_type = Shade.Types.array(new_types[0], array_size);
-            if (_.any(new_types, function(t) { return !t.equals(new_types[0]); })) {
-                throw "array elements must have identical types";
-            }
-            if (_.any(new_v, function(el) { return !el.is_constant(); })) {
-                throw "constant array elements must be constant as well";
-            }
-            return Shade._create_concrete_exp( {
-                parents: new_v,
-                type: array_type,
-                expression_type: "constant",
-                evaluate: function() { return this.glsl_name; },
-                compile: function (ctx) {
-                    this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(this.type.declare(this.glsl_name), ";\n");
-                    ctx.strings.push("void", this.array_initializer_glsl_name, "(void) {\n");
-                    for (var i=0; i<this.parents.length; ++i) {
-                        ctx.strings.push("    ", this.glsl_name, "[", i, "] =",
-                                         this.parents[i].evaluate(), ";\n");
-                    }
-                    ctx.strings.push("}\n");
-                    ctx.add_initialization(this.array_initializer_glsl_name + "()");
-                },
-                is_constant: function() { return true; },
-                element: function(i) {
-                    return this.parents[i];
-                },
-                element_is_constant: function(i) {
-                    return this.parents[i].is_constant();
-                },
-                element_constant_value: function(i) {
-                    return this.parents[i].constant_value();
-                }
-            });
-        } else {
-            throw "type error: constant should be bool, number, vector, matrix or array. got " + t
-            + " instead";
-        }
-    }
+    var d, computed_t;
     if (t === 'number') {
         if (type && !(type.equals(Shade.Types.float_t) ||
                       type.equals(Shade.Types.int_t))) {
@@ -155,15 +107,12 @@ Shade.constant = function(v, type)
                    " got " + type.repr() + " instead.");
         }
         return constant_tuple_fun(type || Shade.Types.float_t, [v]);
-    }
-    if (t === 'boolean') {
+    } else if (t === 'boolean') {
         if (type && !type.equals(Shade.Types.bool_t))
             throw ("boolean constants cannot be interpreted as " + 
                    type.repr());
         return constant_tuple_fun(Shade.Types.bool_t, [v]);
-    }
-    var d, computed_t;
-    if (t === 'vector') {
+    } else if (t === 'vector') {
         d = v.length;
         if (d < 2 && d > 4)
             throw "invalid length for constant vector: " + v;
@@ -182,8 +131,7 @@ Shade.constant = function(v, type)
         }
         else
             throw "bad datatype for constant: " + el_ts[0];
-    }
-    if (t === 'matrix') {
+    } else if (t === 'matrix') {
         d = mat_length_to_dimension[v.length];
         computed_t = Shade.basic('mat' + d);
         if (type && !computed_t.equals(type)) {
@@ -192,6 +140,9 @@ Shade.constant = function(v, type)
                 + type.repr();
         }
         return constant_tuple_fun(computed_t, v);
+    } else {
+        throw "type error: constant should be bool, number, vector, matrix or array. got " + t
+            + " instead";
     }
     throw "internal error: facet_constant_type returned bogus value";
 };
