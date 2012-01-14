@@ -199,7 +199,7 @@ mat2.multiply = function(dest, other)
 
 mat2.product_vec = function(mat, vec)
 {
-    var result = new Float32Array(3);
+    var result = new Float32Array(2);
     result._type = 'vector';
     var x = vec[0], y = vec[1];
     result[0] = mat[0]*x + mat[2]*y;
