@@ -402,8 +402,11 @@ test("Shade constant folding", function() {
            "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 6");
     })();
 
-    // equal(Shade.max(Shade.vec(x,1,x), 2).element(1).constant_value(), 2,
-    //       "partially-constant float-vec max-min-mod built-ins");
+    equal(Shade.array([1,2,3,4]).at(1.5).constant_value(), 2,
+          "array indexing with floats should cast");
+
+    equal(Shade.max(Shade.vec(x,1,x), 2).element(1).constant_value(), 2,
+          "partially-constant float-vec max-min-mod built-ins");
 
 });
 
