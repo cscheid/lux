@@ -7499,7 +7499,7 @@ Shade.lessThan = builtin_glsl_function({
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x < right[i]; });
     }, element_evaluator: function(exp, i) {
-        return Shade.lessThan.apply(this, broadcast_elements(exp, i));
+        return Shade.lt.apply(this, broadcast_elements(exp, i));
     }
 });
 Shade.Exp.lessThan = function(other) { return Shade.lessThan(this, other); };
@@ -7518,7 +7518,7 @@ Shade.lessThanEqual = builtin_glsl_function({
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x <= right[i]; });
     }, element_evaluator: function(exp, i) {
-        return Shade.lessThanEqual.apply(this, broadcast_elements(exp, i));
+        return Shade.le.apply(this, broadcast_elements(exp, i));
     }
 });
 Shade.Exp.lessThanEqual = function(other) { 
@@ -7539,7 +7539,7 @@ Shade.greaterThan = builtin_glsl_function({
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x > right[i]; });
     }, element_evaluator: function(exp, i) {
-        return Shade.greaterThan.apply(this, broadcast_elements(exp, i));
+        return Shade.gt.apply(this, broadcast_elements(exp, i));
     }
 });
 Shade.Exp.greaterThan = function(other) {
@@ -7560,7 +7560,7 @@ Shade.greaterThanEqual = builtin_glsl_function({
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x >= right[i]; });
     }, element_evaluator: function(exp, i) {
-        return Shade.greaterThanEqual.apply(this, broadcast_elements(exp, i));
+        return Shade.ge.apply(this, broadcast_elements(exp, i));
     }
 });
 Shade.Exp.greaterThanEqual = function(other) {
