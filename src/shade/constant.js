@@ -12,8 +12,6 @@
 //    Shade.constant(2, vec.make([1, 2]));
 // - a GLSL matrix of dimensions 2x2, 3x3, 4x4 (Facet currently does not support GLSL rectangular matrices):
 //    Shade.constant(2, mat.make([1, 0, 0, 1]));
-// - An array of constant values of the same type:
-//    Shade.constant([2, 3, 4, 5, 6]);
 
 Shade.constant = function(v, type)
 {
