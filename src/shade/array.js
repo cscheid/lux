@@ -1,3 +1,7 @@
+
+// Shade.array denotes an array of Facet values of the same type:
+//    Shade.array([2, 3, 4, 5, 6]);
+
 Shade.array = function(v)
 {
     var t = facet_typeOf(v);
