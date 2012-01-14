@@ -418,16 +418,79 @@ Shade.mul = function() {
             else
                 throw "i > 0 in pod element";
         }
-        if (e1.type.is_vec() || e1.type.is_mat())
-            v1 = e1.element(i);
-        else
-            v1 = e1;
-        if (e2.type.is_vec() || e2.type.is_vec())
-            v2 = e2.element(i);
-        else
-            v2 = e2;
-        return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
-    }
+        function value_kind(t) {
+            if (t.is_pod())
+                return "pod";
+            if (t.is_vec())
+                return "vec";
+            if (t.is_mat())
+                return "mat";
+            throw "internal error: not pod, vec or mat";
+        }
+        var k1 = value_kind(t1), k2 = value_kind(t2);
+        var dispatch = {
+            "pod": { 
+                "pod": function() { 
+                    throw "internal error, pod pod"; 
+                },
+                "vec": function() { 
+                    v1 = e1; v2 = e2.element(i); 
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                },
+                "mat": function() { 
+                    v1 = e1; v2 = e2.element(i); 
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                }
+            },
+            "vec": { 
+                "pod": function() { 
+                    v1 = e1.element(i); v2 = e2; 
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                },
+                "vec": function() { 
+                    v1 = e1.element(i); v2 = e2.element(i); 
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                },
+                "mat": function() {
+                    // FIXME should we have a mat_dimension?
+                    return Shade.dot(e1, e2.element(i));
+                }
+            },
+            "mat": { 
+                "pod": function() { 
+                    v1 = e1.element(i); v2 = e2;
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                },
+                "vec": function() {
+                    // FIXME should we have a mat_dimension?
+                    var d = t1.array_size();
+                    var row;
+                    if (d === 2) {
+                        row = Shade.vec(e1.element(0).element(i),
+                                        e1.element(1).element(i));
+                    } else if (d === 3) {
+                        row = Shade.vec(e1.element(0).element(i),
+                                        e1.element(1).element(i),
+                                        e1.element(2).element(i));
+                    } else if (d === 4) {
+                        row = Shade.vec(e1.element(0).element(i),
+                                        e1.element(1).element(i),
+                                        e1.element(2).element(i),
+                                        e1.element(3).element(i));
+                    } else
+                        throw "bad dimension for mat " + d;
+                    return Shade.dot(row, e2);
+                    // var row = e1.element(i);
+                    // return Shade.dot(row, e2);
+                },
+                "mat": function() {
+                    var col = e2.element(i);
+                    return operator(e1, col, "*", mul_type_resolver, evaluator, element_evaluator);
+                }
+            }
+        };
+        return dispatch[k1][k2]();
+    };
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
