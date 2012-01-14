@@ -208,6 +208,12 @@ function atan()
     }
 }
 
+function broadcast_elements(exp, i) {
+    return _.map(exp.parents, function(parent) {
+        return parent.type.is_vec() ? parent.element(i) : parent;
+    });
+}
+
 Shade.atan = atan;
 Shade.Exp.atan = function() { return Shade.atan(this); };
 Shade.pow = common_fun_2op("pow", common_fun_2op_constant_evaluator(Math.pow));
@@ -252,10 +258,7 @@ _.each({
         ], 
         constant_evaluator: mod_min_max_constant_evaluator(op),
         element_evaluator: function(exp, i) {
-            var e1 = exp.parents[0], e2 = exp.parents[1];
-            var v1 = e1.type.is_vec() ? e1.element(i) : e1;
-            var v2 = e2.type.is_vec() ? e2.element(i) : e2;
-            return result(v1, v2);
+            return result.apply(this, broadcast_elements(exp, i));
         }
     });
     Shade[k] = result;
@@ -295,7 +298,10 @@ var clamp = builtin_glsl_function({
         [Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec2],
         [Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec3],
         [Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4]], 
-    constant_evaluator: clamp_constant_evaluator
+    constant_evaluator: clamp_constant_evaluator,
+    element_evaluator: function (exp, i) {
+        return Shade.clamp.apply(this, broadcast_elements(exp, i));
+    }
 });
 
 Shade.clamp = clamp;
@@ -332,7 +338,10 @@ var mix = builtin_glsl_function({
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.vec2],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.vec3],
         [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.vec4]],
-    constant_evaluator: mix_constant_evaluator
+    constant_evaluator: mix_constant_evaluator,
+    element_evaluator: function(exp, i) {
+        return Shade.mix.apply(this, broadcast_elements(exp, i));
+    }
 });
 Shade.mix = mix;
 
@@ -382,7 +391,10 @@ var smoothstep = builtin_glsl_function({
         var x = exp.parents[2];
         var t = Shade.clamp(x.sub(edge0).div(edge1.sub(edge0)), 0, 1);
         return t.mul(t).mul(Shade.sub(3, t.mul(2))).constant_value();
-    }});
+    }, element_evaluator: function(exp, i) {
+        return Shade.smoothstep.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.smoothstep = smoothstep;
 
 var length = builtin_glsl_function({
@@ -437,7 +449,16 @@ var cross = builtin_glsl_function({
     constant_evaluator: function(exp) {
         return vec3.cross(exp.parents[0].constant_value(),
                           exp.parents[1].constant_value());
-    }});
+    }, element_evaluator: function (exp, i) {
+        var v1 = exp.parents[0].length;
+        var v2 = exp.parents[1].length;
+        if        (i === 0) { return v1.at(1).mul(v2.at(2)).sub(v1.at(2).mul(v2.at(1)));
+        } else if (i === 1) { return v1.at(2).mul(v2.at(0)).sub(v1.at(0).mul(v2.at(2)));
+        } else if (i === 2) { return v1.at(0).mul(v2.at(1)).sub(v1.at(1).mul(v2.at(0)));
+        } else
+            throw "invalid element " + i + " for cross";
+    }
+});
 Shade.cross = cross;
 
 var normalize = builtin_glsl_function({
@@ -467,7 +488,14 @@ var faceforward = builtin_glsl_function({
             return N.constant_value();
         else
             return Shade.sub(0, N).constant_value();
-    }});
+    }, element_evaluator: function(exp, i) {
+        var N = exp.parents[0];
+        var I = exp.parents[1];
+        var Nref = exp.parents[2];
+        return Shade.selection(Nref.dot(I).lt(0),
+                               N, Shade.neg(N)).element(i);
+    }
+});
 Shade.faceforward = faceforward;
 
 var reflect = builtin_glsl_function({
@@ -498,11 +526,26 @@ var refract = builtin_glsl_function({
         
         var k = Shade.sub(1.0, Shade.mul(eta, eta, Shade.sub(1.0, N.dot(I).mul(N.dot(I)))));
         if (k.constant_value() < 0.0) {
-            return Vector.Zero(I.type.array_size());
+            return vec[I.type.array_size()].create();
         } else {
             return eta.mul(I).sub(eta.mul(N.dot(I)).add(k.sqrt()).mul(N)).constant_value();
         }
-    }});
+    }, element_evaluator: function(exp, i) {
+        var I = exp.parents[0];
+        var N = exp.parents[1];
+        var eta = exp.parents[2];
+        var k = Shade.sub(1.0, Shade.mul(eta, eta, Shade.sub(1.0, N.dot(I).mul(N.dot(I)))));
+        var refraction = eta.mul(I).sub(eta.mul(N.dot(I)).add(k.sqrt()).mul(N));
+        var zero;
+        switch (I.type.array_size()) {
+        case 2: zero = Shade.vec(0,0); break;
+        case 3: zero = Shade.vec(0,0,0); break;
+        case 4: zero = Shade.vec(0,0,0,0); break;
+        default: throw "internal error";
+        };
+        return Shade.selection(k.lt(0), zero, refraction).element(i);
+    }
+});
 Shade.refract = refract;
 
 var texture2D = builtin_glsl_function({
@@ -564,7 +607,10 @@ Shade.lessThan = builtin_glsl_function({
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x < right[i]; });
-    }});
+    }, element_evaluator: function(exp, i) {
+        return Shade.lessThan.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.Exp.lessThan = function(other) { return Shade.lessThan(this, other); };
 
 Shade.lessThanEqual = builtin_glsl_function({
@@ -580,7 +626,10 @@ Shade.lessThanEqual = builtin_glsl_function({
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x <= right[i]; });
-    }});
+    }, element_evaluator: function(exp, i) {
+        return Shade.lessThanEqual.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.Exp.lessThanEqual = function(other) { 
     return Shade.lessThanEqual(this, other); 
 };
@@ -598,7 +647,10 @@ Shade.greaterThan = builtin_glsl_function({
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x > right[i]; });
-    }});
+    }, element_evaluator: function(exp, i) {
+        return Shade.greaterThan.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.Exp.greaterThan = function(other) {
     return Shade.greaterThan(this, other);
 };
@@ -616,7 +668,10 @@ Shade.greaterThanEqual = builtin_glsl_function({
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x >= right[i]; });
-    }});
+    }, element_evaluator: function(exp, i) {
+        return Shade.greaterThanEqual.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.Exp.greaterThanEqual = function(other) {
     return Shade.greaterThanEqual(this, other);
 };
@@ -655,8 +710,12 @@ Shade.matrixCompMult = builtin_glsl_function({
         var v1 = exp.parents[0].constant_value();
         var v2 = exp.parents[1].constant_value();
         return mat.map(v1, function(x, i) { return x * v2[i]; });
-    }}
-);
+    }, element_evaluator: function(exp, i) {
+        var v1 = exp.parents[0];
+        var v2 = exp.parents[1];
+        return v1.element(i).mul(v2.element(i));
+    }
+});
 Shade.Exp.matrixCompMult = function(other) {
     return Shade.matrixCompMult(this, other);
 };
