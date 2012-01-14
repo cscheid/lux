@@ -20,6 +20,7 @@ function builtin_glsl_function(opts)
     var name = opts.name;
     var type_resolving_list = opts.type_resolving_list;
     var constant_evaluator = opts.constant_evaluator;
+    var element_evaluator = opts.element_evaluator;
 
     for (var i=0; i<type_resolving_list.length; ++i)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
@@ -27,6 +28,7 @@ function builtin_glsl_function(opts)
             if (_.isUndefined(t))
                 throw "undefined type in type_resolver";
         }
+
     // takes a list of lists of possible argument types, returns a function to 
     // resolve those types.
     function type_resolver_from_list(lst)
@@ -55,61 +57,47 @@ function builtin_glsl_function(opts)
         };
     }
 
-    var resolver = type_resolver_from_list(type_resolving_list);
-    if (constant_evaluator) {
-        return function() {
-            var type, canon_args = [];
-            for (var i=0; i<arguments.length; ++i) {
-                canon_args.push(Shade.make(arguments[i]));
+    return function() {
+        var resolver = type_resolver_from_list(type_resolving_list);
+        var type, canon_args = [];
+        for (i=0; i<arguments.length; ++i) {
+            canon_args.push(Shade.make(arguments[i]));
+        }
+        try {
+            type = resolver.apply(this, canon_args);
+        } catch (err) {
+            throw "type error on " + name + ": " + err;
+        }
+        var obj = {
+            parents: canon_args,
+            expression_type: "builtin_function{" + name + "}",
+            type: type,
+            value: function() {
+                return [name, "(",
+                        this.parents.map(function(t) { 
+                            return t.evaluate(); 
+                        }).join(", "),
+                        ")"].join(" ");
             }
-            try {
-                type = resolver.apply(this, canon_args);
-            } catch (err) {
-                throw "type error on " + name + ": " + err;
-            }
-            var obj = {
-                parents: canon_args,
-                type: type,
-                expression_type: "builtin_function{" + name + "}",
-                value: function() {
-                    return [name, "(",
-                            this.parents.map(function(t) { 
-                                return t.evaluate(); 
-                            }).join(", "),
-                            ")"].join(" ");
-                },
-                constant_value: Shade.memoize_on_field("_constant_value", function() {
-                    return constant_evaluator(this);
-                })
-            };
-            return Shade._create_concrete_value_exp(obj);
         };
-    } else {
-        return function() {
-            var type, canon_args = [];
-            for (var i=0; i<arguments.length; ++i) {
-                canon_args.push(Shade.make(arguments[i]));
-            }
-            try {
-                type = resolver.apply(this, canon_args);
-            } catch (err) {
-                throw "type error on " + name + ": " + err;
-            }
-            return Shade._create_concrete_value_exp( {
-                parents: canon_args,
-                expression_type: "builtin_function{" + name + "}",
-                type: type,
-                value: function() {
-                    return [name, "(",
-                            this.parents.map(function(t) { 
-                                return t.evaluate(); 
-                            }).join(", "),
-                            ")"].join(" ");
-                },
-                is_constant: function() { return false; }
+
+        if (constant_evaluator) {
+            obj.constant_value = Shade.memoize_on_field("_constant_value", function() {
+                return constant_evaluator(this);
             });
+        } else {
+            obj.is_constant = function() { return false; };
         };
-    }
+        if (element_evaluator) {
+            obj.element = function(i) {
+                return element_evaluator(this, i);
+            };
+            obj.element_is_constant = function(i) {
+                return this.element(i).is_constant();
+            };
+        }
+        return Shade._create_concrete_value_exp(obj);
+    };
 }
 
 function common_fun_1op(fun_name, constant_evaluator) {
@@ -249,7 +237,7 @@ _.each({
     "min": Math.min,
     "max": Math.max
 }, function(op, k) {
-    Shade[k] = builtin_glsl_function({
+    var result = builtin_glsl_function({
         name: k, 
         type_resolving_list: [
             [Shade.Types.int_t,    Shade.Types.int_t,   Shade.Types.int_t],
@@ -262,8 +250,15 @@ _.each({
             [Shade.Types.vec3,     Shade.Types.float_t, Shade.Types.vec3],
             [Shade.Types.vec4,     Shade.Types.float_t, Shade.Types.vec4]
         ], 
-        constant_evaluator: mod_min_max_constant_evaluator(op)
+        constant_evaluator: mod_min_max_constant_evaluator(op),
+        element_evaluator: function(exp, i) {
+            var e1 = exp.parents[0], e2 = exp.parents[1];
+            var v1 = e1.type.is_vec() ? e1.element(i) : e1;
+            var v2 = e2.type.is_vec() ? e2.element(i) : e2;
+            return result(v1, v2);
+        }
     });
+    Shade[k] = result;
 });
 
 function clamp_constant_evaluator(exp)
