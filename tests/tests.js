@@ -371,12 +371,38 @@ test("Shade constant folding", function() {
     ok(Shade.add(2, Shade.vec(1, 2)).element_is_constant(1),
        "operator element_is_constant");
 
-    // equal(Shade.max(Shade.vec(x,1,x), 2).element(1).constant_value(), 2,
-    //       "partially-constant float-vec max-min-mod built-ins");
-
     ok(Shade.div(Shade.vec(1,2,3).swizzle("gb"),
                  Shade.mul(Shade.vec(1,2,3).swizzle("r"), 13)).element_is_constant(1),
        "operator element_is_constant");
+
+    (function() {
+        var m1 = Shade.mat(Shade.vec(Math.random(), Math.random()),
+                           Shade.vec(Math.random(), Math.random()));
+        var m2 = Shade.mat(Shade.vec(Math.random(), Math.random()),
+                           Shade.vec(Math.random(), Math.random()));
+        var v1 = Shade.vec(Math.random(), Math.random()),
+            v2 = Shade.vec(Math.random(), Math.random());
+        var s = Math.random();
+        ok(Math.abs(m1.mul(v1).element_constant_value(0) - m1.mul(v1).constant_value()[0]) < 1e-4, 
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 1");
+        ok(Math.abs(v1.mul(m1).element_constant_value(0) - v1.mul(m1).constant_value()[0]) < 1e-4, 
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 2");
+        ok(vec.length(vec.minus(m1.mul(m2).element_constant_value(0),
+                                _.toArray(m1.mul(m2).constant_value()).slice(0, 2))) < 1e-4, 
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 3");
+        ok(Math.abs(v1.mul(v2).element_constant_value(0) - v1.mul(v2).constant_value()[0]) < 1e-4,
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 4");
+        ok(Math.abs(v1.mul(s).element_constant_value(0) -
+                    v1.mul(s).constant_value()[0]) < 1e-4,
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 5");
+        ok(Math.abs(Shade.mul(s, v1).element_constant_value(0) -
+                    Shade.mul(s, v1).constant_value()[0]) < 1e-4,
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 6");
+    })();
+
+    // equal(Shade.max(Shade.vec(x,1,x), 2).element(1).constant_value(), 2,
+    //       "partially-constant float-vec max-min-mod built-ins");
+
 });
 
 test("Shade optimizer", function() {
