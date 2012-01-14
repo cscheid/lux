@@ -1,5 +1,5 @@
 // FIXME should be Shade.Types.array
-Shade.array = function(base_type, size) {
+Shade.Types.array = function(base_type, size) {
     return Shade._create(Shade.Types.base_t, {
         is_array: function() { return true; },
         declare: function(glsl_name) {

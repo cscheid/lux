@@ -109,7 +109,7 @@ Shade.constant = function(v, type)
             }
 
             var new_types = new_v.map(function(t) { return t.type; });
-            var array_type = Shade.array(new_types[0], array_size);
+            var array_type = Shade.Types.array(new_types[0], array_size);
             if (_.any(new_types, function(t) { return !t.equals(new_types[0]); })) {
                 throw "array elements must have identical types";
             }
