@@ -3,9 +3,6 @@ The Big List of Facet TODOs
 * BUGS
 ** OpenStreetMap globe is broken on MacBook Air 11" (is it a precision problem?)
 ** Grand Tour demo is broken on MacBook Air 11" as well
-** Fix Shade.Utils.choose; 
-arrays must be created in other ways now that we have better cosntant
-detection. Arrays have never been constants; it's just bad coding.
 * Optimizer
 ** TODO Common subexpression elimination
     
