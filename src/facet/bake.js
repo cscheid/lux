@@ -64,7 +64,7 @@ function draw_it(batch)
                     };
                 })(program[key], currentActiveTexture);
                 currentActiveTexture++;
-            } else if (t === "number" || t == "vector") {
+            } else if (t === "number" || t === "vector" || t === "boolean") {
                 uniform._facet_active_uniform = (function(call, uid) {
                     return function(v) {
                         call.call(ctx, uid, v);
@@ -76,6 +76,8 @@ function draw_it(batch)
                         ctx[call](uid, false, v);
                     };
                 })(call, program[key]);
+            } else {
+                throw "could not figure out uniform type! " + t;
             }
             uniform._facet_active_uniform(value);
         });
