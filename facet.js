@@ -3224,7 +3224,7 @@ function draw_it(batch)
                     };
                 })(program[key], currentActiveTexture);
                 currentActiveTexture++;
-            } else if (t === "number" || t == "vector") {
+            } else if (t === "number" || t === "vector" || t === "boolean") {
                 uniform._facet_active_uniform = (function(call, uid) {
                     return function(v) {
                         call.call(ctx, uid, v);
@@ -3236,6 +3236,8 @@ function draw_it(batch)
                         ctx[call](uid, false, v);
                     };
                 })(call, program[key]);
+            } else {
+                throw "could not figure out uniform type! " + t;
             }
             uniform._facet_active_uniform(value);
         });
@@ -5478,6 +5480,14 @@ Shade.Exp = {
         return result;
     }
 };
+
+_.each(["r", "g", "b", "a",
+        "x", "y", "z", "w"], function(v) {
+            Shade.Exp[v] = function() {
+                return this.swizzle(v);
+            };
+        });
+
 Shade._create_concrete_exp = Shade._create_concrete(Shade.Exp, ["parents", "compile", "type"]);
 Shade.ValueExp = Shade._create(Shade.Exp, {
     is_constant: Shade.memoize_on_field("_is_constant", function() {
