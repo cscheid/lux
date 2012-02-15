@@ -1,0 +1,107 @@
+<html>
+<head><title>HCL color space</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link type="text/css" href="../lib/ui-lightness/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/mchighlight-javascript.css"/>
+  <script src="../lib/jquery-1.6.2.min.js"></script>
+  <script src="../lib/jquery-ui-1.8.16.custom.min.js"></script>
+  <script src="../facet.js"></script>
+  <script src="js/mclexer.js"></script>
+  <script src="js/mchighlight.js"></script>
+  <script src="js/mchighlight-javascript.js"></script>
+  <script src="hcl.js"></script>
+</head>
+<style>
+.ui-slider .ui-slider-handle { 
+    width: 18px; 
+    height: 18px;
+}
+
+.vertical {
+  -webkit-transform:rotate(90deg);
+  -webkit-transform-origin: top left;
+  -moz-transform:rotate(90deg);
+  -moz-transform-origin: top left;
+  -o-transform:rotate(90deg);
+  -o-transform-origin: top left;
+}
+
+.shadow {
+  text-shadow: 2px 2px #333;
+}
+
+#luminance {
+   top: 4px;
+   width: 300px;
+   height: 10px;
+   float: left;
+   clear: left;
+   margin-right: 18px;
+}
+</style>
+<body>
+<div class="body">
+<div class="content">
+<h1>HCL color space</h1>
+<div style="position:relative" width="720" height="480">
+<div style="position:absolute; top: 0.2em; left: 720px" class="vertical shadow">Chroma</div>
+<div style="position:absolute; bottom: 0em; left: 0.2em" class="shadow">Hue</div>
+<canvas id="webgl" width="720" height="480"></canvas>
+</div>
+<div style="text-align: right">View the <a href="hcl.js">full source</a>.</div>
+
+<div style="margin:20px"></div>
+<div>  Luminance   <div id="luminance"></div>    </div>
+
+<div><input type="checkbox" id="show_out_of_gamut" checked
+	    onclick="switch_gamut()"></input> Mark out-of-gamut
+  region</div>
+
+<p>The HCL color space is an alternative to the traditional
+  device-centric HSV and HSL. HSL and HSV are attractive because of
+  the easy explanations behind the coordinates, but they are not
+  perceptually uniform: changes in one coordinate will tend to change
+  your perception of the value along the other coordinate. 
+</p>
+
+<p>The Luv color space, on the other hand, is explicitly designed to
+be perceptually uniform, but its uv coordinates are not very
+  intuitive. The HCL colorspace preserves the L(uminance) axis of Luv,
+  but tranforms uv to polar coordinates, where the distance from zero
+  has a nice interpretation in terms of "chroma" ("saturation" in the
+  HSL and HSV colorspaces), and the phase is our familiar chroma.</p>
+
+<p>HCL, however, is not as simple as HSV, and this interactive
+  experiment shows why. HCL tends to specify colors outside of the RGB
+  gamut, which means that some sensible choices of HCL values will
+  generate values outside the (0,0,0)-(1,1,1) RGB cube. More
+  worryingly, the HCL->RGB transformation is discontinuous. Although
+  it lies outside the RGB gamut, clamping the transform to the closest
+  RGB point does not patch the seam in the color space. The
+  discontinuity is fairly obvious for low luminances.</p>
+
+<p>The first potential solution is to find a simple slice of the HCL
+  parameter space that is all in-gamut for RGB. Limiting the chroma as
+  a function of luminance can do that, and there's a simple function
+  which is the minimum of two linear ramps which works. This has the
+  problem of eliminating some valid in-gamut mappings: for example,
+  some highly chromatic yellows and greens are not reachable.</p>
+
+<p>The other solution is to clamp the transformation
+  differently. Instead of using the closest point inside the RGB gamut
+  after transform, the alternative is to use the transform of the
+  closest point in the HCL that is still inside the RGB
+  gamut. Unfortunately, this is computationally much more intensive,
+  because the gamut boundary in HCL is a complicated surface.</p>
+
+<p>Back to the <a href="index.html">index</a>.</p>
+
+</div>
+
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</body>
+</html>
+
