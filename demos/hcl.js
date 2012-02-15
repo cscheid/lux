@@ -1,6 +1,6 @@
 var gl;
 var hcl_batch;
-var luminance_uniform;
+var luminance_uniform, show_out_of_gamut;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -18,7 +18,7 @@ $().ready(function () {
         near_distance: 0.1,
         far_distance: 100
     });
-    model_mat = Shade.uniform("mat4");
+    show_out_of_gamut = Shade.uniform("bool", true);
     var starting_luminance = 80;
     luminance_uniform = Shade.uniform("float", starting_luminance);
     function change_luminance() {
@@ -47,14 +47,10 @@ $().ready(function () {
 
     var steps = 1;
     function max3(v) {
-        return Shade.max(v.swizzle("r"),
-                         Shade.max(v.swizzle("g"),
-                                   v.swizzle("b")));
+        return Shade.max(v.r(), Shade.max(v.g(), v.b()));
     }
     function min3(v) {
-        return Shade.min(v.swizzle("r"),
-                         Shade.min(v.swizzle("g"),
-                                   v.swizzle("b")));
+        return Shade.min(v.r(), Shade.min(v.g(), v.b()));
     }
     function even_p(p) { 
         var v = Shade.make(p).floor().div(2);
@@ -66,22 +62,21 @@ $().ready(function () {
         return max_value.gt(1).or(min_value.lt(0));
     }
     function out_of_gamut_pattern(rgb) {
-        var x_even = even_p(Shade.fragCoord().swizzle("x")),
-            y_even = even_p(Shade.fragCoord().swizzle("y"));
+        var x_even = even_p(Shade.fragCoord().x()),
+            y_even = even_p(Shade.fragCoord().y());
         return Shade.selection(xor(x_even, y_even),
                                rgb,
-                               rgb.clamp(Shade.vec(0,0,0,0),
-                                         Shade.vec(1,1,1,1)).alpha(0.1));
+                               rgb.clamp(0, 1).alpha(0.1));
     }
     var hcl_mesh = Facet.Models.mesh(steps, steps);
     var color = Shade.Colors.shadetable.hcl.create(
-        hcl_mesh.tex_coord.swizzle("r").mul(Math.PI*2),
-        hcl_mesh.tex_coord.swizzle("g").mul(100),
+        hcl_mesh.tex_coord.r().mul(Math.PI*2),
+        hcl_mesh.tex_coord.g().mul(100),
         luminance_uniform).as_shade(1);
     hcl_batch = Facet.bake(hcl_mesh, {
         mode: Facet.DrawingMode.over,
         position: Shade.vec(hcl_mesh.vertex, 0, 1),
-        color: Shade.selection(out_of_gamut(color),
+        color: Shade.selection(out_of_gamut(color).and(show_out_of_gamut),
                                out_of_gamut_pattern(color),
                                color)
     });
@@ -93,3 +88,9 @@ $().ready(function () {
     };
     f();
 });
+
+function switch_gamut()
+{
+    show_out_of_gamut.set(!show_out_of_gamut.get());
+    gl.display();
+}
