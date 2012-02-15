@@ -406,4 +406,12 @@ Shade.Exp = {
         return result;
     }
 };
+
+_.each(["r", "g", "b", "a",
+        "x", "y", "z", "w"], function(v) {
+            Shade.Exp[v] = function() {
+                return this.swizzle(v);
+            };
+        });
+
 Shade._create_concrete_exp = Shade._create_concrete(Shade.Exp, ["parents", "compile", "type"]);
