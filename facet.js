@@ -5766,7 +5766,8 @@ Shade.Exp = {
 };
 
 _.each(["r", "g", "b", "a",
-        "x", "y", "z", "w"], function(v) {
+        "x", "y", "z", "w",
+        "s", "t", "p", "q"], function(v) {
             Shade.Exp[v] = function() {
                 return this.swizzle(v);
             };
