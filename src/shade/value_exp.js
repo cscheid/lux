@@ -4,8 +4,14 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             return v.is_constant();
         });
     }),
+    element_is_constant: Shade.memoize_on_field("_element_is_constant", function(i) {
+        return this.is_constant();
+    }),
+    element_constant_value: Shade.memoize_on_field("_element_constant_value", function (i) {
+        return this.element(i).constant_value();
+    }),
     _must_be_function_call: false,
-    eval: function() {
+    evaluate: function() {
         if (this._must_be_function_call)
             return this.glsl_name + "()";
         if (this.children_count <= 1)
@@ -14,6 +20,15 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             return this.precomputed_value_glsl_name;
         else
             return this.glsl_name + "()";
+    },
+    element: function(i) {
+        if (this.type.is_pod()) {
+            if (i === 0)
+                return this;
+            else
+                throw this.type.repr() + " is an atomic type, got this: " + i;
+        }
+        return this.at(i);
     },
     compile: function(ctx) {
         if (this._must_be_function_call) {
@@ -48,7 +63,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                     ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
                     ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                 } else {
-                    // don't emit anything, all is taken care by eval()
+                    // don't emit anything, all is taken care by evaluate()
                 }
             } else {
                 if (this.children_count > 1) {
@@ -63,7 +78,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                                        + this.precomputed_value_glsl_name + "="
                                        + this.value() + ")))");
                 } else {
-                    // don't emit anything, all is taken care by eval()
+                    // don't emit anything, all is taken care by evaluate()
                 }
             }
         }

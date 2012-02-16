@@ -1,22 +1,39 @@
 Shade.Exp = {
-    debug_print: function(indent) {
-        if (indent === undefined) indent = 0;
-        var str = "";
-        for (var i=0; i<indent; ++i) { str = str + ' '; }
-        if (this.parents.length === 0) 
-            console.log(str + "[" + this.expression_type + ":" + this.guid + "]"
-                        // + "[is_constant: " + this.is_constant() + "]"
-                        + "()");
-        else {
-            console.log(str + "[" + this.expression_type + ":" + this.guid + "]"
-                        // + "[is_constant: " + this.is_constant() + "]"
-                        + "(");
-            for (i=0; i<this.parents.length; ++i)
-                this.parents[i].debug_print(indent + 2);
-            console.log(str + ')');
-        }
+    debug_print: function(do_what) {
+        var lst = [];
+        var refs = {};
+        function _debug_print(which, indent) {
+            var i;
+            var str = new Array(indent+2).join(" "); // This is python's '" " * indent'
+            // var str = "";
+            // for (var i=0; i<indent; ++i) { str = str + ' '; }
+            if (which.parents.length === 0) 
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " ()");
+            else {
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " (");
+                for (i=0; i<which.parents.length; ++i) {
+                    if (refs[which.parents[i].guid])
+                        lst.push(str + "  {{" + which.parents[i].guid + "}}");
+                    else {
+                        _debug_print(which.parents[i], indent + 2);
+                        refs[which.parents[i].guid] = 1;
+                    }
+                }
+                lst.push(str + ')');
+            }
+        };
+        _debug_print(this, 0);
+        do_what = do_what || function(l) {
+            var s = l.join("\n");
+            console.log(s);
+        };
+        do_what(lst);
     },
-    eval: function() {
+    evaluate: function() {
         return this.glsl_name + "()";
     },
     parent_is_unconditional: function(i) {
@@ -44,8 +61,8 @@ Shade.Exp = {
                 return;
             }
             var parents = exp.parents;
-            if (typeOf(parents) === "undefined") {
-                throw "Internal error: expression " + exp.eval()
+            if (_.isUndefined(parents)) {
+                throw "Internal error: expression " + exp.evaluate()
                     + " has undefined parents.";
             }
             for (var i=0; i<parents.length; ++i) {
@@ -77,7 +94,6 @@ Shade.Exp = {
     // element access for compound expressions
 
     element: function(i) {
-        // FIXME. Why doesn't this check for is_pod and use this.at()?
         throw "invalid call: atomic expression";  
     },
 
@@ -147,7 +163,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.int_t,
-            value: function() { return "int(" + this.parents[0].eval() + ")"; },
+            value: function() { return "int(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -163,7 +179,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.bool_t,
-            value: function() { return "bool(" + this.parents[0].eval() + ")"; },
+            value: function() { return "bool(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -179,7 +195,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.float_t,
-            value: function() { return "float(" + this.parents[0].eval() + ")"; },
+            value: function() { return "float(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -204,9 +220,9 @@ Shade.Exp = {
                 case 't': return 1;
                 case 'p': return 2;
                 case 'q': return 3;
-                default: throw "Invalid swizzle pattern";
+                default: throw "invalid swizzle pattern";
                 }
-            };
+            }
             var result = [];
             for (var i=0; i<pattern.length; ++i) {
                 result.push(to_index(pattern[i]));
@@ -219,8 +235,8 @@ Shade.Exp = {
         return Shade._create_concrete_exp( {
             parents: [parent],
             type: parent.type.swizzle(pattern),
-            expression_type: "swizzle",
-            eval: function() { return this.parents[0].eval() + "." + pattern; },
+            expression_type: "swizzle{" + pattern + "}",
+            evaluate: function() { return this.parents[0].evaluate() + "." + pattern; },
             is_constant: Shade.memoize_on_field("_is_constant", function () {
                 var that = this;
                 return _.all(indices, function(i) {
@@ -263,43 +279,40 @@ Shade.Exp = {
         // this "works around" current constant index restrictions in webgl
         // look for it to get broken in the future as this hole is plugged.
         index._must_be_function_call = true;
-        // FIXME: enforce that at only takes floats or ints;
+        if (!index.type.equals(Shade.Types.float_t) &&
+            !index.type.equals(Shade.Types.int_t)) {
+            throw "at expects int or float, got '" + 
+                index.type.repr() + "' instead";
+        }
         return Shade._create_concrete_exp( {
             parents: [parent, index],
             type: parent.type.array_base(),
             expression_type: "index",
-            eval: function() { 
+            evaluate: function() { 
                 if (this.parents[1].type.is_integral()) {
-                    return this.parents[0].eval() + 
-                        "[" + this.parents[1].eval() + "]"; 
+                    return this.parents[0].evaluate() + 
+                        "[" + this.parents[1].evaluate() + "]"; 
                 } else {
-                    return this.parents[0].eval() + 
-                        "[int(" + this.parents[1].eval() + ")]"; 
+                    return this.parents[0].evaluate() + 
+                        "[int(" + this.parents[1].evaluate() + ")]"; 
                 }
             },
             is_constant: function() {
-                return (this.parents[0].is_constant() && 
-                        this.parents[1].is_constant());
+                if (!this.parents[1].is_constant())
+                    return false;
+                var ix = Math.floor(this.parents[1].constant_value());
+                return (this.parents[1].is_constant() &&
+                        this.parents[0].element_is_constant(ix));
             },
             constant_value: Shade.memoize_on_field("_constant_value", function() {
-                var a = this.parents[0].constant_value();
-                if (typeOf(a) === 'array') // this was a GLSL array of stuff
-                    return a[this.parents[1].constant_value()];
-                else { // this was a vec.
-                    if (a._type === 'vector') {
-                        return a[this.parents[1].constant_value()];
-                    } else {
-                        // FIXME: at constant_value for mats is broken.
-                        //  Lift and use matrix_row from constant.js
-                        throw "at constant_value currently broken";
-                    }
-                }
+                var ix = Math.floor(this.parents[1].constant_value());
+                return this.parents[0].element_constant_value(ix);
             }),
             // the reason for the (if x === this) checks here is that sometimes
             // the only appropriate description of an element() of an
             // opaque object (uniforms and attributes, notably) is an at() call.
-            // This means that (this.parents[0].element(ix) === this) happens
-            // sometimes, and we're stuck in an infinite loop.
+            // This means that (this.parents[0].element(ix) === this) is
+            // sometimes true, and we're stuck in an infinite loop.
             element: Shade.memoize_on_field("_element", function(i) {
                 if (!this.parents[1].is_constant()) {
                     throw "at().element cannot be called with non-constant index";
@@ -326,7 +339,7 @@ Shade.Exp = {
                 var ix = this.parents[1].constant_value();
                 var x = this.parents[0].element(ix);
                 if (x === this) {
-                    throw "Would have gone into an infinite loop here: internal error.";
+                    throw "internal error: would have gone into an infinite loop here.";
                 }
                 return x.element_constant_value(i);
             }),
@@ -352,7 +365,10 @@ Shade.Exp = {
     // around, such as the things we move around when attributes are 
     // referenced in fragment programs
     // 
-    // FIXME: it's currently easy to create bad expressions with these.
+    // NB: it's easy to create bad expressions with these.
+    //
+    // The general rule is that types should be preserved (although
+    // that might not *always* be the case)
     find_if: function(check) {
         return _.select(this.sorted_sub_expressions(), check);
     },
@@ -390,4 +406,12 @@ Shade.Exp = {
         return result;
     }
 };
+
+_.each(["r", "g", "b", "a",
+        "x", "y", "z", "w"], function(v) {
+            Shade.Exp[v] = function() {
+                return this.swizzle(v);
+            };
+        });
+
 Shade._create_concrete_exp = Shade._create_concrete(Shade.Exp, ["parents", "compile", "type"]);

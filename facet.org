@@ -1,5 +1,8 @@
 The Big List of Facet TODOs
 
+* BUGS
+** OpenStreetMap globe is broken on MacBook Air 11" (is it a precision problem?)
+** Grand Tour demo is broken on MacBook Air 11" as well
 * Optimizer
 ** TODO Common subexpression elimination
     
@@ -35,75 +38,47 @@ stricter type checking.
 * Documentation
 ** TODO NeHe Lessons
 ** TODO Change lesson2.html to reflect camera class.
+** TODO We need a "pitfalls". For example, zoom.get() vs. zoom...
 * Expressions
 ** TODO ternary op performance fixes.
 Right now the algorithm in place is correct, but conservative. Ideally,
 I will want to propagate BDDs up the expression tree and check them
 
-** TODO discard
-
-Discard is a statement; I don't really have statements in the
-language.
-
-
-*** discard is fragment-only.
-
-How do I implement discard in a vertex shader?
-
-**** Possibilities:
-***** Disallow it to happen in the vertex shader
-Good: Simplest
-Bad: Breaks the model in Facet programs where we don't care much about
-what happens in vertex expressions vs fragment expressions
-Ugly: The error messages would be really opaque, unless I specifically
-detect where the discard statement would appear.
-***** Send the vertex outside the homogenous cube
-Good: Simple
-Bad: doesn't discard the whole primitive
-Ugly: would make triangles, etc look really weird.
-***** Set some special varying which discards every single fragment in the shader
-Good: Discards an entire primitive.
-Bad: Wastes a varying, which might be a scarce resource.
-Ugly: varying cannot be discrete (bool). The solution would be to
-discard if varying is greater than zero, set the discarded varying to be greater
-than the largest possible distance between two vertices on the screen,
-and the non-discarded to zero.
-
-*** Implementation ideas:
-
-**** special key for the program description
-
-like so:
-
-{
-  gl_Position: foo
-  gl_FragColor: bar
-  discard_if: baz
-}
-
-The main disadvantage here is that one application of discard is to
-save computation time. This means that my current initialization of
-variables used in more than one context will be wasteful if none of
-these variables are actually used before the discard condition is
-verified. What I would need, then, is some dependency analysis that
-determines which variables are used for which discard checks, and
-computes those in the correct order.
-
-This discard interacts with the initializer code.
-
-**** new expression called discard_if
-
-We add a discard_when(condition, value_if_not) expression, which
-issues the discard statement if condition is true. 
-
-But what about discard_when being executed inside conditional
-expressions? Worse: discard_when would turn case D above from a
-performance problem into an actual bug.
-
 ** TODO precision declarations
 
 * Rendering
+** Batch Drawing Mode and Scene Rendering Mode
+Batches can be drawn in different modes, currently:
+
+- "regular" drawing
+- additive blending
+- alpha-blended
+
+But scenes can also be rendered in different modes, currently
+
+- regular drawing mode
+- picking mode
+- depth unproject mode
+
+These two possibilities interact, and the result is a double dispatch,
+currently implemented badly on Facet.DrawingMode.*
+
+This should be fixed.
+
+Namely, the Facet.DrawingMode.<foo>.set_<bar>_caps functions dispatch on both foo and bar.
+
+One better solution is to have a dictionary and dispatch on (<foo>,
+<bar>) pairs.
+
+This would pave the way for extensible batch drawing modes. But extending
+rendering modes is not as easy because, for example, the picking
+procedure requires extra state to be kept around. This should be
+designed carefully (in other words, I'm afraid of trying it out right
+now)
+
 * API
+** TODO Support for boolean vectors
+Part of it exists throughout Facet, but it's scattered and untested.
 ** TODO I really should have a matrix stack.
 ** TODO I should have a camera class
 
@@ -121,6 +96,14 @@ The main difficulty is that I currently
 assume a one-to-one relationship between array buffers and attributes
 throughout the API.
 * Testing/Engineering
+** TODO fix the _shade_type ugliness
+One possibility is to create a WebGLObject prototype that knows how to
+turn itself into a Shade expression
+** TODO runtime type information
+It is very convenient to use runtime type checking to get
+polymorphism, but it seems like it tends to proliferate along the
+code. I should try to consolidate all these calls in a single API of
+some sort.
 ** TODO Write test suite for all builtins constant folding
 I've been seeing a lot of infinite loops because of co-recursion in
 constant_value. What do I do about it?
@@ -128,8 +111,6 @@ constant_value. What do I do about it?
 ** TODO Typechecking code review 
 functions like cosh which just build other expressions should have
 stricter type checking.
-
-
 ** TODO Code review on FIXMEs
 ** TODO Review best practices on exception raising/handling in JS.
 * Features
@@ -141,5 +122,7 @@ picking.
 ** Multiple WebGL canvases in a same page
 This means multiple contexts, and lots of things are going to break.
 ** TEXT SUPPORT
+** Mousewheel support
+*** Integrate https://github.com/brandonaaron/jquery-mousewheel ?
 * Other
 ** FIXME what do we do on canvas resizing?

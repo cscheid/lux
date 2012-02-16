@@ -33,8 +33,7 @@ facet.js:					\
 	src/facet/bake.js			\
 	src/facet/camera/_begin.js		\
 	src/facet/camera/perspective.js		\
-	src/facet/data/_begin.js		\
-	src/facet/data/texture_table.js		\
+	src/facet/camera/ortho.js		\
 	src/facet/draw.js			\
 	src/facet/element_buffer.js		\
 	src/facet/fresh_pick_id.js		\
@@ -49,6 +48,7 @@ facet.js:					\
 	src/facet/render_buffer.js		\
 	src/facet/set_context.js		\
 	src/facet/texture.js			\
+	src/facet/unprojector.js		\
 	src/facet/net/_begin.js			\
 	src/facet/net/buffer_ajax.js		\
 	src/facet/scale/_begin.js		\
@@ -59,12 +59,14 @@ facet.js:					\
 	src/facet/drawing_mode/additive.js	\
 	src/facet/drawing_mode/over.js		\
 	src/facet/drawing_mode/standard.js	\
+	src/facet/data/_begin.js		\
+	src/facet/data/texture_table.js		\
 	src/shade/_begin.js			\
+	src/shade/color.js			\
 	src/shade/looping.js			\
 	src/shade/unique_name.js		\
 	src/shade/create.js			\
 	src/shade/memoize_on_field.js		\
-	src/shade/zipWith.js			\
 	src/shade/types/_begin.js		\
 	src/shade/types/base_t.js		\
 	src/shade/types/basic.js		\
@@ -77,12 +79,15 @@ facet.js:					\
 	src/shade/value_exp.js			\
 	src/shade/swizzle.js			\
 	src/shade/constant.js			\
+	src/shade/array.js			\
 	src/shade/set.js			\
 	src/shade/uniform.js			\
 	src/shade/sampler2D_from_texture.js	\
 	src/shade/attribute.js			\
 	src/shade/varying.js			\
+	src/shade/fragCoord.js			\
 	src/shade/pointCoord.js			\
+	src/shade/round_dot.js			\
 	src/shade/operators.js			\
 	src/shade/neg.js			\
 	src/shade/vec.js			\
@@ -109,6 +114,10 @@ facet.js:					\
 	src/shade/discard.js			\
 	src/shade/id.js				\
 	src/shade/_end.js			\
+	src/shade/colors/_begin.js		\
+	src/shade/colors/alpha.js		\
+	src/shade/colors/convert.js		\
+	src/shade/colors/convert_shade.js	\
 	src/facet/marks/_begin.js		\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\
@@ -118,8 +127,7 @@ facet.js:					\
 	src/facet/models/mesh.js		\
 	src/facet/models/sphere.js		\
 	src/facet/models/square.js		\
-	src/facet/models/teapot.js		\
-	src/colors.js
+	src/facet/models/teapot.js
 
 # If the chmods below don't make sense to you right now, wait until
 # you fix a bug on the compilation output instead of the source :)
@@ -132,6 +140,9 @@ facet.js: Makefile
 	echo $^
 	@rm -f $@
 	cat $(filter %.js,$^) > $@
+ifeq ($(CHECK),1) 
+	jshint $(filter %.js,$(filter-out lib/%.js,$(filter-out %/_begin.js,$(filter-out %/_end.js, $^))))
+endif
 	chmod -w $@ 
 
 data.js: Makefile

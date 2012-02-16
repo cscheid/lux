@@ -14,11 +14,11 @@ Shade.uniform = function(type, v)
     ];
 
     var uniform_name = Shade.unique_name();
-    if (typeof type === 'undefined') throw "uniform requires type";
+    if (_.isUndefined(type)) throw "uniform requires type";
     if (typeof type === 'string') type = Shade.basic(type);
     var value;
     var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
-    if (typeof call !== 'undefined') {
+    if (!_.isUndefined(call)) {
         call = call[1];
     } else {
         throw "Unsupported type " + type.repr() + " for uniform.";
@@ -27,7 +27,7 @@ Shade.uniform = function(type, v)
         parents: [],
         type: type,
         expression_type: 'uniform',
-        eval: function() {
+        evaluate: function() {
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
             } else
@@ -51,9 +51,12 @@ Shade.uniform = function(type, v)
                 ctx.value_function(this, this.precomputed_value_glsl_name);
             }
         },
-        // FIXME: type checking
         set: function(v) {
-            var t = constant_type(v);
+            // Ideally, we'd like to do type checking here, but I'm concerned about
+            // performance implications. setting a uniform might be a hot path
+            // then again, facet_constant_type is unlikely to be particularly fast.
+            // FIXME check performance
+            var t = facet_constant_type(v);
             if (t === "shade_expression")
                 v = v.constant_value();
             value = v;

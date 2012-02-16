@@ -11,6 +11,7 @@ Facet.init = function(canvas, opts)
                                         depth: true
                                     }
                                   });
+    // FIXME This should be a "is Shade expression" check
     if (opts.clearColor.expression_type) {
         if (!opts.clearColor.is_constant())
             throw "clearColor must be constant expression";
@@ -20,6 +21,7 @@ Facet.init = function(canvas, opts)
     } else
         clearColor = opts.clearColor;
 
+    // FIXME This should be a "is Shade expression" check
     if (opts.clearDepth.expression_type) {
         if (!opts.clearDepth.is_constant())
             throw "clearDepth must be constant expression";
@@ -31,23 +33,18 @@ Facet.init = function(canvas, opts)
 
     Facet._globals.display_callback = (opts.display || function() {});
 
-    if (typeof opts === "undefined")
-        opts = {};
-    // if (typeof listeners === "undefined")
-    //     listeners = {};
     try {
-//         gl = WebGLDebugUtils.makeDebugContext(canvas.getContext("experimental-webgl"));
         if ("attributes" in opts)
             gl = WebGLUtils.setupWebGL(canvas, opts.attributes);
         else
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
-            throw "Failed context creation";
+            throw "failed context creation";
         if (opts.debugging) {
-            function throwOnGLError(err, funcName, args) {
+            var throwOnGLError = function(err, funcName, args) {
                 throw WebGLDebugUtils.glEnumToString(err) + 
                     " was caused by call to " + funcName;
-            }
+            };
             gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
         gl.viewportWidth = canvas.width;
@@ -57,7 +54,7 @@ Facet.init = function(canvas, opts)
         for (var i=0; i<names.length; ++i) {
             var ename = names[i];
             var listener = opts[ename];
-            if (typeof listener != "undefined")
+            if (!_.isUndefined(listener))
                 canvas.addEventListener(ename, listener, false);
         }
         var ext;
@@ -68,7 +65,7 @@ Facet.init = function(canvas, opts)
             // FIXME design something like progressive enhancement for these cases. HARD!
             alert("OES_texture_float is not available on your browser/computer! " +
                   "Facet will not work, sorry.");
-            throw "Insufficient GPU support";
+            throw "insufficient GPU support";
         } else {
             gl.getExtension("oes_texture_float");
         }
@@ -77,7 +74,7 @@ Facet.init = function(canvas, opts)
     }
     if (!gl) {
         alert("Could not initialise WebGL, sorry :-(");
-        throw "Failed initalization";
+        throw "failed initalization";
     }
 
     gl.display = function() {

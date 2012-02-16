@@ -19,19 +19,18 @@ Shade.basic = function(repr) {
              Number(repr[4]) < 5)) return true;
         // if (repr === '__auto__') return true;
         return false;
-    };
+    }
 
     if (!is_valid_basic_type(repr)) {
-        throw "invalid basic type '" + repr + "'.";
-    };
+        throw "invalid basic type '" + repr + "'";
+    }
     
     return Shade._create(Shade.Types.base_t, {
         declare: function(glsl_name) { return repr + " " + glsl_name; },
         repr: function() { return repr; },
         swizzle: function(pattern) {
-            // FIXME swizzle is for vecs only, not arrays in general.
-            if (!(this.is_array())) {
-                throw "Swizzle pattern requires array type";
+            if (!this.is_vec()) {
+                throw "swizzle requires a vec";
             }
             var base_repr = this.repr();
             var base_size = Number(base_repr[base_repr.length-1]);
@@ -51,18 +50,18 @@ Shade.basic = function(repr) {
                 group_res = [ /[rgba]/, /[xyzw]/, /[stpq]/ ];
                 break;
             default:
-                throw "Internal error?!";
-            };
+                throw "internal error on swizzle";
+            }
             if (!pattern.match(valid_re)) {
-                throw "Invalid swizzle pattern '" + pattern + "'.";
+                throw "invalid swizzle pattern '" + pattern + "'";
             }
             var count = 0;
             for (var i=0; i<group_res.length; ++i) {
                 if (pattern.match(group_res[i])) count += 1;
             }
             if (count != 1) {
-                throw ("Swizzle pattern '" + pattern + 
-                       "' belongs to more than one group.");
+                throw ("swizzle pattern '" + pattern + 
+                       "' belongs to more than one group");
             }
             if (pattern.length === 1) {
                 return this.array_base();
@@ -93,14 +92,22 @@ Shade.basic = function(repr) {
         vec_dimension: function() {
             var repr = this.repr();
             if (repr.substring(0, 3) === "vec")
-                return parseInt(repr[3]);
+                return parseInt(repr[3], 10);
             if (repr.substring(0, 4) === "ivec" ||
                 repr.substring(0, 4) === "bvec")
-                return parseInt(repr[4]);
+                return parseInt(repr[4], 10);
             if (this.repr() === 'float'
                 || this.repr() === 'int'
                 || this.repr() === 'bool')
-                return 1; // FIXME convenient, probably wrong
+                // This is convenient: assuming vec_dimension() === 1 for POD 
+                // lets me pretend floats, ints and bools are vec1, ivec1 and bvec1.
+                // 
+                // However, this might have
+                // other bad consequences I have not thought of.
+                //
+                // For example, I cannot make float_t.is_vec() be true, because
+                // this would allow sizzling from a float, which GLSL disallows.
+                return 1;
             if (!this.is_vec()) {
                 throw "is_vec() === false, cannot call vec_dimension";
             }
@@ -126,7 +133,7 @@ Shade.basic = function(repr) {
                 return Shade.basic("int");
             if (repr == "float")
                 return Shade.basic("float");
-            throw "datatype not array!";
+            throw "datatype not array";
         },
         size_for_vec_constructor: function() {
             var repr = this.repr();
@@ -143,8 +150,8 @@ Shade.basic = function(repr) {
                 return this.vec_dimension();
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")  
-                return parseInt(repr[3]);
-            throw "datatype not array!";
+                return parseInt(repr[3], 10);
+            throw "datatype not array";
         },
         is_floating: function() {
             var repr = this.repr();
@@ -190,10 +197,18 @@ Shade.basic = function(repr) {
                 else if (f === 'i')
                     return Shade.Types.int_t;
                 else
-                    throw "Internal error";
+                    throw "internal error";
             } else
                 // FIXME implement this
-                throw "Unimplemented for mats";
+                throw "unimplemented for mats";
+        },
+        constant_equal: function(v1, v2) {
+            if (this.is_pod())
+                return v1 === v2;
+            if (this.is_vec() || this.is_mat())
+                return _.all(_.range(v1.length), function(i) { return v1[i] === v2[i]; });
+            else
+                throw "bad type for equality comparison: " + this.repr();
         }
     });
 };

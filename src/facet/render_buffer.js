@@ -14,14 +14,7 @@ Facet.render_buffer = function(opts)
     rttFramebuffer.width  = opts.width;
     rttFramebuffer.height = opts.height;
 
-    var rttTexture = ctx.createTexture();
-    rttTexture._shade_type = 'texture';
-    ctx.bindTexture(ctx.TEXTURE_2D, rttTexture);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
-    ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, null);
+    var rttTexture = Facet.texture(opts);
 
     var renderbuffer = ctx.createRenderbuffer();
     ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderbuffer);
@@ -35,19 +28,15 @@ Facet.render_buffer = function(opts)
         case ctx.FRAMEBUFFER_COMPLETE:
             break;
         case ctx.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
         case ctx.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
         case ctx.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
         case ctx.FRAMEBUFFER_UNSUPPORTED:
-            throw("Incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED";
         default:
-            throw("Incomplete framebuffer: " + status);
+            throw "incomplete framebuffer: " + status;
     }
 
     ctx.bindTexture(ctx.TEXTURE_2D, null);
@@ -68,6 +57,13 @@ Facet.render_buffer = function(opts)
             } finally {
                 ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
             }
+        },
+        make_screen_batch: function (with_texel_at_uv) {
+            var sq = Facet.Models.square();
+            return Facet.bake(sq, {
+                position: Shade.vec(sq.vertex.mul(2).sub(Shade.vec(1, 1)), 0, 1),
+                color: with_texel_at_uv(Shade.texture2D(rttTexture, sq.tex_coord), sq.tex_coord)
+            });
         }
     };
 };

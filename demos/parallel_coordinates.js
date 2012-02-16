@@ -51,8 +51,8 @@ function create_parallel_coords_batch()
             elements.push(i * table.n_columns + j,
                           i * table.n_columns + j+1);
 
-    var column_min = Shade.constant(table.column_min);
-    var column_max = Shade.constant(table.column_max);
+    var column_min = Shade.array(table.column_min);
+    var column_max = Shade.array(table.column_max);
     var y = Shade.Utils.linear(column_min.at(table.column),
                                column_max.at(table.column),
                                -0.9, 0.9)(table.value);
@@ -92,5 +92,4 @@ $().ready(function () {
     var start = new Date().getTime();
 
     gl.display();
-    f();
 });

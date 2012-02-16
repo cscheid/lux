@@ -14,5 +14,12 @@ Facet.DrawingMode.additive = {
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
     }
 };

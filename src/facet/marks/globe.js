@@ -2,16 +2,17 @@ function spherical_mercator_patch(tess)
 {
     var uv = [];
     var elements = [];
+    var i, j;
 
-    for (var i=0; i<=tess; ++i)
-        for (var j=0; j<=tess; ++j)
+    for (i=0; i<=tess; ++i)
+        for (j=0; j<=tess; ++j)
             uv.push(i/tess, j/tess);
 
     for (i=0; i<tess; ++i)
-        for (var j=0; j<tess; ++j) {
+        for (j=0; j<tess; ++j) {
             var ix = (tess + 1) * i + j;
             elements.push(ix, ix+1, ix+tess+2, ix, ix+tess+2, ix+tess+1);
-        };
+        }
 
     return Facet.model({
         type: "triangles",
@@ -24,7 +25,7 @@ function spherical_mercator_patch(tess)
             return Shade.mix(min, max, this.uv).div(Math.PI * 2).add(Shade.vec(0, 0.5));
         }
     });
-};
+}
 
 function latlong_to_mercator(lat, lon)
 {
@@ -71,6 +72,7 @@ Facet.Marks.globe = function(opts)
         gl_FragColor: Shade.texture2D(sampler, sphere.transformed_uv(min, max))
     });
 
+    var display = function() { gl.display(); };
     for (var i=0; i<8; ++i)
         for (var j=0; j<8; ++j)
             Facet.load_image_into_texture({
@@ -80,7 +82,7 @@ Facet.Marks.globe = function(opts)
                 crossOrigin: "anonymous",
                 x_offset: ((i + 4) % 8)  * 256,
                 y_offset: 2048 - (j+1) * 256,
-                onload: function() { gl.display(); }
+                onload: display
             });
 
     return {
@@ -178,7 +180,6 @@ Facet.Marks.globe = function(opts)
                 max_x.set(mx_x);
                 sphere_drawable.draw();
             }
-            
         }
     };
-}
+};

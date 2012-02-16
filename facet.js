@@ -85,10 +85,34 @@
 
 Facet = {};
 // yucky globals used throughout Facet. I guess this means I lost.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+/* FIXME there should be one globals object per WebGL context.
+
+ When fixing Facet so that it works in multiple-context
+ situations, all the globals scattered throughout Facet should be
+ collected here.
+
+*/
 
 Facet._globals = {
-    ctx: undefined, // stores the active webgl context
-    display_callback: undefined
+    ctx: undefined,
+     // stores the active webgl context
+
+    display_callback: undefined,
+    // when Facet.init is called with a display callback, it gets stored in
+    // _globals.display_callback
+
+    batch_render_mode: 0
+    // batches can currently be rendered in "draw" or "pick" mode.
+
+    // draw: 0
+    // pick: 1
+
+    // these are indices into an array defined inside Facet.bake
+
+    // For legibility, they should be strings, but for speed, they'll be integers.
 };
 // Underscore.js 1.1.7
 // (c) 2011 Jeremy Ashkenas, DocumentCloud Inc.
@@ -1748,7 +1772,7 @@ mat2.multiply = function(dest, other)
 
 mat2.product_vec = function(mat, vec)
 {
-    var result = new Float32Array(3);
+    var result = new Float32Array(2);
     result._type = 'vector';
     var x = vec[0], y = vec[1];
     result[0] = mat[0]*x + mat[2]*y;
@@ -2867,7 +2891,7 @@ mat4.lookAt = function(eye, center, up)
 	x0 /= len;
 	x1 /= len;
 	x2 /= len;
-    };
+    }
     
     //vec3.normalize(vec3.cross(z, x, y));
     y0 = z1*x2 - z2*x1;
@@ -3033,7 +3057,7 @@ function to_dim(l)
     case 16: return 4;
     }
     throw "bad length";
-};
+}
 
 mat.make = function(v)
 {
@@ -3059,11 +3083,12 @@ mat.str = function(m1)
 };
 
 })();
-// FIXME DO NOT POLLUTE GLOBAL NAMESPACE
+// FIXME Can I make these two the same function call?
+function facet_constant_type(obj)
 // it is convenient in many places to accept as a parameter a scalar,
 // a vector or a matrix. This function tries to
-// tell them apart.
-function constant_type(obj)
+// tell them apart. Functions such as vec.make and mat.make populate
+// the _type slot. This is ugly, but extremely convenient.
 {
     var t = typeof obj;
     if (t === "boolean")         return "boolean";
@@ -3078,7 +3103,7 @@ function constant_type(obj)
 //////////////////////////////////////////////////////////////////////////////
 // http://javascript.crockford.com/remedial.html
 
-function typeOf(value) 
+function facet_typeOf(value) 
 {
     var s = typeof value;
     if (s === 'object') {
@@ -3115,7 +3140,7 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
     var result = ctx.createBuffer();
     ctx.bindBuffer(ctx.ARRAY_BUFFER, result);
     ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
-    result._shade_type = 'attribute_buffer'; // FIXME: UGLY
+    result._shade_type = 'attribute_buffer';
     result.array = typedArray;
     result.itemSize = itemSize;
     result.numItems = vertex_array.length/itemSize;
@@ -3176,7 +3201,7 @@ function draw_it(batch)
 
         for (key in attributes) {
             var attr = program[key];
-            if (typeof attr !== 'undefined') {
+            if (!_.isUndefined(attr)) {
                 ctx.enableVertexAttribArray(attr);
                 attributes[key].bind(attr);
             }
@@ -3187,10 +3212,10 @@ function draw_it(batch)
             var key = uniform.uniform_name;
             var call = uniform.uniform_call,
                 value = uniform.get();
-            if (typeOf(value) === 'undefined') {
+            if (_.isUndefined(value)) {
                 throw "uniform " + key + " has not been set.";
             }
-            var t = constant_type(value);
+            var t = facet_constant_type(value);
             if (t === "other") {
                 uniform._facet_active_uniform = (function(uid, cat) {
                     return function(v) {
@@ -3200,7 +3225,7 @@ function draw_it(batch)
                     };
                 })(program[key], currentActiveTexture);
                 currentActiveTexture++;
-            } else if (t === "number" || t == "vector") {
+            } else if (t === "number" || t === "vector" || t === "boolean") {
                 uniform._facet_active_uniform = (function(call, uid) {
                     return function(v) {
                         call.call(ctx, uid, v);
@@ -3212,29 +3237,115 @@ function draw_it(batch)
                         ctx[call](uid, false, v);
                     };
                 })(call, program[key]);
+            } else {
+                throw "could not figure out uniform type! " + t;
             }
             uniform._facet_active_uniform(value);
         });
     }
 
     batch.draw_chunk();
-};
+}
 
 var largest_batch_id = 1;
 
 Facet.bake = function(model, appearance)
 {
+    appearance = Shade.canonicalize_program_object(appearance);
     var ctx = Facet._globals.ctx;
-    var draw_program_exp = {};
-    _.each(appearance, function(value, key) {
-        if (Shade.is_program_parameter(key)) {
-            draw_program_exp[key] = value;
+
+    var batch_id = Facet.fresh_pick_id();
+
+    function build_attribute_arrays_obj(prog) {
+        return _.build(_.map(
+            prog.attribute_buffers, function(v) { return [v._shade_name, v]; }
+        ));
+    }
+
+    function process_appearance(val_key_function) {
+        var result = {};
+        _.each(appearance, function(value, key) {
+            if (Shade.is_program_parameter(key)) {
+                result[key] = val_key_function(value, key);
+            }
+        });
+        return Shade.program(result);
+    }
+
+    function create_draw_program() {
+        return process_appearance(function(value, key) {
+            return value;
+        });
+    }
+
+    function create_pick_program() {
+        var pick_id;
+        if (appearance.pick_id)
+            pick_id = Shade.make(appearance.pick_id);
+        else {
+            pick_id = Shade.make(Shade.id(batch_id));
         }
-    });
-    var draw_program = Shade.program(draw_program_exp);
-    var draw_attribute_arrays = _.build(_.map(
-        draw_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
-    ));
+        return process_appearance(function(value, key) {
+            if (key === 'gl_FragColor') {
+                var pick_if = (appearance.pick_if || 
+                               Shade.make(value).swizzle("a").gt(0));
+                return pick_id.discard_if(Shade.not(pick_if));
+            } else
+                return value;
+        });
+    }
+
+    /* Facet unprojecting uses the render-as-depth technique suggested
+     by Benedetto et al. in the SpiderGL paper in the context of
+     shadow mapping:
+
+     SpiderGL: A JavaScript 3D Graphics Library for Next-Generation
+     WWW
+
+     Marco Di Benedetto, Federico Ponchio, Fabio Ganovelli, Roberto
+     Scopigno. Visual Computing Lab, ISTI-CNR
+
+     http://vcg.isti.cnr.it/Publications/2010/DPGS10/spidergl.pdf
+
+     FIXME: Perhaps there should be an option of doing this directly as
+     render-to-float-texture.
+
+     */
+    
+    function create_unproject_program() {
+        return process_appearance(function(value, key) {
+            if (key === 'gl_FragColor') {
+                var position_z = appearance.gl_Position.swizzle('z'),
+                    position_w = appearance.gl_Position.swizzle('w');
+                var normalized_z = position_z.div(position_w).add(1).div(2);
+
+                // normalized_z ranges from 0 to 1.
+
+                // an opengl z-buffer actually stores information as
+                // 1/z, so that more precision is spent on the close part
+                // of the depth range. Here, we are storing z, and so our efficiency won't be great.
+                // 
+                // However, even 1/z is only an approximation to the ideal scenario, and 
+                // if we're already doing this computation on a shader, it might be worthwhile to use
+                // Thatcher Ulrich's suggestion about constant relative precision using 
+                // a logarithmic mapping:
+
+                // http://tulrich.com/geekstuff/log_depth_buffer.txt
+
+                // This mapping, incidentally, is more directly interpretable as
+                // linear interpolation in log space.
+
+                var result_rgba = Shade.vec(
+                    normalized_z,
+                    normalized_z.mul(1 << 8),
+                    normalized_z.mul(1 << 16),
+                    normalized_z.mul(1 << 24)
+                );
+                return result_rgba;
+            } else
+                return value;
+        });
+    }
 
     var primitive_types = {
         points: ctx.POINTS,
@@ -3249,7 +3360,7 @@ Facet.bake = function(model, appearance)
     var primitive_type = primitive_types[model.type];
     var elements = model.elements;
     var draw_chunk;
-    if (typeOf(model.elements) === 'number') {
+    if (facet_typeOf(elements) === 'number') {
         draw_chunk = function() {
             ctx.drawArrays(primitive_type, 0, elements);
         };
@@ -3260,9 +3371,7 @@ Facet.bake = function(model, appearance)
     }
     var primitives = [primitive_types[model.type], model.elements];
 
-    var draw_batch_id = largest_batch_id++;
-
-    // FIXME the batch_id field in the *_opts objects is not
+    // FIXME the batch_id field in the batch_opts objects is not
     // the same as the batch_id in the batch itself. 
     // 
     // The former is used to avoid state switching, while the latter is
@@ -3272,57 +3381,27 @@ Facet.bake = function(model, appearance)
     // This should not lead to any problems right now but might be confusing to
     // readers.
 
-    var draw_opts = {
-        program: draw_program,
-        attributes: draw_attribute_arrays,
-        set_caps: ((appearance.mode && appearance.mode.set_draw_caps) || 
-                   Facet.DrawingMode.standard.set_draw_caps),
-        draw_chunk: draw_chunk,
-        batch_id: draw_batch_id
-    };
-
-    var batch_id = Facet.fresh_pick_id();
-    var pick_id;
-    if (appearance.pick_id)
-        pick_id = Shade.make(appearance.pick_id);
-    else {
-        pick_id = Shade.make(Shade.id(batch_id));
+    function create_batch_opts(program, caps_name) {
+        return {
+            program: program,
+            attributes: build_attribute_arrays_obj(program),
+            set_caps: ((appearance.mode && appearance.mode[caps_name]) ||
+                       Facet.DrawingMode.standard[caps_name]),
+            draw_chunk: draw_chunk,
+            batch_id: largest_batch_id++
+        };
     }
 
-    var pick_program_exp = {};
-    _.each(appearance, function(value, key) {
-        if (Shade.is_program_parameter(key)) {
-            if (key === 'color' || key === 'gl_FragColor') {
-                var pick_if = (appearance.pick_if ||
-                               Shade.make(value).swizzle("a").gt(0));
-                pick_program_exp[key] = pick_id
-                    .discard_if(Shade.not(pick_if));
-            } else {
-                pick_program_exp[key] = value;
-            }
-        }
-    });
-    var pick_program = Shade.program(pick_program_exp);
-    var pick_attribute_arrays = _.build(_.map(
-        pick_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
-    ));
-        
-    var pick_batch_id = largest_batch_id++;
-    var pick_opts = {
-        program: pick_program,
-        attributes: pick_attribute_arrays,
-        set_caps: ((appearance.mode && appearance.mode.set_pick_caps) || 
-                   Facet.DrawingMode.standard.set_pick_caps),
-        draw_chunk: draw_chunk,
-        batch_id: pick_batch_id
-    };
+    var draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
+    var pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
+    var unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
 
-    var which_opts = [ draw_opts, pick_opts ];
+    var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {
         batch_id: batch_id,
         draw: function() {
-            draw_it(which_opts[Facet.Picker.picking_mode]);
+            draw_it(which_opts[Facet._globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.
@@ -3404,7 +3483,7 @@ Facet.Camera.perspective = function(opts)
             else if (t.equals(Shade.Types.vec4))
                 return vp_uniform.mul(model_vertex);
             else
-                throw "Type mismatch: expected vec, got " + t.repr();
+                throw "expected vec, got " + t.repr();
         },
         eye_vertex: function(model_vertex) {
             var t = model_vertex.type;
@@ -3415,80 +3494,94 @@ Facet.Camera.perspective = function(opts)
             else if (t.equals(Shade.Types.vec4))
                 return view_uniform.mul(model_vertex);
             else
-                throw "Type mismatch: expected vec, got " + t.repr();
+                throw "expected vec, got " + t.repr();
         }
     };
 };
-Facet.Data = {};
-// NB: Luminance float textures appear to clamp to [0,1] on Chrome 15
-// on Linux...
-
-Facet.Data.texture_table = function(table)
+Facet.Camera.ortho = function(opts)
 {
-    var ctx = Facet._globals.ctx;
+    opts = _.defaults(opts || {}, {
+        aspect_ratio: 1,
+        left: -1,
+        right: -1,
+        bottom: -1,
+        top: 1,
+        near: -1,
+        far: 1
+    });
 
-    var elements = [];
-    for (var row_ix = 0; row_ix < table.data.length; ++row_ix) {
-        var row = table.data[row_ix];
-        for (var col_ix = 0; col_ix < table.number_columns.length; ++col_ix) {
-            var col_name = table.columns[table.number_columns[col_ix]];
-            var val = row[col_name];
-            if (typeof val !== "number")
-                throw "texture_table requires numeric values";
-            elements.push(val);
-            elements.push(val);
-            elements.push(val);
-            elements.push(val);
+    var left = opts.left;
+    var right = opts.right;
+    var bottom = opts.bottom;
+    var top = opts.top;
+    var screen_ratio = opts.aspect_ratio;
+    var near = opts.near;
+    var far = opts.far;
+
+    var proj_uniform = Shade.uniform("mat4");
+
+    function update_projection()
+    {
+        var view_ratio = (right - left) / (top - bottom);
+        var l, r, t, b;
+        var half_width, half_height;
+        if (view_ratio > screen_ratio) {
+            // fat view rectangle, "letterbox" the projection
+            var cy = (top + bottom) / 2;
+            half_width = (right - left) / 2;
+            half_height = half_width / screen_ratio;
+            l = left;
+            r = right;
+            t = cy + half_height;
+            b = cy - half_height;
+        } else {
+            // tall view rectangle, "pillarbox" the projection
+            var cx = (right + left) / 2;
+            half_height = (top - bottom) / 2;
+            half_width = half_height * screen_ratio;
+            l = cx - half_width;
+            r = cx + half_width;
+            t = top;
+            b = bottom;
         }
+        proj_uniform.set(mat4.ortho(l, r, b, t, near, far));
     }
 
-    var table_ncols = table.number_columns.length;
-    var table_nrows = table.data.length;
-    var texture_width = 1;
-
-    while (4 * texture_width * texture_width < elements.length) {
-        texture_width = texture_width * 2;
-    }
-
-    var texture_height = Math.ceil(elements.length / (4 * texture_width));
-    while (elements.length < 4 * texture_height * texture_width) {
-        elements.push(0);
-        elements.push(0);
-        elements.push(0);
-        elements.push(0);
-    }
-
-    var texture = Facet.texture({
-        width: texture_width,
-        height: texture_height,
-        buffer: new Float32Array(elements),
-        type: ctx.FLOAT,
-        format: ctx.RGBA,
-        min_filter: ctx.NEAREST,
-        mag_filter: ctx.NEAREST
-    });
-
-    var index = Shade.make(function(row, col) {
-        var linear_index = row.mul(table_ncols).add(col);
-        var x = Shade.mod(linear_index, texture_width); // linear_index.sub(y.mul(texture_width));
-        var y = linear_index.div(texture_width).floor();
-        var result = Shade.vec(x, y);
-        return result;
-    });
-    var at = Shade.make(function(row, col) {
-        // returns Shade expression with value at row, col
-        var uv = index(row, col)
-            .add(Shade.vec(0.5, 0.5))
-            .div(Shade.vec(texture_width, texture_height))
-            ;
-        return Shade.texture2D(texture, uv).at(0);
-    });
+    update_projection();
 
     return {
-        n_rows: table_nrows,
-        n_cols: table_ncols,
-        at: at,
-        index: index
+        set_aspect_ratio: function(new_aspect_ratio) {
+            screen_ratio = new_aspect_ratio;
+            update_projection();
+        },
+        set_bounds: function(opts) {
+            opts = _.defaults(opts, {
+                left: -1,
+                right: 1,
+                bottom: -1,
+                top: 1,
+                near: -1,
+                far: 1
+            });
+            left = opts.left;
+            right = opts.right;
+            bottom = opts.bottom;
+            top = opts.top;
+            near = opts.near;
+            far = opts.far;
+            update_projection();
+        },
+        project: function(model_vertex) {
+            var t = model_vertex.type;
+            if (t.equals(Shade.Types.vec2))
+                return proj_uniform.mul(Shade.vec(model_vertex, 0, 1));
+            else if (t.equals(Shade.Types.vec3))
+                return proj_uniform.mul(Shade.vec(model_vertex, 1));
+            else if (t.equals(Shade.Types.vec4))
+                return proj_uniform.mul(model_vertex);
+            else
+                throw "expected vec, got " + t.repr();
+        }
     };
 };
 (function() {
@@ -3501,18 +3594,20 @@ Facet.element_buffer = function(vertex_array)
     ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, result);
     var typedArray = new Uint16Array(vertex_array);
     ctx.bufferData(ctx.ELEMENT_ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
-    result._shade_type = 'element_buffer'; // FIXME: UGLY
+    result._shade_type = 'element_buffer';
     result.array = typedArray;
     result.itemSize = 1;
     result.numItems = vertex_array.length;
-    // FIXME: to make the interface uniform with attribute buffer, bind
-    // takes an unused argument "attribute". I don't see a way to fix this
-    // right now while keeping the drawing interface clean (that is, element buffers
-    // and attribute buffers being interchangeable).
-    // NB it's no longer clear that we need element_buffers and
-    // attribute_buffers to look the same way.
+    result.bind = function() {
+        /* Javascript functions are quirky in that they can take unused arguments.
+         So if a call passes an argument to result.bind, it won't fail; the argument
+         is simply dropped on the floor.
 
-    result.bind = function(attribute) {
+         This has the fortuitous consequence of making attribute
+         buffers and element buffers share the same interface
+         (attributes that get passed to bind are ignored by element
+         buffers and handled by attribute buffers)
+        */
         ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, this);
     };
     result.draw = function(primitive) {
@@ -3543,7 +3638,7 @@ Facet.fresh_pick_id = function(quantity)
 })();
 Facet.id_buffer = function(vertex_array)
 {
-    if (typeOf(vertex_array) !== 'array')
+    if (facet_typeOf(vertex_array) !== 'array')
         throw "id_buffer expects array of integers";
     var typedArray = new Int32Array(vertex_array);
     var byteArray = new Uint8Array(typedArray.buffer);
@@ -3562,6 +3657,7 @@ Facet.init = function(canvas, opts)
                                         depth: true
                                     }
                                   });
+    // FIXME This should be a "is Shade expression" check
     if (opts.clearColor.expression_type) {
         if (!opts.clearColor.is_constant())
             throw "clearColor must be constant expression";
@@ -3571,6 +3667,7 @@ Facet.init = function(canvas, opts)
     } else
         clearColor = opts.clearColor;
 
+    // FIXME This should be a "is Shade expression" check
     if (opts.clearDepth.expression_type) {
         if (!opts.clearDepth.is_constant())
             throw "clearDepth must be constant expression";
@@ -3582,23 +3679,18 @@ Facet.init = function(canvas, opts)
 
     Facet._globals.display_callback = (opts.display || function() {});
 
-    if (typeof opts === "undefined")
-        opts = {};
-    // if (typeof listeners === "undefined")
-    //     listeners = {};
     try {
-//         gl = WebGLDebugUtils.makeDebugContext(canvas.getContext("experimental-webgl"));
         if ("attributes" in opts)
             gl = WebGLUtils.setupWebGL(canvas, opts.attributes);
         else
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
-            throw "Failed context creation";
+            throw "failed context creation";
         if (opts.debugging) {
-            function throwOnGLError(err, funcName, args) {
+            var throwOnGLError = function(err, funcName, args) {
                 throw WebGLDebugUtils.glEnumToString(err) + 
                     " was caused by call to " + funcName;
-            }
+            };
             gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
         gl.viewportWidth = canvas.width;
@@ -3608,7 +3700,7 @@ Facet.init = function(canvas, opts)
         for (var i=0; i<names.length; ++i) {
             var ename = names[i];
             var listener = opts[ename];
-            if (typeof listener != "undefined")
+            if (!_.isUndefined(listener))
                 canvas.addEventListener(ename, listener, false);
         }
         var ext;
@@ -3619,7 +3711,7 @@ Facet.init = function(canvas, opts)
             // FIXME design something like progressive enhancement for these cases. HARD!
             alert("OES_texture_float is not available on your browser/computer! " +
                   "Facet will not work, sorry.");
-            throw "Insufficient GPU support";
+            throw "insufficient GPU support";
         } else {
             gl.getExtension("oes_texture_float");
         }
@@ -3628,7 +3720,7 @@ Facet.init = function(canvas, opts)
     }
     if (!gl) {
         alert("Could not initialise WebGL, sorry :-(");
-        throw "Failed initalization";
+        throw "failed initalization";
     }
 
     gl.display = function() {
@@ -3718,7 +3810,7 @@ Facet.translation = function(v)
     else if (v.length === 2) return t_3x3(v);
     else if (arguments.length === 2) return t_3x3(arguments);
 
-    throw "Invalid vector size for translation";
+    throw "invalid vector size for translation";
 };
 
 Facet.scaling = function (v)
@@ -3739,7 +3831,7 @@ Facet.scaling = function (v)
     else if (v.length === 2) return s_3x3(v);
     else if (arguments.length === 2) return s_3x3(arguments);
 
-    throw "Invalid size for scale";
+    throw "invalid size for scale";
 };
 
 Facet.rotation = function(angle, axis)
@@ -3771,6 +3863,14 @@ Facet.model = function(input)
 {
     var result = {};
     var n_elements;
+    function push_into(array, dimension) {
+        return function(el) {
+            var v = el.constant_value();
+            for (var i=0; i<dimension; ++i)
+                array.push(v[i]);
+        };
+    }
+
     for (var k in input) {
         var v = input[k];
         // First we handle the mandatory keys: "type" and "elements"
@@ -3781,7 +3881,7 @@ Facet.model = function(input)
             if (v._shade_type === 'element_buffer')
                 // example: 'elements: Facet.element_buffer(...)'
                 result.elements = Shade.make(v);
-            else if (typeOf(v) === 'array')
+            else if (facet_typeOf(v) === 'array')
                 // example: 'elements: [0, 1, 2, 3]'
                 result.elements = Shade.make(Facet.element_buffer(v));
             else
@@ -3793,19 +3893,16 @@ Facet.model = function(input)
             // example: 'vertex: Facet.attribute_buffer(...)'
             result[k] = Shade.make(v);
             n_elements = v.numItems;
-        } else if (typeOf(v) === "array") { // ... or a list of per-vertex things
+        } else if (facet_typeOf(v) === "array") { // ... or a list of per-vertex things
+            var buffer;
             // These things can be shade vecs
-            if (typeOf(v[0]) !== "array") {
+            if (facet_typeOf(v[0]) !== "array") {
                 // example: 'color: [Shade.color('white'), Shade.color('blue'), ...]
                 // assume it's a list of shade vecs, assume they all have the same dimension
                 var dimension = v[0].type.vec_dimension();
                 var new_v = [];
-                _.each(v, function(el) {
-                    var v = el.constant_value();
-                    for (var i=0; i<dimension; ++i)
-                        new_v.push(v[i]);
-                });
-                var buffer = Facet.attribute_buffer(new_v, dimension);
+                _.each(v, push_into(new_v, dimension));
+                buffer = Facet.attribute_buffer(new_v, dimension);
                 result[k] = Shade.make(buffer);
                 n_elements = buffer.numItems;
             } else {
@@ -3813,7 +3910,7 @@ Facet.model = function(input)
                 // a pair, the first element being the list, the second 
                 // being the per-element size
                 // example: 'color: [[1,0,0, 0,1,0, 0,0,1], 3]'
-                var buffer = Facet.attribute_buffer(v[0], v[1]);
+                buffer = Facet.attribute_buffer(v[0], v[1]);
                 result[k] = Shade.make(buffer);
                 n_elements = buffer.numItems;
             }
@@ -3826,9 +3923,9 @@ Facet.model = function(input)
     }
     if (!("elements" in result)) {
         // populate automatically using some sensible guess inferred from the attributes above
-        if (typeOf(n_elements) === "undefined") {
-            throw "Facet.model could not figure out how many elements are in this model; "
-                + "consider passing an 'elements' field.";
+        if (_.isUndefined(n_elements)) {
+            throw "could not figure out how many elements are in this model; "
+                + "consider passing an 'elements' field";
         } else {
             result.elements = n_elements;
         }
@@ -3840,9 +3937,9 @@ Facet.model = function(input)
 var rb;
 
 Facet.Picker = {
-    picking_mode: 0,
     draw_pick_scene: function(callback) {
-        var ctx = Facet._globals.ctx;
+        var _globals = Facet._globals;
+        var ctx = _globals.ctx;
         if (!rb) {
             rb = Facet.render_buffer({
                 width: ctx.viewportWidth,
@@ -3852,8 +3949,9 @@ Facet.Picker = {
             });
         }
 
-        callback = callback || Facet._globals.display_callback;
-        this.picking_mode = 1;
+        callback = callback || _globals.display_callback;
+        var old_scene_render_mode = _globals.batch_render_mode;
+        _globals.batch_render_mode = 1;
         try {
             rb.render_to_buffer(function() {
                 ctx.clearColor(0,0,0,0);
@@ -3861,7 +3959,7 @@ Facet.Picker = {
                 callback();
             });
         } finally {
-            this.picking_mode = 0;
+            _globals.batch_render_mode = old_scene_render_mode;
         }
     },
     pick: function(x, y) {
@@ -3898,6 +3996,10 @@ Facet.program = function(vs_src, fs_src)
         ctx.compileShader(shader);
         if (!ctx.getShaderParameter(shader, ctx.COMPILE_STATUS)) {
             alert(ctx.getShaderInfoLog(shader));
+            console.log("Error message: ");
+            console.log(ctx.getShaderInfoLog(shader));
+            console.log("Failing shader: ");
+            console.log(str);
             return null;
         }
         return shader;
@@ -3918,8 +4020,9 @@ Facet.program = function(vs_src, fs_src)
 
     var active_uniforms = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
     var array_name_regexp = /.*\[0\]/;
+    var info;
     for (var i=0; i<active_uniforms; ++i) {
-        var info = ctx.getActiveUniform(shaderProgram, i);
+        info = ctx.getActiveUniform(shaderProgram, i);
         if (array_name_regexp.test(info.name)) {
             var array_name = info.name.substr(0, info.name.length-3);
             shaderProgram[array_name] = ctx.getUniformLocation(shaderProgram, array_name);
@@ -3929,7 +4032,7 @@ Facet.program = function(vs_src, fs_src)
     }
     var active_attributes = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_ATTRIBUTES);
     for (i=0; i<active_attributes; ++i) {
-        var info = ctx.getActiveAttrib(shaderProgram, i);
+        info = ctx.getActiveAttrib(shaderProgram, i);
         shaderProgram[info.name] = ctx.getAttribLocation(shaderProgram, info.name);
     }
     return shaderProgram;    
@@ -3950,14 +4053,7 @@ Facet.render_buffer = function(opts)
     rttFramebuffer.width  = opts.width;
     rttFramebuffer.height = opts.height;
 
-    var rttTexture = ctx.createTexture();
-    rttTexture._shade_type = 'texture';
-    ctx.bindTexture(ctx.TEXTURE_2D, rttTexture);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
-    ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
-    ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, null);
+    var rttTexture = Facet.texture(opts);
 
     var renderbuffer = ctx.createRenderbuffer();
     ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderbuffer);
@@ -3971,19 +4067,15 @@ Facet.render_buffer = function(opts)
         case ctx.FRAMEBUFFER_COMPLETE:
             break;
         case ctx.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
         case ctx.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
         case ctx.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-            throw("Incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
         case ctx.FRAMEBUFFER_UNSUPPORTED:
-            throw("Incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED");
-            break;
+            throw "incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED";
         default:
-            throw("Incomplete framebuffer: " + status);
+            throw "incomplete framebuffer: " + status;
     }
 
     ctx.bindTexture(ctx.TEXTURE_2D, null);
@@ -4004,6 +4096,13 @@ Facet.render_buffer = function(opts)
             } finally {
                 ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
             }
+        },
+        make_screen_batch: function (with_texel_at_uv) {
+            var sq = Facet.Models.square();
+            return Facet.bake(sq, {
+                position: Shade.vec(sq.vertex.mul(2).sub(Shade.vec(1, 1)), 0, 1),
+                color: with_texel_at_uv(Shade.texture2D(rttTexture, sq.tex_coord), sq.tex_coord)
+            });
         }
     };
 };
@@ -4093,6 +4192,84 @@ Facet.texture = function(opts)
     }
     return texture;
 };
+(function() {
+
+var rb;
+var depth_value;
+var clear_batch;
+    
+Facet.Unprojector = {
+    draw_unproject_scene: function(callback) {
+        var _globals = Facet._globals;
+        var ctx = _globals.ctx;
+        if (!rb) {
+            rb = Facet.render_buffer({
+                width: ctx.viewportWidth,
+                height: ctx.viewportHeight,
+                TEXTURE_MAG_FILTER: ctx.NEAREST,
+                TEXTURE_MIN_FILTER: ctx.NEAREST
+            });
+        }
+        // In addition to clearing the depth buffer, we need to fill
+        // the color buffer with
+        // the right depth value. We do it via the batch below.
+
+        if (!clear_batch) {
+            var xy = Shade.make(Facet.attribute_buffer(
+                [-1, -1,   1, -1,   -1,  1,   1,  1], 2));
+            var model = Facet.model({
+                type: "triangle_strip",
+                elements: 4,
+                vertex: xy
+            });
+            depth_value = Shade.uniform("float");
+            clear_batch = Facet.bake(model, {
+                position: Shade.vec(xy, depth_value, 1.0),
+                color: Shade.vec(1,1,1,1)
+            });
+        }
+
+        callback = callback || _globals.display_callback;
+        var old_scene_render_mode = _globals.batch_render_mode;
+        _globals.batch_render_mode = 2;
+        rb.render_to_buffer(function() {
+            var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
+            var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
+            ctx.clearColor(old_clear_depth,
+                           old_clear_depth / (1 << 8),
+                           old_clear_depth / (1 << 16),
+                           old_clear_depth / (1 << 24));
+            ctx.clear(ctx.DEPTH_BUFFER_BIT | ctx.COLOR_BUFFER_BIT);
+            try {
+                callback();
+            } finally {
+                ctx.clearColor(old_clear_color[0],
+                               old_clear_color[1],
+                               old_clear_color[2],
+                               old_clear_color[3]);
+                _globals.batch_render_mode = old_scene_render_mode;
+            }
+        });
+    },
+
+    unproject: function(x, y) {
+        var ctx = Facet._globals.ctx;
+        var buf = new ArrayBuffer(4);
+        var result_bytes = new Uint8Array(4);
+        ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
+                       result_bytes);
+        rb.render_to_buffer(function() {
+            ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
+                           result_bytes);
+        });
+        return result_bytes[0] / 256 + 
+            result_bytes[1] / (1 << 16) + 
+            result_bytes[2] / (1 << 24);
+        // +  result_bytes[3] / (1 << 32);
+    }
+};
+
+})();
 Facet.Net = {};
 // based on http://calumnymmo.wordpress.com/2010/12/22/so-i-decided-to-wait/
 Facet.Net.buffer_ajax = function(url, handler)
@@ -4100,21 +4277,21 @@ Facet.Net.buffer_ajax = function(url, handler)
     var xhr = new window.XMLHttpRequest();
     var ready = false;
     xhr.onreadystatechange = function() {
-	if (xhr.readyState == 4 && xhr.status == 200
-	    && ready!=true) {
-	    if (xhr.responseType=="arraybuffer") {
+        if (xhr.readyState === 4 && xhr.status === 200
+            && ready !== true) {
+            if (xhr.responseType === "arraybuffer") {
                 handler(xhr.response, url);
-            } else if (xhr.mozResponseArrayBuffer != null) {
+            } else if (xhr.mozResponseArrayBuffer !== null) {
                 handler(xhr.mozResponseArrayBuffer, url);
-            } else if (xhr.responseText != null) {
-	        var data = new String(xhr.responseText);
-	        var ary = new Array(data.length);
-	        for (var i = 0; i <data.length; i++) {
+            } else if (xhr.responseText !== null) {
+                var data = String(xhr.responseText);
+                var ary = new Array(data.length);
+                for (var i = 0; i <data.length; i++) {
                     ary[i] = data.charCodeAt(i) & 0xff;
                 }
-	        var uint8ay = new Uint8Array(ary);
+                var uint8ay = new Uint8Array(ary);
                 handler(uint8ay.buffer, url);
-	    }
+            }
             ready = true;
         }
     };
@@ -4147,6 +4324,9 @@ Facet.Scale.Geo.latlong_to_spherical = function(lat, lon)
 // Facet.bake, in order for the batch to automatically set the capabilities.
 // This lets us specify blending, depth-testing, etc. at bake time.
 
+/* FIXME This is double dispatch done wrong. See facet.org for details.
+ */
+
 Facet.DrawingMode = {};
 Facet.DrawingMode.additive = {
     set_draw_caps: function()
@@ -4159,6 +4339,13 @@ Facet.DrawingMode.additive = {
         ctx.depthMask(false);
     },
     set_pick_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
+    },
+    set_unproject_caps: function()
     {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
@@ -4204,6 +4391,13 @@ Facet.DrawingMode.over = {
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
     }
 };
 
@@ -4215,13 +4409,19 @@ Facet.DrawingMode.over_with_depth = {
         ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
                               ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
         ctx.enable(ctx.DEPTH_TEST);
-        ctx.depthFunc(ctx.LESS);
+        ctx.depthFunc(ctx.LEQUAL);
     },
     set_pick_caps: function()
     {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
-        ctx.depthFunc(ctx.LESS);
+        ctx.depthFunc(ctx.LEQUAL);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LEQUAL);
     }
 };
 Facet.DrawingMode.standard = {
@@ -4232,11 +4432,89 @@ Facet.DrawingMode.standard = {
         ctx.depthFunc(ctx.LESS);
     },
     set_pick_caps: function()
+    { 
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+   },
+    set_unproject_caps: function()
     {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
     }
+};
+Facet.Data = {};
+// NB: Luminance float textures appear to clamp to [0,1] on Chrome 15
+// on Linux...
+
+Facet.Data.texture_table = function(table)
+{
+    var ctx = Facet._globals.ctx;
+
+    var elements = [];
+    for (var row_ix = 0; row_ix < table.data.length; ++row_ix) {
+        var row = table.data[row_ix];
+        for (var col_ix = 0; col_ix < table.number_columns.length; ++col_ix) {
+            var col_name = table.columns[table.number_columns[col_ix]];
+            var val = row[col_name];
+            if (typeof val !== "number")
+                throw "texture_table requires numeric values";
+            elements.push(val);
+            elements.push(val);
+            elements.push(val);
+            elements.push(val);
+        }
+    }
+
+    var table_ncols = table.number_columns.length;
+    var table_nrows = table.data.length;
+    var texture_width = 1;
+
+    while (4 * texture_width * texture_width < elements.length) {
+        texture_width = texture_width * 2;
+    }
+
+    var texture_height = Math.ceil(elements.length / (4 * texture_width));
+    while (elements.length < 4 * texture_height * texture_width) {
+        elements.push(0);
+        elements.push(0);
+        elements.push(0);
+        elements.push(0);
+    }
+
+    var texture = Facet.texture({
+        width: texture_width,
+        height: texture_height,
+        buffer: new Float32Array(elements),
+        type: ctx.FLOAT,
+        format: ctx.RGBA,
+        min_filter: ctx.NEAREST,
+        mag_filter: ctx.NEAREST
+    });
+
+    var index = Shade.make(function(row, col) {
+        var linear_index = row.mul(table_ncols).add(col);
+        var x = Shade.mod(linear_index, texture_width); // linear_index.sub(y.mul(texture_width));
+        var y = linear_index.div(texture_width).floor();
+        var result = Shade.vec(x, y);
+        return result;
+    });
+    var at = Shade.make(function(row, col) {
+        // returns Shade expression with value at row, col
+        var uv = index(row, col)
+            .add(Shade.vec(0.5, 0.5))
+            .div(Shade.vec(texture_width, texture_height))
+            ;
+        return Shade.texture2D(texture, uv).at(0);
+    });
+
+    return {
+        n_rows: table_nrows,
+        n_cols: table_ncols,
+        at: at,
+        index: index
+    };
 };
 /*
  * Shade is the javascript DSL for writing GLSL shaders, part of Facet.
@@ -4253,6 +4531,188 @@ var Shade = {};
 (function() {
 
 Shade.debug = false;
+// Specifying colors in shade in an easier way
+
+(function() {
+
+var css_colors = {
+    "aliceblue":            "#F0F8FF",
+    "antiquewhite":         "#FAEBD7",
+    "aqua":                 "#00FFFF",
+    "aquamarine":           "#7FFFD4",
+    "azure":                "#F0FFFF",
+    "beige":                "#F5F5DC",
+    "bisque":               "#FFE4C4",
+    "black":                "#000000",
+    "blanchedalmond":       "#FFEBCD",
+    "blue":                 "#0000FF",
+    "blueviolet":           "#8A2BE2",
+    "brown":                "#A52A2A",
+    "burlywood":            "#DEB887",
+    "cadetblue":            "#5F9EA0",
+    "chartreuse":           "#7FFF00",
+    "chocolate":            "#D2691E",
+    "coral":                "#FF7F50",
+    "cornflowerblue":       "#6495ED",
+    "cornsilk":             "#FFF8DC",
+    "crimson":              "#DC143C",
+    "cyan":                 "#00FFFF",
+    "darkblue":             "#00008B",
+    "darkcyan":             "#008B8B",
+    "darkgoldenrod":        "#B8860B",
+    "darkgray":             "#A9A9A9",
+    "darkgrey":             "#A9A9A9",
+    "darkgreen":            "#006400",
+    "darkkhaki":            "#BDB76B",
+    "darkmagenta":          "#8B008B",
+    "darkolivegreen":       "#556B2F",
+    "darkorange":           "#FF8C00",
+    "darkorchid":           "#9932CC",
+    "darkred":              "#8B0000",
+    "darksalmon":           "#E9967A",
+    "darkseagreen":         "#8FBC8F",
+    "darkslateblue":        "#483D8B",
+    "darkslategray":        "#2F4F4F",
+    "darkslategrey":        "#2F4F4F",
+    "darkturquoise":        "#00CED1",
+    "darkviolet":           "#9400D3",
+    "deeppink":             "#FF1493",
+    "deepskyblue":          "#00BFFF",
+    "dimgray":              "#696969",
+    "dimgrey":              "#696969",
+    "dodgerblue":           "#1E90FF",
+    "firebrick":            "#B22222",
+    "floralwhite":          "#FFFAF0",
+    "forestgreen":          "#228B22",
+    "fuchsia":              "#FF00FF",
+    "gainsboro":            "#DCDCDC",
+    "ghostwhite":           "#F8F8FF",
+    "gold":                 "#FFD700",
+    "goldenrod":            "#DAA520",
+    "gray":                 "#808080",
+    "grey":                 "#808080",
+    "green":                "#008000",
+    "greenyellow":          "#ADFF2F",
+    "honeydew":             "#F0FFF0",
+    "hotpink":              "#FF69B4",
+    "indianred":            "#CD5C5C",
+    "indigo":               "#4B0082",
+    "ivory":                "#FFFFF0",
+    "khaki":                "#F0E68C",
+    "lavender":             "#E6E6FA",
+    "lavenderblush":        "#FFF0F5",
+    "lawngreen":            "#7CFC00",
+    "lemonchiffon":         "#FFFACD",
+    "lightblue":            "#ADD8E6",
+    "lightcoral":           "#F08080",
+    "lightcyan":            "#E0FFFF",
+    "lightgoldenrodyellow": "#FAFAD2",
+    "lightgray":            "#D3D3D3",
+    "lightgrey":            "#D3D3D3",
+    "lightgreen":           "#90EE90",
+    "lightpink":            "#FFB6C1",
+    "lightsalmon":          "#FFA07A",
+    "lightseagreen":        "#20B2AA",
+    "lightskyblue":         "#87CEFA",
+    "lightslategray":       "#778899",
+    "lightslategrey":       "#778899",
+    "lightsteelblue":       "#B0C4DE",
+    "lightyellow":          "#FFFFE0",
+    "lime":                 "#00FF00",
+    "limegreen":            "#32CD32",
+    "linen":                "#FAF0E6",
+    "magenta":              "#FF00FF",
+    "maroon":               "#800000",
+    "mediumaquamarine":     "#66CDAA",
+    "mediumblue":           "#0000CD",
+    "mediumorchid":         "#BA55D3",
+    "mediumpurple":         "#9370D8",
+    "mediumseagreen":       "#3CB371",
+    "mediumslateblue":      "#7B68EE",
+    "mediumspringgreen":    "#00FA9A",
+    "mediumturquoise":      "#48D1CC",
+    "mediumvioletred":      "#C71585",
+    "midnightblue":         "#191970",
+    "mintcream":            "#F5FFFA",
+    "mistyrose":            "#FFE4E1",
+    "moccasin":             "#FFE4B5",
+    "navajowhite":          "#FFDEAD",
+    "navy":                 "#000080",
+    "oldlace":              "#FDF5E6",
+    "olive":                "#808000",
+    "olivedrab":            "#6B8E23",
+    "orange":               "#FFA500",
+    "orangered":            "#FF4500",
+    "orchid":               "#DA70D6",
+    "palegoldenrod":        "#EEE8AA",
+    "palegreen":            "#98FB98",
+    "paleturquoise":        "#AFEEEE",
+    "palevioletred":        "#D87093",
+    "papayawhip":           "#FFEFD5",
+    "peachpuff":            "#FFDAB9",
+    "peru":                 "#CD853F",
+    "pink":                 "#FFC0CB",
+    "plum":                 "#DDA0DD",
+    "powderblue":           "#B0E0E6",
+    "purple":               "#800080",
+    "red":                  "#FF0000",
+    "rosybrown":            "#BC8F8F",
+    "royalblue":            "#4169E1",
+    "saddlebrown":          "#8B4513",
+    "salmon":               "#FA8072",
+    "sandybrown":           "#F4A460",
+    "seagreen":             "#2E8B57",
+    "seashell":             "#FFF5EE",
+    "sienna":               "#A0522D",
+    "silver":               "#C0C0C0",
+    "skyblue":              "#87CEEB",
+    "slateblue":            "#6A5ACD",
+    "slategray":            "#708090",
+    "slategrey":            "#708090",
+    "snow":                 "#FFFAFA",
+    "springgreen":          "#00FF7F",
+    "steelblue":            "#4682B4",
+    "tan":                  "#D2B48C",
+    "teal":                 "#008080",
+    "thistle":              "#D8BFD8",
+    "tomato":               "#FF6347",
+    "turquoise":            "#40E0D0",
+    "violet":               "#EE82EE",
+    "wheat":                "#F5DEB3",
+    "white":                "#FFFFFF",
+    "whitesmoke":           "#F5F5F5",
+    "yellow":               "#FFFF00",
+    "yellowgreen":          "#9ACD32"
+};
+
+var rgb_re = / *rgb *\( *(\d+) *, *(\d+) *, *(\d+) *\) */;
+Shade.color = function(spec, alpha)
+{
+    if (_.isUndefined(alpha))
+        alpha = 1;
+    if (spec[0] === '#') {
+        if (spec.length === 4) {
+            return Shade.vec(parseInt(spec[1], 16) / 15,
+                             parseInt(spec[2], 16) / 15,
+                             parseInt(spec[3], 16) / 15, alpha);
+        } else if (spec.length == 7) {
+            return Shade.vec(parseInt(spec.substr(1,2), 16) / 255,
+                             parseInt(spec.substr(3,2), 16) / 255,
+                             parseInt(spec.substr(5,2), 16) / 255, alpha);
+        } else
+            throw "hex specifier must be either #rgb or #rrggbb";
+    }
+    var m = rgb_re.exec(spec);
+    if (m) {
+        return Shade.vec(parseInt(m[1], 10) / 255,
+                         parseInt(m[2], 10) / 255,
+                         parseInt(m[3], 10) / 255, alpha);
+    }
+    if (spec in css_colors)
+        return Shade.color(css_colors[spec], alpha);
+    throw "unrecognized color specifier " + spec;
+};
+}());
 /*
  A range expression represents a finite stream of values.
 
@@ -4278,7 +4738,7 @@ Shade.variable = function(type)
     return Shade._create_concrete_exp( {
         parents: [],
         type: type,
-        eval: function() {
+        evaluate: function() {
             return this.glsl_name;
         },
         compile: function() {}
@@ -4321,7 +4781,7 @@ Shade.range = function(range_begin, range_end)
                 parents: [this.begin, this.end, 
                           index_variable, accumulator_value, stream_value],
                 type: average_type,
-                eval: function() {
+                evaluate: function() {
                     return this.glsl_name + "()";
                 },
                 element: Shade.memoize_on_field("_element", function(i) {
@@ -4343,17 +4803,17 @@ Shade.range = function(range_begin, range_end)
                     ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
                       accumulator_value.type.zero, ";\n");
                     ctx.strings.push("    for (int",
-                      index_variable.eval(),"=",beg.eval(),";",
-                      index_variable.eval(),"<",end.eval(),";",
-                      "++",index_variable.eval(),") {\n");
+                      index_variable.evaluate(),"=",beg.evaluate(),";",
+                      index_variable.evaluate(),"<",end.evaluate(),";",
+                      "++",index_variable.evaluate(),") {\n");
                     ctx.strings.push("        ",
-                      accumulator_value.eval(),"=",
-                      accumulator_value.eval(),"+",
-                      stream_value.eval(),";\n");
+                      accumulator_value.evaluate(),"=",
+                      accumulator_value.evaluate(),"+",
+                      stream_value.evaluate(),";\n");
                     ctx.strings.push("    }\n");
                     ctx.strings.push("    return", 
-                                     this.type.repr(), "(", accumulator_value.eval(), ")/float(",
-                      end.eval(), "-", beg.eval(), ");\n");
+                                     this.type.repr(), "(", accumulator_value.evaluate(), ")/float(",
+                      end.evaluate(), "-", beg.evaluate(), ");\n");
                     ctx.strings.push("}\n");
                 }
             });
@@ -4398,51 +4858,31 @@ Shade._create_concrete = function(base, requirements)
         for (var i=0; i<requirements.length; ++i) {
             var field = requirements[i];
             if (!(field in new_obj)) {
-                throw "New expression missing " + requirements[i];
+                throw "new expression missing " + requirements[i];
             }
-            if (typeOf(new_obj[field]) === 'undefined') {
-                throw "field '" + field + "' cannot be undefined.";
+            if (_.isUndefined(new_obj[field])) {
+                throw "field '" + field + "' cannot be undefined";
             }
         }
         return Shade._create(base, new_obj);
     }
     return create_it;
-}
+};
 
 // only memoizes on value of first argument, so will fail if function
 // takes more than one argument!!
 Shade.memoize_on_field = function(field_name, fun)
 {
     return function() {
-        if (typeOf(this._caches[field_name]) === "undefined") {
+        if (_.isUndefined(this._caches[field_name])) {
             this._caches[field_name] = {};
         }
-        if (typeOf(this._caches[field_name][arguments[0]]) === "undefined") {
+        if (_.isUndefined(this._caches[field_name][arguments[0]])) {
             this._caches[field_name][arguments[0]] = fun.apply(this, arguments);
         }
         return this._caches[field_name][arguments[0]];
     };
-}
-
-function zipWith(f, l1, l2)
-{
-    var result = [];
-    var l = Math.min(l1.length, l2.length);
-    for (var i=0; i<l; ++i) {
-        result.push(f(l1[i], l2[i]));
-    }
-    return result;
-}
-
-function zipWith3(f, l1, l2, l3)
-{
-    var result = [];
-    var l = Math.min(l1.length, l2.length, l3.length);
-    for (var i=0; i<l; ++i) {
-        result.push(f(l1[i], l2[i], l3[i]));
-    }
-    return result;
-}
+};
 Shade.Types = {};
 Shade.Types.base_t = {
     is_floating: function() { return false; },
@@ -4451,18 +4891,19 @@ Shade.Types.base_t = {
     // POD = plain old data (ints, bools, floats)
     is_pod: function()      { return false; },
     is_vec: function()      { return false; },
+    is_mat: function()      { return false; },
     vec_dimension: function() { 
         throw "is_vec() === false, cannot call vec_dimension";
     },
     is_function: function() { return false; },
     is_sampler:  function() { return false; },
     equals: function(other) {
-        if (typeOf(other) === 'undefined')
-            throw "Type.equals can't be compared to undefined";
+        if (_.isUndefined(other))
+            throw "type cannot be compared to undefined";
         return this.repr() == other.repr();
     },
     swizzle: function(pattern) {
-        throw "type '" + this.repr() + "' does not support swizzling.";
+        throw "type '" + this.repr() + "' does not support swizzling";
     },
     element_type: function(i) {
         throw "invalid call: atomic expression";
@@ -4476,6 +4917,11 @@ Shade.Types.base_t = {
     // function_return_type
     // function_parameter
     // function_parameter_count
+
+    // constant_equal
+    //   constant_equal is a function that takes two parameters as produced
+    //   by the constant_value() method of an object with the given type,
+    //   and tests their equality.
 };
 Shade.basic = function(repr) { 
     function is_valid_basic_type(repr) {
@@ -4498,19 +4944,18 @@ Shade.basic = function(repr) {
              Number(repr[4]) < 5)) return true;
         // if (repr === '__auto__') return true;
         return false;
-    };
+    }
 
     if (!is_valid_basic_type(repr)) {
-        throw "invalid basic type '" + repr + "'.";
-    };
+        throw "invalid basic type '" + repr + "'";
+    }
     
     return Shade._create(Shade.Types.base_t, {
         declare: function(glsl_name) { return repr + " " + glsl_name; },
         repr: function() { return repr; },
         swizzle: function(pattern) {
-            // FIXME swizzle is for vecs only, not arrays in general.
-            if (!(this.is_array())) {
-                throw "Swizzle pattern requires array type";
+            if (!this.is_vec()) {
+                throw "swizzle requires a vec";
             }
             var base_repr = this.repr();
             var base_size = Number(base_repr[base_repr.length-1]);
@@ -4530,18 +4975,18 @@ Shade.basic = function(repr) {
                 group_res = [ /[rgba]/, /[xyzw]/, /[stpq]/ ];
                 break;
             default:
-                throw "Internal error?!";
-            };
+                throw "internal error on swizzle";
+            }
             if (!pattern.match(valid_re)) {
-                throw "Invalid swizzle pattern '" + pattern + "'.";
+                throw "invalid swizzle pattern '" + pattern + "'";
             }
             var count = 0;
             for (var i=0; i<group_res.length; ++i) {
                 if (pattern.match(group_res[i])) count += 1;
             }
             if (count != 1) {
-                throw ("Swizzle pattern '" + pattern + 
-                       "' belongs to more than one group.");
+                throw ("swizzle pattern '" + pattern + 
+                       "' belongs to more than one group");
             }
             if (pattern.length === 1) {
                 return this.array_base();
@@ -4572,14 +5017,22 @@ Shade.basic = function(repr) {
         vec_dimension: function() {
             var repr = this.repr();
             if (repr.substring(0, 3) === "vec")
-                return parseInt(repr[3]);
+                return parseInt(repr[3], 10);
             if (repr.substring(0, 4) === "ivec" ||
                 repr.substring(0, 4) === "bvec")
-                return parseInt(repr[4]);
+                return parseInt(repr[4], 10);
             if (this.repr() === 'float'
                 || this.repr() === 'int'
                 || this.repr() === 'bool')
-                return 1; // FIXME convenient, probably wrong
+                // This is convenient: assuming vec_dimension() === 1 for POD 
+                // lets me pretend floats, ints and bools are vec1, ivec1 and bvec1.
+                // 
+                // However, this might have
+                // other bad consequences I have not thought of.
+                //
+                // For example, I cannot make float_t.is_vec() be true, because
+                // this would allow sizzling from a float, which GLSL disallows.
+                return 1;
             if (!this.is_vec()) {
                 throw "is_vec() === false, cannot call vec_dimension";
             }
@@ -4605,7 +5058,7 @@ Shade.basic = function(repr) {
                 return Shade.basic("int");
             if (repr == "float")
                 return Shade.basic("float");
-            throw "datatype not array!";
+            throw "datatype not array";
         },
         size_for_vec_constructor: function() {
             var repr = this.repr();
@@ -4622,8 +5075,8 @@ Shade.basic = function(repr) {
                 return this.vec_dimension();
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")  
-                return parseInt(repr[3]);
-            throw "datatype not array!";
+                return parseInt(repr[3], 10);
+            throw "datatype not array";
         },
         is_floating: function() {
             var repr = this.repr();
@@ -4669,14 +5122,23 @@ Shade.basic = function(repr) {
                 else if (f === 'i')
                     return Shade.Types.int_t;
                 else
-                    throw "Internal error";
+                    throw "internal error";
             } else
                 // FIXME implement this
-                throw "Unimplemented for mats";
+                throw "unimplemented for mats";
+        },
+        constant_equal: function(v1, v2) {
+            if (this.is_pod())
+                return v1 === v2;
+            if (this.is_vec() || this.is_mat())
+                return _.all(_.range(v1.length), function(i) { return v1[i] === v2[i]; });
+            else
+                throw "bad type for equality comparison: " + this.repr();
         }
     });
 };
-Shade.array = function(base_type, size) {
+// FIXME should be Shade.Types.array
+Shade.Types.array = function(base_type, size) {
     return Shade._create(Shade.Types.base_t, {
         is_array: function() { return true; },
         declare: function(glsl_name) {
@@ -4747,10 +5209,10 @@ Shade.Types.function_t = function(return_type, param_types) {
 // static polymorphism
 Shade.make = function(exp)
 {
-    var t = typeOf(exp);
-    if (t === 'undefined') {
-        throw "Shade.make does not support undefined";
+    if (_.isUndefined(exp)) {
+        throw "expected a value, got undefined instead";
     }
+    var t = facet_typeOf(exp);
     if (t === 'boolean' || t === 'number') {
         return Shade.constant(exp);
     } else if (t === 'array') {
@@ -4774,7 +5236,7 @@ Shade.make = function(exp)
             return exp.apply(this, wrapped_arguments);
         };
     }
-    t = constant_type(exp);
+    t = facet_constant_type(exp);
     if (t === 'vector' || t === 'matrix') {
         return Shade.constant(exp);
     } else if (exp._shade_type === 'attribute_buffer') {
@@ -4814,7 +5276,7 @@ Shade.CompilationContext = function(compile_type) {
         //     this.min_version = Math.max(this.min_version, version);
         // },
         declare: function(decltype, glsl_name, type, declmap) {
-            if (typeof type === 'undefined') {
+            if (_.isUndefined(type)) {
                 throw "must define type";                
             }
             if (!(glsl_name in declmap)) {
@@ -4823,10 +5285,10 @@ Shade.CompilationContext = function(compile_type) {
             } else {
                 var existing_type = declmap[glsl_name];
                 if (!existing_type.equals(type)) {
-                    throw ("Compile error: Different expressions use "
+                    throw ("compile error: different expressions use "
                            + "conflicting types for '" + decltype + " " + glsl_name
                            + "': '" + existing_type.repr() + "', '"
-                           + type.repr() + "'.");
+                           + type.repr() + "'");
                 }
             }
         },
@@ -4867,7 +5329,7 @@ Shade.CompilationContext = function(compile_type) {
             this.strings.push("void main() {\n");
             for (i=0; i<this.initialization_exprs.length; ++i)
                 this.strings.push("    ", this.initialization_exprs[i], ";\n");
-            this.strings.push("    ", fun.eval(), ";\n", "}\n");
+            this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
         },
         add_initialization: function(expr) {
             this.initialization_exprs.push(expr);
@@ -4895,24 +5357,41 @@ Shade.CompilationContext = function(compile_type) {
     };
 };
 Shade.Exp = {
-    debug_print: function(indent) {
-        if (indent === undefined) indent = 0;
-        var str = "";
-        for (var i=0; i<indent; ++i) { str = str + ' '; }
-        if (this.parents.length === 0) 
-            console.log(str + "[" + this.expression_type + ":" + this.guid + "]"
-                        // + "[is_constant: " + this.is_constant() + "]"
-                        + "()");
-        else {
-            console.log(str + "[" + this.expression_type + ":" + this.guid + "]"
-                        // + "[is_constant: " + this.is_constant() + "]"
-                        + "(");
-            for (i=0; i<this.parents.length; ++i)
-                this.parents[i].debug_print(indent + 2);
-            console.log(str + ')');
-        }
+    debug_print: function(do_what) {
+        var lst = [];
+        var refs = {};
+        function _debug_print(which, indent) {
+            var i;
+            var str = new Array(indent+2).join(" "); // This is python's '" " * indent'
+            // var str = "";
+            // for (var i=0; i<indent; ++i) { str = str + ' '; }
+            if (which.parents.length === 0) 
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " ()");
+            else {
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " (");
+                for (i=0; i<which.parents.length; ++i) {
+                    if (refs[which.parents[i].guid])
+                        lst.push(str + "  {{" + which.parents[i].guid + "}}");
+                    else {
+                        _debug_print(which.parents[i], indent + 2);
+                        refs[which.parents[i].guid] = 1;
+                    }
+                }
+                lst.push(str + ')');
+            }
+        };
+        _debug_print(this, 0);
+        do_what = do_what || function(l) {
+            var s = l.join("\n");
+            console.log(s);
+        };
+        do_what(lst);
     },
-    eval: function() {
+    evaluate: function() {
         return this.glsl_name + "()";
     },
     parent_is_unconditional: function(i) {
@@ -4940,8 +5419,8 @@ Shade.Exp = {
                 return;
             }
             var parents = exp.parents;
-            if (typeOf(parents) === "undefined") {
-                throw "Internal error: expression " + exp.eval()
+            if (_.isUndefined(parents)) {
+                throw "Internal error: expression " + exp.evaluate()
                     + " has undefined parents.";
             }
             for (var i=0; i<parents.length; ++i) {
@@ -4973,7 +5452,6 @@ Shade.Exp = {
     // element access for compound expressions
 
     element: function(i) {
-        // FIXME. Why doesn't this check for is_pod and use this.at()?
         throw "invalid call: atomic expression";  
     },
 
@@ -5043,7 +5521,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.int_t,
-            value: function() { return "int(" + this.parents[0].eval() + ")"; },
+            value: function() { return "int(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -5059,7 +5537,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.bool_t,
-            value: function() { return "bool(" + this.parents[0].eval() + ")"; },
+            value: function() { return "bool(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -5075,7 +5553,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.float_t,
-            value: function() { return "float(" + this.parents[0].eval() + ")"; },
+            value: function() { return "float(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -5100,9 +5578,9 @@ Shade.Exp = {
                 case 't': return 1;
                 case 'p': return 2;
                 case 'q': return 3;
-                default: throw "Invalid swizzle pattern";
+                default: throw "invalid swizzle pattern";
                 }
-            };
+            }
             var result = [];
             for (var i=0; i<pattern.length; ++i) {
                 result.push(to_index(pattern[i]));
@@ -5115,8 +5593,8 @@ Shade.Exp = {
         return Shade._create_concrete_exp( {
             parents: [parent],
             type: parent.type.swizzle(pattern),
-            expression_type: "swizzle",
-            eval: function() { return this.parents[0].eval() + "." + pattern; },
+            expression_type: "swizzle{" + pattern + "}",
+            evaluate: function() { return this.parents[0].evaluate() + "." + pattern; },
             is_constant: Shade.memoize_on_field("_is_constant", function () {
                 var that = this;
                 return _.all(indices, function(i) {
@@ -5159,43 +5637,40 @@ Shade.Exp = {
         // this "works around" current constant index restrictions in webgl
         // look for it to get broken in the future as this hole is plugged.
         index._must_be_function_call = true;
-        // FIXME: enforce that at only takes floats or ints;
+        if (!index.type.equals(Shade.Types.float_t) &&
+            !index.type.equals(Shade.Types.int_t)) {
+            throw "at expects int or float, got '" + 
+                index.type.repr() + "' instead";
+        }
         return Shade._create_concrete_exp( {
             parents: [parent, index],
             type: parent.type.array_base(),
             expression_type: "index",
-            eval: function() { 
+            evaluate: function() { 
                 if (this.parents[1].type.is_integral()) {
-                    return this.parents[0].eval() + 
-                        "[" + this.parents[1].eval() + "]"; 
+                    return this.parents[0].evaluate() + 
+                        "[" + this.parents[1].evaluate() + "]"; 
                 } else {
-                    return this.parents[0].eval() + 
-                        "[int(" + this.parents[1].eval() + ")]"; 
+                    return this.parents[0].evaluate() + 
+                        "[int(" + this.parents[1].evaluate() + ")]"; 
                 }
             },
             is_constant: function() {
-                return (this.parents[0].is_constant() && 
-                        this.parents[1].is_constant());
+                if (!this.parents[1].is_constant())
+                    return false;
+                var ix = Math.floor(this.parents[1].constant_value());
+                return (this.parents[1].is_constant() &&
+                        this.parents[0].element_is_constant(ix));
             },
             constant_value: Shade.memoize_on_field("_constant_value", function() {
-                var a = this.parents[0].constant_value();
-                if (typeOf(a) === 'array') // this was a GLSL array of stuff
-                    return a[this.parents[1].constant_value()];
-                else { // this was a vec.
-                    if (a._type === 'vector') {
-                        return a[this.parents[1].constant_value()];
-                    } else {
-                        // FIXME: at constant_value for mats is broken.
-                        //  Lift and use matrix_row from constant.js
-                        throw "at constant_value currently broken";
-                    }
-                }
+                var ix = Math.floor(this.parents[1].constant_value());
+                return this.parents[0].element_constant_value(ix);
             }),
             // the reason for the (if x === this) checks here is that sometimes
             // the only appropriate description of an element() of an
             // opaque object (uniforms and attributes, notably) is an at() call.
-            // This means that (this.parents[0].element(ix) === this) happens
-            // sometimes, and we're stuck in an infinite loop.
+            // This means that (this.parents[0].element(ix) === this) is
+            // sometimes true, and we're stuck in an infinite loop.
             element: Shade.memoize_on_field("_element", function(i) {
                 if (!this.parents[1].is_constant()) {
                     throw "at().element cannot be called with non-constant index";
@@ -5222,7 +5697,7 @@ Shade.Exp = {
                 var ix = this.parents[1].constant_value();
                 var x = this.parents[0].element(ix);
                 if (x === this) {
-                    throw "Would have gone into an infinite loop here: internal error.";
+                    throw "internal error: would have gone into an infinite loop here.";
                 }
                 return x.element_constant_value(i);
             }),
@@ -5248,7 +5723,10 @@ Shade.Exp = {
     // around, such as the things we move around when attributes are 
     // referenced in fragment programs
     // 
-    // FIXME: it's currently easy to create bad expressions with these.
+    // NB: it's easy to create bad expressions with these.
+    //
+    // The general rule is that types should be preserved (although
+    // that might not *always* be the case)
     find_if: function(check) {
         return _.select(this.sorted_sub_expressions(), check);
     },
@@ -5286,6 +5764,14 @@ Shade.Exp = {
         return result;
     }
 };
+
+_.each(["r", "g", "b", "a",
+        "x", "y", "z", "w"], function(v) {
+            Shade.Exp[v] = function() {
+                return this.swizzle(v);
+            };
+        });
+
 Shade._create_concrete_exp = Shade._create_concrete(Shade.Exp, ["parents", "compile", "type"]);
 Shade.ValueExp = Shade._create(Shade.Exp, {
     is_constant: Shade.memoize_on_field("_is_constant", function() {
@@ -5293,8 +5779,14 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             return v.is_constant();
         });
     }),
+    element_is_constant: Shade.memoize_on_field("_element_is_constant", function(i) {
+        return this.is_constant();
+    }),
+    element_constant_value: Shade.memoize_on_field("_element_constant_value", function (i) {
+        return this.element(i).constant_value();
+    }),
     _must_be_function_call: false,
-    eval: function() {
+    evaluate: function() {
         if (this._must_be_function_call)
             return this.glsl_name + "()";
         if (this.children_count <= 1)
@@ -5303,6 +5795,15 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             return this.precomputed_value_glsl_name;
         else
             return this.glsl_name + "()";
+    },
+    element: function(i) {
+        if (this.type.is_pod()) {
+            if (i === 0)
+                return this;
+            else
+                throw this.type.repr() + " is an atomic type, got this: " + i;
+        }
+        return this.at(i);
     },
     compile: function(ctx) {
         if (this._must_be_function_call) {
@@ -5337,7 +5838,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                     ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
                     ctx.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                 } else {
-                    // don't emit anything, all is taken care by eval()
+                    // don't emit anything, all is taken care by evaluate()
                 }
             } else {
                 if (this.children_count > 1) {
@@ -5352,7 +5853,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                                        + this.precomputed_value_glsl_name + "="
                                        + this.value() + ")))");
                 } else {
-                    // don't emit anything, all is taken care by eval()
+                    // don't emit anything, all is taken care by evaluate()
                 }
             }
         }
@@ -5363,12 +5864,40 @@ Shade.swizzle = function(exp, pattern)
 {
     return Shade.make(exp).swizzle(pattern);
 };
+// Shade.constant creates a constant value in the Shade language.
+// 
+// This value can be one of:
+// - a single float: 
+//    Shade.constant(1)
+//    Shade.constant(3.0, Shade.Types.float_t)
+// - a single integer:
+//    Shade.constant(1, Shade.Types.int_t)
+// - a boolean:
+//    Shade.constant(false);
+// - a GLSL vec2, vec3 or vec4 (of floating point values):
+//    Shade.constant(2, vec.make([1, 2]));
+// - a GLSL matrix of dimensions 2x2, 3x3, 4x4 (Facet currently does not support GLSL rectangular matrices):
+//    Shade.constant(2, mat.make([1, 0, 0, 1]));
+
 Shade.constant = function(v, type)
 {
+    var mat_length_to_dimension = {16: 4, 9: 3, 4: 2, 1: 1};
+
     var constant_tuple_fun = function(type, args)
     {
         function to_glsl(type, args) {
-            return type + '(' + _.toArray(args).join(', ') + ')';
+            // this seems incredibly ugly, but we need something
+            // like it, so that numbers are appropriately promoted to floats
+            // in GLSL's syntax.
+
+            var string_args = _.map(args, function(arg) {
+                var v = String(arg);
+                if (facet_typeOf(arg) === "number" && v.indexOf(".") === -1) {
+                    return v + ".0";
+                } else
+                    return v;
+            });
+            return type + '(' + _.toArray(string_args).join(', ') + ')';
         }
 
         function matrix_row(i) {
@@ -5381,7 +5910,7 @@ Shade.constant = function(v, type)
         }
 
         return Shade._create_concrete_exp( {
-            eval: function(glsl_name) {
+            evaluate: function(glsl_name) {
                 return to_glsl(this.type.repr(), args);
             },
             expression_type: "constant{" + args + "}",
@@ -5391,8 +5920,8 @@ Shade.constant = function(v, type)
                     if (i === 0)
                         return this;
                     else
-                        throw "float is an atomic type, got this: " + i;
-                } if (this.type.is_vec()) {
+                        throw this.type.repr() + " is an atomic type, got this: " + i;
+                } else if (this.type.is_vec()) {
                     return Shade.constant(args[i]);
                 } else {
                     return Shade.vec.apply(matrix_row(i));
@@ -5423,9 +5952,9 @@ Shade.constant = function(v, type)
                 if (this.type.equals(Shade.Types.mat2) ||
                     this.type.equals(Shade.Types.mat3) ||
                     this.type.equals(Shade.Types.mat4))
-                    return mat[Math.sqrt(args.length)].make(args);
+                    return mat[mat_length_to_dimension[args.length]].make(args);
                 else
-                    throw "Internal Error: constant of unknown type";
+                    throw "internal error: constant of unknown type";
             }),
             compile: function(ctx) {},
             parents: [],
@@ -5433,46 +5962,8 @@ Shade.constant = function(v, type)
         });
     };
 
-    var t = constant_type(v);
-    if (t === 'other') {
-        t = typeOf(v);
-        if (t === 'array') {
-            var new_v = v.map(Shade.make);
-            var array_size = new_v.length;
-            if (array_size == 0) {
-                throw "array constant must be non-empty";
-            }
-            var array_type = Shade.array(new_v[0].type, array_size);
-            return Shade._create_concrete_exp( {
-                parents: new_v,
-                type: array_type,
-                expression_type: "constant",
-                eval: function() { return this.glsl_name; },
-                compile: function (ctx) {
-                    this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(this.type.declare(this.glsl_name), ";\n");
-                    ctx.strings.push("void", this.array_initializer_glsl_name, "(void) {\n");
-                    for (var i=0; i<this.parents.length; ++i) {
-                        ctx.strings.push("    ", this.glsl_name, "[", i, "] =",
-                                         this.parents[i].eval(), ";\n");
-                    };
-                    ctx.strings.push("}\n");
-                    ctx.add_initialization(this.array_initializer_glsl_name + "()");
-                },
-                element: function(i) {
-                    return this.parents[i];
-                },
-                element_is_constant: function(i) {
-                    return this.parents[i].is_constant();
-                },
-                element_constant_value: function(i) {
-                    return this.parents[i].constant_value();
-                }
-            });
-        } else {
-            throw "type error: constant should be bool, number, vector or matrix";
-        }
-    }
+    var t = facet_constant_type(v);
+    var d, computed_t;
     if (t === 'number') {
         if (type && !(type.equals(Shade.Types.float_t) ||
                       type.equals(Shade.Types.int_t))) {
@@ -5480,24 +5971,21 @@ Shade.constant = function(v, type)
                    " got " + type.repr() + " instead.");
         }
         return constant_tuple_fun(type || Shade.Types.float_t, [v]);
-    }
-    if (t === 'boolean') {
+    } else if (t === 'boolean') {
         if (type && !type.equals(Shade.Types.bool_t))
             throw ("boolean constants cannot be interpreted as " + 
                    type.repr());
         return constant_tuple_fun(Shade.Types.bool_t, [v]);
-    }
-    if (t === 'vector') {
-        var d = v.length;
+    } else if (t === 'vector') {
+        d = v.length;
         if (d < 2 && d > 4)
-            throw "Invalid length for constant vector: " + v;
-
-        var el_ts = _.map(v, function(t) { return typeOf(t); });
+            throw "invalid length for constant vector: " + v;
+        var el_ts = _.map(v, function(t) { return facet_typeOf(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
-            throw "Not all constant params have the same types;";
+            throw "not all constant params have the same types";
         }
         if (el_ts[0] === "number") {
-            var computed_t = Shade.basic('vec' + d);
+            computed_t = Shade.basic('vec' + d);
             if (type && !computed_t.equals(type)) {
                 throw "passed constant must have type " + computed_t.repr()
                     + ", but was request to have incompatible type " 
@@ -5507,35 +5995,79 @@ Shade.constant = function(v, type)
         }
         else
             throw "bad datatype for constant: " + el_ts[0];
-    }
-    if (t === 'boolean_vector') {
-        // FIXME bvecs
-        var d = v.length;
-        var computed_t = Shade.basic('bvec' + d);
+    } else if (t === 'matrix') {
+        d = mat_length_to_dimension[v.length];
+        computed_t = Shade.basic('mat' + d);
         if (type && !computed_t.equals(type)) {
             throw "passed constant must have type " + computed_t.repr()
                 + ", but was request to have incompatible type " 
                 + type.repr();
         }
         return constant_tuple_fun(computed_t, v);
+    } else {
+        throw "type error: constant should be bool, number, vector, matrix or array. got " + t
+            + " instead";
     }
-    if (t === 'matrix') {
-        var d = Math.sqrt(v.length); // FIXME UGLY
-        var computed_t = Shade.basic('mat' + d);
-        if (type && !computed_t.equals(type)) {
-            throw "passed constant must have type " + computed_t.repr()
-                + ", but was request to have incompatible type " 
-                + type.repr();
-        }
-        return constant_tuple_fun(computed_t, v);
-    }
-    throw "type error: constant_type returned bogus value?";
+    throw "internal error: facet_constant_type returned bogus value";
 };
 
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };
 Shade.as_bool = function(v) { return Shade.make(v).as_bool(); };
 Shade.as_float = function(v) { return Shade.make(v).as_float(); };
-// FIXME: Shade.set should be (name, exp), not (exp, name)
+
+
+// Shade.array denotes an array of Facet values of the same type:
+//    Shade.array([2, 3, 4, 5, 6]);
+
+Shade.array = function(v)
+{
+    var t = facet_typeOf(v);
+    if (t === 'array') {
+        var new_v = v.map(Shade.make);
+        var array_size = new_v.length;
+        if (array_size === 0) {
+            throw "array constant must be non-empty";
+        }
+
+        var new_types = new_v.map(function(t) { return t.type; });
+        var array_type = Shade.Types.array(new_types[0], array_size);
+        if (_.any(new_types, function(t) { return !t.equals(new_types[0]); })) {
+            throw "array elements must have identical types";
+        }
+        // if (_.any(new_v, function(el) { return !el.is_constant(); })) {
+        //     throw "constant array elements must be constant as well";
+        // }
+        return Shade._create_concrete_exp( {
+            parents: new_v,
+            type: array_type,
+            expression_type: "constant",
+            evaluate: function() { return this.glsl_name; },
+            compile: function (ctx) {
+                this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
+                ctx.strings.push(this.type.declare(this.glsl_name), ";\n");
+                ctx.strings.push("void", this.array_initializer_glsl_name, "(void) {\n");
+                for (var i=0; i<this.parents.length; ++i) {
+                    ctx.strings.push("    ", this.glsl_name, "[", i, "] =",
+                                     this.parents[i].evaluate(), ";\n");
+                }
+                ctx.strings.push("}\n");
+                ctx.add_initialization(this.array_initializer_glsl_name + "()");
+            },
+            is_constant: function() { return false; }, 
+            element: function(i) {
+                return this.parents[i];
+            },
+            element_is_constant: function(i) {
+                return this.parents[i].is_constant();
+            },
+            element_constant_value: function(i) {
+                return this.parents[i].constant_value();
+            }
+        });
+    } else {
+        throw "type error: need array";
+    }
+};
 Shade.set = function(exp, name)
 {
     exp = Shade.make(exp);
@@ -5558,16 +6090,16 @@ Shade.set = function(exp, name)
             if ((ctx.compile_type !== Shade.VERTEX_PROGRAM_COMPILE) &&
                 (name !== "gl_FragColor") &&
                 (name.substring(0, 11) !== "gl_FragData")) {
-                throw ("The only allowed output variables on a fragment"
+                throw ("the only allowed output variables on a fragment"
                        + " shader are gl_FragColor and gl_FragData[]");
             }
             if (name !== "gl_FragColor" &&
                 name !== "gl_Position" &&
                 name !== "gl_PointSize" &&
-                !(name.substring(0, 11) == "gl_FragData")) {
+                name.substring(0, 11) !== "gl_FragData") {
                 ctx.declare_varying(name, type);
             }
-            ctx.void_function(this, "(", name, "=", this.parents[0].eval(), ")");
+            ctx.void_function(this, "(", name, "=", this.parents[0].evaluate(), ")");
         },
         type: Shade.basic('void'),
         parents: [exp]
@@ -5589,11 +6121,11 @@ Shade.uniform = function(type, v)
     ];
 
     var uniform_name = Shade.unique_name();
-    if (typeof type === 'undefined') throw "uniform requires type";
+    if (_.isUndefined(type)) throw "uniform requires type";
     if (typeof type === 'string') type = Shade.basic(type);
     var value;
     var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
-    if (typeof call !== 'undefined') {
+    if (!_.isUndefined(call)) {
         call = call[1];
     } else {
         throw "Unsupported type " + type.repr() + " for uniform.";
@@ -5602,7 +6134,7 @@ Shade.uniform = function(type, v)
         parents: [],
         type: type,
         expression_type: 'uniform',
-        eval: function() {
+        evaluate: function() {
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
             } else
@@ -5626,9 +6158,12 @@ Shade.uniform = function(type, v)
                 ctx.value_function(this, this.precomputed_value_glsl_name);
             }
         },
-        // FIXME: type checking
         set: function(v) {
-            var t = constant_type(v);
+            // Ideally, we'd like to do type checking here, but I'm concerned about
+            // performance implications. setting a uniform might be a hot path
+            // then again, facet_constant_type is unlikely to be particularly fast.
+            // FIXME check performance
+            var t = facet_constant_type(v);
             if (t === "shade_expression")
                 v = v.constant_value();
             value = v;
@@ -5663,7 +6198,7 @@ Shade.attribute_from_buffer = function(buffer)
         var itemTypeMap = [ undefined, Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec3, Shade.Types.vec4 ];
         var itemType = itemTypeMap[buffer.itemSize];
         var itemName;
-        if (typeof buffer._shade_name === 'undefined') {
+        if (_.isUndefined(buffer._shade_name)) {
             itemName = Shade.unique_name();
             buffer._shade_name = itemName;
         } else {
@@ -5678,7 +6213,7 @@ Shade.attribute_from_buffer = function(buffer)
 
 Shade.attribute = function(name, type)
 {
-    if (typeof type === 'undefined') throw "attribute requires type";
+    if (_.isUndefined(type)) throw "attribute requires type";
     if (typeof type === 'string') type = Shade.basic(type);
     return Shade._create_concrete_exp( {
         parents: [],
@@ -5693,7 +6228,7 @@ Shade.attribute = function(name, type)
             } else
                 return this.at(i);
         }),
-        eval: function() { 
+        evaluate: function() { 
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
             } else
@@ -5710,11 +6245,22 @@ Shade.attribute = function(name, type)
         }
     });
 };
-// FIXME: typechecking
 Shade.varying = function(name, type)
 {
-    if (typeof type === 'undefined') throw "varying requires type";
-    if (typeof type === 'string') type = Shade.basic(type);
+    if (_.isUndefined(type)) throw "varying requires type";
+    if (facet_typeOf(type) === 'string') type = Shade.basic(type);
+    var allowed_types = [
+        Shade.Types.float_t,
+        Shade.Types.vec2,
+        Shade.Types.vec3,
+        Shade.Types.vec4,
+        Shade.Types.mat2,
+        Shade.Types.mat3,
+        Shade.Types.mat4
+    ];
+    if (!_.any(allowed_types, function(t) { return t.equals(type); })) {
+        throw "varying does not support type '" + type.repr() + "'";
+    }
     return Shade._create_concrete_exp( {
         parents: [],
         type: type,
@@ -5728,28 +6274,43 @@ Shade.varying = function(name, type)
             } else
                 return this.at(i);
         }),
-        eval: function() { return name; },
+        evaluate: function() { return name; },
         compile: function(ctx) {
             ctx.declare_varying(name, this.type);
         }
     });
 };
 
+Shade.fragCoord = function() {
+    return Shade._create_concrete_exp({
+        expression_type: "builtin_input{gl_FragCoord}",
+        parents: [],
+        type: Shade.Types.vec4,
+        evaluate: function() { return "gl_FragCoord"; },
+        compile: function(ctx) {
+        }
+    });
+};
 Shade.pointCoord = function() {
     return Shade._create_concrete_exp({
         expression_type: "builtin_input{gl_PointCoord}",
         parents: [],
         type: Shade.Types.vec2,
-        eval: function() { return "gl_PointCoord"; },
+        evaluate: function() { return "gl_PointCoord"; },
         compile: function(ctx) {
         }
     });
+};
+Shade.round_dot = function(color) {
+    var outside_dot = Shade.pointCoord().sub(Shade.vec(0.5, 0.5)).length().gt(0.25);
+    return Shade.make(color).discard_if(outside_dot);
 };
 (function() {
 
 var operator = function(exp1, exp2, 
                         operator_name, type_resolver,
-                        constant_evaluator)
+                        constant_evaluator,
+                        element_evaluator)
 {
     var resulting_type = type_resolver(exp1.type, exp2.type);
     return Shade._create_concrete_value_exp( {
@@ -5757,24 +6318,20 @@ var operator = function(exp1, exp2,
         type: resulting_type,
         expression_type: "operator" + operator_name,
         value: function () {
-            return "(" + this.parents[0].eval() + " " + operator_name + " " +
-                this.parents[1].eval() + ")";
+            return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
+                this.parents[1].evaluate() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return constant_evaluator(this);
         }),
         element: Shade.memoize_on_field("_element", function(i) {
-            return operator(this.parents[0].element(i),
-                            this.parents[1].element(i),
-                            operator_name, type_resolver,
-                            constant_evaluator);
+            return element_evaluator(this, i);
         }),
         element_constant_value: Shade.memoize_on_field("_element_constant_value", function(i) {
             return this.element(i).constant_value();
         }),
         element_is_constant: Shade.memoize_on_field("_element_is_constant", function(i) {
-            return (this.parents[0].element_is_constant(i) &&
-                    this.parents[1].element_is_constant(i));
+            return this.element(i).is_constant();
         })
     });
 };
@@ -5816,7 +6373,7 @@ Shade.add = function() {
                 return type_list[i][2];
         throw ("type mismatch on add: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
-    };
+    }
     var current_result = Shade.make(arguments[0]);
     function evaluator(exp) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
@@ -5842,9 +6399,30 @@ Shade.add = function() {
             });
         return vt.plus(v1, v2);
     }
+    function element_evaluator(exp, i) {
+        var e1 = exp.parents[0], e2 = exp.parents[1];
+        var v1, v2;
+        var t1 = e1.type, t2 = e2.type;
+        if (t1.is_pod() && t2.is_pod()) {
+            if (i === 0)
+                return exp;
+            else
+                throw "i > 0 in pod element";
+        }
+        if (e1.type.is_vec() || e1.type.is_mat())
+            v1 = e1.element(i);
+        else
+            v1 = e1;
+        if (e2.type.is_vec() || e2.type.is_vec())
+            v2 = e2.element(i);
+        else
+            v2 = e2;
+        return operator(v1, v2, "+", add_type_resolver, evaluator, element_evaluator);
+    }
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "+", add_type_resolver, evaluator);
+                                  "+", add_type_resolver, evaluator,
+                                  element_evaluator);
     }
     return current_result;
 };
@@ -5886,7 +6464,7 @@ Shade.sub = function() {
                 return type_list[i][2];
         throw ("type mismatch on sub: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
-    };
+    }
     function evaluator(exp) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
         var vt;
@@ -5911,10 +6489,31 @@ Shade.sub = function() {
             });
         return vt.minus(v1, v2);
     }
+    function element_evaluator(exp, i) {
+        var e1 = exp.parents[0], e2 = exp.parents[1];
+        var v1, v2;
+        var t1 = e1.type, t2 = e2.type;
+        if (t1.is_pod() && t2.is_pod()) {
+            if (i === 0)
+                return exp;
+            else
+                throw "i > 0 in pod element";
+        }
+        if (e1.type.is_vec() || e1.type.is_mat())
+            v1 = e1.element(i);
+        else
+            v1 = e1;
+        if (e2.type.is_vec() || e2.type.is_vec())
+            v2 = e2.element(i);
+        else
+            v2 = e2;
+        return operator(v1, v2, "-", sub_type_resolver, evaluator, element_evaluator);
+    }
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "-", sub_type_resolver, evaluator);
+                                  "-", sub_type_resolver, evaluator,
+                                  element_evaluator);
     }
     return current_result;
 };
@@ -5922,10 +6521,10 @@ Shade.sub = function() {
 Shade.div = function() {
     if (arguments.length === 0) throw "div needs at least two arguments";
     function div_type_resolver(t1, t2) {
-        if (typeof t1 === 'undefined')
-            throw "t1 multiplication with undefined type?";
-        if (typeof t2 === 'undefined')
-            throw "t2 multiplication with undefined type?";
+        if (_.isUndefined(t1))
+            throw "internal error: t1 multiplication with undefined type";
+        if (_.isUndefined(t2))
+            throw "internal error: t2 multiplication with undefined type";
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4],
@@ -5955,9 +6554,9 @@ Shade.div = function() {
             if (t1.equals(type_list[i][0]) &&
                 t2.equals(type_list[i][1]))
                 return type_list[i][2];
-        throw ("type mismatch on div: unexpected types  '"
-                   + t1.repr() + "' and '" + t2.repr() + "'.");
-    };
+        throw ("type mismatch on div: unexpected types '"
+                   + t1.repr() + "' and '" + t2.repr() + "'");
+    }
     function evaluator(exp) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];
@@ -5970,8 +6569,8 @@ Shade.div = function() {
         } else if (exp2.type.is_array()) {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
-        };
-        var t1 = constant_type(v1), t2 = constant_type(v2);
+        }
+        var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { return x / y; },
                       vector: function (x, y) { 
@@ -5992,24 +6591,44 @@ Shade.div = function() {
                           });
                       },
                       matrix: function (x, y) {
-                          throw "internal error, can't eval vector/matrix";
+                          throw "internal error, can't evaluate vector/matrix";
                       }
                     },
             matrix: { number: function (x, y) { return mt.scaling(x, 1/y); },
                       vector: function (x, y) { 
-                          throw "internal error, can't eval matrix/vector";
+                          throw "internal error, can't evaluate matrix/vector";
                       },
                       matrix: function (x, y) { 
-                          throw "internal error, can't eval matrix/matrix";
+                          throw "internal error, can't evaluate matrix/matrix";
                       }
                     }
         };
         return dispatch[t1][t2](v1, v2);
     }
+    function element_evaluator(exp, i) {
+        var e1 = exp.parents[0], e2 = exp.parents[1];
+        var v1, v2;
+        var t1 = e1.type, t2 = e2.type;
+        if (t1.is_pod() && t2.is_pod()) {
+            if (i === 0)
+                return exp;
+            else
+                throw "i > 0 in pod element";
+        }
+        if (e1.type.is_vec() || e1.type.is_mat())
+            v1 = e1.element(i);
+        else
+            v1 = e1;
+        if (e2.type.is_vec() || e2.type.is_vec())
+            v2 = e2.element(i);
+        else
+            v2 = e2;
+        return operator(v1, v2, "/", div_type_resolver, evaluator, element_evaluator);
+    }
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "/", div_type_resolver, evaluator);
+                                  "/", div_type_resolver, evaluator, element_evaluator);
     }
     return current_result;
 };
@@ -6018,9 +6637,9 @@ Shade.mul = function() {
     if (arguments.length === 0) throw "mul needs at least one argument";
     if (arguments.length === 1) return arguments[0];
     function mul_type_resolver(t1, t2) {
-        if (typeof t1 === 'undefined')
+        if (_.isUndefined(t1))
             throw "t1 multiplication with undefined type?";
-        if (typeof t2 === 'undefined')
+        if (_.isUndefined(t2))
             throw "t2 multiplication with undefined type?";
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
@@ -6061,7 +6680,7 @@ Shade.mul = function() {
                 return type_list[i][2];
         throw ("type mismatch on mul: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
-    };
+    }
     function evaluator(exp) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];
@@ -6075,7 +6694,7 @@ Shade.mul = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         }
-        var t1 = constant_type(v1), t2 = constant_type(v2);
+        var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },
@@ -6096,10 +6715,93 @@ Shade.mul = function() {
         };
         return dispatch[t1][t2](v1, v2);
     }
+    function element_evaluator(exp, i) {
+        var e1 = exp.parents[0], e2 = exp.parents[1];
+        var v1, v2;
+        var t1 = e1.type, t2 = e2.type;
+        if (t1.is_pod() && t2.is_pod()) {
+            if (i === 0)
+                return exp;
+            else
+                throw "i > 0 in pod element";
+        }
+        function value_kind(t) {
+            if (t.is_pod())
+                return "pod";
+            if (t.is_vec())
+                return "vec";
+            if (t.is_mat())
+                return "mat";
+            throw "internal error: not pod, vec or mat";
+        }
+        var k1 = value_kind(t1), k2 = value_kind(t2);
+        var dispatch = {
+            "pod": { 
+                "pod": function() { 
+                    throw "internal error, pod pod"; 
+                },
+                "vec": function() { 
+                    v1 = e1; v2 = e2.element(i); 
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                },
+                "mat": function() { 
+                    v1 = e1; v2 = e2.element(i); 
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                }
+            },
+            "vec": { 
+                "pod": function() { 
+                    v1 = e1.element(i); v2 = e2; 
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                },
+                "vec": function() { 
+                    v1 = e1.element(i); v2 = e2.element(i); 
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                },
+                "mat": function() {
+                    // FIXME should we have a mat_dimension?
+                    return Shade.dot(e1, e2.element(i));
+                }
+            },
+            "mat": { 
+                "pod": function() { 
+                    v1 = e1.element(i); v2 = e2;
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                },
+                "vec": function() {
+                    // FIXME should we have a mat_dimension?
+                    var d = t1.array_size();
+                    var row;
+                    if (d === 2) {
+                        row = Shade.vec(e1.element(0).element(i),
+                                        e1.element(1).element(i));
+                    } else if (d === 3) {
+                        row = Shade.vec(e1.element(0).element(i),
+                                        e1.element(1).element(i),
+                                        e1.element(2).element(i));
+                    } else if (d === 4) {
+                        row = Shade.vec(e1.element(0).element(i),
+                                        e1.element(1).element(i),
+                                        e1.element(2).element(i),
+                                        e1.element(3).element(i));
+                    } else
+                        throw "bad dimension for mat " + d;
+                    return Shade.dot(row, e2);
+                    // var row = e1.element(i);
+                    // return Shade.dot(row, e2);
+                },
+                "mat": function() {
+                    var col = e2.element(i);
+                    return operator(e1, col, "*", mul_type_resolver, evaluator, element_evaluator);
+                }
+            }
+        };
+        return dispatch[k1][k2]();
+    };
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "*", mul_type_resolver, evaluator);
+                                  "*", mul_type_resolver, evaluator, element_evaluator);
     }
     return current_result;
 };
@@ -6120,7 +6822,7 @@ Shade.vec = function()
         var arg = Shade.make(arguments[i]);
         parents.push(arg);
         parent_offsets.push(total_size);
-        if (typeOf(vec_type) === 'undefined')
+        if (_.isUndefined(vec_type))
             vec_type = arg.type.element_type(0);
         else if (!vec_type.equals(arg.type.element_type(0)))
             throw "vec requires equal types";
@@ -6129,7 +6831,7 @@ Shade.vec = function()
     parent_offsets.push(total_size);
     if (total_size < 1 || total_size > 4) {
         throw "vec constructor requires resulting width to be between "
-            + "1 and 4, got " + total_size + " instead.";
+            + "1 and 4, got " + total_size + " instead";
     }
     var type;
     if (vec_type.equals(Shade.Types.float_t)) {
@@ -6139,7 +6841,7 @@ Shade.vec = function()
     } else if (vec_type.equals(Shade.Types.bool_t)) {
         type = Shade.basic("bvec" + total_size);
     } else {
-        throw "vec type must be bool, int, or float.";
+        throw "vec type must be bool, int, or float";
     }
     
     return Shade._create_concrete_value_exp({
@@ -6156,7 +6858,7 @@ Shade.vec = function()
                     return this.parents[j].element(i);
                 i = i - sz;
             }
-            throw "Element " + old_i + " out of bounds (size=" 
+            throw "element " + old_i + " out of bounds (size=" 
                 + total_size + ")";
         },
         element_is_constant: function(i) {
@@ -6167,7 +6869,7 @@ Shade.vec = function()
                     return this.parents[j].element_is_constant(i);
                 i = i - sz;
             }
-            throw "Element " + old_i + " out of bounds (size=" 
+            throw "element " + old_i + " out of bounds (size=" 
                 + total_size + ")";
         },
         element_constant_value: function(i) {
@@ -6178,14 +6880,14 @@ Shade.vec = function()
                     return this.parents[j].element_constant_value(i);
                 i = i - sz;
             }
-            throw "Element " + old_i + " out of bounds (size=" 
+            throw "element " + old_i + " out of bounds (size=" 
                 + total_size + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function () {
             var result = [];
             var parent_values = _.each(this.parents, function(v) {
                 var c = v.constant_value();
-                if (typeOf(c) === 'number')
+                if (facet_typeOf(c) === 'number')
                     result.push(c);
                 else
                     for (var i=0; i<c.length; ++i)
@@ -6196,7 +6898,7 @@ Shade.vec = function()
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) {
-                    return t.eval();
+                    return t.evaluate();
                 }).join(", ") + ")";
         }
     });
@@ -6224,7 +6926,7 @@ Shade.mat = function()
 
     if (rows < 1 || rows > 4) {
         throw "mat constructor requires resulting dimension to be between "
-            + "2 and 4.";
+            + "2 and 4";
     }
     var type = Shade.basic("mat" + rows);
     return Shade._create_concrete_value_exp( {
@@ -6254,7 +6956,7 @@ Shade.mat = function()
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) { 
-                    return t.eval(); 
+                    return t.evaluate(); 
                 }).join(", ") + ")";
         }
     });
@@ -6274,7 +6976,7 @@ Shade.mat3 = function(m)
                          m.element(1).swizzle("xyz"),
                          m.element(2).swizzle("xyz"));
     } else {
-        throw "mat3: need matrix to convert to mat3";
+        throw "need matrix to convert to mat3";
     }
 };
 // per_vertex is an identity operation value-wise, but it tags the AST
@@ -6287,23 +6989,41 @@ Shade.per_vertex = function(exp)
         parents: [exp],
         type: exp.type,
         stage: "vertex",
-        eval: function() { return this.parents[0].eval(); },
+        evaluate: function() { return this.parents[0].evaluate(); },
         compile: function () {}
     });
 };
 (function() {
 
+function zipWith(f, v1, v2)
+{
+    return _.map(_.zip(v1, v2),
+                 function(v) { return f(v[0], v[1]); });
+}
+
+function zipWith3(f, v1, v2, v3)
+{
+    return _.map(_.zip(v1, v2, v3),
+                 function(v) { return f(v[0], v[1], v[2]); });
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // common functions
 
-function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
+function builtin_glsl_function(opts)
 {
+    var name = opts.name;
+    var type_resolving_list = opts.type_resolving_list;
+    var constant_evaluator = opts.constant_evaluator;
+    var element_evaluator = opts.element_evaluator;
+
     for (var i=0; i<type_resolving_list.length; ++i)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
             var t = type_resolving_list[i][j];
-            if (typeof(t) === 'undefined')
+            if (_.isUndefined(t))
                 throw "undefined type in type_resolver";
         }
+
     // takes a list of lists of possible argument types, returns a function to 
     // resolve those types.
     function type_resolver_from_list(lst)
@@ -6328,82 +7048,77 @@ function builtin_glsl_function(name, type_resolving_list, constant_evaluator)
             }
             var types = _.map(_.toArray(arguments).slice(0, arguments.length),
                   function(x) { return x.type.repr(); }).join(", ");
-            throw "Could not find appropriate type match for (" + types + ")";
+            throw "could not find appropriate type match for (" + types + ")";
         };
     }
 
-    var resolver = type_resolver_from_list(type_resolving_list);
-    if (constant_evaluator) {
-        return function() {
-            var type, canon_args = [];
-            for (var i=0; i<arguments.length; ++i) {
-                canon_args.push(Shade.make(arguments[i]));
+    return function() {
+        var resolver = type_resolver_from_list(type_resolving_list);
+        var type, canon_args = [];
+        for (i=0; i<arguments.length; ++i) {
+            canon_args.push(Shade.make(arguments[i]));
+        }
+        try {
+            type = resolver.apply(this, canon_args);
+        } catch (err) {
+            throw "type error on " + name + ": " + err;
+        }
+        var obj = {
+            parents: canon_args,
+            expression_type: "builtin_function{" + name + "}",
+            type: type,
+            value: function() {
+                return [name, "(",
+                        this.parents.map(function(t) { 
+                            return t.evaluate(); 
+                        }).join(", "),
+                        ")"].join(" ");
             }
-            try {
-                type = resolver.apply(this, canon_args);
-            } catch (err) {
-                throw "type error on " + name + ": " + err;
-            }
-            return Shade._create_concrete_value_exp( {
-                parents: canon_args,
-                type: type,
-                expression_type: "builtin_function{" + name + "}",
-                value: function() {
-                    return [name, "(",
-                            this.parents.map(function(t) { 
-                                return t.eval(); 
-                            }).join(", "),
-                            ")"].join(" ");
-                },
-                constant_value: Shade.memoize_on_field("_constant_value", function() {
-                    return constant_evaluator(this);
-                })
-            });
         };
-    } else {
-        return function() {
-            var type, canon_args = [];
-            for (var i=0; i<arguments.length; ++i) {
-                canon_args.push(Shade.make(arguments[i]));
-            }
-            try {
-                type = resolver.apply(this, canon_args);
-            } catch (err) {
-                throw "type error on " + name + ": " + err;
-            }
-            return Shade._create_concrete_value_exp( {
-                parents: canon_args,
-                expression_type: "builtin_function{" + name + "}",
-                type: type,
-                value: function() {
-                    return [name, "(",
-                            this.parents.map(function(t) { 
-                                return t.eval(); 
-                            }).join(", "),
-                            ")"].join(" ");
-                },
-                is_constant: function() { return false; }
+
+        if (constant_evaluator) {
+            obj.constant_value = Shade.memoize_on_field("_constant_value", function() {
+                return constant_evaluator(this);
             });
+        } else {
+            obj.is_constant = function() { return false; };
         };
-    }
-};
+        if (element_evaluator) {
+            obj.element = function(i) {
+                return element_evaluator(this, i);
+            };
+            obj.element_is_constant = function(i) {
+                return this.element(i).is_constant();
+            };
+        }
+        return Shade._create_concrete_value_exp(obj);
+    };
+}
 
 function common_fun_1op(fun_name, constant_evaluator) {
-    return builtin_glsl_function(fun_name, [
-        [Shade.Types.float_t, Shade.Types.float_t],
-        [Shade.Types.vec2, Shade.Types.vec2],
-        [Shade.Types.vec3, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4]
-    ], constant_evaluator);
+    return builtin_glsl_function({
+        name: fun_name, 
+        type_resolving_list: [
+            [Shade.Types.float_t, Shade.Types.float_t],
+            [Shade.Types.vec2, Shade.Types.vec2],
+            [Shade.Types.vec3, Shade.Types.vec3],
+            [Shade.Types.vec4, Shade.Types.vec4]
+        ], 
+        constant_evaluator: constant_evaluator
+    });
 }
 
 function common_fun_2op(fun_name, constant_evaluator) {
-    return builtin_glsl_function(fun_name, [
-        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-        [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
-        [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
-    ], constant_evaluator);
+    return builtin_glsl_function({
+        name: fun_name, 
+        type_resolving_list: [
+            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
+            [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
+            [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
+            [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
+        ], 
+        constant_evaluator: constant_evaluator
+    });
 }
 
 // angle and trig, some common, some exponential,
@@ -6439,7 +7154,7 @@ _.each(funcs_1op, function (constant_evaluator_1, fun_name) {
             var c = exp.parents[0].constant_value();
             return vec.map(c, constant_evaluator_1);
         }
-    };
+    }
     Shade[fun_name] = common_fun_1op(fun_name, constant_evaluator);
     Shade.Exp[fun_name] = function(fun) {
         return function() {
@@ -6488,9 +7203,16 @@ function atan()
     }
 }
 
+function broadcast_elements(exp, i) {
+    return _.map(exp.parents, function(parent) {
+        return parent.type.is_vec() ? parent.element(i) : parent;
+    });
+}
+
 Shade.atan = atan;
 Shade.Exp.atan = function() { return Shade.atan(this); };
 Shade.pow = common_fun_2op("pow", common_fun_2op_constant_evaluator(Math.pow));
+Shade.Exp.pow = function(other) { return Shade.pow(this, other); };
 
 function mod_min_max_constant_evaluator(op) {
     return function(exp) {
@@ -6516,17 +7238,25 @@ _.each({
     "min": Math.min,
     "max": Math.max
 }, function(op, k) {
-    Shade[k] = builtin_glsl_function(k, [
-        [Shade.Types.int_t,    Shade.Types.int_t,   Shade.Types.int_t],
-        [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
-        [Shade.Types.vec2,     Shade.Types.vec2,    Shade.Types.vec2],
-        [Shade.Types.vec3,     Shade.Types.vec3,    Shade.Types.vec3],
-        [Shade.Types.vec4,     Shade.Types.vec4,    Shade.Types.vec4],
-        [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
-        [Shade.Types.vec2,     Shade.Types.float_t, Shade.Types.vec2],
-        [Shade.Types.vec3,     Shade.Types.float_t, Shade.Types.vec3],
-        [Shade.Types.vec4,     Shade.Types.float_t, Shade.Types.vec4]
-    ], mod_min_max_constant_evaluator(op));
+    var result = builtin_glsl_function({
+        name: k, 
+        type_resolving_list: [
+            [Shade.Types.int_t,    Shade.Types.int_t,   Shade.Types.int_t],
+            [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
+            [Shade.Types.vec2,     Shade.Types.vec2,    Shade.Types.vec2],
+            [Shade.Types.vec3,     Shade.Types.vec3,    Shade.Types.vec3],
+            [Shade.Types.vec4,     Shade.Types.vec4,    Shade.Types.vec4],
+            [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
+            [Shade.Types.vec2,     Shade.Types.float_t, Shade.Types.vec2],
+            [Shade.Types.vec3,     Shade.Types.float_t, Shade.Types.vec3],
+            [Shade.Types.vec4,     Shade.Types.float_t, Shade.Types.vec4]
+        ], 
+        constant_evaluator: mod_min_max_constant_evaluator(op),
+        element_evaluator: function(exp, i) {
+            return result.apply(this, broadcast_elements(exp, i));
+        }
+    });
+    Shade[k] = result;
 });
 
 function clamp_constant_evaluator(exp)
@@ -6551,16 +7281,23 @@ function clamp_constant_evaluator(exp)
             return clamp(v, v2, v3);
         });
     }
-};
-var clamp = builtin_glsl_function("clamp", [
-    [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-    [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
-    [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
-    [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
-    [Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec2],
-    [Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec3],
-    [Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4]], 
-                                  clamp_constant_evaluator);
+}
+
+var clamp = builtin_glsl_function({
+    name: "clamp", 
+    type_resolving_list: [
+        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
+        [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
+        [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
+        [Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec2],
+        [Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec3],
+        [Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4]], 
+    constant_evaluator: clamp_constant_evaluator,
+    element_evaluator: function (exp, i) {
+        return Shade.clamp.apply(this, broadcast_elements(exp, i));
+    }
+});
 
 Shade.clamp = clamp;
 
@@ -6586,25 +7323,34 @@ function mix_constant_evaluator(exp)
     }
 }
 
-var mix = builtin_glsl_function("mix", [
-    [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-    [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
-    [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
-    [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
-    [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.vec2],
-    [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.vec3],
-    [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.vec4]],
-                               mix_constant_evaluator);
+var mix = builtin_glsl_function({ 
+    name: "mix", 
+    type_resolving_list: [
+        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
+        [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
+        [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
+        [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.vec2],
+        [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.vec3],
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.vec4]],
+    constant_evaluator: mix_constant_evaluator,
+    element_evaluator: function(exp, i) {
+        return Shade.mix.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.mix = mix;
 
-var step = builtin_glsl_function("step", [
-    [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-    [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
-    [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
-    [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
-    [Shade.Types.float_t, Shade.Types.vec2,    Shade.Types.vec2],
-    [Shade.Types.float_t, Shade.Types.vec3,    Shade.Types.vec3],
-    [Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]], function(exp) {
+var step = builtin_glsl_function({
+    name: "step", 
+    type_resolving_list: [
+        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
+        [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
+        [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
+        [Shade.Types.float_t, Shade.Types.vec2,    Shade.Types.vec2],
+        [Shade.Types.float_t, Shade.Types.vec3,    Shade.Types.vec3],
+        [Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]], 
+    constant_evaluator: function(exp) {
         function step(edge, x) {
             if (x < edge) return 0.0; else return 1.0;
         }
@@ -6621,64 +7367,67 @@ var step = builtin_glsl_function("step", [
                 return step(v1, v);
             });
         }
-    });
+    }});
 Shade.step = step;
 
-var smoothstep = builtin_glsl_function
-    ("smoothstep", [
+var smoothstep = builtin_glsl_function({
+    name: "smoothstep", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.vec2],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.vec3],
         [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.vec4],
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec2,    Shade.Types.vec2],
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec3,    Shade.Types.vec3],
-        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]
-    ], function(exp) {
+        [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]], 
+    constant_evaluator: function(exp) {
         var edge0 = exp.parents[0];
         var edge1 = exp.parents[1];
         var x = exp.parents[2];
         var t = Shade.clamp(x.sub(edge0).div(edge1.sub(edge0)), 0, 1);
         return t.mul(t).mul(Shade.sub(3, t.mul(2))).constant_value();
-    });
+    }, element_evaluator: function(exp, i) {
+        return Shade.smoothstep.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.smoothstep = smoothstep;
 
-var length = builtin_glsl_function(
-    "length", 
-    [
+var length = builtin_glsl_function({
+    name: "length", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.float_t],
-        [Shade.Types.vec4,    Shade.Types.float_t]
-    ], function(exp) {
+        [Shade.Types.vec4,    Shade.Types.float_t]], 
+    constant_evaluator: function(exp) {
         var v = exp.parents[0].constant_value();
         if (exp.parents[0].type.equals(Shade.Types.float_t))
             return v * v;
         else
             return vec.length(v);
-    });
+    }});
 Shade.length = length;
 
-var distance = builtin_glsl_function(
-    "distance", 
-    [
+var distance = builtin_glsl_function({
+    name: "distance", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t],
-        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]
-    ], function(exp) {
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]], 
+    constant_evaluator: function(exp) {
         return exp.parents[0].sub(exp.parents[1]).length().constant_value();
-    });
+    }});
 Shade.distance = distance;
 
-var dot = builtin_glsl_function(
-    "dot", 
-    [
+var dot = builtin_glsl_function({
+    name: "dot", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t],
-        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]
-    ],
-    function (exp) {
+        [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]],
+    constant_evaluator: function (exp) {
         var v1 = exp.parents[0].constant_value(),
             v2 = exp.parents[1].constant_value();
         if (exp.parents[0].type.equals(Shade.Types.float_t)) {
@@ -6686,39 +7435,47 @@ var dot = builtin_glsl_function(
         } else {
             return vec.dot(v1, v2);
         }
-    });
+    }});
 Shade.dot = dot;
 
-var cross = builtin_glsl_function(
-    "cross", 
-    [
-        [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3]
-    ], function(exp) {
+var cross = builtin_glsl_function({
+    name: "cross", 
+    type_resolving_list: [[Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3]], 
+    constant_evaluator: function(exp) {
         return vec3.cross(exp.parents[0].constant_value(),
                           exp.parents[1].constant_value());
-    });
+    }, element_evaluator: function (exp, i) {
+        var v1 = exp.parents[0].length;
+        var v2 = exp.parents[1].length;
+        if        (i === 0) { return v1.at(1).mul(v2.at(2)).sub(v1.at(2).mul(v2.at(1)));
+        } else if (i === 1) { return v1.at(2).mul(v2.at(0)).sub(v1.at(0).mul(v2.at(2)));
+        } else if (i === 2) { return v1.at(0).mul(v2.at(1)).sub(v1.at(1).mul(v2.at(0)));
+        } else
+            throw "invalid element " + i + " for cross";
+    }
+});
 Shade.cross = cross;
 
-var normalize = builtin_glsl_function(
-    "normalize", 
-    [
+var normalize = builtin_glsl_function({
+    name: "normalize", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4]
-    ], function(exp) {
+        [Shade.Types.vec4, Shade.Types.vec4]], 
+    constant_evaluator: function(exp) {
         return exp.parents[0].div(exp.parents[0].length()).constant_value();
-    });
+    }});
 Shade.normalize = normalize;
 
-var faceforward = builtin_glsl_function(
-    "faceforward", 
-    [
+var faceforward = builtin_glsl_function({
+    name: "faceforward", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
-    ], function(exp) {
+        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]], 
+    constant_evaluator: function(exp) {
         var N = exp.parents[0];
         var I = exp.parents[1];
         var Nref = exp.parents[2];
@@ -6726,51 +7483,75 @@ var faceforward = builtin_glsl_function(
             return N.constant_value();
         else
             return Shade.sub(0, N).constant_value();
-    });
+    }, element_evaluator: function(exp, i) {
+        var N = exp.parents[0];
+        var I = exp.parents[1];
+        var Nref = exp.parents[2];
+        return Shade.selection(Nref.dot(I).lt(0),
+                               N, Shade.neg(N)).element(i);
+    }
+});
 Shade.faceforward = faceforward;
 
-var reflect = builtin_glsl_function(
-    "reflect", 
-    [
+var reflect = builtin_glsl_function({
+    name: "reflect", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
-    ], function(exp) {
+        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]], 
+    constant_evaluator: function(exp) {
         var I = exp.parents[0];
         var N = exp.parents[1];
         return I.sub(Shade.mul(2, N.dot(I), N)).constant_value();
-    });
+    }});
 Shade.reflect = reflect;
 
-var refract = builtin_glsl_function(
-    "refract", 
-    [
+var refract = builtin_glsl_function({
+    name: "refract", 
+    type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.float_t, Shade.Types.vec3],
-        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.float_t, Shade.Types.vec4]
-    ], function(exp) {
+        [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.float_t, Shade.Types.vec4]],
+    constant_evaluator: function(exp) {
         var I = exp.parents[0];
         var N = exp.parents[1];
         var eta = exp.parents[2];
         
         var k = Shade.sub(1.0, Shade.mul(eta, eta, Shade.sub(1.0, N.dot(I).mul(N.dot(I)))));
         if (k.constant_value() < 0.0) {
-            return Vector.Zero(I.type.array_size());
+            return vec[I.type.array_size()].create();
         } else {
             return eta.mul(I).sub(eta.mul(N.dot(I)).add(k.sqrt()).mul(N)).constant_value();
         }
-    });
+    }, element_evaluator: function(exp, i) {
+        var I = exp.parents[0];
+        var N = exp.parents[1];
+        var eta = exp.parents[2];
+        var k = Shade.sub(1.0, Shade.mul(eta, eta, Shade.sub(1.0, N.dot(I).mul(N.dot(I)))));
+        var refraction = eta.mul(I).sub(eta.mul(N.dot(I)).add(k.sqrt()).mul(N));
+        var zero;
+        switch (I.type.array_size()) {
+        case 2: zero = Shade.vec(0,0); break;
+        case 3: zero = Shade.vec(0,0,0); break;
+        case 4: zero = Shade.vec(0,0,0,0); break;
+        default: throw "internal error";
+        };
+        return Shade.selection(k.lt(0), zero, refraction).element(i);
+    }
+});
 Shade.refract = refract;
 
-var texture2D = builtin_glsl_function("texture2D", [
-    [Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]
-]);
+var texture2D = builtin_glsl_function({
+    name: "texture2D", 
+    type_resolving_list: [[Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]]
+});
 Shade.texture2D = texture2D;
 
-Shade.equal = builtin_glsl_function(
-    "equal", [
+Shade.equal = builtin_glsl_function({
+    name: "equal", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bool_t],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bool_t],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bool_t],
@@ -6779,17 +7560,18 @@ Shade.equal = builtin_glsl_function(
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bool_t],
         [Shade.Types.bvec2, Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bvec3, Shade.Types.bool_t],
-        [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]
-    ], function(exp) {
+        [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return (_.all(zipWith(function (x, y) { return x === y; }),
                       left, right));
-    });
+    }});
 Shade.Exp.equal = function(other) { return Shade.equal(this, other); };
 
-Shade.notEqual = builtin_glsl_function(
-    "notEqual", [
+Shade.notEqual = builtin_glsl_function({
+    name: "notEqual", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bool_t],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bool_t],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bool_t],
@@ -6798,114 +7580,137 @@ Shade.notEqual = builtin_glsl_function(
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bool_t],
         [Shade.Types.bvec2, Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bvec3, Shade.Types.bool_t],
-        [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]
-    ], function(exp) {
+        [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return !(_.all(zipWith(function (x, y) { return x === y; }),
                        left, right));
-    });
+    }});
 Shade.Exp.notEqual = function(other) { return Shade.notEqual(this, other); };
 
-Shade.lessThan = builtin_glsl_function(
-    "lessThan", [
+Shade.lessThan = builtin_glsl_function({
+    name: "lessThan", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bvec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bvec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bvec4],
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
-        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]
-    ], function(exp) {
+        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x < right[i]; });
-    });
+    }, element_evaluator: function(exp, i) {
+        return Shade.lt.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.Exp.lessThan = function(other) { return Shade.lessThan(this, other); };
 
-Shade.lessThanEqual = builtin_glsl_function(
-    "lessThanEqual", [
+Shade.lessThanEqual = builtin_glsl_function({
+    name: "lessThanEqual", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bvec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bvec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bvec4],
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
-        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]
-    ], function(exp) {
+        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x <= right[i]; });
-    });
+    }, element_evaluator: function(exp, i) {
+        return Shade.le.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.Exp.lessThanEqual = function(other) { 
     return Shade.lessThanEqual(this, other); 
 };
 
-Shade.greaterThan = builtin_glsl_function(
-    "greaterThan", [
+Shade.greaterThan = builtin_glsl_function({
+    name: "greaterThan", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bvec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bvec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bvec4],
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
-        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]
-    ], function(exp) {
+        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x > right[i]; });
-    });
+    }, element_evaluator: function(exp, i) {
+        return Shade.gt.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.Exp.greaterThan = function(other) {
     return Shade.greaterThan(this, other);
 };
 
-Shade.greaterThanEqual = builtin_glsl_function(
-    "greaterThanEqual", [
+Shade.greaterThanEqual = builtin_glsl_function({
+    name: "greaterThanEqual", 
+    type_resolving_list: [
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.bvec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.bvec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.bvec4],
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
-        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]
-    ], function(exp) {
+        [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
+    constant_evaluator: function(exp) {
         var left = exp.parents[0].constant_value();
         var right = exp.parents[1].constant_value();
         return _.map(left, function(x, i) { return x >= right[i]; });
-    });
+    }, element_evaluator: function(exp, i) {
+        return Shade.ge.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.Exp.greaterThanEqual = function(other) {
     return Shade.greaterThanEqual(this, other);
 };
 
-Shade.all = builtin_glsl_function(
-    "all", [
+Shade.all = builtin_glsl_function({
+    name: "all", 
+    type_resolving_list: [
         [Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bool_t],
-        [Shade.Types.bvec4, Shade.Types.bool_t]
-    ], function(exp) {
+        [Shade.Types.bvec4, Shade.Types.bool_t]], 
+    constant_evaluator: function(exp) {
         var v = exp.parents[0].constant_value();
         return _.all(v, function(x) { return x; });
-    });
+    }});
 Shade.Exp.all = function() { return Shade.all(this); };
 
-Shade.any = builtin_glsl_function(
-    "any", [
+Shade.any = builtin_glsl_function({
+    name: "any", 
+    type_resolving_list: [
         [Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bool_t],
-        [Shade.Types.bvec4, Shade.Types.bool_t]
-    ], function(exp) {
+        [Shade.Types.bvec4, Shade.Types.bool_t]], 
+    constant_evaluator: function(exp) {
         var v = exp.parents[0].constant_value();
         return _.any(v, function(x) { return x; });
-    });
+    }});
 Shade.Exp.any = function() { return Shade.any(this); };
 
-Shade.matrixCompMult = builtin_glsl_function(
-    "matrixCompMult", [
+Shade.matrixCompMult = builtin_glsl_function({
+    name: "matrixCompMult", 
+    type_resolving_list: [
         [Shade.Types.mat2, Shade.Types.mat2, Shade.Types.mat2],
         [Shade.Types.mat3, Shade.Types.mat3, Shade.Types.mat3],
-        [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4]
-    ], function(exp) {
+        [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4]], 
+    constant_evaluator: function(exp) {
         var v1 = exp.parents[0].constant_value();
         var v2 = exp.parents[1].constant_value();
         return mat.map(v1, function(x, i) { return x * v2[i]; });
+    }, element_evaluator: function(exp, i) {
+        var v1 = exp.parents[0];
+        var v2 = exp.parents[1];
+        return v1.element(i).mul(v2.element(i));
     }
-);
+});
 Shade.Exp.matrixCompMult = function(other) {
     return Shade.matrixCompMult(this, other);
 };
@@ -6919,8 +7724,8 @@ Shade.seq = function(parents)
     return Shade._create_concrete_exp({
         expression_name: "seq",
         parents: parents,
-        eval: function(glsl_name) {
-            return this.parents.map(function (n) { return n.eval(); }).join("; ");
+        evaluate: function(glsl_name) {
+            return this.parents.map(function (n) { return n.evaluate(); }).join("; ");
         },
         type: Shade.basic('void'),
         compile: function (ctx) {}
@@ -6929,12 +7734,14 @@ Shade.seq = function(parents)
 Shade.Optimizer = {};
 Shade.Optimizer.debug = false;
 
+Shade.Optimizer._debug_passes = false;
+
 Shade.Optimizer.transform_expression = function(operations)
 {
     return function(v) {
         var old_v;
         for (var i=0; i<operations.length; ++i) {
-            if (Shade.Optimizer.debug) {
+            if (Shade.debug && Shade.Optimizer._debug_passes) {
                 old_v = v;
             }
             var test = operations[i][0];
@@ -6950,7 +7757,8 @@ Shade.Optimizer.transform_expression = function(operations)
                 v = v.replace_if(test, fun);
             }
             var new_guid = v.guid;
-            if (Shade.Optimizer.debug && old_guid != new_guid) {
+            if (Shade.debug && Shade.Optimizer._debug_passes &&
+                old_guid != new_guid) {
                 console.log("Pass",operations[i][2],"succeeded");
                 console.log("Before: ");
                 old_v.debug_print();
@@ -6979,12 +7787,12 @@ Shade.Optimizer.is_zero = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = constant_type(v);
+    var t = facet_constant_type(v);
     if (t === 'number')
         return v === 0;
     if (t === 'vector')
         return _.all(v, function (x) { return x === 0; });
-    if (typeof(v) === 'matrix')
+    if (facet_typeOf(v) === 'matrix')
         return _.all(v, function (x) { return x === 0; });
     return false;
 };
@@ -6994,7 +7802,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = constant_type(v);
+    var t = facet_constant_type(v);
     if (t === 'number')
         return v === 1;
     if (t === 'vector') {
@@ -7003,7 +7811,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
         case 3: return vec.equal(v, vec.make([1,1,1]));
         case 4: return vec.equal(v, vec.make([1,1,1,1]));
         default:
-            throw "Bad vec length: " + v.length;    
+            throw "bad vec length: " + v.length;    
         }
     }
     if (t === 'matrix')
@@ -7031,7 +7839,7 @@ Shade.Optimizer.replace_with_nonzero = function(exp)
         return exp.parents[1];
     if (Shade.Optimizer.is_zero(exp.parents[1]))
         return exp.parents[0];
-    throw "no zero value on input to replace_with_nonzero?!";
+    throw "internal error: no zero value on input to replace_with_nonzero";
 };
 
 
@@ -7053,7 +7861,7 @@ Shade.Optimizer.is_times_one = function(exp)
     } else if (t1.is_mat() && t2.is_vec()) {
         return Shade.Optimizer.is_mul_identity(exp.parents[0]);
     } else {
-        throw "Internal error, never should have gotten here";
+        throw "internal error on Shade.Optimizer.is_times_one";
     }
 };
 
@@ -7067,14 +7875,14 @@ Shade.Optimizer.replace_with_notone = function(exp)
         } else if (Shade.Optimizer.is_mul_identity(exp.parents[1])) {
             return exp.parents[0];
         } else {
-            throw "Intenal error, never should have gotten here";
+            throw "internal error on Shade.Optimizer.replace_with_notone";
         }
     } else if (!t1.equals(ft) && t2.equals(ft)) {
         return exp.parents[0];
     } else if (t1.equals(ft) && !t2.equals(ft)) {
         return exp.parents[1];
     }
-    throw "no is_mul_identity value on input to replace_with_notone?!";
+    throw "internal error: no is_mul_identity value on input to replace_with_notone";
 };
 
 Shade.Optimizer.replace_with_zero = function(x)
@@ -7095,7 +7903,7 @@ Shade.Optimizer.replace_with_zero = function(x)
         return Shade.constant(mat3.create());
     if (x.type.equals(Shade.Types.mat4))
         return Shade.constant(mat4.create());
-    throw "not a type replaceable with zero!?";
+    throw "internal error: not a type replaceable with zero";
 };
 
 Shade.Optimizer.vec_at_constant_index = function(exp)
@@ -7105,7 +7913,7 @@ Shade.Optimizer.vec_at_constant_index = function(exp)
     if (!exp.parents[1].is_constant())
         return false;
     var v = exp.parents[1].constant_value();
-    if (typeOf(v) !== "number")
+    if (facet_typeOf(v) !== "number")
         return false;
     var t = exp.parents[0].type;
     if (t.equals(Shade.Types.vec2) && (v >= 0) && (v <= 1))
@@ -7120,11 +7928,11 @@ Shade.Optimizer.vec_at_constant_index = function(exp)
 Shade.Optimizer.replace_vec_at_constant_with_swizzle = function(exp)
 {
     var v = exp.parents[1].constant_value();
-    if (v == 0) return exp.parents[0].swizzle("x");
-    if (v == 1) return exp.parents[0].swizzle("y");
-    if (v == 2) return exp.parents[0].swizzle("z");
-    if (v == 3) return exp.parents[0].swizzle("w");
-    throw "Internal error, shouldn't get here";
+    if (v === 0) return exp.parents[0].swizzle("x");
+    if (v === 1) return exp.parents[0].swizzle("y");
+    if (v === 2) return exp.parents[0].swizzle("z");
+    if (v === 3) return exp.parents[0].swizzle("w");
+    throw "internal error on Shade.Optimizer.replace_vec_at_constant_with_swizzle";
 };
 
 Shade.Optimizer.is_logical_and_with_constant = function(exp)
@@ -7185,24 +7993,58 @@ Shade.Optimizer.prune_selection_branch = function(exp)
     }
 };
 
+// We provide saner names for program targets so users don't
+// need to memorize gl_FragColor, gl_Position and gl_PointSize.
+//
+// However, these names should still work, in case the users
+// want to have GLSL-familiar names.
+Shade.canonicalize_program_object = function(program_obj)
+{
+    var result = {};
+    var canonicalization_map = {
+        'color': 'gl_FragColor',
+        'position': 'gl_Position',
+        'point_size': 'gl_PointSize'
+    };
+
+    _.each(program_obj, function(v, k) {
+        var transposed_key = (k in canonicalization_map) ?
+            canonicalization_map[k] : k;
+        result[transposed_key] = v;
+    });
+    return result;
+};
+
 Shade.program = function(program_obj)
 {
+    program_obj = Shade.canonicalize_program_object(program_obj);
     var vp_obj = {}, fp_obj = {};
 
-    // We provide saner names for program targets so users don't
-    // need to memorize gl_FragColor, gl_Position and gl_PointSize.
-    //
-    // However, these names should still work, in case the users
-    // want to have GLSL-familiar names.
     _.each(program_obj, function(v, k) {
-        if (k === 'color' || k === 'gl_FragColor') {
-            fp_obj['gl_FragColor'] = Shade.make(v);
-        } else if (k === 'position') {
-            vp_obj['gl_Position'] = Shade.make(v);
-        } else if (k === 'point_size') {
-            vp_obj['gl_PointSize'] = Shade.make(v);
+        v = Shade.make(v);
+        if (k === 'gl_FragColor') {
+            if (!v.type.equals(Shade.Types.vec4)) {
+                throw "color attribute must be of type vec4, got " +
+                    v.type.repr() + " instead";
+            }
+            fp_obj.gl_FragColor = v;
+        } else if (k === 'gl_Position') {
+            if (!v.type.equals(Shade.Types.vec4)) {
+                throw "position attribute must be of type vec4, got " +
+                    v.type.repr() + " instead";
+            }
+            vp_obj.gl_Position = v;
+        } else if (k === 'gl_PointSize') {
+            if (!v.type.equals(Shade.Types.float_t)) {
+                throw "color attribute must be of type float, got " +
+                    v.type.repr() + " instead";
+            }
+            vp_obj.gl_PointSize = v;
+        } else if (k.substr(0, 3) === 'gl_') {
+            // FIXME: Can we sensibly work around these?
+            throw "gl_* are reserved GLSL names";
         } else
-            vp_obj[k] = Shade.make(v);
+            vp_obj[k] = v;
     });
 
     var vp_compile = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE),
@@ -7225,7 +8067,7 @@ Shade.program = function(program_obj)
         vp_obj[varying_name] = exp;
         varying_names.push(varying_name);
         return Shade.varying(varying_name, exp.type);
-    };
+    }
 
     // explicit per-vertex hoisting must happen before is_attribute hoisting,
     // otherwise we might end up reading from a varying in the vertex program,
@@ -7266,7 +8108,7 @@ Shade.program = function(program_obj)
         used_varying_names.push.apply(used_varying_names,
                                       _.map(v.find_if(is_varying),
                                             function (v) { 
-                                                return v.eval();
+                                                return v.evaluate();
                                             }));
         fp_exprs.push(Shade.set(v, k));
     });
@@ -7285,12 +8127,17 @@ Shade.program = function(program_obj)
     var vp_source = vp_compile.source(),
         fp_source = fp_compile.source();
     if (Shade.debug) {
-        console.log("Vertex program final AST:");
-        vp_exp.debug_print();
+        if (Shade.debug && Shade.Optimizer._debug_passes) {
+            console.log("Vertex program final AST:");
+            vp_exp.debug_print();
+        }
         console.log("Vertex program source:");
         console.log(vp_source);
-        console.log("Fragment program final AST:");
-        fp_exp.debug_print();
+        
+        if (Shade.debug && Shade.Optimizer._debug_passes) {
+            console.log("Fragment program final AST:");
+            fp_exp.debug_print();
+        }
         console.log("Fragment program source:");
         console.log(fp_source);
     }
@@ -7316,7 +8163,7 @@ Shade.Utils.lerp = function(lst) {
     new_lst.push(new_lst[new_lst.length-1]);
     // repeat last to make index calc easier
     return function(v) {
-        var colors_exp = Shade.constant(new_lst);
+        var colors_exp = Shade.array(new_lst);
         v = Shade.clamp(v, 0, 1).mul(new_lst.length-2);
         var u = v.fract();
         var ix = v.floor();
@@ -7333,7 +8180,7 @@ Shade.Utils.lerp = function(lst) {
 Shade.Utils.choose = function(lst) {
     var new_lst = _.toArray(lst);
     return function(v) {
-        var vals_exp = Shade.constant(new_lst);
+        var vals_exp = Shade.array(new_lst);
         v = Shade.clamp(v, 0, new_lst.length-1).floor().as_int();
         return vals_exp.at(v);
     };
@@ -7349,10 +8196,16 @@ Shade.Utils.linear = function(f1, f2, t1, t2)
 // fits between [0, 1]
 
 Shade.Utils.fit = function(data) {
-    // FIXME this makes float attribute buffers work, but it's probably brittle
+    // this makes float attribute buffers work, but it might be confusing to the
+    // user that there exist values v for which Shade.Utils.fit(v) works,
+    // but Shade.Utils.fit(Shade.make(v)) does not
     var t = data._shade_type; 
-    if (t === 'attribute_buffer')
+    if (t === 'attribute_buffer') {
+        if (data.itemSize !== 1)
+            throw "only dimension-1 attribute buffers are supported";
         data = data.array;
+    }
+
     var min = _.min(data), max = _.max(data);
     return Shade.Utils.linear(min, max, 0, 1);
 };
@@ -7395,20 +8248,20 @@ Shade.gl_fog = function(opts)
     var fog_color = Shade.make(opts.fog_color);
     var color = opts.color;
     var z = Shade.make(opts.z);
-    var f;
+    var f, density, start;
 
     if (opts.mode === "exp") {
-        var density = Shade.make(opts.density);
-        var start = Shade.make(opts.start);
+        density = Shade.make(opts.density);
+        start = Shade.make(opts.start);
         f = z.sub(start).mul(density).exp();
     } else if (mode === "exp2") {
-        var density = Shade.make(opts.density);
-        var start = Shade.make(opts.start);
+        density = Shade.make(opts.density);
+        start = Shade.make(opts.start);
         f = z.sub(start).min(0).mul(density);
         f = f.mul(f);
         f = f.neg().exp();
     } else if (mode === "linear") {
-        var start = Shade.make(opts.start);
+        start = Shade.make(opts.start);
         var end = Shade.make(opts.end);
         end = Shade.make(end);
         start = Shade.make(start);
@@ -7443,8 +8296,8 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evalu
         type: Shade.Types.bool_t,
         expression_type: "operator" + operator_name,
         value: function() {
-            return "(" + this.parents[0].eval() + " " + operator_name + " " +
-                this.parents[1].eval() + ")";
+            return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
+                this.parents[1].evaluate() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return constant_evaluator(this);
@@ -7491,7 +8344,7 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
 
 Shade.or = logical_operator_exp(
     "||", lift_binfun_to_evaluator(function(a, b) { return a || b; }),
-    function(i) { return i == 0; }
+    function(i) { return i === 0; }
 );
 
 Shade.Exp.or = function(other)
@@ -7501,7 +8354,7 @@ Shade.Exp.or = function(other)
 
 Shade.and = logical_operator_exp(
     "&&", lift_binfun_to_evaluator(function(a, b) { return a && b; }),
-    function(i) { return i == 0; }
+    function(i) { return i === 0; }
 );
 
 Shade.Exp.and = function(other)
@@ -7527,7 +8380,7 @@ Shade.not = function(exp)
         type: Shade.Types.bool_t,
         expression_type: "operator!",
         value: function() {
-            return "(!" + this.parents[0].eval() + ")";
+            return "(!" + this.parents[0].evaluate() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return !this.parents[0].constant_value();
@@ -7569,7 +8422,7 @@ var equality_type_checker = function(name) {
                    " requires same types, got " +
                    t1.repr() + " and " + t2.repr() +
                    " instead.");
-        if (t1.is_array() && !t1.is_vec())
+        if (t1.is_array() && !t1.is_vec() && !t1.is_mat())
             throw ("operator" + name +
                    " does not support arrays");
     };
@@ -7593,33 +8446,35 @@ Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (typeOf(a) === 'number' ||
-            typeOf(a) === 'boolean')
+        if (facet_typeOf(a) === 'number' ||
+            facet_typeOf(a) === 'boolean')
             return a === b;
-        if (typeOf(a) === 'array')
-            return _.all(zipWith(function(a, b) { return a === b; }, a, b),
+        if (facet_typeOf(a) === 'array')
+            return _.all(_.map(_.zip(a, b),
+                               function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
-        if (constant_type(a) === 'vector' ||
-            constant_type(a) === 'matrix')
-            return a.eql(b);
-        throw "internal error: Unrecognized type " + typeOf(a) + 
-            " " + constant_type(a);
+        if (facet_constant_type(a) === 'vector') {
+            return vec.equal(a, b);
+        }
+        if (facet_constant_type(a) === 'matrix') {
+            return mat.equal(a, b);
+        }
+        throw "internal error: unrecognized type " + facet_typeOf(a) + 
+            " " + facet_constant_type(a);
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (typeOf(a) === 'number' ||
-            typeOf(a) === 'boolean')
+        if (facet_typeOf(a) === 'number' ||
+            facet_typeOf(a) === 'boolean')
             return a !== b;
-        if (typeOf(a) === 'array')
-            return _.any(zipWith(function(a, b) { return a !== b; }, a, b),
+        if (facet_typeOf(a) === 'array')
+            return _.any(_.map(_.zip(a, b),
+                               function(v) { return v[0] !== v[1]; } ),
                          function (x) { return x; });
-        if (constant_type(a) === 'vector' ||
-            constant_type(a) === 'matrix')
-            return !a.eql(b);
-        throw "internal error: Unrecognized type " + typeOf(a) + 
-            " " + constant_type(a);
+        throw "internal error: unrecognized type " + facet_typeOf(a) + 
+            " " + facet_constant_type(a);
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 
@@ -7641,16 +8496,81 @@ Shade.selection = function(condition, if_true, if_false)
         parents: [condition, if_true, if_false],
         type: if_true.type,
         expression_type: "selection",
+        // FIXME: works around Chrome Bug ID 103053
+        _must_be_function_call: true,
         value: function() {
-            return "(" + this.parents[0].eval() + "?"
-                + this.parents[1].eval() + ":"
-                + this.parents[2].eval() + ")";
+            return "(" + this.parents[0].evaluate() + "?"
+                + this.parents[1].evaluate() + ":"
+                + this.parents[2].evaluate() + ")";
         },
         constant_value: function() {
-            return (this.parents[0].constant_value() ?
-                    this.parents[1].constant_value() :
-                    this.parents[2].constant_value());
-        }, 
+            if (!this.parents[0].is_constant()) {
+                // This only gets called when this.is_constant() holds, so
+                // it must be that this.parents[1].constant_value() == 
+                // this.parents[2].constant_value(); we return either
+                return this.parents[1].constant_value();
+            } else {
+                return (this.parents[0].constant_value() ?
+                        this.parents[1].constant_value() :
+                        this.parents[2].constant_value());
+            }
+        },
+        is_constant: function() {
+            if (!this.parents[0].is_constant()) {
+                // if condition is not constant, 
+                // then expression is only constant if sides always
+                // evaluate to same values.
+                if (this.parents[1].is_constant() && 
+                    this.parents[2].is_constant()) {
+                    var v1 = this.parents[1].constant_value();
+                    var v2 = this.parents[2].constant_value();
+                    return this.type.constant_equal(v1, v2);
+                } else {
+                    return false;
+                }
+            } else {
+                // if condition is constant, then
+                // the expression is constant if the appropriate
+                // side of the evaluation is constant.
+                return (this.parents[0].constant_value() ?
+                        this.parents[1].is_constant() :
+                        this.parents[2].is_constant());
+            }
+        },
+        element_constant_value: function(i) {
+            if (!this.parents[0].is_constant()) {
+                // This only gets called when this.is_constant() holds, so
+                // it must be that this.parents[1].constant_value() == 
+                // this.parents[2].constant_value(); we return either
+                return this.parents[1].element_constant_value(i);
+            } else {
+                return (this.parents[0].constant_value() ?
+                        this.parents[1].element_constant_value(i) :
+                        this.parents[2].element_constant_value(i));
+            }
+        },
+        element_is_constant: function(i) {
+            if (!this.parents[0].is_constant()) {
+                // if condition is not constant, 
+                // then expression is only constant if sides always
+                // evaluate to same values.
+                if (this.parents[1].element_is_constant(i) && 
+                    this.parents[2].element_is_constant(i)) {
+                    var v1 = this.parents[1].element_constant_value(i);
+                    var v2 = this.parents[2].element_constant_value(i);
+                    return this.type.element_type(i).constant_equal(v1, v2);
+                } else {
+                    return false;
+                }
+            } else {
+                // if condition is constant, then
+                // the expression is constant if the appropriate
+                // side of the evaluation is constant.
+                return (this.parents[0].constant_value() ?
+                        this.parents[1].element_is_constant(i) :
+                        this.parents[2].element_is_constant(i));
+            }
+        },
         parent_is_unconditional: function(i) {
             return i === 0;
         }
@@ -7714,6 +8634,77 @@ Shade.look_at = function(eye, center, up)
                                z.dot(eye).neg(),
                                1));
 };
+/*
+ * Shade.discard_if: conditionally discard fragments from the pipeline
+ * 
+
+*********************************************************************************
+ * 
+ * For future reference, this is a copy of the org discussion on the
+ * discard statement as I was designing it.
+ * 
+
+Discard is a statement; I don't really have statements in the
+language.
+
+
+*** discard is fragment-only.
+
+How do I implement discard in a vertex shader?
+
+**** Possibilities:
+***** Disallow it to happen in the vertex shader
+Good: Simplest
+Bad: Breaks the model in Facet programs where we don't care much about
+what happens in vertex expressions vs fragment expressions
+Ugly: The error messages would be really opaque, unless I specifically
+detect where the discard statement would appear.
+***** Send the vertex outside the homogenous cube
+Good: Simple
+Bad: doesn't discard the whole primitive
+Ugly: would make triangles, etc look really weird.
+***** Set some special varying which discards every single fragment in the shader
+Good: Discards an entire primitive.
+Bad: Wastes a varying, which might be a scarce resource.
+Ugly: varying cannot be discrete (bool). The solution would be to
+discard if varying is greater than zero, set the discarded varying to be greater
+than the largest possible distance between two vertices on the screen,
+and the non-discarded to zero.
+
+*** Implementation ideas:
+
+**** special key for the program description
+
+like so:
+
+{
+  gl_Position: foo
+  gl_FragColor: bar
+  discard_if: baz
+}
+
+The main disadvantage here is that one application of discard is to
+save computation time. This means that my current initialization of
+variables used in more than one context will be wasteful if none of
+these variables are actually used before the discard condition is
+verified. What I would need, then, is some dependency analysis that
+determines which variables are used for which discard checks, and
+computes those in the correct order.
+
+This discard interacts with the initializer code.
+
+**** new expression called discard_if
+
+We add a discard_when(condition, value_if_not) expression, which
+issues the discard statement if condition is true. 
+
+But what about discard_when being executed inside conditional
+expressions? Worse: discard_when would turn case D above from a
+performance problem into an actual bug.
+
+ * 
+ */
+
 Shade.discard_if = function(exp, condition)
 {
     exp = Shade.make(exp);
@@ -7735,8 +8726,8 @@ Shade.discard_if = function(exp, condition)
         },
         compile: function(ctx) {
             ctx.strings.push(exp.type.repr(), this.glsl_name, "(void) {\n",
-                             "    if (",this.parents[0].eval(),") discard;\n",
-                             "    return ", this.parents[1].eval(), ";\n}\n");
+                             "    if (",this.parents[0].evaluate(),") discard;\n",
+                             "    return ", this.parents[1].evaluate(), ";\n}\n");
         },
         constant_value: function() {
             return exp.constant_value();
@@ -7762,8 +8753,736 @@ Shade.id = function(id_value)
 
 return Shade;
 }());
+////////////////////////////////////////////////////////////////////////////////
+// The colorspace conversion routines are based on
+// Ross Ihaka's colorspace library for R.
+
+Shade.Colors = {};
+Shade.Colors.alpha = function(color, alpha)
+{
+    color = Shade.make(color);
+    alpha = Shade.make(alpha);
+    if (!alpha.type.equals(Shade.Types.float_t))
+        throw "alpha parameter must be float";
+    if (color.type.equals(Shade.Types.vec4)) {
+        return Shade.vec(color.swizzle("rgb"), alpha);
+    }
+    if (color.type.equals(Shade.Types.vec3)) {
+        return Shade.vec(color, alpha);
+    }
+    throw "color parameter must be vec3 or vec4";
+};
+
+Shade.Exp.alpha = function(alpha)
+{
+    return Shade.Colors.alpha(this, alpha);
+};
+(function() {
+
+function compose(g, f)
+{
+    if (_.isUndefined(f) || _.isUndefined(g))
+        throw "Undefined!";
+    return function(x) {
+        return g(f(x));
+    };
+}
+
+var table = {};
+var colorspaces = ["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz"];
+_.each(colorspaces, function(space) {
+    table[space] = {};
+    table[space][space] = function(x) { return x; };
+    table[space].create = function(v0, v1, v2) {
+        // this function is carefully designed to work for the above
+        // color space names. if those change, this probably changes
+        // too.
+        var l = space.length;
+        var field_0 = space[l-3],
+            field_1 = space[l-2],
+            field_2 = space[l-1];
+        var result = {
+            space: space,
+            values: function() {
+                return [this[field_0], this[field_1], this[field_2]];
+            },
+            as_shade: function(alpha) {
+                if (_.isUndefined(alpha))
+                    alpha = 1;
+                var srgb = table[space].rgb(this);
+                return Shade.vec(srgb.r, srgb.g, srgb.b, alpha);
+            }
+        };
+        
+        result[field_0] = v0;
+        result[field_1] = v1;
+        result[field_2] = v2;
+        _.each(colorspaces, function(other_space) {
+            result[other_space] = function() { return table[space][other_space](result); };
+        });
+        return result;
+    };
+});
+
+function xyz_to_uv(xyz)
+{
+    var t, x, y;
+    t = xyz.x + xyz.y + xyz.z;
+    x = xyz.x / t;
+    y = xyz.y / t;
+    return [2 * x / (6 * y - x + 1.5),
+            4.5 * y / (6 * y - x + 1.5)];
+};
+
+// qtrans takes hue varying from 0 to 1!
+function qtrans(q1, q2, hue)
+{
+    if (hue > 1) hue -= 1;
+    if (hue < 0) hue += 1;
+    if (hue < 1/6) 
+        return q1 + (q2 - q1) * (hue * 6);
+    else if (hue < 1/2)
+        return q2;
+    else if (hue < 2/3)
+        return q1 + (q2 - q1) * (2/3 - hue) * 6;
+    else
+        return q1;
+};
+
+function gtrans(u, gamma)
+{
+    if (u > 0.00304)
+        return 1.055 * Math.pow(u, 1 / gamma) - 0.055;
+    else
+        return 12.92 * u;
+    // if (u < 0) return u;
+    // return Math.pow(u, 1.0 / gamma);
+}
+
+function ftrans(u, gamma)
+{
+    if (u > 0.03928)
+        return Math.pow((u + 0.055) / 1.055, gamma);
+    else
+        return u / 12.92;
+    // if (u < 0) return u;
+    // return Math.pow(u, gamma);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// table.rgb.*
+
+table.rgb.hsv = function(rgb)
+{
+    var x = Math.min(rgb.r, rgb.g, rgb.b);
+    var y = Math.max(rgb.r, rgb.g, rgb.b);
+    if (y !== x) {
+        var f = ((rgb.r === x) ? rgb.g - rgb.b : 
+                 (rgb.g === x) ? rgb.b - rgb.r :
+                                 rgb.r - rgb.g);
+        var i = ((rgb.r === x) ? 3 :
+                 (rgb.g === x) ? 5 : 1);
+        return table.hsv.create((Math.PI/3) * (i - f / (y - x)),
+                                (y - x) / y,
+                                y);
+    } else {
+        return table.hsv.create(0, 0, y);
+    }
+};
+
+table.rgb.hls = function(rgb)
+{
+    var min = Math.min(rgb.r, rgb.g, rgb.b);
+    var max = Math.max(rgb.r, rgb.g, rgb.b);
+
+    var l = (max + min) / 2, s, h;
+    if (max !== min) {
+        if (l < 0.5)
+            s = (max - min) / (max + min);
+        else
+            s = (max - min) / (2.0 - max - min);
+        if (rgb.r === max) {
+            h = (rgb.g - rgb.b) / (max - min);
+        } else if (rgb.g === max) {
+            h = 2.0 + (rgb.b - rgb.r) / (max - min);
+        } else {
+            h = 4.0 + (rgb.r - rgb.g) / (max - min);
+        }
+        h = h * Math.PI / 3;
+        if (h < 0)           h += Math.PI * 2;
+        if (h > Math.PI * 2) h -= Math.PI * 2;
+    } else {
+        s = 0;
+        h = 0;
+    }
+    return table.hls.create(h, l, s);
+};
+
+table.rgb.xyz = function(rgb)
+{
+    var yn = white_point.y;
+    return table.xyz.create(
+        yn * (0.412453 * rgb.r + 0.357580 * rgb.g + 0.180423 * rgb.b),
+        yn * (0.212671 * rgb.r + 0.715160 * rgb.g + 0.072169 * rgb.b),
+        yn * (0.019334 * rgb.r + 0.119193 * rgb.g + 0.950227 * rgb.b));
+};
+
+table.rgb.srgb = function(rgb)
+{
+    return table.srgb.create(gtrans(rgb.r, 2.4),
+                             gtrans(rgb.g, 2.4),
+                             gtrans(rgb.b, 2.4));
+};
+
+// table.rgb.luv = compose(table.xyz.luv, table.rgb.xyz);
+// table.rgb.hcl = compose(table.luv.hcl, table.rgb.luv);
+
+//////////////////////////////////////////////////////////////////////////////
+// table.srgb.*
+
+table.srgb.xyz = function(srgb)
+{
+    var yn = white_point.y;
+    var r = ftrans(srgb.r, 2.4),
+        g = ftrans(srgb.g, 2.4),
+        b = ftrans(srgb.b, 2.4);
+    return table.xyz.create(
+        yn * (0.412453 * r + 0.357580 * g + 0.180423 * b),
+        yn * (0.212671 * r + 0.715160 * g + 0.072169 * b),
+        yn * (0.019334 * r + 0.119193 * g + 0.950227 * b));
+};
+
+table.srgb.rgb = function(srgb)
+{
+    var result = table.rgb.create(ftrans(srgb.r, 2.4),
+                                  ftrans(srgb.g, 2.4),
+                                  ftrans(srgb.b, 2.4));
+    return result;
+};
+
+table.srgb.hls = compose(table.rgb.hls, table.srgb.rgb);
+table.srgb.hsv = compose(table.rgb.hsv, table.srgb.rgb);
+// table.srgb.luv = compose(table.rgb.luv, table.srgb.rgb);
+// table.srgb.hcl = compose(table.rgb.hcl, table.srgb.rgb);
+
+//////////////////////////////////////////////////////////////////////////////
+// table.xyz.*
+
+table.xyz.luv = function(xyz)
+{
+    var y;
+    var t1 = xyz_to_uv(xyz);
+    y = xyz.y / white_point.y;
+    var l = (y > 0.008856 ? 
+             116 * Math.pow(y, 1.0/3.0) - 16 :
+             903.3 * y);
+    return table.luv.create(l, 
+                            13 * l * (t1[0] - white_point_uv[0]),
+                            13 * l * (t1[1] - white_point_uv[1]));
+};
+// now I can define these
+table.rgb.luv = compose(table.xyz.luv, table.rgb.xyz);
+table.srgb.luv = compose(table.rgb.luv, table.srgb.rgb);
+
+table.xyz.rgb = function(xyz)
+{
+    var yn = white_point.y;
+    return table.rgb.create(
+        ( 3.240479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn,
+        (-0.969256 * xyz.x + 1.875992 * xyz.y + 0.041556 * xyz.z) / yn,
+        ( 0.055648 * xyz.x - 0.204043 * xyz.y + 1.057311 * xyz.z) / yn
+    );
+};
+table.xyz.hls = compose(table.rgb.hls, table.xyz.rgb);
+table.xyz.hsv = compose(table.rgb.hsv, table.xyz.rgb);
+
+table.xyz.srgb = function(xyz)
+{
+    var yn = white_point.y;
+    return table.srgb.create(
+        gtrans(( 3.240479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn, 2.4),
+        gtrans((-0.969256 * xyz.x + 1.875992 * xyz.y + 0.041556 * xyz.z) / yn, 2.4),
+        gtrans(( 0.055648 * xyz.x - 0.204043 * xyz.y + 1.057311 * xyz.z) / yn, 2.4)
+    );
+};
+
+// table.xyz.hcl = compose(table.rgb.hcl, table.xyz.rgb);
+
+//////////////////////////////////////////////////////////////////////////////
+// table.luv.*
+
+table.luv.hcl = function(luv)
+{
+    var c = Math.sqrt(luv.u * luv.u + luv.v * luv.v);    
+    var h = Math.atan2(luv.v, luv.u);
+    while (h > Math.PI * 2) { h -= Math.PI * 2; }
+    while (h < 0) { h += Math.PI * 2; }
+    return table.hcl.create(h, c, luv.l);
+};
+table.rgb.hcl  = compose(table.luv.hcl,  table.rgb.luv);
+table.srgb.hcl = compose(table.luv.hcl,  table.srgb.luv);
+table.xyz.hcl  = compose(table.rgb.hcl, table.xyz.rgb);
+
+table.luv.xyz = function(luv)
+{
+    var x = 0, y = 0, z = 0;
+    if (!(luv.l <= 0 && luv.u == 0 && luv.v == 0)) {
+        y = white_point.y * ((luv.l > 7.999592) ? 
+                             Math.pow((luv.l + 16)/116, 3) : 
+                             luv.l / 903.3);
+        // var t = xyz_to_uv(xn, yn, zn);
+        // var un = t[0], vn = t[1];
+        var result_u = luv.u / (13 * luv.l) + white_point_uv[0];
+        var result_v = luv.v / (13 * luv.l) + white_point_uv[1];
+        x = 9 * y * result_u / (4 * result_v);
+        z = -x / 3 - 5 * y + 3 * y / result_v;
+    }
+    return table.xyz.create(x, y, z);
+};
+table.luv.rgb  = compose(table.xyz.rgb,  table.luv.xyz);
+table.luv.hls  = compose(table.rgb.hls,  table.luv.rgb);
+table.luv.hsv  = compose(table.rgb.hsv,  table.luv.rgb);
+table.luv.srgb = compose(table.rgb.srgb, table.luv.rgb);
+
+
+//////////////////////////////////////////////////////////////////////////////
+// table.hcl.*
+
+table.hcl.luv = function(hcl)
+{
+    return table.luv.create(
+        hcl.l, hcl.c * Math.cos(hcl.h), hcl.c * Math.sin(hcl.h));
+};
+
+table.hcl.rgb  = compose(table.luv.rgb,  table.hcl.luv);
+table.hcl.srgb = compose(table.luv.srgb, table.hcl.luv);
+table.hcl.hsv  = compose(table.luv.hsv,  table.hcl.luv);
+table.hcl.hls  = compose(table.luv.hls,  table.hcl.luv);
+table.hcl.xyz  = compose(table.luv.xyz,  table.hcl.luv);
+
+//////////////////////////////////////////////////////////////////////////////
+// table.hls.*
+
+table.hls.rgb = function(hls)
+{
+    var p1, p2;
+    if (hls.l <= 0.5)
+        p2 = hls.l * (1 + hls.s);
+    else
+        p2 = hls.l + hls.s - (hls.l * hls.s);
+    p1 = 2 * hls.l - p2;
+    if (hls.s === 0) {
+        return table.rgb.create(hls.l, hls.l, hls.l);
+    } else {
+        return table.rgb.create(
+            qtrans(p1, p2, (hls.h + Math.PI * 2/3) / (Math.PI * 2)),
+            qtrans(p1, p2, hls.h / (Math.PI * 2)),
+            qtrans(p1, p2, (hls.h - Math.PI * 2/3) / (Math.PI * 2)));
+    }
+};
+
+table.hls.srgb = compose(table.rgb.srgb, table.hls.rgb);
+table.hls.hsv  = compose(table.rgb.hsv,  table.hls.rgb);
+table.hls.xyz  = compose(table.rgb.xyz,  table.hls.rgb);
+table.hls.luv  = compose(table.rgb.luv,  table.hls.rgb);
+table.hls.hcl  = compose(table.rgb.hcl,  table.hls.rgb);
+
+//////////////////////////////////////////////////////////////////////////////
+// table.hsv.*
+
+table.hsv.rgb = function(hsv)
+{
+    if (isNaN(hsv.h)) {
+        return table.rgb.create(hsv.v, hsv.v, hsv.v);
+    } else {
+        var v = hsv.v;
+        var h = hsv.h / Math.PI * 3; // from [0,2Pi] to [0,6];
+        var i = Math.floor(h);
+        var f = h - i;
+        if (!(i & 1)) // if index is even
+            f = 1 - f;
+        var m = v * (1 - hsv.s);
+        var n = v * (1 - hsv.s * f);
+        switch (i) {
+        case 6:
+        case 0: return table.rgb.create(v, n, m);
+        case 1: return table.rgb.create(n, v, m);
+        case 2: return table.rgb.create(m, v, n);
+        case 3: return table.rgb.create(m, n, v);
+        case 4: return table.rgb.create(n, m, v);
+        case 5: return table.rgb.create(v, m, n);
+        default:
+            throw "internal error";
+        };
+    }
+};
+
+table.hsv.srgb = compose(table.rgb.srgb, table.hsv.rgb);
+table.hsv.hls  = compose(table.rgb.hls,  table.hsv.rgb);
+table.hsv.xyz  = compose(table.rgb.xyz,  table.hsv.rgb);
+table.hsv.luv  = compose(table.rgb.luv,  table.hsv.rgb);
+table.hsv.hcl  = compose(table.rgb.hcl,  table.hsv.rgb);
+
+// currently we assume a D65 white point, but this could be configurable
+var white_point = table.xyz.create(95.047, 100.000, 108.883);
+var white_point_uv = xyz_to_uv(white_point);
+
+Shade.Colors.jstable = table;
+
+})();
+(function() {
+
+function compose(g, f)
+{
+    if (_.isUndefined(f) || _.isUndefined(g))
+        throw "Undefined!";
+    return function(x) {
+        return g(f(x));
+    };
+}
+
+var _if = Shade.selection; // This is probably a good name for it...
+
+var table = {};
+var colorspaces = ["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz"];
+_.each(colorspaces, function(space) {
+    table[space] = {};
+    table[space][space] = function(x) { return x; };
+    table[space].create = function() {
+        var vec;
+        if (arguments.length === 1) {
+            vec = arguments[0];
+            if (!vec.type.equals(Shade.Types.vec3))
+                throw "create with 1 parameter requires a vec3";
+        } else if (arguments.length === 3) {
+            vec = Shade.vec(arguments[0], arguments[1], arguments[2]);
+            if (!vec.type.equals(Shade.Types.vec3))
+                throw "create with 3 parameter requires 3 floats";
+        } else
+            throw "create requires either 1 vec3 or 3 floats";
+        // this function is carefully designed to work for the above
+        // color space names. if those change, this probably changes
+        // too.
+        var l = space.length;
+        var field_0 = space[l-3],
+            field_1 = space[l-2],
+            field_2 = space[l-1];
+        var result = {
+            space: space,
+            vec: vec,
+            values: function() {
+                return [this[field_0].constant_value(), 
+                        this[field_1].constant_value(), 
+                        this[field_2].constant_value()];
+            },
+            as_shade: function(alpha) {
+                if (_.isUndefined(alpha))
+                    alpha = Shade.make(1);
+                var result = this.rgb().vec;
+                return Shade.vec(this.rgb().vec, alpha);
+            }
+        };
+        result[field_0] = vec.swizzle("r");
+        result[field_1] = vec.swizzle("g");
+        result[field_2] = vec.swizzle("b");
+        _.each(colorspaces, function(other_space) {
+            result[other_space] = function() { return table[space][other_space](result); };
+        });
+        return result;
+    };
+});
+
+function xyz_to_uv(xyz)
+{
+    var t, x, y;
+    t = xyz.x.add(xyz.y).add(xyz.z);
+    x = xyz.x.div(t);
+    y = xyz.y.div(t);
+    return Shade.vec(x.mul(2).div(y.mul(6).sub(x).add(1.5)),
+                     y.mul(4.5).div(y.mul(6).sub(x).add(1.5)));
+};
+
+// qtrans takes hue varying from 0 to 1!
+function qtrans(q1, q2, hue)
+{
+    hue = _if(hue.gt(1), hue.sub(1), hue);
+    hue = _if(hue.lt(0), hue.add(1), hue);
+    return _if(hue.lt(1/6), q1.add(q2.sub(q1).mul(hue.mul(6))),
+           _if(hue.lt(1/2), q2,
+           _if(hue.lt(2/3), q1.add(q2.sub(q1).mul(Shade.make(2/3)
+                                                  .sub(hue).mul(6))),
+               q1)));
+};
+
+function gtrans(u, gamma)
+{
+    return _if(u.gt(0.00304),
+               Shade.mul(1.055, Shade.pow(u, Shade.div(1, gamma))).sub(0.055),
+               u.mul(12.92));
+    // return Shade.selection(u.lt(0), u, Shade.pow(u, Shade.div(1, gamma)));
+}
+
+function ftrans(u, gamma)
+{
+    return _if(u.gt(0.03928),
+               Shade.pow(u.add(0.055).div(1.055), gamma),
+               u.div(12.92));
+    // return Shade.selection(u.lt(0), u, Shade.pow(u, gamma));
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// table.rgb.*
+
+function min3(v)
+{
+    return Shade.min(v.r, Shade.min(v.g, v.b));
+}
+
+function max3(v)
+{
+    return Shade.max(v.r, Shade.max(v.g, v.b));
+}
+
+table.rgb.hsv = function(rgb)
+{
+    var x = min3(rgb);
+    var y = max3(rgb);
+    
+    var f = _if(rgb.r.eq(x), rgb.g.sub(rgb.b),
+            _if(rgb.g.eq(x), rgb.b.sub(rgb.r),
+                             rgb.r.sub(rgb.g)));
+    var i = _if(rgb.r.eq(x), 3, _if(rgb.g.eq(x), 5, 1));
+    return table.hsv.create(_if(
+        y.eq(x), 
+        Shade.vec(0,0,y),
+        Shade.vec(Shade.mul(Math.PI/3, i.sub(f.div(y.sub(x)))),
+                  y.sub(x).div(y),
+                  y)));
+};
+
+table.rgb.hls = function(rgb)
+{
+    var min = min3(rgb);
+    var max = max3(rgb);
+    var l = max.add(min).div(2), s, h;
+    var mx_ne_mn = max.ne(min);
+    
+    s = _if(mx_ne_mn,
+            _if(l.lt(0.5), 
+                max.sub(min).div(max.add(min)),
+                max.sub(min).div(Shade.sub(2.0, max).sub(min))),
+            0);
+    h = _if(mx_ne_mn,
+            _if(rgb.r.eq(max),                rgb.g.sub(rgb.b).div(max.sub(min)),
+            _if(rgb.g.eq(max), Shade.add(2.0, rgb.b.sub(rgb.r).div(max.sub(min))),
+                               Shade.add(4.0, rgb.r.sub(rgb.g).div(max.sub(min))))),
+            0);
+    h = h.mul(Math.PI / 3);
+    h = _if(h.lt(0),           h.add(Math.PI * 2),
+        _if(h.gt(Math.PI * 2), h.sub(Math.PI * 2), 
+                               h));
+    return table.hls.create(h, l, s);
+};
+
+table.rgb.xyz = function(rgb)
+{
+    var yn = white_point.y;
+    return table.xyz.create(
+        yn.mul(rgb.r.mul(0.412453).add(rgb.g.mul(0.357580)).add(rgb.b.mul(0.180423))),
+        yn.mul(rgb.r.mul(0.212671).add(rgb.g.mul(0.715160)).add(rgb.b.mul(0.072169))),
+        yn.mul(rgb.r.mul(0.019334).add(rgb.g.mul(0.119193)).add(rgb.b.mul(0.950227))));
+};
+
+table.rgb.srgb = function(rgb)
+{
+    return table.srgb.create(gtrans(rgb.r, 2.4),
+                             gtrans(rgb.g, 2.4),
+                             gtrans(rgb.b, 2.4));
+};
+
+// table.rgb.luv = compose(table.xyz.luv, table.rgb.xyz);
+// table.rgb.hcl = compose(table.luv.hcl, table.rgb.luv);
+
+//////////////////////////////////////////////////////////////////////////////
+// table.srgb.*
+
+table.srgb.xyz = function(srgb)
+{
+    var yn = white_point.y;
+    var r = ftrans(srgb.r, 2.4),
+        g = ftrans(srgb.g, 2.4),
+        b = ftrans(srgb.b, 2.4);
+    return table.xyz.create(
+        yn.mul(r.mul(0.412453).add(g.mul(0.357580)).add(b.mul(0.180423))),
+        yn.mul(r.mul(0.212671).add(g.mul(0.715160)).add(b.mul(0.072169))),
+        yn.mul(r.mul(0.019334).add(g.mul(0.119193)).add(b.mul(0.950227))));
+};
+
+table.srgb.rgb = function(srgb)
+{
+    var result = table.rgb.create(ftrans(srgb.r, 2.4),
+                                  ftrans(srgb.g, 2.4),
+                                  ftrans(srgb.b, 2.4));
+    
+    return result;
+};
+
+table.srgb.hls = compose(table.rgb.hls, table.srgb.rgb);
+table.srgb.hsv = compose(table.rgb.hsv, table.srgb.rgb);
+// table.srgb.luv = compose(table.rgb.luv, table.srgb.rgb);
+// table.srgb.hcl = compose(table.rgb.hcl, table.srgb.rgb);
+
+//////////////////////////////////////////////////////////////////////////////
+// table.xyz.*
+
+table.xyz.luv = function(xyz)
+{
+    var y;
+    var t1 = xyz_to_uv(xyz);
+    y = xyz.y.div(white_point.y);
+    var l = _if(y.gt(0.008856), 
+                Shade.mul(116, Shade.pow(y, 1.0/3.0)).sub(16),
+                Shade.mul(903.3, y));
+    return table.luv.create(Shade.vec(l, l.mul(t1.sub(white_point_uv)).mul(13)));
+};
+// now I can define these
+table.rgb.luv = compose(table.xyz.luv, table.rgb.xyz);
+table.srgb.luv = compose(table.rgb.luv, table.srgb.rgb);
+
+table.xyz.rgb = function(xyz)
+{
+    var yn = white_point.y;
+    return table.rgb.create(
+        (xyz.x.mul( 3.240479).sub(xyz.y.mul(1.537150)).sub(xyz.z.mul(0.498535))).div(yn),
+        (xyz.x.mul(-0.969256).add(xyz.y.mul(1.875992)).add(xyz.z.mul(0.041556))).div(yn),
+        (xyz.x.mul( 0.055648).sub(xyz.y.mul(0.204043)).add(xyz.z.mul(1.057311))).div(yn)
+    );
+};
+table.xyz.hls = compose(table.rgb.hls, table.xyz.rgb);
+table.xyz.hsv = compose(table.rgb.hsv, table.xyz.rgb);
+
+table.xyz.srgb = function(xyz)
+{
+    var yn = white_point.y;
+    return table.srgb.create(
+        gtrans((xyz.x.mul( 3.240479).sub(xyz.y.mul(1.537150)).sub(xyz.z.mul(0.498535))).div(yn), 2.4),
+        gtrans((xyz.x.mul(-0.969256).add(xyz.y.mul(1.875992)).add(xyz.z.mul(0.041556))).div(yn), 2.4),
+        gtrans((xyz.x.mul( 0.055648).sub(xyz.y.mul(0.204043)).add(xyz.z.mul(1.057311))).div(yn), 2.4)
+    );
+};
+
+// table.xyz.hcl = compose(table.rgb.hcl, table.xyz.rgb);
+
+//////////////////////////////////////////////////////////////////////////////
+// table.luv.*
+
+table.luv.hcl = function(luv)
+{
+    var c = Shade.length(luv.vec.swizzle("gb"));
+    var h = Shade.atan(luv.v, luv.u);
+    h = _if(h.gt(Math.PI*2), h.sub(Math.PI*2),
+        _if(h.lt(0), h.add(Math.PI*2), h));
+    while (h > Math.PI * 2) { h -= Math.PI * 2; }
+    while (h < 0) { h += Math.PI * 2; }
+    return table.hcl.create(h, c, luv.l);
+};
+table.rgb.hcl  = compose(table.luv.hcl,  table.rgb.luv);
+table.srgb.hcl = compose(table.luv.hcl,  table.srgb.luv);
+table.xyz.hcl  = compose(table.rgb.hcl, table.xyz.rgb);
+
+table.luv.xyz = function(luv)
+{
+    var uv = luv.vec.swizzle("gb").div(luv.l.mul(13)).add(white_point_uv);
+    var u = uv.swizzle("r"), v = uv.swizzle("g");
+    var y = white_point.y.mul(_if(luv.l.gt(7.999592),
+                                  Shade.pow(luv.l.add(16).div(116), 3),
+                                  luv.l.div(903.3)));
+    var x = y.mul(9).mul(u).div(v.mul(4));
+    var z = x.div(-3).sub(y.mul(5)).add(y.mul(3).div(v));
+    return table.xyz.create(_if(luv.l.le(0).and(luv.u.eq(0).and(luv.v.eq(0))),
+                                Shade.vec(0,0,0),
+                                Shade.vec(x,y,z)));
+};
+table.luv.rgb  = compose(table.xyz.rgb,  table.luv.xyz);
+table.luv.hls  = compose(table.rgb.hls,  table.luv.rgb);
+table.luv.hsv  = compose(table.rgb.hsv,  table.luv.rgb);
+table.luv.srgb = compose(table.rgb.srgb, table.luv.rgb);
+
+//////////////////////////////////////////////////////////////////////////////
+// table.hcl.*
+
+table.hcl.luv = function(hcl)
+{
+    return table.luv.create(
+        hcl.l, hcl.c.mul(hcl.h.cos()), hcl.c.mul(hcl.h.sin()));
+};
+
+table.hcl.rgb  = compose(table.luv.rgb,  table.hcl.luv);
+table.hcl.srgb = compose(table.luv.srgb, table.hcl.luv);
+table.hcl.hsv  = compose(table.luv.hsv,  table.hcl.luv);
+table.hcl.hls  = compose(table.luv.hls,  table.hcl.luv);
+table.hcl.xyz  = compose(table.luv.xyz,  table.hcl.luv);
+
+//////////////////////////////////////////////////////////////////////////////
+// table.hls.*
+
+table.hls.rgb = function(hls)
+{
+    var p2 = _if(hls.l.le(0.5),
+                 hls.l.mul(hls.s.add(1)),
+                 hls.l.add(hls.s).sub(hls.l.mul(hls.s)));
+    var p1 = hls.l.mul(2).sub(p2);
+    return table.rgb.create(
+        _if(hls.s.eq(0),
+            Shade.vec(hls.vec.swizzle("ggg")),
+            Shade.vec(qtrans(p1, p2, hls.h.add(Math.PI * 2/3).div(Math.PI * 2)),
+                      qtrans(p1, p2, hls.h.div(Math.PI * 2)),
+                      qtrans(p1, p2, hls.h.sub(Math.PI * 2/3).div(Math.PI * 2)))));
+};
+
+table.hls.srgb = compose(table.rgb.srgb, table.hls.rgb);
+table.hls.hsv  = compose(table.rgb.hsv,  table.hls.rgb);
+table.hls.xyz  = compose(table.rgb.xyz,  table.hls.rgb);
+table.hls.luv  = compose(table.rgb.luv,  table.hls.rgb);
+table.hls.hcl  = compose(table.rgb.hcl,  table.hls.rgb);
+
+//////////////////////////////////////////////////////////////////////////////
+// table.hsv.*
+
+table.hsv.rgb = function(hsv)
+{
+    var v = hsv.v;
+    var h = hsv.h.div(Math.PI).mul(3);
+    var i = h.floor();
+    var f = h.sub(i);
+    f = _if(i.div(2).floor().eq(i.div(2)),
+            Shade.sub(1, f),
+            f);
+    var m = v.mul(Shade.sub(1, hsv.s));
+    var n = v.mul(Shade.sub(1, hsv.s.mul(f)));
+    return table.rgb.create(_if(i.eq(0), Shade.vec(v, n, m),
+                            _if(i.eq(1), Shade.vec(n, v, m),
+                            _if(i.eq(2), Shade.vec(m, v, n),
+                            _if(i.eq(3), Shade.vec(m, n, v),
+                            _if(i.eq(4), Shade.vec(n, m, v),
+                            _if(i.eq(5), Shade.vec(v, m, n),
+                                         Shade.vec(v, n, m))))))));
+};
+
+table.hsv.srgb = compose(table.rgb.srgb, table.hsv.rgb);
+table.hsv.hls  = compose(table.rgb.hls,  table.hsv.rgb);
+table.hsv.xyz  = compose(table.rgb.xyz,  table.hsv.rgb);
+table.hsv.luv  = compose(table.rgb.luv,  table.hsv.rgb);
+table.hsv.hcl  = compose(table.rgb.hcl,  table.hsv.rgb);
+
+// currently we assume a D65 white point, but this could be configurable
+var white_point = table.xyz.create(95.047, 100.000, 108.883);
+var white_point_uv = xyz_to_uv(white_point);
+
+Shade.Colors.shadetable = table;
+
+})();
 Facet.Marks = {};
-// FIXME: alpha=0 points should discard because of depth buffer
 Facet.Marks.dots = function(opts)
 {
     opts = _.defaults(opts, {
@@ -7771,15 +9490,15 @@ Facet.Marks.dots = function(opts)
         stroke_color: Shade.vec(0,0,0,1),
         point_diameter: 5,
         stroke_width: 2,
-        mode: Facet.DrawingMode.over,
+        mode: Facet.DrawingMode.over_with_depth,
         alpha: true,
         plain: false
     });
 
     if (!opts.position)
-        throw "Facet.Marks.dots expects parameter 'position'";
+        throw "missing required parameter 'position'";
     if (!opts.elements)
-        throw "Facet.Marks.dots expects parameter 'elements'";
+        throw "missing required parameter 'elements'";
 
     var S = Shade;
 
@@ -7819,7 +9538,12 @@ Facet.Marks.dots = function(opts)
         color: Shade.selection(opts.plain, plain_fill_color, alpha_fill_color),
         mode: opts.mode
     });
-    // FIXME there must be a better way to do this.
+
+    /* We pass the gl_Position attribute explicitly because some other
+     call might want to explicitly use the same position of the dots marks.
+
+     This is the exact use case of dot-and-line graph drawing.
+     */
     result.gl_Position = gl_Position;
     return result;
 };
@@ -7831,7 +9555,7 @@ Facet.Marks.scatterplot = function(opts)
         xy_scale: function (x) { return x; }
     });
 
-    function to_opengl(x) { return x.mul(2).sub(1); };
+    function to_opengl(x) { return x.mul(2).sub(1); }
     var S = Shade;
     
     var x_scale = opts.x_scale;
@@ -7844,7 +9568,7 @@ Facet.Marks.scatterplot = function(opts)
                          to_opengl(opts.y_scale(opts.y)));
     } else if (!_.isUndefined(opts.xy)) {
         position = opts.xy_scale(opts.xy).mul(2).sub(S.vec(1,1));
-    };
+    }
 
     if (opts.model) {
         elements = opts.model.elements;
@@ -7867,16 +9591,17 @@ function spherical_mercator_patch(tess)
 {
     var uv = [];
     var elements = [];
+    var i, j;
 
-    for (var i=0; i<=tess; ++i)
-        for (var j=0; j<=tess; ++j)
+    for (i=0; i<=tess; ++i)
+        for (j=0; j<=tess; ++j)
             uv.push(i/tess, j/tess);
 
     for (i=0; i<tess; ++i)
-        for (var j=0; j<tess; ++j) {
+        for (j=0; j<tess; ++j) {
             var ix = (tess + 1) * i + j;
             elements.push(ix, ix+1, ix+tess+2, ix, ix+tess+2, ix+tess+1);
-        };
+        }
 
     return Facet.model({
         type: "triangles",
@@ -7889,7 +9614,7 @@ function spherical_mercator_patch(tess)
             return Shade.mix(min, max, this.uv).div(Math.PI * 2).add(Shade.vec(0, 0.5));
         }
     });
-};
+}
 
 function latlong_to_mercator(lat, lon)
 {
@@ -7936,6 +9661,7 @@ Facet.Marks.globe = function(opts)
         gl_FragColor: Shade.texture2D(sampler, sphere.transformed_uv(min, max))
     });
 
+    var display = function() { gl.display(); };
     for (var i=0; i<8; ++i)
         for (var j=0; j<8; ++j)
             Facet.load_image_into_texture({
@@ -7945,7 +9671,7 @@ Facet.Marks.globe = function(opts)
                 crossOrigin: "anonymous",
                 x_offset: ((i + 4) % 8)  * 256,
                 y_offset: 2048 - (j+1) * 256,
-                onload: function() { gl.display(); }
+                onload: display
             });
 
     return {
@@ -8043,10 +9769,9 @@ Facet.Marks.globe = function(opts)
                 max_x.set(mx_x);
                 sphere_drawable.draw();
             }
-            
         }
     };
-}
+};
 Facet.Models = {};
 Facet.Models.flat_cube = function() {
     return Facet.model({
@@ -8080,21 +9805,21 @@ Facet.Models.flat_cube = function() {
 Facet.Models.mesh = function(u_secs, v_secs) {
     var verts = [];
     var elements = [];
-    if (typeof v_secs === "undefined") v_secs = u_secs;
+    if (_.isUndefined(v_secs)) v_secs = u_secs;
     if (v_secs <= 0) throw "v_secs must be positive";
     if (u_secs <= 0) throw "u_secs must be positive";
     v_secs = Math.floor(v_secs);
     u_secs = Math.floor(u_secs);
-    
-    for (var i=0; i<=v_secs; ++i) {
+    var i, j;    
+    for (i=0; i<=v_secs; ++i) {
         var v = (i / v_secs);
-        for (var j=0; j<=u_secs; ++j) {
+        for (j=0; j<=u_secs; ++j) {
             var u = (j / u_secs);
             verts.push(u, v);
         }
     }
     for (i=0; i<v_secs; ++i) {
-        for (var j=0; j<=u_secs; ++j) {
+        for (j=0; j<=u_secs; ++j) {
             elements.push(i * (u_secs + 1) + j,
                           (i + 1) * (u_secs + 1) + j);
         }
@@ -8108,36 +9833,32 @@ Facet.Models.mesh = function(u_secs, v_secs) {
         }
     }
 
-    var S = Shade;
-    var uv_attr = Facet.attribute_buffer(verts, 2);
-    var phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
-    var theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
-    var cosphi = S.cos(phi);
+    var uv_attr = Shade.make(Facet.attribute_buffer(verts, 2));
     return Facet.model({
         type: "triangle_strip",
         tex_coord: uv_attr,
-        vertex: Shade.mul(uv_attr, 2).sub(Shade.vec(1, 1)),
+        vertex: uv_attr.mul(2).sub(1),
         elements: Facet.element_buffer(elements)
     });
 };
 Facet.Models.sphere = function(lat_secs, long_secs) {
     var verts = [];
     var elements = [];
-    if (typeof long_secs === "undefined") long_secs = lat_secs;
+    if (_.isUndefined(long_secs)) long_secs = lat_secs;
     if (lat_secs <= 0) throw "lat_secs must be positive";
     if (long_secs <= 0) throw "long_secs must be positive";
     lat_secs = Math.floor(lat_secs);
     long_secs = Math.floor(long_secs);
-    
-    for (var i=0; i<=lat_secs; ++i) {
-        var phi = (i / lat_secs);
-        for (var j=0; j<long_secs; ++j) {
-            var theta = (j / long_secs);
+    var i, j, phi, theta;    
+    for (i=0; i<=lat_secs; ++i) {
+        phi = (i / lat_secs);
+        for (j=0; j<long_secs; ++j) {
+            theta = (j / long_secs);
             verts.push(theta, phi);
         }
     }
     for (i=0; i<lat_secs; ++i) {
-        for (var j=0; j<long_secs; ++j) {
+        for (j=0; j<long_secs; ++j) {
             elements.push(i * long_secs + j,
                           i * long_secs + ((j + 1) % long_secs),
                           (i + 1) * long_secs + j,
@@ -8149,8 +9870,8 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
 
     var S = Shade;
     var uv_attr = Facet.attribute_buffer(verts, 2);
-    var phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
-    var theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
+    phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
+    theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
     var cosphi = S.cos(phi);
     return Facet.model({
         type: "triangles",
@@ -8159,7 +9880,7 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
                       S.sin(phi),
                       S.cos(theta).mul(cosphi), 1)
     });
-},
+};
 Facet.Models.square = function() {
     var uv = Shade.make(Facet.attribute_buffer([0, 0, 1, 0, 0, 1, 1, 1], 2));
     return Facet.model({
@@ -8168,7 +9889,7 @@ Facet.Models.square = function() {
         vertex: uv,
         tex_coord: uv
     });
-}
+};
 Facet.Models.teapot = function()
 {
     return Facet.model({
@@ -8178,209 +9899,3 @@ Facet.Models.teapot = function()
         vertex: [[-3.0, 1.8, 0.0, -2.9916, 1.8, -0.081, -2.9916, 1.8, 0.081, -2.98945, 1.666162, 0.0, -2.985, 1.92195, 0.0, -2.985, 1.92195, 0.0, -2.981175, 1.667844, -0.081, -2.981175, 1.667844, 0.081, -2.976687, 1.920243, -0.081, -2.976687, 1.920243, 0.081, -2.9688, 1.8, -0.144, -2.9688, 1.8, 0.144, -2.958713, 1.672406, -0.144, -2.958713, 1.672406, 0.144, -2.9576, 1.5348, 0.0, -2.9576, 1.5348, 0.0, -2.954122, 1.915609, -0.144, -2.954122, 1.915609, 0.144, -2.949693, 1.53779, -0.081, -2.949693, 1.53779, 0.081, -2.94, 2.0196, 0.0, -2.9352, 1.8, -0.189, -2.9352, 1.8, 0.189, -2.931958, 2.016526, 0.081, -2.931958, 2.016526, -0.081, -2.92823, 1.545907, -0.144, -2.92823, 1.545907, 0.144, -2.925611, 1.679131, -0.189, -2.925611, 1.679131, 0.189, -2.92087, 1.908779, -0.189, -2.92087, 1.908779, 0.189, -2.910131, 2.008181, -0.144, -2.910131, 2.008181, 0.144, -2.90415, 1.406137, 0.0, -2.90415, 1.406137, 0.0, -2.896846, 1.410135, 0.081, -2.896846, 1.410135, -0.081, -2.896602, 1.557869, -0.189, -2.896602, 1.557869, 0.189, -2.8944, 1.8, -0.216, -2.8944, 1.8, 0.216, -2.885416, 1.687296, -0.216, -2.885416, 1.687296, 0.216, -2.880491, 1.900487, -0.216, -2.880491, 1.900487, 0.216, -2.877965, 1.995883, -0.189, -2.877965, 1.995883, 0.189, -2.877022, 1.420985, -0.144, -2.877022, 1.420985, 0.144, -2.865, 2.09565, 0.0, -2.858195, 1.572394, 0.216, -2.858195, 1.572394, -0.216, -2.857432, 2.091511, -0.081, -2.857432, 2.091511, 0.081, -2.85, 1.8, -0.225, -2.85, 1.8, 0.225, -2.847806, 1.436974, 0.189, -2.847806, 1.436974, -0.189, -2.841675, 1.696181, 0.225, -2.841675, 1.696181, -0.225, -2.838906, 1.98095, -0.216, -2.838906, 1.98095, 0.216, -2.836889, 2.080276, -0.144, -2.836889, 2.080276, 0.144, -2.83655, 1.891463, -0.225, -2.83655, 1.891463, 0.225, -2.8288, 1.2804, 0.0, -2.822326, 1.285171, -0.081, -2.822326, 1.285171, 0.081, -2.8164, 1.5882, -0.225, -2.8164, 1.5882, 0.225, -2.812331, 1.45639, 0.216, -2.812331, 1.45639, -0.216, -2.806615, 2.06372, -0.189, -2.806615, 2.06372, 0.189, -2.8056, 1.8, -0.216, -2.8056, 1.8, 0.216, -2.804755, 1.298122, -0.144, -2.804755, 1.298122, 0.144, -2.797934, 1.705067, -0.216, -2.797934, 1.705067, 0.216, -2.7964, 1.9647, 0.225, -2.7964, 1.9647, -0.225, -2.792609, 1.882438, -0.216, -2.792609, 1.882438, 0.216, -2.778861, 1.317206, -0.189, -2.778861, 1.317206, 0.189, -2.774605, 1.604006, 0.216, -2.774605, 1.604006, -0.216, -2.773725, 1.477519, 0.225, -2.773725, 1.477519, -0.225, -2.769854, 2.043616, -0.216, -2.769854, 2.043616, 0.216, -2.7648, 1.8, -0.189, -2.7648, 1.8, 0.189, -2.76, 2.1528, 0.0, -2.76, 2.1528, 0.0, -2.757739, 1.713232, -0.189, -2.757739, 1.713232, 0.189, -2.753894, 1.94845, -0.216, -2.753894, 1.94845, 0.216, -2.753123, 2.147861, -0.081, -2.753123, 2.147861, 0.081, -2.75223, 1.874146, -0.189, -2.75223, 1.874146, 0.189, -2.747418, 1.340381, -0.216, -2.747418, 1.340381, 0.216, -2.736198, 1.618531, -0.189, -2.736198, 1.618531, 0.189, -2.735119, 1.498648, 0.216, -2.735119, 1.498648, -0.216, -2.734458, 2.134454, -0.144, -2.734458, 2.134454, 0.144, -2.73125, 1.157813, 0.0, -2.73125, 1.157813, 0.0, -2.7312, 1.8, -0.144, -2.7312, 1.8, 0.144, -2.72985, 2.021737, -0.225, -2.72985, 2.021737, 0.225, -2.725825, 1.163194, 0.081, -2.725825, 1.163194, -0.081, -2.724637, 1.719956, -0.144, -2.724637, 1.719956, 0.144, -2.718978, 1.867316, -0.144, -2.718978, 1.867316, 0.144, -2.714835, 1.933517, -0.189, -2.714835, 1.933517, 0.189, -2.7132, 1.3656, -0.225, -2.7132, 1.3656, 0.225, -2.7111, 1.1778, -0.144, -2.7111, 1.1778, 0.144, -2.7084, 1.8, -0.081, -2.7084, 1.8, 0.081, -2.70695, 2.114698, -0.189, -2.70695, 2.114698, 0.189, -2.70457, 1.630493, -0.144, -2.70457, 1.630493, 0.144, -2.702175, 1.724519, -0.081, -2.702175, 1.724519, 0.081, -2.7, 1.8, 0.0, -2.699644, 1.518063, 0.189, -2.699644, 1.518063, -0.189, -2.696413, 1.862682, -0.081, -2.696413, 1.862682, 0.081, -2.6939, 1.7262, 0.0, -2.689846, 1.999859, -0.216, -2.689846, 1.999859, 0.216, -2.6894, 1.199325, -0.189, -2.6894, 1.199325, 0.189, -2.6881, 1.860975, 0.0, -2.6881, 1.860975, 0.0, -2.683107, 1.63861, -0.081, -2.683107, 1.63861, 0.081, -2.682669, 1.921219, -0.144, -2.682669, 1.921219, 0.144, -2.678982, 1.390819, -0.216, -2.678982, 1.390819, 0.216, -2.6752, 1.6416, 0.0, -2.6752, 1.6416, 0.0, -2.673549, 2.090707, -0.216, -2.673549, 2.090707, 0.216, -2.670428, 1.534053, -0.144, -2.670428, 1.534053, 0.144, -2.66305, 1.225463, -0.216, -2.66305, 1.225463, 0.216, -2.660842, 1.912874, 0.081, -2.660842, 1.912874, -0.081, -2.653085, 1.979755, -0.189, -2.653085, 1.979755, 0.189, -2.6528, 1.9098, 0.0, -2.6528, 1.9098, 0.0, -2.650604, 1.544903, 0.081, -2.650604, 1.544903, -0.081, -2.647539, 1.413994, -0.189, -2.647539, 1.413994, 0.189, -2.6433, 1.5489, 0.0, -2.6372, 2.0646, -0.225, -2.6372, 2.0646, 0.225, -2.634375, 1.253906, 0.225, -2.634375, 1.253906, -0.225, -2.625, 2.19375, 0.0, -2.622811, 1.963199, -0.144, -2.622811, 1.963199, 0.144, -2.621645, 1.433078, -0.144, -2.621645, 1.433078, 0.144, -2.61905, 2.188238, -0.081, -2.61905, 2.188238, 0.081, -2.6112, 1.0386, 0.0, -2.6112, 1.0386, 0.0, -2.607034, 1.044497, 0.081, -2.607034, 1.044497, -0.081, -2.6057, 1.28235, -0.216, -2.6057, 1.28235, 0.216, -2.604074, 1.446029, -0.081, -2.604074, 1.446029, 0.081, -2.6029, 2.173275, -0.144, -2.6029, 2.173275, 0.144, -2.602268, 1.951964, -0.081, -2.602268, 1.951964, 0.081, -2.600851, 2.038493, -0.216, -2.600851, 2.038493, 0.216, -2.5976, 1.4508, 0.0, -2.595725, 1.060502, -0.144, -2.595725, 1.060502, 0.144, -2.5947, 1.947825, 0.0, -2.57935, 1.308488, -0.189, -2.57935, 1.308488, 0.189, -2.5791, 2.151225, -0.189, -2.5791, 2.151225, 0.189, -2.579059, 1.08409, -0.189, -2.579059, 1.08409, 0.189, -2.56745, 2.014502, -0.189, -2.56745, 2.014502, 0.189, -2.558822, 1.112731, 0.216, -2.558822, 1.112731, -0.216, -2.55765, 1.330013, -0.144, -2.55765, 1.330013, 0.144, -2.5502, 2.12445, -0.216, -2.5502, 2.12445, 0.216, -2.542925, 1.344619, 0.081, -2.542925, 1.344619, -0.081, -2.539942, 1.994746, -0.144, -2.539942, 1.994746, 0.144, -2.5375, 1.35, 0.0, -2.5375, 1.35, 0.0, -2.5368, 1.1439, 0.225, -2.5368, 1.1439, -0.225, -2.521277, 1.981339, -0.081, -2.521277, 1.981339, 0.081, -2.51875, 2.095312, -0.225, -2.51875, 2.095312, 0.225, -2.514778, 1.175069, 0.216, -2.514778, 1.175069, -0.216, -2.5144, 1.9764, 0.0, -2.5144, 1.9764, 0.0, -2.494541, 1.20371, -0.189, -2.494541, 1.20371, 0.189, -2.4873, 2.066175, -0.216, -2.4873, 2.066175, 0.216, -2.477875, 1.227298, -0.144, -2.477875, 1.227298, 0.144, -2.46835, 0.922987, 0.0, -2.466566, 1.243303, 0.081, -2.466566, 1.243303, -0.081, -2.465644, 0.929375, -0.081, -2.465644, 0.929375, 0.081, -2.4624, 1.2492, 0.0, -2.4624, 1.2492, 0.0, -2.46, 2.2212, 0.0, -2.46, 2.2212, 0.0, -2.4584, 2.0394, -0.189, -2.4584, 2.0394, 0.189, -2.458298, 0.946711, -0.144, -2.458298, 0.946711, 0.144, -2.455229, 2.215303, -0.081, -2.455229, 2.215303, 0.081, -2.447474, 0.97226, 0.189, -2.447474, 0.97226, -0.189, -2.442278, 2.199298, -0.144, -2.442278, 2.199298, 0.144, -2.4346, 2.01735, -0.144, -2.4346, 2.01735, 0.144, -2.434329, 1.003283, -0.216, -2.434329, 1.003283, 0.216, -2.423194, 2.17571, -0.189, -2.423194, 2.17571, 0.189, -2.420025, 1.037044, -0.225, -2.420025, 1.037044, 0.225, -2.41845, 2.002387, -0.081, -2.41845, 2.002388, 0.081, -2.4125, 1.996875, 0.0, -2.4125, 1.996875, 0.0, -2.405721, 1.070804, -0.216, -2.405721, 1.070804, 0.216, -2.400019, 2.147069, -0.216, -2.400019, 2.147069, 0.216, -2.392576, 1.101828, -0.189, -2.392576, 1.101828, 0.189, -2.381752, 1.127376, -0.144, -2.381752, 1.127376, 0.144, -2.3748, 2.1159, -0.225, -2.3748, 2.1159, 0.225, -2.374406, 1.144713, 0.081, -2.374406, 1.144713, -0.081, -2.3717, 1.1511, 0.0, -2.349581, 2.084731, -0.216, -2.349581, 2.084731, 0.216, -2.326406, 2.05609, -0.189, -2.326406, 2.05609, 0.189, -2.307322, 2.032502, -0.144, -2.307322, 2.032502, 0.144, -2.3024, 0.8112, 0.0, -2.3024, 0.8112, 0.0, -2.301347, 0.818122, 0.081, -2.301347, 0.818122, -0.081, -2.29849, 0.836909, 0.144, -2.29849, 0.836909, -0.144, -2.294371, 2.016497, -0.081, -2.294371, 2.016497, 0.081, -2.294278, 0.864595, 0.189, -2.294278, 0.864595, -0.189, -2.2896, 2.0106, 0.0, -2.2896, 2.0106, 0.0, -2.289165, 0.898214, 0.216, -2.289165, 0.898214, -0.216, -2.2836, 0.9348, 0.225, -2.2836, 0.9348, -0.225, -2.278035, 0.971386, 0.216, -2.278035, 0.971386, -0.216, -2.272922, 1.005005, 0.189, -2.272922, 1.005005, -0.189, -2.26871, 1.032691, -0.144, -2.26871, 1.032691, 0.144, -2.265853, 1.051478, 0.081, -2.265853, 1.051478, -0.081, -2.265, 2.23785, 0.0, -2.2648, 1.0584, 0.0, -2.2648, 1.0584, 0.0, -2.261676, 2.23172, -0.081, -2.261676, 2.23172, 0.081, -2.252655, 2.215082, -0.144, -2.252655, 2.215082, 0.144, -2.239361, 2.190562, -0.189, -2.239361, 2.190562, 0.189, -2.223218, 2.160788, -0.216, -2.223218, 2.160788, 0.216, -2.20565, 2.128387, 0.225, -2.20565, 2.128388, -0.225, -2.188082, 2.095987, -0.216, -2.188082, 2.095987, 0.216, -2.171939, 2.066213, -0.189, -2.171939, 2.066213, 0.189, -2.158645, 2.041693, -0.144, -2.158645, 2.041693, 0.144, -2.149624, 2.025055, -0.081, -2.149624, 2.025055, 0.081, -2.1463, 2.018925, 0.0, -2.1411, 0.9738, 0.0, -2.1411, 0.9738, 0.0, -2.140315, 0.966231, 0.081, -2.140315, 0.966231, -0.081, -2.138183, 0.945685, 0.144, -2.138183, 0.945685, -0.144, -2.135041, 0.915407, 0.189, -2.135041, 0.915407, -0.189, -2.131226, 0.878641, 0.216, -2.131226, 0.878641, -0.216, -2.127075, 0.838631, 0.225, -2.127075, 0.838631, -0.225, -2.122924, 0.798621, 0.216, -2.122924, 0.798621, -0.216, -2.119109, 0.761855, 0.189, -2.119109, 0.761855, -0.189, -2.115967, 0.731578, 0.144, -2.115967, 0.731578, -0.144, -2.113835, 0.711032, 0.081, -2.113835, 0.711032, -0.081, -2.11305, 0.703463, 0.0, -2.11305, 0.703463, 0.0, -2.04, 2.2464, 0.0, -2.04, 2.2464, 0.0, -2.03841, 2.24015, -0.081, -2.03841, 2.24015, 0.081, -2.034093, 2.223187, -0.144, -2.034093, 2.223187, 0.144, -2.027731, 2.198189, -0.189, -2.027731, 2.198189, 0.189, -2.020006, 2.167834, 0.216, -2.020006, 2.167834, -0.216, -2.0116, 2.1348, 0.225, -2.0116, 2.1348, -0.225, -2.003194, 2.101766, 0.216, -2.003194, 2.101766, -0.216, -2.0, 0.9, 0.0, -2.0, 0.9, 0.0, -2.0, 0.9, 0.0, -1.9972, 0.8916, 0.081, -1.9972, 0.8916, -0.081, -1.995469, 2.071411, -0.189, -1.995469, 2.071411, 0.189, -1.99275, 1.037175, -0.0, -1.99275, 1.037175, 0.0, -1.9896, 0.8688, 0.144, -1.9896, 0.8688, -0.144, -1.989107, 2.046413, 0.144, -1.989107, 2.046413, -0.144, -1.986, 0.771675, 0.0, -1.986, 0.771675, 0.0, -1.98479, 2.02945, -0.081, -1.98479, 2.02945, 0.081, -1.9832, 2.0232, 0.0, -1.9832, 2.0232, 0.0, -1.9784, 0.8352, 0.189, -1.9784, 0.8352, -0.189, -1.97424, 0.9, -0.32816, -1.97424, 0.9, -0.32816, -1.97424, 0.9, 0.32816, -1.972, 1.1784, -0.0, -1.972, 1.1784, 0.0, -1.967083, 1.037175, -0.32697, -1.967083, 1.037175, 0.32697, -1.9648, 0.7944, 0.216, -1.9648, 0.7944, -0.216, -1.96042, 0.771675, -0.325863, -1.96042, 0.771675, 0.325863, -1.95, 0.75, -0.225, -1.95, 0.75, 0.225, -1.948, 0.6564, 0.0, -1.948, 0.6564, 0.0, -1.946601, 1.1784, -0.323566, -1.946601, 1.1784, 0.323566, -1.93925, 1.323225, 0.0, -1.93925, 1.323225, 0.0, -1.9352, 0.7056, 0.216, -1.9352, 0.7056, -0.216, -1.92291, 0.6564, -0.319628, -1.92291, 0.6564, 0.319628, -1.9216, 0.6648, 0.189, -1.9216, 0.6648, -0.189, -1.914272, 1.323225, -0.318192, -1.914272, 1.323225, 0.318192, -1.9104, 0.6312, 0.144, -1.9104, 0.6312, -0.144, -1.9028, 0.6084, 0.081, -1.9028, 0.6084, -0.081, -1.9, 0.6, 0.0, -1.9, 0.6, 0.0, -1.89952, 0.9, -0.63808, -1.89952, 0.9, -0.63808, -1.89952, 0.9, 0.63808, -1.89952, 0.9, 0.63808, -1.896, 1.4712, 0.0, -1.896, 1.4712, 0.0, -1.892634, 1.037175, -0.635767, -1.892634, 1.037175, 0.635767, -1.892, 0.553725, 0.0, -1.892, 0.553725, 0.0, -1.886223, 0.771675, -0.633613, -1.886223, 0.771675, 0.633613, -1.872927, 1.1784, -0.629147, -1.872927, 1.1784, 0.629147, -1.87158, 1.4712, -0.311096, -1.87158, 1.4712, 0.311096, -1.867631, 0.553725, -0.310439, -1.867631, 0.553725, 0.310439, -1.850132, 0.6564, -0.62149, -1.850132, 0.6564, 0.62149, -1.84375, 1.621875, 0.0, -1.84375, 1.621875, 0.0, -1.841822, 1.323225, -0.618698, -1.841822, 1.323225, 0.618698, -1.824, 0.4632, -0.0, -1.824, 0.4632, 0.0, -1.820003, 1.621875, -0.302522, -1.820003, 1.621875, 0.302523, -1.8009, 2.024775, 0.0, -1.800745, 1.4712, -0.6049, -1.800745, 1.4712, 0.6049, -1.800507, 0.4632, -0.299282, -1.800507, 0.4632, 0.299282, -1.800455, 2.031069, -0.081, -1.800455, 2.031069, 0.081, -1.799246, 2.048152, -0.144, -1.799246, 2.048152, 0.144, -1.797466, 2.073326, -0.189, -1.797466, 2.073326, 0.189, -1.796946, 0.553725, -0.603624, -1.796946, 0.553725, 0.603624, -1.795303, 2.103896, -0.216, -1.795303, 2.103896, 0.216, -1.79295, 2.137163, -0.225, -1.79295, 2.137163, 0.225, -1.790597, 2.170429, -0.216, -1.790597, 2.170429, 0.216, -1.788434, 2.200999, -0.189, -1.788434, 2.200999, 0.189, -1.786654, 2.226173, -0.144, -1.786654, 2.226173, 0.144, -1.785445, 2.243256, -0.081, -1.785445, 2.243256, 0.081, -1.785, 2.24955, 0.0, -1.784, 1.7748, -0.0, -1.784, 1.7748, 0.0, -1.77968, 0.9, -0.92592, -1.77968, 0.9, -0.92592, -1.77968, 0.9, 0.92592, -1.77968, 0.9, 0.92592, -1.773229, 1.037175, -0.922564, -1.773229, 1.037175, 0.922564, -1.767222, 0.771675, -0.919439, -1.767222, 0.771675, 0.919439, -1.761022, 1.7748, -0.292719, -1.761022, 1.7748, 0.292719, -1.754764, 1.1784, -0.912957, -1.754764, 1.1784, 0.912957, -1.75112, 1.621875, -0.58823, -1.75112, 1.621875, 0.58823, -1.75, 0.384375, -0.0, -1.75, 0.384375, 0.0, -1.733408, 0.6564, -0.901846, -1.733408, 0.6564, 0.901846, -1.732362, 0.4632, -0.581929, -1.732362, 0.4632, 0.581929, -1.72746, 0.384375, -0.28714, -1.72746, 0.384375, 0.28714, -1.725622, 1.323225, -0.897795, -1.725622, 1.323225, 0.897795, -1.71825, 1.929525, -0.0, -1.71825, 1.929525, 0.0, -1.696119, 1.929525, -0.28193, -1.696119, 1.929525, 0.28193, -1.694372, 1.7748, -0.569167, -1.694372, 1.7748, 0.569167, -1.687137, 1.4712, -0.877772, -1.687137, 1.4712, 0.877772, -1.683577, 0.553725, -0.87592, -1.683577, 0.553725, 0.87592, -1.676, 0.3168, 0.0, -1.676, 0.3168, 0.0, -1.66208, 0.384375, -0.55832, -1.66208, 0.384375, 0.55832, -1.654413, 0.3168, -0.274998, -1.654413, 0.3168, 0.274998, -1.648, 2.0856, 0.0, -1.648, 2.0856, 0.0, -1.640643, 1.621875, -0.853583, -1.640643, 1.621875, 0.853583, -1.631925, 1.929525, -0.54819, -1.631925, 1.929525, 0.54819, -1.626774, 2.0856, -0.270404, -1.626774, 2.0856, 0.270404, -1.623068, 0.4632, -0.844439, -1.623068, 0.4632, 0.844439, -1.61856, 0.9, -1.18784, -1.61856, 0.9, -1.18784, -1.61856, 0.9, 1.18784, -1.61856, 0.9, 1.18784, -1.612693, 1.037175, -1.183534, -1.612693, 1.037175, 1.183534, -1.608, 0.260025, -0.0, -1.608, 0.260025, 0.0, -1.60723, 0.771675, -1.179525, -1.60723, 0.771675, 1.179525, -1.6, 2.025, 0.0, -1.5972, 2.0313, -0.081, -1.5972, 2.0313, 0.081, -1.5959, 1.1784, -1.17121, -1.5959, 1.1784, 1.17121, -1.591798, 0.3168, -0.534711, -1.591798, 0.3168, 0.534711, -1.5896, 2.0484, -0.144, -1.5896, 2.0484, 0.144, -1.587475, 1.7748, -0.825921, -1.587475, 1.7748, 0.825921, -1.587289, 0.260025, 0.263841, -1.587289, 0.260025, -0.263841, -1.5784, 2.0736, -0.189, -1.5784, 2.0736, 0.189, -1.576477, 0.6564, -1.156956, -1.576477, 0.6564, 1.156956, -1.57475, 2.242575, 0.0, -1.57475, 2.242575, 0.0, -1.569396, 1.323225, -1.151759, -1.569396, 1.323225, 1.151759, -1.565204, 2.0856, -0.525778, -1.565204, 2.0856, 0.525778, -1.5648, 2.1042, -0.216, -1.5648, 2.1042, 0.216, -1.55722, 0.384375, -0.81018, -1.55722, 0.384375, 0.81018, -1.554467, 2.242575, -0.258385, -1.554467, 2.242575, 0.258385, -1.552, 0.2136, 0.0, -1.552, 0.2136, 0.0, -1.55, 2.1375, -0.225, -1.55, 2.1375, 0.225, -1.5352, 2.1708, -0.216, -1.5352, 2.1708, 0.216, -1.534395, 1.4712, -1.126072, -1.534395, 1.4712, 1.126072, -1.53201, 0.2136, 0.254652, -1.53201, 0.2136, -0.254652, -1.531158, 0.553725, -1.123697, -1.531158, 0.553725, 1.123697, -1.528968, 1.929525, -0.795481, -1.528968, 1.929525, 0.795481, -1.527214, 0.260025, -0.513016, -1.527214, 0.260025, 0.513016, -1.5216, 2.2014, -0.189, -1.5216, 2.2014, 0.189, -1.514, 0.177075, 0.0, -1.514, 0.177075, 0.0, -1.5104, 2.2266, -0.144, -1.5104, 2.2266, 0.144, -1.5028, 2.2437, -0.081, -1.5028, 2.2437, 0.081, -1.5, 2.4, 0.0, -1.5, 0.15, 0.0, -1.5, 2.25, 0.0, -1.5, 2.4, 0.0, -1.5, 0.15, 0.0, -1.496475, 0.127575, -0.0, -1.496475, 0.127575, 0.0, -1.495635, 2.242575, -0.502408, -1.495635, 2.242575, 0.502408, -1.4945, 0.177075, 0.248417, -1.4945, 0.177075, -0.248417, -1.49211, 1.621875, -1.09504, -1.49211, 1.621875, 1.09504, -1.491372, 0.3168, -0.775921, -1.491372, 0.3168, 0.775921, -1.4808, 0.1056, 0.0, -1.4808, 0.1056, -0.0, -1.48068, 2.4, -0.24612, -1.48068, 0.15, 0.24612, -1.48068, 2.4, 0.24612, -1.48068, 0.15, -0.24612, -1.48068, 0.15, -0.24612, -1.48068, 0.15, 0.24612, -1.480325, 2.435437, 0.0, -1.480325, 2.435437, 0.0, -1.4772, 0.127575, 0.245542, -1.4772, 0.127575, -0.245542, -1.476127, 0.4632, -1.08331, -1.476127, 0.4632, 1.08331, -1.474028, 0.2136, 0.49515, -1.474028, 0.2136, -0.49515, -1.466456, 2.0856, -0.762958, -1.466456, 2.0856, 0.762958, -1.461727, 0.1056, -0.24297, -1.461727, 0.1056, 0.24297, -1.461258, 2.435437, -0.242892, -1.461258, 2.435437, 0.242892, -1.4596, 2.463, 0.0, -1.4596, 2.463, 0.0, -1.445325, 0.084525, 0.0, -1.445325, 0.084525, 0.0, -1.443756, 1.7748, -1.059553, -1.443756, 1.7748, 1.059553, -1.4408, 2.463, -0.239491, -1.4408, 2.463, 0.239491, -1.439025, 2.482687, 0.0, -1.437937, 0.177075, 0.483027, -1.437937, 0.177075, -0.483027, -1.430863, 0.260025, 0.74444, -1.430863, 0.260025, -0.74444, -1.426709, 0.084525, -0.237149, -1.426709, 0.084525, 0.237149, -1.42464, 2.4, -0.47856, -1.42464, 0.15, -0.47856, -1.42464, 0.15, -0.47856, -1.42464, 0.15, 0.47856, -1.42464, 0.15, 0.47856, -1.42464, 2.4, 0.47856, -1.421292, 0.127575, 0.477435, -1.421292, 0.127575, -0.477435, -1.42049, 2.482687, -0.236115, -1.42049, 2.482687, 0.236115, -1.42, 0.9, -1.42, -1.42, 0.9, -1.42, -1.42, 0.9, 1.42, -1.42, 0.9, 1.42, -1.4198, 2.4945, 0.0, -1.4198, 2.4945, 0.0, -1.41624, 0.384375, -1.03936, -1.41624, 0.384375, 1.03936, -1.414853, 1.037175, -1.414853, -1.414853, 1.037175, 1.414853, -1.41006, 0.771675, -1.41006, -1.41006, 0.771675, 1.41006, -1.406405, 0.1056, -0.472434, -1.406405, 0.1056, 0.472434, -1.405953, 2.435437, -0.472283, -1.405953, 2.435437, 0.472283, -1.403125, 2.498438, 0.0, -1.403125, 2.498438, 0.0, -1.401513, 2.4945, -0.232961, -1.401513, 2.4945, 0.232961, -1.401276, 2.242575, -0.729046, -1.401276, 2.242575, 0.729046, -1.40012, 1.1784, -1.40012, -1.40012, 1.1784, 1.40012, -1.4, 2.4, 0.0, -1.4, 2.4, 0.0, -1.390545, 1.929525, -1.020503, -1.390545, 1.929525, 1.020503, -1.3902, 2.4945, 0.0, -1.3902, 2.4945, 0.0, -1.38627, 2.463, -0.465671, -1.38627, 2.463, 0.465671, -1.385925, 2.435437, 0.0, -1.385925, 2.435437, 0.0, -1.385053, 2.498438, -0.230225, -1.385053, 2.498438, 0.230225, -1.38308, 0.6564, -1.38308, -1.38308, 0.6564, 1.38308, -1.3824, 0.0648, -0.0, -1.3824, 0.0648, 0.0, -1.382225, 2.482687, -0.0, -1.382225, 2.482687, 0.0, -1.381968, 2.4, -0.229712, -1.381968, 2.4, 0.229712, -1.381032, 0.2136, 0.718514, -1.381032, 0.2136, -0.718514, -1.3804, 2.463, 0.0, -1.3804, 2.463, 0.0, -1.376868, 1.323225, -1.376867, -1.376867, 1.323225, 1.376868, -1.372712, 0.084525, -0.461116, -1.372712, 0.084525, 0.461116, -1.372294, 2.4945, -0.228104, -1.372294, 2.4945, 0.228104, -1.368074, 2.435437, -0.227403, -1.368074, 2.435437, 0.227403, -1.366728, 2.482687, -0.459107, -1.366728, 2.482687, 0.459107, -1.364595, 0.0648, -0.226824, -1.364595, 0.0648, 0.226824, -1.364422, 2.482687, -0.226795, -1.364422, 2.482687, 0.226795, -1.36262, 2.463, -0.226496, -1.36262, 2.463, 0.226496, -1.356353, 0.3168, -0.99541, -1.356353, 0.3168, 0.99541, -1.348469, 2.4945, -0.452973, -1.348469, 2.4945, 0.452973, -1.347218, 0.177075, 0.700921, -1.347218, 0.177075, -0.700921, -1.34616, 1.4712, -1.34616, -1.34616, 1.4712, 1.34616, -1.34332, 0.553725, -1.34332, -1.34332, 0.553725, 1.34332, -1.33476, 2.4, -0.69444, -1.33476, 0.15, -0.69444, -1.33476, 0.15, 0.69444, -1.33476, 0.15, 0.69444, -1.33476, 2.4, 0.69444, -1.33476, 0.15, -0.69444, -1.333693, 2.0856, -0.97878, -1.333693, 2.0856, 0.97878, -1.332632, 2.498438, -0.447653, -1.332632, 2.498438, 0.447653, -1.331623, 0.127575, 0.692808, -1.331623, 0.127575, -0.692808, -1.329664, 2.4, -0.446656, -1.329664, 2.4, 0.446656, -1.320356, 2.4945, -0.443529, -1.320356, 2.4945, 0.443529, -1.317675, 0.1056, -0.685551, -1.317675, 0.1056, 0.685551, -1.317252, 2.435437, -0.685331, -1.317252, 2.435437, 0.685331, -1.316296, 2.435437, -0.442166, -1.316296, 2.435437, 0.442166, -1.312948, 0.0648, 0.441041, -1.312948, 0.0648, -0.441041, -1.312782, 2.482687, -0.440985, -1.312782, 2.482687, 0.440985, -1.311049, 2.463, -0.440403, -1.311049, 2.463, 0.440403, -1.309063, 1.621875, -1.309063, -1.309063, 1.621875, 1.309063, -1.301322, 0.260025, 0.955023, -1.301322, 0.260025, -0.955023, -1.3, 2.4, 0.0, -1.3, 2.4, 0.0, -1.29881, 2.463, -0.675736, -1.29881, 2.463, 0.675736, -1.29504, 0.4632, -1.29504, -1.29504, 0.4632, 1.29504, -1.286108, 0.084525, -0.669128, -1.286108, 0.084525, 0.669128, -1.284375, 0.046875, 0.0, -1.284375, 0.046875, 0.0, -1.283256, 2.4, -0.213304, -1.283256, 2.4, 0.213304, -1.280502, 2.482687, -0.666211, -1.280502, 2.482687, 0.666211, -1.2746, 2.4408, 0.0, -1.2746, 2.4408, 0.0, -1.274414, 2.242575, -0.935276, -1.274414, 2.242575, 0.935276, -1.267832, 0.046875, -0.21074, -1.267832, 0.046875, 0.21074, -1.26664, 1.7748, -1.26664, -1.26664, 1.7748, 1.26664, -1.263395, 2.4945, -0.657311, -1.263395, 2.4945, 0.657311, -1.258183, 2.4408, 0.209136, -1.258183, 2.4408, -0.209136, -1.256003, 0.2136, 0.921764, -1.256003, 0.2136, -0.921764, -1.248557, 2.498438, -0.649591, -1.248557, 2.498438, 0.649591, -1.245776, 2.4, -0.648144, -1.245776, 2.4, 0.648144, -1.2425, 0.384375, -1.2425, -1.2425, 0.384375, 1.2425, -1.237056, 2.4945, -0.643607, -1.237056, 2.4945, 0.643607, -1.234688, 2.4, -0.414752, -1.234688, 2.4, 0.414752, -1.233252, 2.435437, -0.641628, -1.233252, 2.435437, 0.641628, -1.230115, 0.0648, -0.639996, -1.230115, 0.0648, 0.639996, -1.229959, 2.482687, -0.639915, -1.229959, 2.482687, 0.639915, -1.228335, 2.463, -0.63907, -1.228335, 2.463, 0.63907, -1.22525, 0.177075, 0.899195, -1.22525, 0.177075, -0.899195, -1.219958, 1.929525, 1.219958, -1.219958, 1.929525, -1.219958, -1.219848, 0.046875, -0.409767, -1.219848, 0.046875, 0.409767, -1.21392, 2.4, -0.89088, -1.21392, 0.15, -0.89088, -1.21392, 0.15, -0.89088, -1.21392, 0.15, 0.89088, -1.21392, 0.15, 0.89088, -1.21392, 2.4, 0.89088, -1.211067, 0.127575, 0.888786, -1.211067, 0.127575, -0.888786, -1.210564, 2.4408, 0.406648, -1.210564, 2.4408, -0.406648, -1.2048, 2.4744, 0.0, -1.2048, 2.4744, 0.0, -1.198382, 0.1056, -0.879477, -1.198382, 0.1056, 0.879477, -1.197997, 2.435437, -0.879195, -1.197997, 2.435437, 0.879195, -1.18996, 0.3168, -1.18996, -1.18996, 0.3168, 1.18996, -1.189282, 2.4744, -0.197684, -1.189282, 2.4744, 0.197684, -1.18784, 0.9, -1.61856, -1.18784, 0.9, -1.61856, -1.18784, 0.9, 1.61856, -1.18784, 0.9, 1.61856, -1.183534, 1.037175, -1.612693, -1.183534, 1.037175, 1.612693, -1.181225, 2.463, -0.866886, -1.181225, 2.463, 0.866886, -1.179525, 0.771675, -1.60723, -1.179525, 0.771675, 1.60723, -1.17121, 1.1784, -1.5959, -1.17121, 1.1784, 1.5959, -1.17008, 2.0856, -1.17008, -1.17008, 2.0856, 1.17008, -1.169673, 0.084525, -0.858407, -1.169673, 0.084525, 0.858407, -1.164574, 2.482687, -0.854666, -1.164574, 2.482687, 0.854666, -1.156956, 0.6564, -1.576477, -1.156956, 0.6564, 1.576477, -1.156792, 2.4, -0.601848, -1.156792, 2.4, 0.601848, -1.151759, 1.323225, -1.569396, -1.151759, 1.323225, 1.569396, -1.149016, 2.4945, -0.843248, -1.149016, 2.4945, 0.843248, -1.144271, 2.4744, -0.384379, -1.144271, 2.4744, 0.384379, -1.1436, 0.0312, 0.0, -1.1436, 0.0312, 0.0, -1.142888, 0.046875, -0.594614, -1.142888, 0.046875, 0.594614, -1.14168, 0.260025, 1.14168, -1.14168, 0.260025, -1.14168, -1.135521, 2.498438, -0.833344, -1.135521, 2.498438, 0.833344, -1.13419, 2.4408, 0.590089, -1.13419, 2.4408, -0.590089, -1.132992, 2.4, -0.831488, -1.132992, 2.4, 0.831488, -1.12887, 0.0312, -0.187642, -1.12887, 0.0312, 0.187642, -1.126072, 1.4712, -1.534395, -1.126072, 1.4712, 1.534395, -1.125061, 2.4945, -0.825668, -1.125061, 2.4945, 0.825668, -1.123697, 0.553725, -1.531158, -1.123697, 0.553725, 1.531158, -1.121601, 2.435437, -0.823129, -1.121601, 2.435437, 0.823129, -1.118749, 0.0648, -0.821035, -1.118749, 0.0648, 0.821035, -1.118607, 2.482687, -0.820931, -1.118607, 2.482687, 0.820931, -1.118073, 2.242575, -1.118073, -1.118073, 2.242575, 1.118073, -1.11713, 2.463, -0.819847, -1.11713, 2.463, 0.819847, -1.10192, 0.2136, 1.10192, -1.10192, 0.2136, -1.10192, -1.1002, 2.5026, 0.0, -1.1002, 2.5026, 0.0, -1.09504, 1.621875, -1.49211, -1.09504, 1.621875, 1.49211, -1.086146, 0.0312, 0.364854, -1.086146, 0.0312, -0.364854, -1.086029, 2.5026, 0.180521, -1.086029, 2.5026, -0.180521, -1.08331, 0.4632, -1.476127, -1.08331, 0.4632, 1.476127, -1.07494, 0.177075, -1.07494, -1.07494, 0.177075, 1.07494, -1.072079, 2.4744, -0.557774, -1.072079, 2.4744, 0.557774, -1.065, 2.4, -1.065, -1.065, 0.15, -1.065, -1.065, 0.15, 1.065, -1.065, 2.4, 1.065, -1.062497, 0.127575, 1.062497, -1.062497, 0.127575, -1.062497, -1.059553, 1.7748, -1.443756, -1.059553, 1.7748, 1.443756, -1.052064, 2.4, -0.772096, -1.052064, 2.4, 0.772096, -1.051368, 0.1056, -1.051368, -1.051368, 0.1056, 1.051368, -1.051031, 2.435437, -1.051031, -1.051031, 2.435437, 1.051031, -1.044926, 2.5026, -0.351008, -1.044926, 2.5026, 0.351008, -1.039419, 0.046875, -0.762816, -1.039419, 0.046875, 0.762816, -1.03936, 0.384375, -1.41624, -1.03936, 0.384375, 1.41624, -1.036316, 2.463, -1.036316, -1.036316, 2.463, 1.036316, -1.031508, 2.4408, 0.75701, -1.031508, 2.4408, -0.75701, -1.026181, 0.084525, -1.026181, -1.026181, 0.084525, 1.026181, -1.021708, 2.482687, -1.021708, -1.021708, 2.482687, 1.021708, -1.020503, 1.929525, -1.390545, -1.020503, 1.929525, 1.390545, -1.017621, 0.0312, 0.529441, -1.017621, 0.0312, -0.529441, -1.008058, 2.4945, -1.008058, -1.008058, 2.4945, 1.008058, -0.996219, 2.498438, -0.996219, -0.996219, 2.498438, 0.996219, -0.99541, 0.3168, -1.356353, -0.99541, 0.3168, 1.356353, -0.994, 2.4, -0.994, -0.994, 2.4, 0.994, -0.987042, 2.4945, -0.987042, -0.987042, 2.4945, 0.987042, -0.984007, 2.435437, -0.984007, -0.984007, 2.435437, 0.984007, -0.981504, 0.0648, 0.981504, -0.981504, 0.0648, -0.981504, -0.98138, 2.482687, -0.98138, -0.98138, 2.482687, 0.98138, -0.980084, 2.463, -0.980084, -0.980084, 2.463, 0.980084, -0.979002, 2.5026, 0.509349, -0.979002, 2.5026, -0.509349, -0.97878, 2.0856, -1.333693, -0.97878, 2.0856, 1.333693, -0.975021, 2.4744, -0.715555, -0.975021, 2.4744, 0.715555, -0.9704, 2.5272, 0.0, -0.9704, 2.5272, 0.0, -0.957901, 2.5272, -0.159223, -0.957901, 2.5272, 0.159223, -0.955023, 0.260025, 1.301322, -0.955023, 0.260025, -1.301322, -0.952425, 0.018225, -0.0, -0.952425, 0.018225, 0.0, -0.940158, 0.018225, 0.156274, -0.940158, 0.018225, -0.156274, -0.935276, 2.242575, -1.274414, -0.935276, 2.242575, 1.274414, -0.92592, 0.9, -1.77968, -0.92592, 0.9, 1.77968, -0.92592, 0.9, 1.77968, -0.92592, 0.9, -1.77968, -0.925493, 0.0312, 0.679207, -0.925493, 0.0312, -0.679207, -0.923, 2.4, -0.923, -0.923, 2.4, 0.923, -0.922564, 1.037175, 1.773229, -0.922564, 1.037175, -1.773229, -0.921764, 0.2136, 1.256003, -0.921764, 0.2136, -1.256003, -0.921647, 2.5272, -0.309596, -0.921647, 2.5272, 0.309596, -0.919439, 0.771675, -1.767222, -0.919439, 0.771675, 1.767222, -0.912957, 1.1784, -1.754764, -0.912957, 1.1784, 1.754764, -0.911906, 0.046875, -0.911906, -0.911906, 0.046875, 0.911906, -0.904966, 2.4408, 0.904966, -0.904966, 2.4408, -0.904966, -0.904575, 0.018225, 0.303862, -0.904575, 0.018225, -0.303862, -0.901846, 0.6564, -1.733408, -0.901846, 0.6564, 1.733408, -0.899195, 0.177075, 1.22525, -0.899195, 0.177075, -1.22525, -0.897795, 1.323225, -1.725622, -0.897795, 1.323225, 1.725622, -0.89088, 0.15, -1.21392, -0.89088, 0.15, 1.21392, -0.89088, 2.4, -1.21392, -0.89088, 0.15, -1.21392, -0.89088, 0.15, 1.21392, -0.89088, 2.4, 1.21392, -0.89037, 2.5026, -0.653431, -0.89037, 2.5026, 0.653431, -0.888786, 0.127575, 1.211067, -0.888786, 0.127575, -1.211067, -0.879477, 0.1056, -1.198382, -0.879477, 0.1056, 1.198382, -0.879195, 2.435437, -1.197997, -0.879195, 2.435437, 1.197997, -0.877772, 1.4712, -1.687137, -0.877772, 1.4712, 1.687137, -0.87592, 0.553725, -1.683577, -0.87592, 0.553725, 1.683577, -0.866886, 2.463, -1.181225, -0.866886, 2.463, 1.181225, -0.863501, 2.5272, -0.449256, -0.863501, 2.5272, 0.449256, -0.858407, 0.084525, -1.169673, -0.858407, 0.084525, 1.169673, -0.855408, 2.4744, -0.855408, -0.855408, 2.4744, 0.855408, -0.854666, 2.482687, -1.164574, -0.854666, 2.482687, 1.164574, -0.853583, 1.621875, -1.640643, -0.853583, 1.621875, 1.640643, -0.847506, 0.018225, -0.440935, -0.847506, 0.018225, 0.440935, -0.844439, 0.4632, 1.623068, -0.844439, 0.4632, -1.623068, -0.843248, 2.4945, -1.149016, -0.843248, 2.4945, 1.149016, -0.833344, 2.498438, -1.135521, -0.833344, 2.498438, 1.135521, -0.831488, 2.4, -1.132992, -0.831488, 2.4, 1.132992, -0.825921, 1.7748, 1.587475, -0.825921, 1.7748, -1.587475, -0.825668, 2.4945, -1.125061, -0.825668, 2.4945, 1.125061, -0.825, 2.55, 0.0, -0.825, 2.55, 0.0, -0.823129, 2.435437, -1.121601, -0.823129, 2.435437, 1.121601, -0.821035, 0.0648, 1.118749, -0.821035, 0.0648, -1.118749, -0.820931, 2.482687, 1.118607, -0.820931, 2.482687, -1.118607, -0.819847, 2.463, -1.11713, -0.819847, 2.463, 1.11713, -0.814374, 2.55, -0.135366, -0.814374, 2.55, 0.135366, -0.811956, 0.0312, 0.811956, -0.811956, 0.0312, -0.811956, -0.81018, 0.384375, 1.55722, -0.81018, 0.384375, -1.55722, -0.795481, 1.929525, 1.528968, -0.795481, 1.929525, -1.528968, -0.785325, 2.5272, -0.57634, -0.785325, 2.5272, 0.57634, -0.783552, 2.55, -0.263208, -0.783552, 2.55, 0.263208, -0.781142, 2.5026, -0.781142, -0.781142, 2.5026, 0.781142, -0.775921, 0.3168, -1.491372, -0.775921, 0.3168, 1.491372, -0.772096, 2.4, -1.052064, -0.772096, 2.4, 1.052064, -0.770779, 0.018225, 0.565664, -0.770779, 0.018225, -0.565664, -0.762958, 2.0856, -1.466456, -0.762958, 2.0856, 1.466456, -0.762816, 0.046875, -1.039419, -0.762816, 0.046875, 1.039419, -0.75701, 2.4408, 1.031508, -0.75701, 2.4408, -1.031508, -0.74444, 0.260025, 1.430863, -0.74444, 0.260025, -1.430863, -0.734118, 2.55, -0.381942, -0.734118, 2.55, 0.381942, -0.729046, 2.242575, -1.401276, -0.729046, 2.242575, 1.401276, -0.718514, 0.2136, 1.381032, -0.718514, 0.2136, -1.381032, -0.715555, 2.4744, -0.975021, -0.715555, 2.4744, 0.975021, -0.7032, 0.0084, 0.0, -0.700921, 0.177075, 1.347218, -0.700921, 0.177075, -1.347218, -0.69444, 0.15, -1.33476, -0.69444, 0.15, 1.33476, -0.69444, 2.4, 1.33476, -0.69444, 0.15, 1.33476, -0.69444, 2.4, -1.33476, -0.69444, 0.15, -1.33476, -0.694143, 0.0084, -0.115381, -0.694143, 0.0084, 0.115381, -0.692808, 0.127575, 1.331623, -0.692808, 0.127575, -1.331623, -0.688984, 2.5272, -0.688984, -0.688984, 2.5272, 0.688984, -0.685551, 0.1056, -1.317675, -0.685551, 0.1056, 1.317675, -0.685331, 2.435437, -1.317252, -0.685331, 2.435437, 1.317252, -0.679207, 0.0312, -0.925493, -0.679207, 0.0312, 0.925493, -0.676222, 0.018225, 0.676222, -0.676222, 0.018225, -0.676222, -0.675736, 2.463, -1.29881, -0.675736, 2.463, 1.29881, -0.6736, 2.5728, 0.0, -0.6736, 2.5728, 0.0, -0.669128, 0.084525, -1.286108, -0.669128, 0.084525, 1.286108, -0.667871, 0.0084, -0.224349, -0.667871, 0.0084, 0.224349, -0.667656, 2.55, -0.489984, -0.667656, 2.55, 0.489984, -0.666211, 2.482687, 1.280502, -0.666211, 2.482687, -1.280502, -0.664924, 2.5728, -0.110524, -0.664924, 2.5728, 0.110524, -0.657311, 2.4945, -1.263395, -0.657311, 2.4945, 1.263395, -0.653431, 2.5026, -0.89037, -0.653431, 2.5026, 0.89037, -0.649591, 2.498438, -1.248557, -0.649591, 2.498438, 1.248557, -0.648144, 2.4, -1.245776, -0.648144, 2.4, 1.245776, -0.643607, 2.4945, -1.237056, -0.643607, 2.4945, 1.237056, -0.641628, 2.435437, -1.233252, -0.641628, 2.435437, 1.233252, -0.639996, 0.0648, -1.230115, -0.639996, 0.0648, 1.230115, -0.639915, 2.482687, 1.229959, -0.639915, 2.482687, -1.229959, -0.639758, 2.5728, -0.214905, -0.639758, 2.5728, 0.214905, -0.63907, 2.463, -1.228335, -0.63907, 2.463, 1.228335, -0.63808, 0.9, -1.89952, -0.63808, 0.9, -1.89952, -0.63808, 0.9, 1.89952, -0.63808, 0.9, 1.89952, -0.635767, 1.037175, -1.892634, -0.635767, 1.037175, 1.892634, -0.633613, 0.771675, -1.886223, -0.633613, 0.771675, 1.886223, -0.629147, 1.1784, -1.872927, -0.629147, 1.1784, 1.872927, -0.625735, 0.0084, 0.325553, -0.625735, 0.0084, -0.325553, -0.62149, 0.6564, -1.850132, -0.62149, 0.6564, 1.850132, -0.618698, 1.323225, -1.841822, -0.618698, 1.323225, 1.841822, -0.6049, 1.4712, -1.800745, -0.6049, 1.4712, 1.800745, -0.603624, 0.553725, -1.796946, -0.603624, 0.553725, 1.796946, -0.601848, 2.4, -1.156792, -0.601848, 2.4, 1.156792, -0.599396, 2.5728, -0.31185, -0.599396, 2.5728, 0.31185, -0.594614, 0.046875, -1.142888, -0.594614, 0.046875, 1.142888, -0.590089, 2.4408, 1.13419, -0.590089, 2.4408, -1.13419, -0.58823, 1.621875, -1.75112, -0.58823, 1.621875, 1.75112, -0.58575, 2.55, -0.58575, -0.58575, 2.55, 0.58575, -0.581929, 0.4632, -1.732362, -0.581929, 0.4632, 1.732362, -0.57634, 2.5272, -0.785325, -0.57634, 2.5272, 0.785325, -0.569167, 1.7748, -1.694372, -0.569167, 1.7748, 1.694372, -0.569086, 0.0084, -0.417645, -0.569086, 0.0084, 0.417645, -0.565664, 0.018225, 0.770779, -0.565664, 0.018225, -0.770779, -0.55832, 0.384375, -1.66208, -0.55832, 0.384375, 1.66208, -0.557774, 2.4744, -1.072079, -0.557774, 2.4744, 1.072079, -0.54819, 1.929525, -1.631925, -0.54819, 1.929525, 1.631925, -0.545131, 2.5728, -0.400065, -0.545131, 2.5728, 0.400065, -0.534711, 0.3168, -1.591798, -0.534711, 0.3168, 1.591798, -0.529441, 0.0312, -1.017621, -0.529441, 0.0312, 1.017621, -0.5258, 2.5974, 0.0, -0.5258, 2.5974, 0.0, -0.525778, 2.0856, -1.565204, -0.525778, 2.0856, 1.565204, -0.519028, 2.5974, 0.086273, -0.519028, 2.5974, -0.086273, -0.513016, 0.260025, -1.527214, -0.513016, 0.260025, 1.527214, -0.509349, 2.5026, 0.979002, -0.509349, 2.5026, -0.979002, -0.502408, 2.242575, -1.495635, -0.502408, 2.242575, 1.495635, -0.499384, 2.5974, -0.167751, -0.499384, 2.5974, 0.167751, -0.499272, 0.0084, -0.499272, -0.499272, 0.0084, 0.499272, -0.49515, 0.2136, -1.474028, -0.49515, 0.2136, 1.474028, -0.489984, 2.55, -0.667656, -0.489984, 2.55, 0.667656, -0.483027, 0.177075, -1.437937, -0.483027, 0.177075, 1.437937, -0.47856, 0.15, 1.42464, -0.47856, 2.4, -1.42464, -0.47856, 0.15, -1.42464, -0.47856, 0.15, -1.42464, -0.47856, 0.15, 1.42464, -0.47856, 2.4, 1.42464, -0.478256, 2.5728, -0.478256, -0.478256, 2.5728, 0.478256, -0.477435, 0.127575, 1.421292, -0.477435, 0.127575, -1.421292, -0.472434, 0.1056, 1.406405, -0.472434, 0.1056, -1.406405, -0.472283, 2.435437, -1.405953, -0.472283, 2.435437, 1.405953, -0.467878, 2.5974, -0.243424, -0.467878, 2.5974, 0.243424, -0.465671, 2.463, -1.38627, -0.465671, 2.463, 1.38627, -0.461116, 0.084525, 1.372712, -0.461116, 0.084525, -1.372712, -0.459107, 2.482687, -1.366728, -0.459107, 2.482687, 1.366728, -0.452973, 2.4945, -1.348469, -0.452973, 2.4945, 1.348469, -0.449256, 2.5272, -0.863501, -0.449256, 2.5272, 0.863501, -0.447653, 2.498438, -1.332632, -0.447653, 2.498438, 1.332632, -0.446656, 2.4, -1.329664, -0.446656, 2.4, 1.329664, -0.443529, 2.4945, -1.320356, -0.443529, 2.4945, 1.320356, -0.442166, 2.435437, -1.316296, -0.442166, 2.435437, 1.316296, -0.441041, 0.0648, 1.312948, -0.441041, 0.0648, -1.312948, -0.440985, 2.482687, -1.312782, -0.440985, 2.482687, 1.312782, -0.440935, 0.018225, 0.847506, -0.440935, 0.018225, -0.847506, -0.440403, 2.463, -1.311049, -0.440403, 2.463, 1.311049, -0.425519, 2.5974, 0.312283, -0.425519, 2.5974, -0.312283, -0.417645, 0.0084, -0.569086, -0.417645, 0.0084, 0.569086, -0.414752, 2.4, -1.234688, -0.414752, 2.4, 1.234688, -0.409767, 0.046875, 1.219848, -0.409767, 0.046875, -1.219848, -0.406648, 2.4408, -1.210564, -0.406648, 2.4408, 1.210564, -0.400065, 2.5728, -0.545131, -0.400065, 2.5728, 0.545131, -0.3912, 2.6256, 0.0, -0.3912, 2.6256, 0.0, -0.388275, 0.002175, -0.0, -0.388275, 0.002175, 0.0, -0.386161, 2.6256, -0.064188, -0.386161, 2.6256, 0.064188, -0.384379, 2.4744, -1.144271, -0.384379, 2.4744, 1.144271, -0.383274, 0.002175, -0.063708, -0.383274, 0.002175, 0.063708, -0.381942, 2.55, -0.734118, -0.381942, 2.55, 0.734118, -0.373318, 2.5974, -0.373318, -0.373318, 2.5974, 0.373318, -0.371546, 2.6256, -0.124808, -0.371546, 2.6256, 0.124808, -0.368768, 0.002175, -0.123875, -0.368768, 0.002175, 0.123875, -0.364854, 0.0312, 1.086146, -0.364854, 0.0312, -1.086146, -0.3584, 3.0348, 0.0, -0.3584, 3.0348, 0.0, -0.3582, 3.08115, 0.0, -0.3582, 3.08115, 0.0, -0.353807, 3.0348, -0.059016, -0.353807, 3.0348, 0.059016, -0.35361, 3.08115, -0.058988, -0.35361, 3.08115, 0.058988, -0.351008, 2.5026, -1.044926, -0.351008, 2.5026, 1.044926, -0.348105, 2.6256, -0.18111, -0.348105, 2.6256, 0.18111, -0.345503, 0.002175, -0.179756, -0.345503, 0.002175, 0.179756, -0.340477, 3.0348, -0.114676, -0.340477, 3.0348, 0.114676, -0.340289, 3.08115, -0.114619, -0.340289, 3.08115, 0.114619, -0.32816, 0.9, -1.97424, -0.32816, 0.9, 1.97424, -0.32816, 0.9, 1.97424, -0.32697, 1.037175, -1.967083, -0.32697, 1.037175, 1.967083, -0.325863, 0.771675, -1.96042, -0.325863, 0.771675, 1.96042, -0.325553, 0.0084, -0.625735, -0.325553, 0.0084, 0.625735, -0.325, 2.98125, 0.0, -0.325, 2.98125, 0.0, -0.323566, 1.1784, -1.946601, -0.323566, 1.1784, 1.946601, -0.320834, 2.98125, -0.053508, -0.320834, 2.98125, 0.053508, -0.319628, 0.6564, -1.92291, -0.319628, 0.6564, 1.92291, -0.319082, 3.0348, -0.166306, -0.319082, 3.0348, 0.166306, -0.318907, 3.08115, -0.166221, -0.318907, 3.08115, 0.166221, -0.318192, 1.323225, -1.914272, -0.318192, 1.323225, 1.914272, -0.31659, 2.6256, -0.232342, -0.31659, 2.6256, 0.232342, -0.314223, 0.002175, -0.230604, -0.314223, 0.002175, 0.230604, -0.312283, 2.5974, -0.425519, -0.312283, 2.5974, 0.425519, -0.31185, 2.5728, -0.599396, -0.31185, 2.5728, 0.599396, -0.311096, 1.4712, -1.87158, -0.311096, 1.4712, 1.87158, -0.310439, 0.553725, -1.867631, -0.310439, 0.553725, 1.867631, -0.309596, 2.5272, -0.921647, -0.309596, 2.5272, 0.921647, -0.3088, 3.1176, 0.0, -0.3088, 3.1176, 0.0, -0.308744, 2.98125, -0.103976, -0.308744, 2.98125, 0.103976, -0.304843, 3.1176, -0.050855, -0.304843, 3.1176, 0.050855, -0.303862, 0.018225, 0.904575, -0.303862, 0.018225, -0.904575, -0.302523, 1.621875, -1.820003, -0.302522, 1.621875, 1.820003, -0.299282, 0.4632, -1.800507, -0.299282, 0.4632, 1.800507, -0.29336, 3.1176, -0.098814, -0.29336, 3.1176, 0.098814, -0.292719, 1.7748, -1.761022, -0.292719, 1.7748, 1.761022, -0.290295, 3.0348, -0.213234, -0.290295, 3.0348, 0.213234, -0.290138, 3.08115, -0.213123, -0.290138, 3.08115, 0.213123, -0.28934, 2.98125, -0.150793, -0.28934, 2.98125, 0.150793, -0.28714, 0.384375, -1.72746, -0.28714, 0.384375, 1.72746, -0.28193, 1.929525, 1.696119, -0.28193, 1.929525, -1.696119, -0.2794, 2.6592, 0.0, -0.277752, 2.6256, -0.277752, -0.277752, 2.6256, 0.277752, -0.275801, 2.6592, -0.045844, -0.275801, 2.6592, 0.045844, -0.275675, 0.002175, -0.275675, -0.275675, 0.002175, 0.275675, -0.274998, 0.3168, -1.654413, -0.274998, 0.3168, 1.654413, -0.274928, 3.1176, -0.143301, -0.274928, 3.1176, 0.143301, -0.2736, 2.9232, 0.0, -0.2736, 2.9232, 0.0, -0.270404, 2.0856, -1.626774, -0.270404, 2.0856, 1.626774, -0.270092, 2.9232, -0.045032, -0.270092, 2.9232, 0.045032, -0.265363, 2.6592, -0.08914, -0.265363, 2.6592, 0.08914, -0.263841, 0.260025, 1.587289, -0.263841, 0.260025, -1.587289, -0.263232, 2.98125, -0.193348, -0.263232, 2.98125, 0.193348, -0.263208, 2.55, -0.783552, -0.263208, 2.55, 0.783552, -0.25991, 2.9232, -0.087511, -0.25991, 2.9232, 0.087511, -0.258385, 2.242575, -1.554467, -0.258385, 2.242575, 1.554467, -0.254788, 3.0348, -0.254788, -0.254788, 3.0348, 0.254788, -0.254653, 3.08115, -0.254653, -0.254653, 3.08115, 0.254653, -0.254652, 0.2136, -1.53201, -0.254652, 0.2136, 1.53201, -0.250127, 3.1176, -0.183734, -0.250127, 3.1176, 0.183734, -0.248621, 2.6592, 0.129351, -0.248621, 2.6592, -0.129351, -0.248417, 0.177075, -1.4945, -0.248417, 0.177075, 1.4945, -0.24612, 0.15, 1.48068, -0.24612, 2.4, -1.48068, -0.24612, 0.15, -1.48068, -0.24612, 0.15, -1.48068, -0.24612, 0.15, 1.48068, -0.24612, 2.4, 1.48068, -0.245542, 0.127575, 1.4772, -0.245542, 0.127575, -1.4772, -0.243569, 2.9232, -0.12692, -0.243569, 2.9232, 0.12692, -0.243424, 2.5974, 0.467878, -0.243424, 2.5974, -0.467878, -0.24297, 0.1056, 1.461727, -0.24297, 0.1056, -1.461727, -0.242892, 2.435437, -1.461258, -0.242892, 2.435437, 1.461258, -0.239491, 2.463, -1.4408, -0.239491, 2.463, 1.4408, -0.237149, 0.084525, 1.426709, -0.237149, 0.084525, -1.426709, -0.236115, 2.482687, -1.42049, -0.236115, 2.482687, 1.42049, -0.232961, 2.4945, -1.401513, -0.232961, 2.4945, 1.401513, -0.232342, 2.6256, -0.31659, -0.232342, 2.6256, 0.31659, -0.231031, 2.98125, -0.231031, -0.231031, 2.98125, 0.231031, -0.230604, 0.002175, -0.314223, -0.230604, 0.002175, 0.314223, -0.230225, 2.498438, -1.385053, -0.230225, 2.498438, 1.385053, -0.229712, 2.4, -1.381968, -0.229712, 2.4, 1.381968, -0.228104, 2.4945, -1.372294, -0.228104, 2.4945, 1.372294, -0.227403, 2.435437, -1.368074, -0.227403, 2.435437, 1.368074, -0.226824, 0.0648, 1.364595, -0.226824, 0.0648, -1.364595, -0.226795, 2.482687, 1.364422, -0.226795, 2.482687, -1.364422, -0.226496, 2.463, -1.36262, -0.226496, 2.463, 1.36262, -0.226113, 2.6592, -0.165941, -0.226113, 2.6592, 0.165941, -0.224349, 0.0084, 0.667871, -0.224349, 0.0084, -0.667871, -0.221585, 2.9232, -0.162745, -0.221585, 2.9232, 0.162745, -0.2198, 2.86335, 0.0, -0.2198, 2.86335, 0.0, -0.219536, 3.1176, -0.219536, -0.219536, 3.1176, 0.219536, -0.216979, 2.86335, 0.036157, -0.216979, 2.86335, -0.036157, -0.214905, 2.5728, -0.639758, -0.214905, 2.5728, 0.639758, -0.213304, 2.4, -1.283256, -0.213304, 2.4, 1.283256, -0.213234, 3.0348, -0.290295, -0.213234, 3.0348, 0.290295, -0.213123, 3.08115, -0.290138, -0.213123, 3.08115, 0.290138, -0.21074, 0.046875, -1.267832, -0.21074, 0.046875, 1.267832, -0.209136, 2.4408, -1.258183, -0.209136, 2.4408, 1.258183, -0.208794, 2.86335, 0.07027, -0.208794, 2.86335, -0.07027, -0.2, 2.7, 0.0, -0.2, 2.7, 0.0, -0.2, 2.7, 0.0, -0.2, 2.7, 0.0, -0.198374, 2.6592, -0.198374, -0.198374, 2.6592, 0.198374, -0.197684, 2.4744, -1.189282, -0.197684, 2.4744, 1.189282, -0.197424, 2.7, -0.032816, -0.197424, 2.7, 0.032816, -0.197424, 2.7, 0.032816, -0.197424, 2.7, -0.032816, -0.195658, 2.86335, -0.101925, -0.195658, 2.86335, 0.101925, -0.1946, 3.14145, 0.0, -0.1946, 3.14145, 0.0, -0.194472, 2.9232, -0.194472, -0.194472, 2.9232, 0.194472, -0.193348, 2.98125, -0.263232, -0.193348, 2.98125, 0.263232, -0.192107, 3.14145, -0.032048, -0.192107, 3.14145, 0.032048, -0.189952, 2.7, -0.063808, -0.189952, 2.7, 0.063808, -0.189952, 2.7, 0.063808, -0.189952, 2.7, -0.063808, -0.187642, 0.0312, 1.12887, -0.187642, 0.0312, -1.12887, -0.18487, 3.14145, -0.062272, -0.18487, 3.14145, 0.062272, -0.183734, 3.1176, -0.250127, -0.183734, 3.1176, 0.250127, -0.18111, 2.6256, 0.348105, -0.18111, 2.6256, -0.348105, -0.180521, 2.5026, -1.086029, -0.180521, 2.5026, 1.086029, -0.179756, 0.002175, -0.345503, -0.179756, 0.002175, 0.345503, -0.1792, 2.8044, 0.0, -0.1792, 2.8044, 0.0, -0.177989, 2.86335, -0.130707, -0.177989, 2.86335, 0.130707, -0.177968, 2.7, -0.092592, -0.177968, 2.7, 0.092592, -0.177968, 2.7, 0.092592, -0.177968, 2.7, -0.092592, -0.176897, 2.8044, 0.02945, -0.176897, 2.8044, -0.02945, -0.173255, 3.14145, -0.090306, -0.173255, 3.14145, 0.090306, -0.170215, 2.8044, 0.057246, -0.170215, 2.8044, -0.057246, -0.167751, 2.5974, -0.499384, -0.167751, 2.5974, 0.499384, -0.1674, 2.74905, 0.0, -0.1674, 2.74905, 0.0, -0.166306, 3.0348, -0.319082, -0.166306, 3.0348, 0.319082, -0.166221, 3.08115, 0.318907, -0.166221, 3.08115, -0.318907, -0.165941, 2.6592, -0.226113, -0.165941, 2.6592, 0.226113, -0.165245, 2.74905, 0.02748, -0.165245, 2.74905, -0.02748, -0.162745, 2.9232, -0.221585, -0.162745, 2.9232, 0.221585, -0.161856, 2.7, -0.118784, -0.161856, 2.7, 0.118784, -0.161856, 2.7, 0.118784, -0.161856, 2.7, -0.118784, -0.159496, 2.8044, 0.083047, -0.159496, 2.8044, -0.083047, -0.159223, 2.5272, -0.957901, -0.159223, 2.5272, 0.957901, -0.158995, 2.74905, 0.053428, -0.158995, 2.74905, -0.053428, -0.157626, 3.14145, -0.115787, -0.157626, 3.14145, 0.115787, -0.156274, 0.018225, 0.940158, -0.156274, 0.018225, -0.940158, -0.1562, 2.86335, -0.1562, -0.1562, 2.86335, 0.1562, -0.150793, 2.98125, -0.28934, -0.150793, 2.98125, 0.28934, -0.148969, 2.74905, 0.077523, -0.148969, 2.74905, -0.077523, -0.145078, 2.8044, 0.106513, -0.145078, 2.8044, -0.106513, -0.143301, 3.1176, -0.274928, -0.143301, 3.1176, 0.274928, -0.142, 2.7, -0.142, -0.142, 2.7, 0.142, -0.142, 2.7, 0.142, -0.142, 2.7, -0.142, -0.138348, 3.14145, -0.138348, -0.138348, 3.14145, 0.138348, -0.135489, 2.74905, 0.099446, -0.135489, 2.74905, -0.099446, -0.135366, 2.55, -0.814374, -0.135366, 2.55, 0.814374, -0.130707, 2.86335, -0.177989, -0.130707, 2.86335, 0.177989, -0.129351, 2.6592, 0.248621, -0.129351, 2.6592, -0.248621, -0.127304, 2.8044, 0.127304, -0.127304, 2.8044, -0.127304, -0.12692, 2.9232, -0.243569, -0.12692, 2.9232, 0.243569, -0.124808, 2.6256, -0.371546, -0.124808, 2.6256, 0.371546, -0.123875, 0.002175, 0.368768, -0.123875, 0.002175, -0.368768, -0.118874, 2.74905, 0.118874, -0.118874, 2.74905, -0.118874, -0.118784, 2.7, -0.161856, -0.118784, 2.7, 0.161856, -0.118784, 2.7, 0.161856, -0.118784, 2.7, -0.161856, -0.115787, 3.14145, -0.157626, -0.115787, 3.14145, 0.157626, -0.115381, 0.0084, 0.694143, -0.115381, 0.0084, -0.694143, -0.114676, 3.0348, -0.340477, -0.114676, 3.0348, 0.340477, -0.114619, 3.08115, -0.340289, -0.114619, 3.08115, 0.340289, -0.110524, 2.5728, -0.664924, -0.110524, 2.5728, 0.664924, -0.106513, 2.8044, -0.145078, -0.106513, 2.8044, 0.145078, -0.103976, 2.98125, -0.308744, -0.103976, 2.98125, 0.308744, -0.101925, 2.86335, -0.195658, -0.101925, 2.86335, 0.195658, -0.099446, 2.74905, 0.135489, -0.099446, 2.74905, -0.135489, -0.098814, 3.1176, -0.29336, -0.098814, 3.1176, 0.29336, -0.092592, 2.7, -0.177968, -0.092592, 2.7, 0.177968, -0.092592, 2.7, -0.177968, -0.092592, 2.7, 0.177968, -0.090306, 3.14145, -0.173255, -0.090306, 3.14145, 0.173255, -0.08914, 2.6592, -0.265363, -0.08914, 2.6592, 0.265363, -0.087511, 2.9232, -0.25991, -0.087511, 2.9232, 0.25991, -0.086273, 2.5974, -0.519028, -0.086273, 2.5974, 0.519028, -0.083047, 2.8044, -0.159496, -0.083047, 2.8044, 0.159496, -0.077523, 2.74905, -0.148969, -0.077523, 2.74905, 0.148969, -0.07027, 2.86335, -0.208794, -0.07027, 2.86335, 0.208794, -0.064188, 2.6256, -0.386161, -0.064188, 2.6256, 0.386161, -0.063808, 2.7, -0.189952, -0.063808, 2.7, 0.189952, -0.063808, 2.7, -0.189952, -0.063808, 2.7, 0.189952, -0.063708, 0.002175, 0.383274, -0.063708, 0.002175, -0.383274, -0.062272, 3.14145, -0.18487, -0.062272, 3.14145, 0.18487, -0.059016, 3.0348, -0.353807, -0.059016, 3.0348, 0.353807, -0.058988, 3.08115, -0.35361, -0.058988, 3.08115, 0.35361, -0.057246, 2.8044, -0.170215, -0.057246, 2.8044, 0.170215, -0.053508, 2.98125, -0.320834, -0.053508, 2.98125, 0.320834, -0.053428, 2.74905, -0.158995, -0.053428, 2.74905, 0.158995, -0.050855, 3.1176, -0.304843, -0.050855, 3.1176, 0.304843, -0.045844, 2.6592, -0.275801, -0.045844, 2.6592, 0.275801, -0.045032, 2.9232, -0.270092, -0.045032, 2.9232, 0.270092, -0.036157, 2.86335, -0.216979, -0.036157, 2.86335, 0.216979, -0.032816, 2.7, -0.197424, -0.032816, 2.7, 0.197424, -0.032816, 2.7, -0.197424, -0.032816, 2.7, 0.197424, -0.032048, 3.14145, -0.192107, -0.032048, 3.14145, 0.192107, -0.02945, 2.8044, -0.176897, -0.02945, 2.8044, 0.176897, -0.02748, 2.74905, -0.165245, -0.02748, 2.74905, 0.165245, -0.0, 0.260025, 1.608, -0.0, 1.929525, 1.71825, -0.0, 2.0856, -1.648, -0.0, 0.6564, -1.948, -0.0, 0.771675, -1.986, -0.0, 2.482687, 1.382225, -0.0, 2.7, -0.2, -0.0, 0.127575, 1.496475, -0.0, 2.4744, -1.2048, -0.0, 2.74905, -0.1674, -0.0, 0.018225, 0.952425, -0.0, 0.046875, -1.284375, -0.0, 0.0648, 1.3824, -0.0, 0.384375, 1.75, -0.0, 0.4632, 1.824, -0.0, 0.553725, -1.892, -0.0, 1.037175, 1.99275, -0.0, 1.1784, 1.972, -0.0, 1.323225, -1.93925, -0.0, 1.621875, -1.84375, -0.0, 1.7748, 1.784, -0.0, 2.4, -1.3, -0.0, 2.435437, -1.480325, -0.0, 2.435437, -1.385925, -0.0, 2.463, -1.4596, -0.0, 2.463, -1.3804, -0.0, 2.4945, -1.3902, -0.0, 2.5026, -1.1002, -0.0, 2.8044, -0.1792, -0.0, 2.86335, -0.2198, -0.0, 2.5728, -0.6736, -0.0, 0.1056, 1.4808, -0.0, 0.177075, -1.514, -0.0, 2.4945, -1.4198, -0.0, 2.5272, -0.9704, -0.0, 2.9232, -0.2736, -0.0, 3.1176, -0.3088, -0.0, 2.5974, -0.5258, -0.0, 2.7, -0.2, -0.0, 2.98125, -0.325, -0.0, 3.14145, -0.1946, -0.0, 0.002175, 0.388275, -0.0, 3.08115, -0.3582, 0.0, 0.0, 0.0, 0.0, 0.002175, -0.388275, 0.0, 0.002175, 0.388275, 0.0, 0.0084, -0.7032, 0.0, 0.0084, 0.7032, 0.0, 0.018225, -0.952425, 0.0, 0.018225, 0.952425, 0.0, 0.0312, -1.1436, 0.0, 0.0312, -1.1436, 0.0, 0.0312, 1.1436, 0.0, 0.0312, 1.1436, 0.0, 0.046875, -1.284375, 0.0, 0.046875, 1.284375, 0.0, 0.0648, -1.3824, 0.0, 0.0648, 1.3824, 0.0, 0.084525, -1.445325, 0.0, 0.084525, -1.445325, 0.0, 0.084525, 1.445325, 0.0, 0.084525, 1.445325, 0.0, 0.1056, -1.4808, 0.0, 0.1056, 1.4808, 0.0, 0.127575, -1.496475, 0.0, 0.127575, 1.496475, 0.0, 0.15, -1.5, 0.0, 0.15, -1.5, 0.0, 0.15, 1.5, 0.0, 0.15, 1.5, 0.0, 0.177075, -1.514, 0.0, 0.177075, 1.514, 0.0, 0.2136, -1.552, 0.0, 0.2136, -1.552, 0.0, 0.2136, 1.552, 0.0, 0.2136, 1.552, 0.0, 0.260025, -1.608, 0.0, 0.260025, 1.608, 0.0, 0.3168, -1.676, 0.0, 0.3168, -1.676, 0.0, 0.3168, 1.676, 0.0, 0.3168, 1.676, 0.0, 0.384375, -1.75, 0.0, 0.384375, 1.75, 0.0, 0.4632, -1.824, 0.0, 0.4632, 1.824, 0.0, 0.553725, -1.892, 0.0, 0.553725, 1.892, 0.0, 0.6564, -1.948, 0.0, 0.6564, 1.948, 0.0, 0.771675, -1.986, 0.0, 0.771675, 1.986, 0.0, 0.9, -2.0, 0.0, 0.9, -2.0, 0.0, 0.9, 2.0, 0.0, 0.9, 2.0, 0.0, 1.037175, -1.99275, 0.0, 1.037175, 1.99275, 0.0, 1.1784, -1.972, 0.0, 1.1784, 1.972, 0.0, 1.323225, -1.93925, 0.0, 1.323225, 1.93925, 0.0, 1.4712, -1.896, 0.0, 1.4712, -1.896, 0.0, 1.4712, 1.896, 0.0, 1.4712, 1.896, 0.0, 1.621875, -1.84375, 0.0, 1.621875, 1.84375, 0.0, 1.7748, -1.784, 0.0, 1.7748, 1.784, 0.0, 1.929525, -1.71825, 0.0, 1.929525, 1.71825, 0.0, 2.0856, -1.648, 0.0, 2.0856, 1.648, 0.0, 2.242575, -1.57475, 0.0, 2.242575, -1.57475, 0.0, 2.242575, 1.57475, 0.0, 2.242575, 1.57475, 0.0, 2.4, -1.5, 0.0, 2.4, -1.5, 0.0, 2.4, -1.4, 0.0, 2.4, -1.4, 0.0, 2.4, -1.3, 0.0, 2.4, 1.3, 0.0, 2.4, 1.4, 0.0, 2.4, 1.4, 0.0, 2.4, 1.5, 0.0, 2.4, 1.5, 0.0, 2.435437, -1.480325, 0.0, 2.435437, -1.385925, 0.0, 2.435437, 1.385925, 0.0, 2.435437, 1.480325, 0.0, 2.4408, -1.2746, 0.0, 2.4408, -1.2746, 0.0, 2.4408, 1.2746, 0.0, 2.4408, 1.2746, 0.0, 2.463, -1.4596, 0.0, 2.463, -1.3804, 0.0, 2.463, 1.3804, 0.0, 2.463, 1.4596, 0.0, 2.4744, -1.2048, 0.0, 2.4744, 1.2048, 0.0, 2.482687, -1.439025, 0.0, 2.482687, -1.382225, 0.0, 2.482687, 1.382225, 0.0, 2.482687, 1.439025, 0.0, 2.4945, -1.4198, 0.0, 2.4945, -1.3902, 0.0, 2.4945, 1.3902, 0.0, 2.4945, 1.4198, 0.0, 2.498438, -1.403125, 0.0, 2.498438, -1.403125, 0.0, 2.498438, 1.403125, 0.0, 2.498438, 1.403125, 0.0, 2.5026, -1.1002, 0.0, 2.5026, 1.1002, 0.0, 2.5272, -0.9704, 0.0, 2.5272, 0.9704, 0.0, 2.55, -0.825, 0.0, 2.55, -0.825, 0.0, 2.55, 0.825, 0.0, 2.55, 0.825, 0.0, 2.5728, -0.6736, 0.0, 2.5728, 0.6736, 0.0, 2.5974, -0.5258, 0.0, 2.5974, 0.5258, 0.0, 2.6256, -0.3912, 0.0, 2.6256, -0.3912, 0.0, 2.6256, 0.3912, 0.0, 2.6256, 0.3912, 0.0, 2.6592, -0.2794, 0.0, 2.6592, 0.2794, 0.0, 2.7, -0.2, 0.0, 2.7, -0.2, 0.0, 2.7, 0.2, 0.0, 2.7, 0.2, 0.0, 2.74905, -0.1674, 0.0, 2.74905, 0.1674, 0.0, 2.8044, -0.1792, 0.0, 2.8044, 0.1792, 0.0, 2.86335, -0.2198, 0.0, 2.86335, 0.2198, 0.0, 2.9232, -0.2736, 0.0, 2.9232, 0.2736, 0.0, 2.98125, -0.325, 0.0, 2.98125, 0.325, 0.0, 3.0348, -0.3584, 0.0, 3.0348, -0.3584, 0.0, 3.0348, 0.3584, 0.0, 3.0348, 0.3584, 0.0, 3.08115, -0.3582, 0.0, 3.08115, 0.3582, 0.0, 3.1176, -0.3088, 0.0, 3.1176, 0.3088, 0.0, 3.14145, -0.1946, 0.0, 3.14145, 0.1946, 0.0, 3.15, 0.0, 0.0, 0.002175, -0.388275, 0.0, 3.08115, 0.3582, 0.0, 2.5974, 0.5258, 0.0, 2.7, 0.2, 0.0, 2.98125, 0.325, 0.0, 3.14145, 0.1946, 0.0, 3.1176, 0.3088, 0.0, 0.1056, -1.4808, 0.0, 0.177075, 1.514, 0.0, 2.4945, 1.4198, 0.0, 2.5272, 0.9704, 0.0, 2.9232, 0.2736, 0.0, 2.5728, 0.6736, 0.0, 2.86335, 0.2198, 0.0, 0.018225, -0.952425, 0.0, 0.046875, 1.284375, 0.0, 0.0648, -1.3824, 0.0, 0.384375, -1.75, 0.0, 0.4632, -1.824, 0.0, 0.553725, 1.892, 0.0, 1.037175, -1.99275, 0.0, 1.1784, -1.972, 0.0, 1.323225, 1.93925, 0.0, 1.621875, 1.84375, 0.0, 1.7748, -1.784, 0.0, 2.4, 1.3, 0.0, 2.435437, 1.385925, 0.0, 2.435437, 1.480325, 0.0, 2.463, 1.3804, 0.0, 2.463, 1.4596, 0.0, 2.4945, 1.3902, 0.0, 2.5026, 1.1002, 0.0, 2.8044, 0.1792, 0.0, 2.74905, 0.1674, 0.0, 0.127575, -1.496475, 0.0, 2.4744, 1.2048, 0.0, 0.6564, 1.948, 0.0, 0.771675, 1.986, 0.0, 2.482687, -1.382225, 0.0, 2.7, 0.2, 0.0, 0.260025, -1.608, 0.0, 1.929525, -1.71825, 0.0, 2.0856, 1.648, 0.02748, 2.74905, -0.165245, 0.02748, 2.74905, 0.165245, 0.02945, 2.8044, -0.176897, 0.02945, 2.8044, 0.176897, 0.032048, 3.14145, -0.192107, 0.032048, 3.14145, 0.192107, 0.032816, 2.7, -0.197424, 0.032816, 2.7, 0.197424, 0.032816, 2.7, -0.197424, 0.032816, 2.7, 0.197424, 0.036157, 2.86335, -0.216979, 0.036157, 2.86335, 0.216979, 0.045032, 2.9232, -0.270092, 0.045032, 2.9232, 0.270092, 0.045844, 2.6592, -0.275801, 0.045844, 2.6592, 0.275801, 0.050855, 3.1176, -0.304843, 0.050855, 3.1176, 0.304843, 0.053428, 2.74905, -0.158995, 0.053428, 2.74905, 0.158995, 0.053508, 2.98125, -0.320834, 0.053508, 2.98125, 0.320834, 0.057246, 2.8044, -0.170215, 0.057246, 2.8044, 0.170215, 0.058988, 3.08115, -0.35361, 0.058988, 3.08115, 0.35361, 0.059016, 3.0348, -0.353807, 0.059016, 3.0348, 0.353807, 0.062272, 3.14145, -0.18487, 0.062272, 3.14145, 0.18487, 0.063708, 0.002175, 0.383274, 0.063708, 0.002175, -0.383274, 0.063808, 2.7, -0.189952, 0.063808, 2.7, 0.189952, 0.063808, 2.7, -0.189952, 0.063808, 2.7, 0.189952, 0.064188, 2.6256, -0.386161, 0.064188, 2.6256, 0.386161, 0.07027, 2.86335, -0.208794, 0.07027, 2.86335, 0.208794, 0.077523, 2.74905, -0.148969, 0.077523, 2.74905, 0.148969, 0.083047, 2.8044, -0.159496, 0.083047, 2.8044, 0.159496, 0.086273, 2.5974, -0.519028, 0.086273, 2.5974, 0.519028, 0.087511, 2.9232, -0.25991, 0.087511, 2.9232, 0.25991, 0.08914, 2.6592, -0.265363, 0.08914, 2.6592, 0.265363, 0.090306, 3.14145, -0.173255, 0.090306, 3.14145, 0.173255, 0.092592, 2.7, -0.177968, 0.092592, 2.7, 0.177968, 0.092592, 2.7, -0.177968, 0.092592, 2.7, 0.177968, 0.098814, 3.1176, -0.29336, 0.098814, 3.1176, 0.29336, 0.099446, 2.74905, 0.135489, 0.099446, 2.74905, -0.135489, 0.101925, 2.86335, -0.195658, 0.101925, 2.86335, 0.195658, 0.103976, 2.98125, -0.308744, 0.103976, 2.98125, 0.308744, 0.106513, 2.8044, -0.145078, 0.106513, 2.8044, 0.145078, 0.110524, 2.5728, -0.664924, 0.110524, 2.5728, 0.664924, 0.114619, 3.08115, -0.340289, 0.114619, 3.08115, 0.340289, 0.114676, 3.0348, -0.340477, 0.114676, 3.0348, 0.340477, 0.115381, 0.0084, 0.694143, 0.115381, 0.0084, -0.694143, 0.115787, 3.14145, -0.157626, 0.115787, 3.14145, 0.157626, 0.118784, 2.7, 0.161856, 0.118784, 2.7, -0.161856, 0.118784, 2.7, -0.161856, 0.118784, 2.7, 0.161856, 0.118874, 2.74905, 0.118874, 0.118874, 2.74905, -0.118874, 0.123875, 0.002175, 0.368768, 0.123875, 0.002175, -0.368768, 0.124808, 2.6256, -0.371546, 0.124808, 2.6256, 0.371546, 0.12692, 2.9232, -0.243569, 0.12692, 2.9232, 0.243569, 0.127304, 2.8044, 0.127304, 0.127304, 2.8044, -0.127304, 0.129351, 2.6592, 0.248621, 0.129351, 2.6592, -0.248621, 0.130707, 2.86335, -0.177989, 0.130707, 2.86335, 0.177989, 0.135366, 2.55, -0.814374, 0.135366, 2.55, 0.814374, 0.135489, 2.74905, 0.099446, 0.135489, 2.74905, -0.099446, 0.138348, 3.14145, -0.138348, 0.138348, 3.14145, 0.138348, 0.142, 2.7, 0.142, 0.142, 2.7, -0.142, 0.142, 2.7, -0.142, 0.142, 2.7, 0.142, 0.143301, 3.1176, -0.274928, 0.143301, 3.1176, 0.274928, 0.145078, 2.8044, 0.106513, 0.145078, 2.8044, -0.106513, 0.148969, 2.74905, 0.077523, 0.148969, 2.74905, -0.077523, 0.150793, 2.98125, -0.28934, 0.150793, 2.98125, 0.28934, 0.1562, 2.86335, -0.1562, 0.1562, 2.86335, 0.1562, 0.156274, 0.018225, 0.940158, 0.156274, 0.018225, -0.940158, 0.157626, 3.14145, -0.115787, 0.157626, 3.14145, 0.115787, 0.158995, 2.74905, 0.053428, 0.158995, 2.74905, -0.053428, 0.159223, 2.5272, -0.957901, 0.159223, 2.5272, 0.957901, 0.159496, 2.8044, 0.083047, 0.159496, 2.8044, -0.083047, 0.161856, 2.7, 0.118784, 0.161856, 2.7, -0.118784, 0.161856, 2.7, -0.118784, 0.161856, 2.7, 0.118784, 0.162745, 2.9232, -0.221585, 0.162745, 2.9232, 0.221585, 0.165245, 2.74905, 0.02748, 0.165245, 2.74905, -0.02748, 0.165941, 2.6592, -0.226113, 0.165941, 2.6592, 0.226113, 0.166221, 3.08115, 0.318907, 0.166221, 3.08115, -0.318907, 0.166306, 3.0348, -0.319082, 0.166306, 3.0348, 0.319082, 0.1674, 2.74905, -0.0, 0.1674, 2.74905, 0.0, 0.167751, 2.5974, -0.499384, 0.167751, 2.5974, 0.499384, 0.170215, 2.8044, 0.057246, 0.170215, 2.8044, -0.057246, 0.173255, 3.14145, -0.090306, 0.173255, 3.14145, 0.090306, 0.176897, 2.8044, 0.02945, 0.176897, 2.8044, -0.02945, 0.177968, 2.7, 0.092592, 0.177968, 2.7, -0.092592, 0.177968, 2.7, -0.092592, 0.177968, 2.7, 0.092592, 0.177989, 2.86335, -0.130707, 0.177989, 2.86335, 0.130707, 0.1792, 2.8044, -0.0, 0.1792, 2.8044, 0.0, 0.179756, 0.002175, -0.345503, 0.179756, 0.002175, 0.345503, 0.180521, 2.5026, -1.086029, 0.180521, 2.5026, 1.086029, 0.18111, 2.6256, 0.348105, 0.18111, 2.6256, -0.348105, 0.183734, 3.1176, -0.250127, 0.183734, 3.1176, 0.250127, 0.18487, 3.14145, -0.062272, 0.18487, 3.14145, 0.062272, 0.187642, 0.0312, 1.12887, 0.187642, 0.0312, -1.12887, 0.189952, 2.7, 0.063808, 0.189952, 2.7, -0.063808, 0.189952, 2.7, -0.063808, 0.189952, 2.7, 0.063808, 0.192107, 3.14145, -0.032048, 0.192107, 3.14145, 0.032048, 0.193348, 2.98125, -0.263232, 0.193348, 2.98125, 0.263232, 0.194472, 2.9232, -0.194472, 0.194472, 2.9232, 0.194472, 0.1946, 3.14145, 0.0, 0.1946, 3.14145, -0.0, 0.195658, 2.86335, -0.101925, 0.195658, 2.86335, 0.101925, 0.197424, 2.7, 0.032816, 0.197424, 2.7, -0.032816, 0.197424, 2.7, -0.032816, 0.197424, 2.7, 0.032816, 0.197684, 2.4744, -1.189282, 0.197684, 2.4744, 1.189282, 0.198374, 2.6592, -0.198374, 0.198374, 2.6592, 0.198374, 0.2, 2.7, -0.0, 0.2, 2.7, 0.0, 0.2, 2.7, 0.0, 0.2, 2.7, -0.0, 0.208794, 2.86335, 0.07027, 0.208794, 2.86335, -0.07027, 0.209136, 2.4408, -1.258183, 0.209136, 2.4408, 1.258183, 0.21074, 0.046875, -1.267832, 0.21074, 0.046875, 1.267832, 0.213123, 3.08115, -0.290138, 0.213123, 3.08115, 0.290138, 0.213234, 3.0348, -0.290295, 0.213234, 3.0348, 0.290295, 0.213304, 2.4, -1.283256, 0.213304, 2.4, 1.283256, 0.214905, 2.5728, -0.639758, 0.214905, 2.5728, 0.639758, 0.216979, 2.86335, 0.036157, 0.216979, 2.86335, -0.036157, 0.219536, 3.1176, -0.219536, 0.219536, 3.1176, 0.219536, 0.2198, 2.86335, -0.0, 0.2198, 2.86335, 0.0, 0.221585, 2.9232, -0.162745, 0.221585, 2.9232, 0.162745, 0.224349, 0.0084, 0.667871, 0.224349, 0.0084, -0.667871, 0.226113, 2.6592, -0.165941, 0.226113, 2.6592, 0.165941, 0.226496, 2.463, -1.36262, 0.226496, 2.463, 1.36262, 0.226795, 2.482687, 1.364422, 0.226795, 2.482687, -1.364422, 0.226824, 0.0648, 1.364595, 0.226824, 0.0648, -1.364595, 0.227403, 2.435437, -1.368074, 0.227403, 2.435437, 1.368074, 0.228104, 2.4945, -1.372294, 0.228104, 2.4945, 1.372294, 0.229712, 2.4, -1.381968, 0.229712, 2.4, 1.381968, 0.230225, 2.498438, -1.385053, 0.230225, 2.498438, 1.385053, 0.230604, 0.002175, -0.314223, 0.230604, 0.002175, 0.314223, 0.231031, 2.98125, -0.231031, 0.231031, 2.98125, 0.231031, 0.232342, 2.6256, -0.31659, 0.232342, 2.6256, 0.31659, 0.232961, 2.4945, -1.401513, 0.232961, 2.4945, 1.401513, 0.236115, 2.482687, -1.42049, 0.236115, 2.482687, 1.42049, 0.237149, 0.084525, 1.426709, 0.237149, 0.084525, -1.426709, 0.239491, 2.463, -1.4408, 0.239491, 2.463, 1.4408, 0.242892, 2.435437, -1.461258, 0.242892, 2.435437, 1.461258, 0.24297, 0.1056, 1.461727, 0.24297, 0.1056, -1.461727, 0.243424, 2.5974, 0.467878, 0.243424, 2.5974, -0.467878, 0.243569, 2.9232, -0.12692, 0.243569, 2.9232, 0.12692, 0.245542, 0.127575, 1.4772, 0.245542, 0.127575, -1.4772, 0.24612, 0.15, -1.48068, 0.24612, 2.4, -1.48068, 0.24612, 0.15, 1.48068, 0.24612, 0.15, 1.48068, 0.24612, 2.4, 1.48068, 0.24612, 0.15, -1.48068, 0.248417, 0.177075, -1.4945, 0.248417, 0.177075, 1.4945, 0.248621, 2.6592, 0.129351, 0.248621, 2.6592, -0.129351, 0.250127, 3.1176, -0.183734, 0.250127, 3.1176, 0.183734, 0.254652, 0.2136, -1.53201, 0.254652, 0.2136, 1.53201, 0.254653, 3.08115, -0.254653, 0.254653, 3.08115, 0.254653, 0.254788, 3.0348, -0.254788, 0.254788, 3.0348, 0.254788, 0.258385, 2.242575, -1.554467, 0.258385, 2.242575, 1.554467, 0.25991, 2.9232, -0.087511, 0.25991, 2.9232, 0.087511, 0.263208, 2.55, -0.783552, 0.263208, 2.55, 0.783552, 0.263232, 2.98125, -0.193348, 0.263232, 2.98125, 0.193348, 0.263841, 0.260025, 1.587289, 0.263841, 0.260025, -1.587289, 0.265363, 2.6592, -0.08914, 0.265363, 2.6592, 0.08914, 0.270092, 2.9232, -0.045032, 0.270092, 2.9232, 0.045032, 0.270404, 2.0856, -1.626774, 0.270404, 2.0856, 1.626774, 0.2736, 2.9232, -0.0, 0.2736, 2.9232, 0.0, 0.274928, 3.1176, -0.143301, 0.274928, 3.1176, 0.143301, 0.274998, 0.3168, -1.654413, 0.274998, 0.3168, 1.654413, 0.275675, 0.002175, -0.275675, 0.275675, 0.002175, 0.275675, 0.275801, 2.6592, -0.045844, 0.275801, 2.6592, 0.045844, 0.277752, 2.6256, -0.277752, 0.277752, 2.6256, 0.277752, 0.2794, 2.6592, 0.0, 0.28193, 1.929525, 1.696119, 0.28193, 1.929525, -1.696119, 0.28714, 0.384375, -1.72746, 0.28714, 0.384375, 1.72746, 0.28934, 2.98125, -0.150793, 0.28934, 2.98125, 0.150793, 0.290138, 3.08115, -0.213123, 0.290138, 3.08115, 0.213123, 0.290295, 3.0348, -0.213234, 0.290295, 3.0348, 0.213234, 0.292719, 1.7748, -1.761022, 0.292719, 1.7748, 1.761022, 0.29336, 3.1176, -0.098814, 0.29336, 3.1176, 0.098814, 0.299282, 0.4632, -1.800507, 0.299282, 0.4632, 1.800507, 0.302522, 1.621875, -1.820003, 0.302523, 1.621875, 1.820003, 0.303862, 0.018225, 0.904575, 0.303862, 0.018225, -0.904575, 0.304843, 3.1176, -0.050855, 0.304843, 3.1176, 0.050855, 0.308744, 2.98125, -0.103976, 0.308744, 2.98125, 0.103976, 0.3088, 3.1176, 0.0, 0.3088, 3.1176, -0.0, 0.309596, 2.5272, -0.921647, 0.309596, 2.5272, 0.921647, 0.310439, 0.553725, -1.867631, 0.310439, 0.553725, 1.867631, 0.311096, 1.4712, -1.87158, 0.311096, 1.4712, 1.87158, 0.31185, 2.5728, -0.599396, 0.31185, 2.5728, 0.599396, 0.312283, 2.5974, -0.425519, 0.312283, 2.5974, 0.425519, 0.314223, 0.002175, -0.230604, 0.314223, 0.002175, 0.230604, 0.31659, 2.6256, -0.232342, 0.31659, 2.6256, 0.232342, 0.318192, 1.323225, -1.914272, 0.318192, 1.323225, 1.914272, 0.318907, 3.08115, -0.166221, 0.318907, 3.08115, 0.166221, 0.319082, 3.0348, -0.166306, 0.319082, 3.0348, 0.166306, 0.319628, 0.6564, -1.92291, 0.319628, 0.6564, 1.92291, 0.320834, 2.98125, -0.053508, 0.320834, 2.98125, 0.053508, 0.323566, 1.1784, -1.946601, 0.323566, 1.1784, 1.946601, 0.325, 2.98125, 0.0, 0.325, 2.98125, -0.0, 0.325553, 0.0084, -0.625735, 0.325553, 0.0084, 0.625735, 0.325863, 0.771675, -1.96042, 0.325863, 0.771675, 1.96042, 0.32697, 1.037175, -1.967083, 0.32697, 1.037175, 1.967083, 0.32816, 0.9, -1.97424, 0.32816, 0.9, -1.97424, 0.32816, 0.9, 1.97424, 0.340289, 3.08115, -0.114619, 0.340289, 3.08115, 0.114619, 0.340477, 3.0348, -0.114676, 0.340477, 3.0348, 0.114676, 0.345503, 0.002175, -0.179756, 0.345503, 0.002175, 0.179756, 0.348105, 2.6256, -0.18111, 0.348105, 2.6256, 0.18111, 0.351008, 2.5026, -1.044926, 0.351008, 2.5026, 1.044926, 0.35361, 3.08115, -0.058988, 0.35361, 3.08115, 0.058988, 0.353807, 3.0348, -0.059016, 0.353807, 3.0348, 0.059016, 0.3582, 3.08115, -0.0, 0.3582, 3.08115, 0.0, 0.3584, 3.0348, 0.0, 0.3584, 3.0348, 0.0, 0.364854, 0.0312, 1.086146, 0.364854, 0.0312, -1.086146, 0.368768, 0.002175, -0.123875, 0.368768, 0.002175, 0.123875, 0.371546, 2.6256, -0.124808, 0.371546, 2.6256, 0.124808, 0.373318, 2.5974, -0.373318, 0.373318, 2.5974, 0.373318, 0.381942, 2.55, -0.734118, 0.381942, 2.55, 0.734118, 0.383274, 0.002175, -0.063708, 0.383274, 0.002175, 0.063708, 0.384379, 2.4744, -1.144271, 0.384379, 2.4744, 1.144271, 0.386161, 2.6256, -0.064188, 0.386161, 2.6256, 0.064188, 0.388275, 0.002175, 0.0, 0.388275, 0.002175, 0.0, 0.3912, 2.6256, 0.0, 0.3912, 2.6256, 0.0, 0.400065, 2.5728, -0.545131, 0.400065, 2.5728, 0.545131, 0.406648, 2.4408, -1.210564, 0.406648, 2.4408, 1.210564, 0.409767, 0.046875, 1.219848, 0.409767, 0.046875, -1.219848, 0.414752, 2.4, -1.234688, 0.414752, 2.4, 1.234688, 0.417645, 0.0084, -0.569086, 0.417645, 0.0084, 0.569086, 0.425519, 2.5974, 0.312283, 0.425519, 2.5974, -0.312283, 0.440403, 2.463, -1.311049, 0.440403, 2.463, 1.311049, 0.440935, 0.018225, 0.847506, 0.440935, 0.018225, -0.847506, 0.440985, 2.482687, -1.312782, 0.440985, 2.482687, 1.312782, 0.441041, 0.0648, 1.312948, 0.441041, 0.0648, -1.312948, 0.442166, 2.435437, -1.316296, 0.442166, 2.435437, 1.316296, 0.443529, 2.4945, -1.320356, 0.443529, 2.4945, 1.320356, 0.446656, 2.4, -1.329664, 0.446656, 2.4, 1.329664, 0.447653, 2.498438, -1.332632, 0.447653, 2.498438, 1.332632, 0.449256, 2.5272, -0.863501, 0.449256, 2.5272, 0.863501, 0.452973, 2.4945, -1.348469, 0.452973, 2.4945, 1.348469, 0.459107, 2.482687, -1.366728, 0.459107, 2.482687, 1.366728, 0.461116, 0.084525, 1.372712, 0.461116, 0.084525, -1.372712, 0.465671, 2.463, -1.38627, 0.465671, 2.463, 1.38627, 0.467878, 2.5974, -0.243424, 0.467878, 2.5974, 0.243424, 0.472283, 2.435437, -1.405953, 0.472283, 2.435437, 1.405953, 0.472434, 0.1056, 1.406405, 0.472434, 0.1056, -1.406405, 0.477435, 0.127575, 1.421292, 0.477435, 0.127575, -1.421292, 0.478256, 2.5728, -0.478256, 0.478256, 2.5728, 0.478256, 0.47856, 0.15, -1.42464, 0.47856, 2.4, -1.42464, 0.47856, 0.15, 1.42464, 0.47856, 0.15, 1.42464, 0.47856, 0.15, -1.42464, 0.47856, 2.4, 1.42464, 0.483027, 0.177075, -1.437937, 0.483027, 0.177075, 1.437937, 0.489984, 2.55, -0.667656, 0.489984, 2.55, 0.667656, 0.49515, 0.2136, -1.474028, 0.49515, 0.2136, 1.474028, 0.499272, 0.0084, -0.499272, 0.499272, 0.0084, 0.499272, 0.499384, 2.5974, -0.167751, 0.499384, 2.5974, 0.167751, 0.502408, 2.242575, -1.495635, 0.502408, 2.242575, 1.495635, 0.509349, 2.5026, 0.979002, 0.509349, 2.5026, -0.979002, 0.513016, 0.260025, -1.527214, 0.513016, 0.260025, 1.527214, 0.519028, 2.5974, 0.086273, 0.519028, 2.5974, -0.086273, 0.525778, 2.0856, -1.565204, 0.525778, 2.0856, 1.565204, 0.5258, 2.5974, -0.0, 0.5258, 2.5974, 0.0, 0.529441, 0.0312, -1.017621, 0.529441, 0.0312, 1.017621, 0.534711, 0.3168, -1.591798, 0.534711, 0.3168, 1.591798, 0.545131, 2.5728, -0.400065, 0.545131, 2.5728, 0.400065, 0.54819, 1.929525, -1.631925, 0.54819, 1.929525, 1.631925, 0.557774, 2.4744, -1.072079, 0.557774, 2.4744, 1.072079, 0.55832, 0.384375, -1.66208, 0.55832, 0.384375, 1.66208, 0.565664, 0.018225, 0.770779, 0.565664, 0.018225, -0.770779, 0.569086, 0.0084, -0.417645, 0.569086, 0.0084, 0.417645, 0.569167, 1.7748, -1.694372, 0.569167, 1.7748, 1.694372, 0.57634, 2.5272, -0.785325, 0.57634, 2.5272, 0.785325, 0.581929, 0.4632, -1.732362, 0.581929, 0.4632, 1.732362, 0.58575, 2.55, -0.58575, 0.58575, 2.55, 0.58575, 0.58823, 1.621875, -1.75112, 0.58823, 1.621875, 1.75112, 0.590089, 2.4408, 1.13419, 0.590089, 2.4408, -1.13419, 0.594614, 0.046875, -1.142888, 0.594614, 0.046875, 1.142888, 0.599396, 2.5728, -0.31185, 0.599396, 2.5728, 0.31185, 0.601848, 2.4, -1.156792, 0.601848, 2.4, 1.156792, 0.603624, 0.553725, -1.796946, 0.603624, 0.553725, 1.796946, 0.6049, 1.4712, -1.800745, 0.6049, 1.4712, 1.800745, 0.618698, 1.323225, -1.841822, 0.618698, 1.323225, 1.841822, 0.62149, 0.6564, -1.850132, 0.62149, 0.6564, 1.850132, 0.625735, 0.0084, 0.325553, 0.625735, 0.0084, -0.325553, 0.629147, 1.1784, -1.872927, 0.629147, 1.1784, 1.872927, 0.633613, 0.771675, -1.886223, 0.633613, 0.771675, 1.886223, 0.635767, 1.037175, -1.892634, 0.635767, 1.037175, 1.892634, 0.63808, 0.9, -1.89952, 0.63808, 0.9, -1.89952, 0.63808, 0.9, 1.89952, 0.63808, 0.9, 1.89952, 0.63907, 2.463, -1.228335, 0.63907, 2.463, 1.228335, 0.639758, 2.5728, -0.214905, 0.639758, 2.5728, 0.214905, 0.639915, 2.482687, 1.229959, 0.639915, 2.482687, -1.229959, 0.639996, 0.0648, -1.230115, 0.639996, 0.0648, 1.230115, 0.641628, 2.435437, -1.233252, 0.641628, 2.435437, 1.233252, 0.643607, 2.4945, -1.237056, 0.643607, 2.4945, 1.237056, 0.648144, 2.4, -1.245776, 0.648144, 2.4, 1.245776, 0.649591, 2.498438, -1.248557, 0.649591, 2.498438, 1.248557, 0.653431, 2.5026, -0.89037, 0.653431, 2.5026, 0.89037, 0.657311, 2.4945, -1.263395, 0.657311, 2.4945, 1.263395, 0.664924, 2.5728, -0.110524, 0.664924, 2.5728, 0.110524, 0.666211, 2.482687, 1.280502, 0.666211, 2.482687, -1.280502, 0.667656, 2.55, -0.489984, 0.667656, 2.55, 0.489984, 0.667871, 0.0084, -0.224349, 0.667871, 0.0084, 0.224349, 0.669128, 0.084525, -1.286108, 0.669128, 0.084525, 1.286108, 0.6736, 2.5728, 0.0, 0.6736, 2.5728, -0.0, 0.675736, 2.463, -1.29881, 0.675736, 2.463, 1.29881, 0.676222, 0.018225, 0.676222, 0.676222, 0.018225, -0.676222, 0.679207, 0.0312, -0.925493, 0.679207, 0.0312, 0.925493, 0.685331, 2.435437, -1.317252, 0.685331, 2.435437, 1.317252, 0.685551, 0.1056, -1.317675, 0.685551, 0.1056, 1.317675, 0.688984, 2.5272, -0.688984, 0.688984, 2.5272, 0.688984, 0.692808, 0.127575, 1.331623, 0.692808, 0.127575, -1.331623, 0.694143, 0.0084, -0.115381, 0.694143, 0.0084, 0.115381, 0.69444, 0.15, 1.33476, 0.69444, 0.15, -1.33476, 0.69444, 2.4, 1.33476, 0.69444, 0.15, -1.33476, 0.69444, 0.15, 1.33476, 0.69444, 2.4, -1.33476, 0.700921, 0.177075, 1.347218, 0.700921, 0.177075, -1.347218, 0.7032, 0.0084, 0.0, 0.715555, 2.4744, -0.975021, 0.715555, 2.4744, 0.975021, 0.718514, 0.2136, 1.381032, 0.718514, 0.2136, -1.381032, 0.729046, 2.242575, -1.401276, 0.729046, 2.242575, 1.401276, 0.734118, 2.55, -0.381942, 0.734118, 2.55, 0.381942, 0.74444, 0.260025, 1.430863, 0.74444, 0.260025, -1.430863, 0.75701, 2.4408, 1.031508, 0.75701, 2.4408, -1.031508, 0.762816, 0.046875, -1.039419, 0.762816, 0.046875, 1.039419, 0.762958, 2.0856, -1.466456, 0.762958, 2.0856, 1.466456, 0.770779, 0.018225, 0.565664, 0.770779, 0.018225, -0.565664, 0.772096, 2.4, -1.052064, 0.772096, 2.4, 1.052064, 0.775921, 0.3168, -1.491372, 0.775921, 0.3168, 1.491372, 0.781142, 2.5026, -0.781142, 0.781142, 2.5026, 0.781142, 0.783552, 2.55, -0.263208, 0.783552, 2.55, 0.263208, 0.785325, 2.5272, -0.57634, 0.785325, 2.5272, 0.57634, 0.795481, 1.929525, 1.528968, 0.795481, 1.929525, -1.528968, 0.81018, 0.384375, 1.55722, 0.81018, 0.384375, -1.55722, 0.811956, 0.0312, 0.811956, 0.811956, 0.0312, -0.811956, 0.814374, 2.55, -0.135366, 0.814374, 2.55, 0.135366, 0.819847, 2.463, -1.11713, 0.819847, 2.463, 1.11713, 0.820931, 2.482687, 1.118607, 0.820931, 2.482687, -1.118607, 0.821035, 0.0648, 1.118749, 0.821035, 0.0648, -1.118749, 0.823129, 2.435437, -1.121601, 0.823129, 2.435437, 1.121601, 0.825, 2.55, 0.0, 0.825, 2.55, 0.0, 0.825668, 2.4945, -1.125061, 0.825668, 2.4945, 1.125061, 0.825921, 1.7748, 1.587475, 0.825921, 1.7748, -1.587475, 0.831488, 2.4, -1.132992, 0.831488, 2.4, 1.132992, 0.833344, 2.498438, -1.135521, 0.833344, 2.498438, 1.135521, 0.843248, 2.4945, -1.149016, 0.843248, 2.4945, 1.149016, 0.844439, 0.4632, 1.623068, 0.844439, 0.4632, -1.623068, 0.847506, 0.018225, -0.440935, 0.847506, 0.018225, 0.440935, 0.853583, 1.621875, -1.640643, 0.853583, 1.621875, 1.640643, 0.854666, 2.482687, -1.164574, 0.854666, 2.482687, 1.164574, 0.855408, 2.4744, -0.855408, 0.855408, 2.4744, 0.855408, 0.858407, 0.084525, -1.169673, 0.858407, 0.084525, 1.169673, 0.863501, 2.5272, -0.449256, 0.863501, 2.5272, 0.449256, 0.866886, 2.463, -1.181225, 0.866886, 2.463, 1.181225, 0.87592, 0.553725, -1.683577, 0.87592, 0.553725, 1.683577, 0.877772, 1.4712, -1.687137, 0.877772, 1.4712, 1.687137, 0.879195, 2.435437, -1.197997, 0.879195, 2.435437, 1.197997, 0.879477, 0.1056, -1.198382, 0.879477, 0.1056, 1.198382, 0.888786, 0.127575, 1.211067, 0.888786, 0.127575, -1.211067, 0.89037, 2.5026, -0.653431, 0.89037, 2.5026, 0.653431, 0.89088, 0.15, -1.21392, 0.89088, 0.15, 1.21392, 0.89088, 2.4, -1.21392, 0.89088, 0.15, -1.21392, 0.89088, 0.15, 1.21392, 0.89088, 2.4, 1.21392, 0.897795, 1.323225, -1.725622, 0.897795, 1.323225, 1.725622, 0.899195, 0.177075, 1.22525, 0.899195, 0.177075, -1.22525, 0.901846, 0.6564, -1.733408, 0.901846, 0.6564, 1.733408, 0.904575, 0.018225, 0.303862, 0.904575, 0.018225, -0.303862, 0.904966, 2.4408, 0.904966, 0.904966, 2.4408, -0.904966, 0.911906, 0.046875, -0.911906, 0.911906, 0.046875, 0.911906, 0.912957, 1.1784, -1.754764, 0.912957, 1.1784, 1.754764, 0.919439, 0.771675, -1.767222, 0.919439, 0.771675, 1.767222, 0.921647, 2.5272, -0.309596, 0.921647, 2.5272, 0.309596, 0.921764, 0.2136, 1.256003, 0.921764, 0.2136, -1.256003, 0.922564, 1.037175, 1.773229, 0.922564, 1.037175, -1.773229, 0.923, 2.4, -0.923, 0.923, 2.4, 0.923, 0.925493, 0.0312, 0.679207, 0.925493, 0.0312, -0.679207, 0.92592, 0.9, 1.77968, 0.92592, 0.9, -1.77968, 0.92592, 0.9, -1.77968, 0.92592, 0.9, 1.77968, 0.935276, 2.242575, -1.274414, 0.935276, 2.242575, 1.274414, 0.940158, 0.018225, 0.156274, 0.940158, 0.018225, -0.156274, 0.952425, 0.018225, 0.0, 0.952425, 0.018225, 0.0, 0.955023, 0.260025, 1.301322, 0.955023, 0.260025, -1.301322, 0.957901, 2.5272, -0.159223, 0.957901, 2.5272, 0.159223, 0.9704, 2.5272, 0.0, 0.9704, 2.5272, -0.0, 0.975021, 2.4744, -0.715555, 0.975021, 2.4744, 0.715555, 0.97878, 2.0856, -1.333693, 0.97878, 2.0856, 1.333693, 0.979002, 2.5026, 0.509349, 0.979002, 2.5026, -0.509349, 0.980084, 2.463, -0.980084, 0.980084, 2.463, 0.980084, 0.98138, 2.482687, -0.98138, 0.98138, 2.482687, 0.98138, 0.981504, 0.0648, 0.981504, 0.981504, 0.0648, -0.981504, 0.984007, 2.435437, -0.984007, 0.984007, 2.435437, 0.984007, 0.987042, 2.4945, -0.987042, 0.987042, 2.4945, 0.987042, 0.994, 2.4, -0.994, 0.994, 2.4, 0.994, 0.99541, 0.3168, -1.356353, 0.99541, 0.3168, 1.356353, 0.996219, 2.498438, -0.996219, 0.996219, 2.498438, 0.996219, 1.008058, 2.4945, -1.008058, 1.008058, 2.4945, 1.008058, 1.017621, 0.0312, 0.529441, 1.017621, 0.0312, -0.529441, 1.020503, 1.929525, -1.390545, 1.020503, 1.929525, 1.390545, 1.021708, 2.482687, -1.021708, 1.021708, 2.482687, 1.021708, 1.026181, 0.084525, -1.026181, 1.026181, 0.084525, 1.026181, 1.031508, 2.4408, 0.75701, 1.031508, 2.4408, -0.75701, 1.036316, 2.463, -1.036316, 1.036316, 2.463, 1.036316, 1.03936, 0.384375, -1.41624, 1.03936, 0.384375, 1.41624, 1.039419, 0.046875, -0.762816, 1.039419, 0.046875, 0.762816, 1.044926, 2.5026, -0.351008, 1.044926, 2.5026, 0.351008, 1.051031, 2.435437, -1.051031, 1.051031, 2.435437, 1.051031, 1.051368, 0.1056, -1.051368, 1.051368, 0.1056, 1.051368, 1.052064, 2.4, -0.772096, 1.052064, 2.4, 0.772096, 1.059553, 1.7748, -1.443756, 1.059553, 1.7748, 1.443756, 1.062497, 0.127575, 1.062497, 1.062497, 0.127575, -1.062497, 1.065, 0.15, -1.065, 1.065, 0.15, 1.065, 1.065, 2.4, -1.065, 1.065, 2.4, 1.065, 1.072079, 2.4744, -0.557774, 1.072079, 2.4744, 0.557774, 1.07494, 0.177075, -1.07494, 1.07494, 0.177075, 1.07494, 1.08331, 0.4632, -1.476127, 1.08331, 0.4632, 1.476127, 1.086029, 2.5026, 0.180521, 1.086029, 2.5026, -0.180521, 1.086146, 0.0312, 0.364854, 1.086146, 0.0312, -0.364854, 1.09504, 1.621875, -1.49211, 1.09504, 1.621875, 1.49211, 1.1002, 2.5026, -0.0, 1.1002, 2.5026, 0.0, 1.10192, 0.2136, 1.10192, 1.10192, 0.2136, -1.10192, 1.11713, 2.463, -0.819847, 1.11713, 2.463, 0.819847, 1.118073, 2.242575, -1.118073, 1.118073, 2.242575, 1.118073, 1.118607, 2.482687, -0.820931, 1.118607, 2.482687, 0.820931, 1.118749, 0.0648, -0.821035, 1.118749, 0.0648, 0.821035, 1.121601, 2.435437, -0.823129, 1.121601, 2.435437, 0.823129, 1.123697, 0.553725, -1.531158, 1.123697, 0.553725, 1.531158, 1.125061, 2.4945, -0.825668, 1.125061, 2.4945, 0.825668, 1.126072, 1.4712, -1.534395, 1.126072, 1.4712, 1.534395, 1.12887, 0.0312, -0.187642, 1.12887, 0.0312, 0.187642, 1.132992, 2.4, -0.831488, 1.132992, 2.4, 0.831488, 1.13419, 2.4408, 0.590089, 1.13419, 2.4408, -0.590089, 1.135521, 2.498438, -0.833344, 1.135521, 2.498438, 0.833344, 1.14168, 0.260025, 1.14168, 1.14168, 0.260025, -1.14168, 1.142888, 0.046875, -0.594614, 1.142888, 0.046875, 0.594614, 1.1436, 0.0312, 0.0, 1.1436, 0.0312, 0.0, 1.144271, 2.4744, -0.384379, 1.144271, 2.4744, 0.384379, 1.149016, 2.4945, -0.843248, 1.149016, 2.4945, 0.843248, 1.151759, 1.323225, -1.569396, 1.151759, 1.323225, 1.569396, 1.156792, 2.4, -0.601848, 1.156792, 2.4, 0.601848, 1.156956, 0.6564, -1.576477, 1.156956, 0.6564, 1.576477, 1.164574, 2.482687, -0.854666, 1.164574, 2.482687, 0.854666, 1.169673, 0.084525, -0.858407, 1.169673, 0.084525, 0.858407, 1.17008, 2.0856, -1.17008, 1.17008, 2.0856, 1.17008, 1.17121, 1.1784, -1.5959, 1.17121, 1.1784, 1.5959, 1.179525, 0.771675, -1.60723, 1.179525, 0.771675, 1.60723, 1.181225, 2.463, -0.866886, 1.181225, 2.463, 0.866886, 1.183534, 1.037175, -1.612693, 1.183534, 1.037175, 1.612693, 1.18784, 0.9, -1.61856, 1.18784, 0.9, -1.61856, 1.18784, 0.9, 1.61856, 1.18784, 0.9, 1.61856, 1.189282, 2.4744, -0.197684, 1.189282, 2.4744, 0.197684, 1.18996, 0.3168, -1.18996, 1.18996, 0.3168, 1.18996, 1.197997, 2.435437, -0.879195, 1.197997, 2.435437, 0.879195, 1.198382, 0.1056, -0.879477, 1.198382, 0.1056, 0.879477, 1.2048, 2.4744, 0.0, 1.2048, 2.4744, -0.0, 1.210564, 2.4408, 0.406648, 1.210564, 2.4408, -0.406648, 1.211067, 0.127575, 0.888786, 1.211067, 0.127575, -0.888786, 1.21392, 0.15, -0.89088, 1.21392, 0.15, -0.89088, 1.21392, 0.15, 0.89088, 1.21392, 0.15, 0.89088, 1.21392, 2.4, -0.89088, 1.21392, 2.4, 0.89088, 1.219848, 0.046875, -0.409767, 1.219848, 0.046875, 0.409767, 1.219958, 1.929525, 1.219958, 1.219958, 1.929525, -1.219958, 1.22525, 0.177075, 0.899195, 1.22525, 0.177075, -0.899195, 1.228335, 2.463, -0.63907, 1.228335, 2.463, 0.63907, 1.229959, 2.482687, -0.639915, 1.229959, 2.482687, 0.639915, 1.230115, 0.0648, -0.639996, 1.230115, 0.0648, 0.639996, 1.233252, 2.435437, -0.641628, 1.233252, 2.435437, 0.641628, 1.234688, 2.4, -0.414752, 1.234688, 2.4, 0.414752, 1.237056, 2.4945, -0.643607, 1.237056, 2.4945, 0.643607, 1.2425, 0.384375, -1.2425, 1.2425, 0.384375, 1.2425, 1.245776, 2.4, -0.648144, 1.245776, 2.4, 0.648144, 1.248557, 2.498438, -0.649591, 1.248557, 2.498438, 0.649591, 1.256003, 0.2136, 0.921764, 1.256003, 0.2136, -0.921764, 1.258183, 2.4408, 0.209136, 1.258183, 2.4408, -0.209136, 1.263395, 2.4945, -0.657311, 1.263395, 2.4945, 0.657311, 1.26664, 1.7748, -1.26664, 1.26664, 1.7748, 1.26664, 1.267832, 0.046875, -0.21074, 1.267832, 0.046875, 0.21074, 1.274414, 2.242575, -0.935276, 1.274414, 2.242575, 0.935276, 1.2746, 2.4408, 0.0, 1.2746, 2.4408, 0.0, 1.280502, 2.482687, -0.666211, 1.280502, 2.482687, 0.666211, 1.283256, 2.4, -0.213304, 1.283256, 2.4, 0.213304, 1.284375, 0.046875, 0.0, 1.284375, 0.046875, -0.0, 1.286108, 0.084525, -0.669128, 1.286108, 0.084525, 0.669128, 1.29504, 0.4632, -1.29504, 1.29504, 0.4632, 1.29504, 1.29881, 2.463, -0.675736, 1.29881, 2.463, 0.675736, 1.3, 2.4, 0.0, 1.3, 2.4, -0.0, 1.301322, 0.260025, 0.955023, 1.301322, 0.260025, -0.955023, 1.309063, 1.621875, -1.309063, 1.309063, 1.621875, 1.309063, 1.311049, 2.463, -0.440403, 1.311049, 2.463, 0.440403, 1.312782, 2.482687, -0.440985, 1.312782, 2.482687, 0.440985, 1.312948, 0.0648, 0.441041, 1.312948, 0.0648, -0.441041, 1.316296, 2.435437, -0.442166, 1.316296, 2.435437, 0.442166, 1.317252, 2.435437, -0.685331, 1.317252, 2.435437, 0.685331, 1.317675, 0.1056, -0.685551, 1.317675, 0.1056, 0.685551, 1.320356, 2.4945, -0.443529, 1.320356, 2.4945, 0.443529, 1.329664, 2.4, -0.446656, 1.329664, 2.4, 0.446656, 1.331623, 0.127575, 0.692808, 1.331623, 0.127575, -0.692808, 1.332632, 2.498438, -0.447653, 1.332632, 2.498438, 0.447653, 1.333693, 2.0856, -0.97878, 1.333693, 2.0856, 0.97878, 1.33476, 0.15, 0.69444, 1.33476, 0.15, -0.69444, 1.33476, 0.15, -0.69444, 1.33476, 0.15, 0.69444, 1.33476, 2.4, -0.69444, 1.33476, 2.4, 0.69444, 1.34332, 0.553725, -1.34332, 1.34332, 0.553725, 1.34332, 1.34616, 1.4712, -1.34616, 1.34616, 1.4712, 1.34616, 1.347218, 0.177075, 0.700921, 1.347218, 0.177075, -0.700921, 1.348469, 2.4945, -0.452973, 1.348469, 2.4945, 0.452973, 1.356353, 0.3168, -0.99541, 1.356353, 0.3168, 0.99541, 1.36262, 2.463, -0.226496, 1.36262, 2.463, 0.226496, 1.364422, 2.482687, -0.226795, 1.364422, 2.482687, 0.226795, 1.364595, 0.0648, -0.226824, 1.364595, 0.0648, 0.226824, 1.366728, 2.482687, -0.459107, 1.366728, 2.482687, 0.459107, 1.368074, 2.435437, -0.227403, 1.368074, 2.435437, 0.227403, 1.372294, 2.4945, -0.228104, 1.372294, 2.4945, 0.228104, 1.372712, 0.084525, -0.461116, 1.372712, 0.084525, 0.461116, 1.376867, 1.323225, -1.376868, 1.376868, 1.323225, 1.376867, 1.3804, 2.463, 0.0, 1.3804, 2.463, -0.0, 1.381032, 0.2136, 0.718514, 1.381032, 0.2136, -0.718514, 1.381968, 2.4, -0.229712, 1.381968, 2.4, 0.229712, 1.382225, 2.482687, 0.0, 1.382225, 2.482687, 0.0, 1.3824, 0.0648, 0.0, 1.3824, 0.0648, 0.0, 1.38308, 0.6564, -1.38308, 1.38308, 0.6564, 1.38308, 1.385053, 2.498438, -0.230225, 1.385053, 2.498438, 0.230225, 1.385925, 2.435437, 0.0, 1.385925, 2.435437, -0.0, 1.38627, 2.463, -0.465671, 1.38627, 2.463, 0.465671, 1.3902, 2.4945, 0.0, 1.3902, 2.4945, -0.0, 1.390545, 1.929525, -1.020503, 1.390545, 1.929525, 1.020503, 1.4, 2.4, 0.0, 1.4, 2.4, 0.0, 1.40012, 1.1784, -1.40012, 1.40012, 1.1784, 1.40012, 1.401276, 2.242575, -0.729046, 1.401276, 2.242575, 0.729046, 1.401513, 2.4945, -0.232961, 1.401513, 2.4945, 0.232961, 1.403125, 2.498438, 0.0, 1.403125, 2.498438, 0.0, 1.405953, 2.435437, -0.472283, 1.405953, 2.435437, 0.472283, 1.406405, 0.1056, -0.472434, 1.406405, 0.1056, 0.472434, 1.41006, 0.771675, -1.41006, 1.41006, 0.771675, 1.41006, 1.414853, 1.037175, -1.414853, 1.414853, 1.037175, 1.414853, 1.41624, 0.384375, -1.03936, 1.41624, 0.384375, 1.03936, 1.4198, 2.4945, 0.0, 1.4198, 2.4945, -0.0, 1.42, 0.9, -1.42, 1.42, 0.9, -1.42, 1.42, 0.9, 1.42, 1.42, 0.9, 1.42, 1.42049, 2.482687, -0.236115, 1.42049, 2.482687, 0.236115, 1.421292, 0.127575, 0.477435, 1.421292, 0.127575, -0.477435, 1.42464, 0.15, -0.47856, 1.42464, 0.15, -0.47856, 1.42464, 0.15, 0.47856, 1.42464, 0.15, 0.47856, 1.42464, 2.4, -0.47856, 1.42464, 2.4, 0.47856, 1.426709, 0.084525, -0.237149, 1.426709, 0.084525, 0.237149, 1.430863, 0.260025, 0.74444, 1.430863, 0.260025, -0.74444, 1.437937, 0.177075, 0.483027, 1.437937, 0.177075, -0.483027, 1.439025, 2.482687, 0.0, 1.4408, 2.463, -0.239491, 1.4408, 2.463, 0.239491, 1.443756, 1.7748, -1.059553, 1.443756, 1.7748, 1.059553, 1.445325, 0.084525, 0.0, 1.445325, 0.084525, 0.0, 1.4596, 2.463, 0.0, 1.4596, 2.463, -0.0, 1.461258, 2.435437, -0.242892, 1.461258, 2.435437, 0.242892, 1.461727, 0.1056, -0.24297, 1.461727, 0.1056, 0.24297, 1.466456, 2.0856, -0.762958, 1.466456, 2.0856, 0.762958, 1.474028, 0.2136, 0.49515, 1.474028, 0.2136, -0.49515, 1.476127, 0.4632, -1.08331, 1.476127, 0.4632, 1.08331, 1.4772, 0.127575, 0.245542, 1.4772, 0.127575, -0.245542, 1.480325, 2.435437, 0.0, 1.480325, 2.435437, -0.0, 1.48068, 0.15, -0.24612, 1.48068, 0.15, 0.24612, 1.48068, 0.15, 0.24612, 1.48068, 0.15, -0.24612, 1.48068, 2.4, -0.24612, 1.48068, 2.4, 0.24612, 1.4808, 0.1056, 0.0, 1.4808, 0.1056, 0.0, 1.491372, 0.3168, -0.775921, 1.491372, 0.3168, 0.775921, 1.49211, 1.621875, -1.09504, 1.49211, 1.621875, 1.09504, 1.4945, 0.177075, 0.248417, 1.4945, 0.177075, -0.248417, 1.495635, 2.242575, -0.502408, 1.495635, 2.242575, 0.502408, 1.496475, 0.127575, 0.0, 1.496475, 0.127575, 0.0, 1.5, 0.15, 0.0, 1.5, 0.15, 0.0, 1.5, 2.4, 0.0, 1.5, 2.4, 0.0, 1.514, 0.177075, -0.0, 1.514, 0.177075, 0.0, 1.527214, 0.260025, -0.513016, 1.527214, 0.260025, 0.513016, 1.528968, 1.929525, -0.795481, 1.528968, 1.929525, 0.795481, 1.531158, 0.553725, -1.123697, 1.531158, 0.553725, 1.123697, 1.53201, 0.2136, 0.254652, 1.53201, 0.2136, -0.254652, 1.534395, 1.4712, -1.126072, 1.534395, 1.4712, 1.126072, 1.552, 0.2136, 0.0, 1.552, 0.2136, 0.0, 1.554467, 2.242575, -0.258385, 1.554467, 2.242575, 0.258385, 1.55722, 0.384375, -0.81018, 1.55722, 0.384375, 0.81018, 1.565204, 2.0856, -0.525778, 1.565204, 2.0856, 0.525778, 1.569396, 1.323225, -1.151759, 1.569396, 1.323225, 1.151759, 1.57475, 2.242575, 0.0, 1.57475, 2.242575, 0.0, 1.576477, 0.6564, -1.156956, 1.576477, 0.6564, 1.156956, 1.587289, 0.260025, 0.263841, 1.587289, 0.260025, -0.263841, 1.587475, 1.7748, -0.825921, 1.587475, 1.7748, 0.825921, 1.591798, 0.3168, -0.534711, 1.591798, 0.3168, 0.534711, 1.5959, 1.1784, -1.17121, 1.5959, 1.1784, 1.17121, 1.60723, 0.771675, -1.179525, 1.60723, 0.771675, 1.179525, 1.608, 0.260025, 0.0, 1.608, 0.260025, 0.0, 1.612693, 1.037175, -1.183534, 1.612693, 1.037175, 1.183534, 1.61856, 0.9, -1.18784, 1.61856, 0.9, -1.18784, 1.61856, 0.9, 1.18784, 1.61856, 0.9, 1.18784, 1.623068, 0.4632, -0.844439, 1.623068, 0.4632, 0.844439, 1.626774, 2.0856, -0.270404, 1.626774, 2.0856, 0.270404, 1.631925, 1.929525, -0.54819, 1.631925, 1.929525, 0.54819, 1.640643, 1.621875, -0.853583, 1.640643, 1.621875, 0.853583, 1.648, 2.0856, 0.0, 1.648, 2.0856, -0.0, 1.654413, 0.3168, -0.274998, 1.654413, 0.3168, 0.274998, 1.66208, 0.384375, -0.55832, 1.66208, 0.384375, 0.55832, 1.676, 0.3168, 0.0, 1.676, 0.3168, 0.0, 1.683577, 0.553725, -0.87592, 1.683577, 0.553725, 0.87592, 1.687137, 1.4712, -0.877772, 1.687137, 1.4712, 0.877772, 1.694372, 1.7748, -0.569167, 1.694372, 1.7748, 0.569167, 1.696119, 1.929525, -0.28193, 1.696119, 1.929525, 0.28193, 1.7, 0.6, 0.0, 1.7, 0.6, 0.0, 1.7, 0.6231, 0.1782, 1.7, 0.6231, -0.1782, 1.7, 0.6858, -0.3168, 1.7, 0.6858, 0.3168, 1.7, 0.7782, 0.4158, 1.7, 0.7782, -0.4158, 1.7, 0.8904, -0.4752, 1.7, 0.8904, 0.4752, 1.7, 1.0125, -0.495, 1.7, 1.0125, 0.495, 1.7, 1.1346, -0.4752, 1.7, 1.1346, 0.4752, 1.7, 1.2468, 0.4158, 1.7, 1.2468, -0.4158, 1.7, 1.3392, -0.3168, 1.7, 1.3392, 0.3168, 1.7, 1.4019, 0.1782, 1.7, 1.4019, -0.1782, 1.7, 1.425, 0.0, 1.7, 1.425, 0.0, 1.71825, 1.929525, 0.0, 1.71825, 1.929525, 0.0, 1.725622, 1.323225, -0.897795, 1.725622, 1.323225, 0.897795, 1.72746, 0.384375, -0.28714, 1.72746, 0.384375, 0.28714, 1.732362, 0.4632, -0.581929, 1.732362, 0.4632, 0.581929, 1.733408, 0.6564, -0.901846, 1.733408, 0.6564, 0.901846, 1.75, 0.384375, 0.0, 1.75, 0.384375, 0.0, 1.75112, 1.621875, -0.58823, 1.75112, 1.621875, 0.58823, 1.754764, 1.1784, -0.912957, 1.754764, 1.1784, 0.912957, 1.761022, 1.7748, -0.292719, 1.761022, 1.7748, 0.292719, 1.767222, 0.771675, -0.919439, 1.767222, 0.771675, 0.919439, 1.773229, 1.037175, -0.922564, 1.773229, 1.037175, 0.922564, 1.77968, 0.9, -0.92592, 1.77968, 0.9, -0.92592, 1.77968, 0.9, 0.92592, 1.77968, 0.9, 0.92592, 1.784, 1.7748, 0.0, 1.784, 1.7748, 0.0, 1.796946, 0.553725, -0.603624, 1.796946, 0.553725, 0.603624, 1.800507, 0.4632, -0.299282, 1.800507, 0.4632, 0.299282, 1.800745, 1.4712, -0.6049, 1.800745, 1.4712, 0.6049, 1.820003, 1.621875, -0.302523, 1.820003, 1.621875, 0.302522, 1.824, 0.4632, 0.0, 1.824, 0.4632, 0.0, 1.841822, 1.323225, -0.618698, 1.841822, 1.323225, 0.618698, 1.84375, 1.621875, 0.0, 1.84375, 1.621875, -0.0, 1.850132, 0.6564, -0.62149, 1.850132, 0.6564, 0.62149, 1.867631, 0.553725, -0.310439, 1.867631, 0.553725, 0.310439, 1.87158, 1.4712, -0.311096, 1.87158, 1.4712, 0.311096, 1.872927, 1.1784, -0.629147, 1.872927, 1.1784, 0.629147, 1.886223, 0.771675, -0.633613, 1.886223, 0.771675, 0.633613, 1.892, 0.553725, 0.0, 1.892, 0.553725, -0.0, 1.892634, 1.037175, -0.635767, 1.892634, 1.037175, 0.635767, 1.896, 1.4712, 0.0, 1.896, 1.4712, 0.0, 1.89952, 0.9, -0.63808, 1.89952, 0.9, -0.63808, 1.89952, 0.9, 0.63808, 1.89952, 0.9, 0.63808, 1.914272, 1.323225, -0.318192, 1.914272, 1.323225, 0.318192, 1.92291, 0.6564, -0.319628, 1.92291, 0.6564, 0.319628, 1.9359, 1.4442, 0.0, 1.9359, 1.4442, 0.0, 1.93925, 1.323225, 0.0, 1.93925, 1.323225, -0.0, 1.939394, 1.423221, -0.1751, 1.939394, 1.423221, 0.1751, 1.946601, 1.1784, -0.323566, 1.946601, 1.1784, 0.323566, 1.948, 0.6564, 0.0, 1.948, 0.6564, -0.0, 1.948879, 1.366278, -0.31129, 1.948879, 1.366278, 0.31129, 1.96042, 0.771675, -0.325863, 1.96042, 0.771675, 0.325863, 1.962857, 1.282362, -0.408568, 1.962857, 1.282362, 0.408568, 1.967083, 1.037175, -0.32697, 1.967083, 1.037175, 0.32697, 1.972, 1.1784, 0.0, 1.972, 1.1784, 0.0, 1.97424, 0.9, -0.32816, 1.97424, 0.9, 0.32816, 1.97424, 0.9, 0.32816, 1.97983, 1.180464, -0.466934, 1.97983, 1.180464, 0.466934, 1.986, 0.771675, 0.0, 1.986, 0.771675, -0.0, 1.99275, 1.037175, 0.0, 1.99275, 1.037175, 0.0, 1.9983, 1.069575, -0.48639, 1.9983, 1.069575, 0.48639, 2.0, 0.9, 0.0, 2.0, 0.9, 0.0, 2.01677, 0.958686, -0.466934, 2.01677, 0.958686, 0.466934, 2.033743, 0.856788, -0.408568, 2.033743, 0.856788, 0.408568, 2.047721, 0.772872, 0.31129, 2.047721, 0.772872, -0.31129, 2.057206, 0.715929, 0.1751, 2.057206, 0.715929, -0.1751, 2.0607, 0.69495, 0.0, 2.0607, 0.69495, 0.0, 2.1112, 1.4976, 0.0, 2.1112, 1.4976, 0.0, 2.116979, 1.47912, -0.166687, 2.116979, 1.47912, 0.166687, 2.132666, 1.42896, -0.296333, 2.132666, 1.42896, 0.296333, 2.155782, 1.35504, -0.388937, 2.155782, 1.35504, 0.388937, 2.183853, 1.26528, -0.444499, 2.183853, 1.26528, 0.444499, 2.2144, 1.1676, -0.46302, 2.2144, 1.1676, 0.46302, 2.2373, 1.5789, 0.0, 2.2373, 1.5789, 0.0, 2.244457, 1.563171, -0.154289, 2.244457, 1.563171, 0.154289, 2.244947, 1.06992, -0.444499, 2.244947, 1.06992, 0.444499, 2.263882, 1.520478, -0.274291, 2.263882, 1.520478, 0.274291, 2.273018, 0.98016, -0.388937, 2.273018, 0.98016, 0.388937, 2.29251, 1.457562, -0.360007, 2.29251, 1.457562, 0.360007, 2.296134, 0.90624, -0.296333, 2.296134, 0.90624, 0.296333, 2.311821, 0.85608, -0.166687, 2.311821, 0.85608, 0.166687, 2.3176, 0.8376, 0.0, 2.3176, 0.8376, 0.0, 2.3256, 1.6818, 0.0, 2.3256, 1.6818, 0.0, 2.327271, 1.381164, -0.411437, 2.327271, 1.381164, 0.411437, 2.33353, 1.668948, -0.139234, 2.33353, 1.668948, 0.139234, 2.355053, 1.634064, -0.247526, 2.355053, 1.634064, 0.247526, 2.3651, 1.298025, -0.42858, 2.3651, 1.298025, 0.42858, 2.386771, 1.582656, -0.324878, 2.386771, 1.582656, 0.324878, 2.3875, 1.8, 0.0, 2.3875, 1.8, 0.0, 2.3959, 1.790025, 0.12285, 2.3959, 1.790025, -0.12285, 2.402929, 1.214886, -0.411437, 2.402929, 1.214886, 0.411437, 2.4187, 1.76295, -0.2184, 2.4187, 1.76295, 0.2184, 2.425286, 1.520232, -0.37129, 2.425286, 1.520232, 0.37129, 2.4344, 1.9272, 0.0, 2.4344, 1.9272, 0.0, 2.43769, 1.138488, -0.360007, 2.43769, 1.138488, 0.360007, 2.44327, 1.919976, 0.106466, 2.44327, 1.919976, -0.106466, 2.4523, 1.72305, -0.28665, 2.4523, 1.72305, 0.28665, 2.466318, 1.075572, -0.274291, 2.466318, 1.075572, 0.274291, 2.4672, 1.4523, -0.38676, 2.4672, 1.4523, 0.38676, 2.467347, 1.900368, 0.189274, 2.467347, 1.900368, -0.189274, 2.4777, 2.0571, 0.0, 2.4777, 2.0571, 0.0, 2.485743, 1.032879, -0.154289, 2.485743, 1.032879, 0.154289, 2.487343, 2.052375, -0.091411, 2.487343, 2.052375, 0.091411, 2.4929, 1.01715, 0.0, 2.4929, 1.01715, 0.0, 2.4931, 1.6746, -0.3276, 2.4931, 1.6746, 0.3276, 2.502829, 1.871472, 0.248422, 2.502829, 1.871472, -0.248422, 2.509114, 1.384368, -0.37129, 2.509114, 1.384368, 0.37129, 2.513518, 2.03955, 0.162509, 2.513518, 2.03955, -0.162509, 2.5288, 2.1834, 0.0, 2.5375, 1.621875, -0.34125, 2.5375, 1.621875, 0.34125, 2.539821, 2.180796, -0.079013, 2.539821, 2.180796, 0.079013, 2.545914, 1.836384, -0.28391, 2.545914, 1.836384, 0.28391, 2.547629, 1.321944, -0.324878, 2.547629, 1.321944, 0.324878, 2.55209, 2.02065, -0.213293, 2.55209, 2.02065, 0.213293, 2.569734, 2.173728, -0.140467, 2.569734, 2.173728, 0.140467, 2.579347, 1.270536, -0.247526, 2.579347, 1.270536, 0.247526, 2.5819, 1.56915, -0.3276, 2.5819, 1.56915, 0.3276, 2.5928, 1.7982, -0.29574, 2.5928, 1.7982, 0.29574, 2.598929, 1.9977, -0.243763, 2.598929, 1.9977, 0.243763, 2.5991, 2.2998, 0.0, 2.5991, 2.2998, 0.0, 2.60087, 1.235652, -0.139234, 2.60087, 1.235652, 0.139234, 2.6088, 1.2228, 0.0, 2.6088, 1.2228, 0.0, 2.612406, 2.298813, 0.0706, 2.612406, 2.298813, -0.0706, 2.613818, 2.163312, -0.184363, 2.613818, 2.163312, 0.184363, 2.6227, 1.5207, -0.28665, 2.6227, 1.5207, 0.28665, 2.639686, 1.760016, -0.28391, 2.639686, 1.760016, 0.28391, 2.648521, 2.296134, 0.12551, 2.648521, 2.296134, -0.12551, 2.6499, 1.972725, 0.25392, 2.6499, 1.972725, -0.25392, 2.6563, 1.4808, -0.2184, 2.6563, 1.4808, 0.2184, 2.667347, 2.150664, -0.210701, 2.667347, 2.150664, 0.210701, 2.6791, 1.453725, 0.12285, 2.6791, 1.453725, -0.12285, 2.682771, 1.724928, 0.248422, 2.682771, 1.724928, -0.248422, 2.6875, 1.44375, 0.0, 2.6875, 1.44375, 0.0, 2.7, 2.4, 0.0, 2.7, 2.4, 0.0, 2.7, 2.4, 0.0, 2.700871, 1.94775, -0.243763, 2.700871, 1.94775, 0.243763, 2.701743, 2.292186, 0.164732, 2.701743, 2.292186, -0.164732, 2.7168, 2.4, 0.0675, 2.7168, 2.4, -0.0675, 2.7168, 2.4, -0.0675, 2.7168, 2.4, 0.0675, 2.718253, 1.696032, 0.189274, 2.718253, 1.696032, -0.189274, 2.7256, 2.1369, -0.21948, 2.7256, 2.1369, 0.21948, 2.7298, 2.42025, 0.0, 2.74233, 1.676424, 0.106466, 2.74233, 1.676424, -0.106466, 2.747407, 2.420406, -0.066744, 2.747407, 2.420406, 0.066744, 2.74771, 1.9248, -0.213293, 2.74771, 1.9248, 0.213293, 2.7512, 1.6692, 0.0, 2.7512, 1.6692, 0.0, 2.7584, 2.436, 0.0, 2.7624, 2.4, 0.12, 2.7624, 2.4, -0.12, 2.7624, 2.4, -0.12, 2.7624, 2.4, 0.12, 2.76637, 2.287392, 0.188266, 2.76637, 2.287392, -0.188266, 2.776365, 2.436302, -0.064692, 2.776365, 2.436302, 0.064692, 2.783853, 2.123136, -0.210701, 2.783853, 2.123136, 0.210701, 2.7846, 2.44725, 0.0, 2.7846, 2.44725, 0.0, 2.786282, 1.9059, 0.162509, 2.786282, 1.9059, -0.162509, 2.795198, 2.420829, -0.118656, 2.795198, 2.420829, 0.118656, 2.8, 2.4, 0.0, 2.802528, 2.44768, -0.061668, 2.802528, 2.44768, 0.061668, 2.8072, 2.454, 0.0, 2.8112, 2.4, -0.0405, 2.8112, 2.4, 0.0405, 2.812457, 1.893075, 0.091411, 2.812457, 1.893075, -0.091411, 2.8221, 1.88835, 0.0, 2.8221, 1.88835, 0.0, 2.8242, 2.42025, 0.0, 2.8242, 2.42025, 0.0, 2.82475, 2.454529, -0.057996, 2.82475, 2.454529, 0.057996, 2.825, 2.45625, 0.0, 2.825, 2.45625, 0.0, 2.825126, 2.437123, -0.115008, 2.825126, 2.437123, 0.115008, 2.8296, 2.4, 0.1575, 2.8296, 2.4, -0.1575, 2.8296, 2.4, -0.1575, 2.8296, 2.4, 0.1575, 2.836672, 2.420519, -0.041256, 2.836672, 2.420519, 0.041256, 2.8367, 2.282175, 0.19611, 2.8367, 2.282175, -0.19611, 2.8368, 2.454, 0.0, 2.8368, 2.454, 0.0, 2.837382, 2.110488, -0.184363, 2.837382, 2.110488, 0.184363, 2.8376, 2.436, 0.0, 2.8376, 2.436, 0.0, 2.8414, 2.44725, 0.0, 2.8414, 2.44725, 0.0, 2.8416, 2.4, -0.072, 2.8416, 2.4, 0.072, 2.841887, 2.456841, -0.054, 2.841887, 2.456841, 0.054, 2.851189, 2.448847, -0.109632, 2.851189, 2.448847, 0.109632, 2.851331, 2.436454, -0.043308, 2.851331, 2.436454, 0.043308, 2.852794, 2.454605, -0.050004, 2.852794, 2.454605, 0.050004, 2.856323, 2.447812, -0.046332, 2.856323, 2.447812, 0.046332, 2.865626, 2.421453, -0.155736, 2.865626, 2.421453, 0.155736, 2.870524, 2.42125, -0.073344, 2.870524, 2.42125, 0.073344, 2.872387, 2.455966, -0.103104, 2.872387, 2.455966, 0.103104, 2.881466, 2.100072, -0.140467, 2.881466, 2.100072, 0.140467, 2.8864, 2.4, -0.0945, 2.8864, 2.4, 0.0945, 2.887725, 2.458444, -0.096, 2.887725, 2.458444, 0.096, 2.888602, 2.437685, -0.076992, 2.888602, 2.437685, 0.076992, 2.896205, 2.456246, 0.088896, 2.896205, 2.456246, -0.088896, 2.896829, 2.449338, -0.082368, 2.896829, 2.449338, 0.082368, 2.896986, 2.438333, -0.150948, 2.896986, 2.438333, 0.150948, 2.90703, 2.276958, 0.188266, 2.90703, 2.276958, -0.188266, 2.9112, 2.4, -0.18, 2.9112, 2.4, -0.18, 2.9112, 2.4, 0.18, 2.911379, 2.093004, -0.079013, 2.911379, 2.093004, 0.079013, 2.920412, 2.422328, -0.096264, 2.920412, 2.422328, 0.096264, 2.9224, 2.0904, 0.0, 2.922899, 2.450567, -0.143892, 2.922899, 2.450567, 0.143892, 2.9408, 2.4, -0.108, 2.9408, 2.4, 0.108, 2.942589, 2.458082, -0.135324, 2.942589, 2.458082, 0.135324, 2.943526, 2.439499, -0.101052, 2.943526, 2.439499, 0.101052, 2.951146, 2.42221, -0.177984, 2.951146, 2.42221, 0.177984, 2.955275, 2.460806, -0.126, 2.955275, 2.460806, 0.126, 2.956523, 2.451588, -0.108108, 2.956523, 2.451588, 0.108108, 2.960179, 2.458666, -0.116676, 2.960179, 2.458666, 0.116676, 2.971657, 2.272164, 0.164732, 2.971657, 2.272164, -0.164732, 2.98099, 2.423636, 0.110016, 2.98099, 2.423636, -0.110016, 2.984243, 2.439802, -0.172512, 2.984243, 2.439802, 0.172512, 3.0, 2.4, -0.1875, 3.0, 2.4, -0.1875, 3.0, 2.4, -0.1125, 3.0, 2.4, 0.1125, 3.0, 2.4, 0.1875, 3.009977, 2.452655, -0.164448, 3.009977, 2.452655, 0.164448, 3.010221, 2.441702, -0.115488, 3.010221, 2.441702, 0.115488, 3.024879, 2.268216, 0.12551, 3.024879, 2.268216, -0.12551, 3.027834, 2.460653, -0.154656, 3.027834, 2.460653, 0.154656, 3.029007, 2.454319, -0.123552, 3.029007, 2.454319, 0.123552, 3.0373, 2.463675, -0.144, 3.0373, 2.463675, 0.144, 3.037862, 2.461603, 0.133344, 3.037862, 2.461603, -0.133344, 3.044212, 2.423034, -0.1854, 3.044212, 2.423034, 0.1854, 3.046912, 2.425059, 0.1146, 3.046912, 2.425059, -0.1146, 3.0592, 2.4, -0.108, 3.0592, 2.4, 0.108, 3.060994, 2.265537, 0.0706, 3.060994, 2.265537, -0.0706, 3.0743, 2.26455, 0.0, 3.0743, 2.26455, 0.0, 3.0792, 2.4414, -0.1797, 3.0792, 2.4414, 0.1797, 3.0828, 2.4441, -0.1203, 3.0828, 2.4441, 0.1203, 3.0888, 2.4, -0.18, 3.0888, 2.4, -0.18, 3.0888, 2.4, 0.18, 3.104737, 2.454928, -0.1713, 3.104738, 2.454928, 0.1713, 3.107887, 2.457291, -0.1287, 3.107887, 2.457291, 0.1287, 3.112835, 2.426483, 0.110016, 3.112835, 2.426483, -0.110016, 3.1136, 2.4, -0.0945, 3.1136, 2.4, 0.0945, 3.1206, 2.46345, 0.1611, 3.1206, 2.46345, -0.1611, 3.1224, 2.4648, 0.1389, 3.1224, 2.4648, -0.1389, 3.126562, 2.466797, -0.15, 3.126562, 2.466797, 0.15, 3.137279, 2.423859, -0.177984, 3.137279, 2.423859, 0.177984, 3.155379, 2.446498, -0.115488, 3.155379, 2.446498, 0.115488, 3.1584, 2.4, -0.072, 3.1584, 2.4, 0.072, 3.1704, 2.4, -0.1575, 3.1704, 2.4, 0.1575, 3.1704, 2.4, -0.1575, 3.173413, 2.427791, -0.096264, 3.173413, 2.427791, 0.096264, 3.174157, 2.442998, -0.172512, 3.174157, 2.442998, 0.172512, 3.186768, 2.460263, -0.123552, 3.186768, 2.460263, 0.123552, 3.1888, 2.4, -0.0405, 3.1888, 2.4, 0.0405, 3.199498, 2.457201, -0.164448, 3.199498, 2.457201, 0.164448, 3.2, 2.4, 0.0, 3.206938, 2.467997, 0.133344, 3.206938, 2.467997, -0.133344, 3.213366, 2.466247, -0.154656, 3.213366, 2.466247, 0.154656, 3.215825, 2.469919, -0.144, 3.215825, 2.469919, 0.144, 3.222074, 2.448701, -0.101052, 3.222074, 2.448701, 0.101052, 3.222799, 2.424616, -0.155736, 3.222799, 2.424616, 0.155736, 3.223301, 2.428868, -0.073344, 3.223301, 2.428868, 0.073344, 3.2376, 2.4, -0.12, 3.2376, 2.4, 0.12, 3.2376, 2.4, -0.12, 3.257153, 2.429599, -0.041256, 3.257153, 2.429599, 0.041256, 3.259252, 2.462994, -0.108108, 3.259252, 2.462994, 0.108108, 3.261414, 2.444467, -0.150948, 3.261414, 2.444467, 0.150948, 3.269625, 2.429869, 0.0, 3.269625, 2.429869, 0.0, 3.276998, 2.450515, -0.076992, 3.276998, 2.450515, 0.076992, 3.2832, 2.4, -0.0675, 3.2832, 2.4, 0.0675, 3.2832, 2.4, -0.0675, 3.284621, 2.470934, -0.116676, 3.284621, 2.470934, 0.116676, 3.286576, 2.459289, -0.143892, 3.286576, 2.459289, 0.143892, 3.293227, 2.42524, -0.118656, 3.293227, 2.42524, 0.118656, 3.29785, 2.472787, -0.126, 3.29785, 2.472788, 0.126, 3.298611, 2.468818, -0.135324, 3.298611, 2.468818, 0.135324, 3.3, 2.4, 0.0, 3.3, 2.4, 0.0, 3.314269, 2.451746, -0.043308, 3.314269, 2.451746, 0.043308, 3.318946, 2.465243, -0.082368, 3.318946, 2.465243, 0.082368, 3.328, 2.4522, 0.0, 3.328, 2.4522, 0.0, 3.333274, 2.445677, -0.115008, 3.333274, 2.445677, 0.115008, 3.341018, 2.425663, -0.066744, 3.341018, 2.425663, 0.066744, 3.348595, 2.473354, 0.088896, 3.348595, 2.473354, -0.088896, 3.358286, 2.461009, -0.109632, 3.358286, 2.461009, 0.109632, 3.358625, 2.425819, 0.0, 3.359452, 2.466769, -0.046332, 3.359452, 2.466769, 0.046332, 3.3654, 2.47515, -0.096, 3.3654, 2.47515, 0.096, 3.368813, 2.470934, -0.103104, 3.368813, 2.470934, 0.103104, 3.374375, 2.467331, 0.0, 3.374375, 2.467331, 0.0, 3.382035, 2.446498, -0.064692, 3.382035, 2.446498, 0.064692, 3.392006, 2.474995, -0.050004, 3.392006, 2.474995, 0.050004, 3.4, 2.4468, 0.0, 3.406947, 2.462176, -0.061668, 3.406947, 2.462176, 0.061668, 3.408, 2.4756, 0.0, 3.408, 2.4756, 0.0, 3.411237, 2.476753, -0.054, 3.411237, 2.476753, 0.054, 3.41645, 2.472371, -0.057996, 3.41645, 2.472371, 0.057996, 3.424875, 2.462606, 0.0, 3.428125, 2.477344, 0.0, 3.428125, 2.477344, 0.0, 3.434, 2.4729, 0.0], 3]
     });
 };
-// Specifying colors in shade in an easier way
-(function() {
-
-var css_colors = {
-    "aliceblue":	    "#F0F8FF",
-    "antiquewhite":	    "#FAEBD7",
-    "aqua":		    "#00FFFF",
-    "aquamarine":	    "#7FFFD4",
-    "azure":		    "#F0FFFF",
-    "beige":		    "#F5F5DC",
-    "bisque":		    "#FFE4C4",
-    "black":		    "#000000",
-    "blanchedalmond":       "#FFEBCD",
-    "blue":		    "#0000FF",
-    "blueviolet":	    "#8A2BE2",
-    "brown":		    "#A52A2A",
-    "burlywood":	    "#DEB887",
-    "cadetblue":	    "#5F9EA0",
-    "chartreuse":	    "#7FFF00",
-    "chocolate":	    "#D2691E",
-    "coral":		    "#FF7F50",
-    "cornflowerblue":       "#6495ED",
-    "cornsilk":             "#FFF8DC",
-    "crimson":		    "#DC143C",
-    "cyan":		    "#00FFFF",
-    "darkblue":             "#00008B",
-    "darkcyan":             "#008B8B",
-    "darkgoldenrod":	    "#B8860B",
-    "darkgray":             "#A9A9A9",
-    "darkgrey":             "#A9A9A9",
-    "darkgreen":	    "#006400",
-    "darkkhaki":	    "#BDB76B",
-    "darkmagenta":	    "#8B008B",
-    "darkolivegreen":       "#556B2F",
-    "darkorange":	    "#FF8C00",
-    "darkorchid":	    "#9932CC",
-    "darkred":		    "#8B0000",
-    "darksalmon":	    "#E9967A",
-    "darkseagreen":	    "#8FBC8F",
-    "darkslateblue":	    "#483D8B",
-    "darkslategray":	    "#2F4F4F",
-    "darkslategrey":	    "#2F4F4F",
-    "darkturquoise":	    "#00CED1",
-    "darkviolet":	    "#9400D3",
-    "deeppink":             "#FF1493",
-    "deepskyblue":	    "#00BFFF",
-    "dimgray":		    "#696969",
-    "dimgrey":		    "#696969",
-    "dodgerblue":	    "#1E90FF",
-    "firebrick":	    "#B22222",
-    "floralwhite":	    "#FFFAF0",
-    "forestgreen":	    "#228B22",
-    "fuchsia":		    "#FF00FF",
-    "gainsboro":	    "#DCDCDC",
-    "ghostwhite":	    "#F8F8FF",
-    "gold":		    "#FFD700",
-    "goldenrod":	    "#DAA520",
-    "gray":		    "#808080",
-    "grey":		    "#808080",
-    "green":		    "#008000",
-    "greenyellow":	    "#ADFF2F",
-    "honeydew":             "#F0FFF0",
-    "hotpink":		    "#FF69B4",
-    "indianred":	    "#CD5C5C",
-    "indigo":		    "#4B0082",
-    "ivory":		    "#FFFFF0",
-    "khaki":		    "#F0E68C",
-    "lavender":             "#E6E6FA",
-    "lavenderblush":	    "#FFF0F5",
-    "lawngreen":	    "#7CFC00",
-    "lemonchiffon":	    "#FFFACD",
-    "lightblue":	    "#ADD8E6",
-    "lightcoral":	    "#F08080",
-    "lightcyan":	    "#E0FFFF",
-    "lightgoldenrodyellow": "#FAFAD2",
-    "lightgray":	    "#D3D3D3",
-    "lightgrey":	    "#D3D3D3",
-    "lightgreen":	    "#90EE90",
-    "lightpink":	    "#FFB6C1",
-    "lightsalmon":	    "#FFA07A",
-    "lightseagreen":	    "#20B2AA",
-    "lightskyblue":	    "#87CEFA",
-    "lightslategray":       "#778899",
-    "lightslategrey":       "#778899",
-    "lightsteelblue":       "#B0C4DE",
-    "lightyellow":	    "#FFFFE0",
-    "lime":		    "#00FF00",
-    "limegreen":	    "#32CD32",
-    "linen":		    "#FAF0E6",
-    "magenta":		    "#FF00FF",
-    "maroon":		    "#800000",
-    "mediumaquamarine":     "#66CDAA",
-    "mediumblue":	    "#0000CD",
-    "mediumorchid":	    "#BA55D3",
-    "mediumpurple":	    "#9370D8",
-    "mediumseagreen":       "#3CB371",
-    "mediumslateblue":      "#7B68EE",
-    "mediumspringgreen":    "#00FA9A",
-    "mediumturquoise":      "#48D1CC",
-    "mediumvioletred":      "#C71585",
-    "midnightblue":	    "#191970",
-    "mintcream":	    "#F5FFFA",
-    "mistyrose":	    "#FFE4E1",
-    "moccasin":             "#FFE4B5",
-    "navajowhite":	    "#FFDEAD",
-    "navy":		    "#000080",
-    "oldlace":		    "#FDF5E6",
-    "olive":		    "#808000",
-    "olivedrab":	    "#6B8E23",
-    "orange":		    "#FFA500",
-    "orangered":	    "#FF4500",
-    "orchid":		    "#DA70D6",
-    "palegoldenrod":	    "#EEE8AA",
-    "palegreen":	    "#98FB98",
-    "paleturquoise":	    "#AFEEEE",
-    "palevioletred":	    "#D87093",
-    "papayawhip":	    "#FFEFD5",
-    "peachpuff":	    "#FFDAB9",
-    "peru":		    "#CD853F",
-    "pink":		    "#FFC0CB",
-    "plum":		    "#DDA0DD",
-    "powderblue":	    "#B0E0E6",
-    "purple":		    "#800080",
-    "red":		    "#FF0000",
-    "rosybrown":	    "#BC8F8F",
-    "royalblue":	    "#4169E1",
-    "saddlebrown":	    "#8B4513",
-    "salmon":		    "#FA8072",
-    "sandybrown":	    "#F4A460",
-    "seagreen":             "#2E8B57",
-    "seashell":             "#FFF5EE",
-    "sienna":		    "#A0522D",
-    "silver":		    "#C0C0C0",
-    "skyblue":		    "#87CEEB",
-    "slateblue":	    "#6A5ACD",
-    "slategray":	    "#708090",
-    "slategrey":	    "#708090",
-    "snow":		    "#FFFAFA",
-    "springgreen":	    "#00FF7F",
-    "steelblue":	    "#4682B4",
-    "tan":		    "#D2B48C",
-    "teal":		    "#008080",
-    "thistle":		    "#D8BFD8",
-    "tomato":		    "#FF6347",
-    "turquoise":	    "#40E0D0",
-    "violet":		    "#EE82EE",
-    "wheat":		    "#F5DEB3",
-    "white":		    "#FFFFFF",
-    "whitesmoke":	    "#F5F5F5",
-    "yellow":		    "#FFFF00",
-    "yellowgreen":	    "#9ACD32"
-};
-
-var single_hex_to_float = {};
-var rgb_re = / *rgb *\( *(\d+) *, *(\d+) *, *(\d+) *\) */;
-Shade.color = function(spec, alpha)
-{
-    if (typeOf(alpha) === 'undefined')
-        alpha = 1;
-    if (spec[0] === '#') {
-        if (spec.length === 4) {
-            return Shade.vec(parseInt(spec[1], 16) / 15,
-                             parseInt(spec[2], 16) / 15,
-                             parseInt(spec[3], 16) / 15, alpha);
-        } else if (spec.length == 7) {
-            return Shade.vec(parseInt(spec.substr(1,2), 16) / 255,
-                             parseInt(spec.substr(3,2), 16) / 255,
-                             parseInt(spec.substr(5,2), 16) / 255, alpha);
-        } else
-            throw "hex specifier must be either #rgb or #rrggbb";
-    }
-    var m = rgb_re.exec(spec);
-    if (m) {
-        return Shade.vec(parseInt(m[1]) / 255,
-                         parseInt(m[2]) / 255,
-                         parseInt(m[3]) / 255, alpha);
-    }
-    if (spec in css_colors)
-        return Shade.color(css_colors[spec], alpha);
-    throw "Unrecognized color specifier " + spec;
-};
-}());
-
-Shade.Colors = {};
-
-Shade.Colors.alpha = function(color, alpha)
-{
-    color = Shade.make(color);
-    alpha = Shade.make(alpha);
-    if (!alpha.type.equals(Shade.Types.float_t))
-        throw "Shade.Colors.alpha type error: alpha parameter must be float";
-    if (color.type.equals(Shade.Types.vec4)) {
-        return Shade.vec(color.swizzle("rgb"), alpha);
-    }
-    if (color.type.equals(Shade.Types.vec3)) {
-        return Shade.vec(color, alpha);
-    }
-    throw "Shade.Colors.alpha type error: color parameter must be vec3 or vec4";
-};
-
-Shade.Exp.alpha = function(alpha)
-{
-    return Shade.Colors.alpha(this, alpha);
-};
-
-

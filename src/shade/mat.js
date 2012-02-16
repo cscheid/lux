@@ -21,7 +21,7 @@ Shade.mat = function()
 
     if (rows < 1 || rows > 4) {
         throw "mat constructor requires resulting dimension to be between "
-            + "2 and 4.";
+            + "2 and 4";
     }
     var type = Shade.basic("mat" + rows);
     return Shade._create_concrete_value_exp( {
@@ -51,7 +51,7 @@ Shade.mat = function()
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) { 
-                    return t.eval(); 
+                    return t.evaluate(); 
                 }).join(", ") + ")";
         }
     });
@@ -71,6 +71,6 @@ Shade.mat3 = function(m)
                          m.element(1).swizzle("xyz"),
                          m.element(2).swizzle("xyz"));
     } else {
-        throw "mat3: need matrix to convert to mat3";
+        throw "need matrix to convert to mat3";
     }
 };

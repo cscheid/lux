@@ -16,7 +16,7 @@ function to_dim(l)
     case 16: return 4;
     }
     throw "bad length";
-};
+}
 
 mat.make = function(v)
 {

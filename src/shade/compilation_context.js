@@ -25,7 +25,7 @@ Shade.CompilationContext = function(compile_type) {
         //     this.min_version = Math.max(this.min_version, version);
         // },
         declare: function(decltype, glsl_name, type, declmap) {
-            if (typeof type === 'undefined') {
+            if (_.isUndefined(type)) {
                 throw "must define type";                
             }
             if (!(glsl_name in declmap)) {
@@ -34,10 +34,10 @@ Shade.CompilationContext = function(compile_type) {
             } else {
                 var existing_type = declmap[glsl_name];
                 if (!existing_type.equals(type)) {
-                    throw ("Compile error: Different expressions use "
+                    throw ("compile error: different expressions use "
                            + "conflicting types for '" + decltype + " " + glsl_name
                            + "': '" + existing_type.repr() + "', '"
-                           + type.repr() + "'.");
+                           + type.repr() + "'");
                 }
             }
         },
@@ -78,7 +78,7 @@ Shade.CompilationContext = function(compile_type) {
             this.strings.push("void main() {\n");
             for (i=0; i<this.initialization_exprs.length; ++i)
                 this.strings.push("    ", this.initialization_exprs[i], ";\n");
-            this.strings.push("    ", fun.eval(), ";\n", "}\n");
+            this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
         },
         add_initialization: function(expr) {
             this.initialization_exprs.push(expr);

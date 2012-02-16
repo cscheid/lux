@@ -1,4 +1,3 @@
-// FIXME: alpha=0 points should discard because of depth buffer
 Facet.Marks.dots = function(opts)
 {
     opts = _.defaults(opts, {
@@ -6,15 +5,15 @@ Facet.Marks.dots = function(opts)
         stroke_color: Shade.vec(0,0,0,1),
         point_diameter: 5,
         stroke_width: 2,
-        mode: Facet.DrawingMode.over,
+        mode: Facet.DrawingMode.over_with_depth,
         alpha: true,
         plain: false
     });
 
     if (!opts.position)
-        throw "Facet.Marks.dots expects parameter 'position'";
+        throw "missing required parameter 'position'";
     if (!opts.elements)
-        throw "Facet.Marks.dots expects parameter 'elements'";
+        throw "missing required parameter 'elements'";
 
     var S = Shade;
 
@@ -54,7 +53,12 @@ Facet.Marks.dots = function(opts)
         color: Shade.selection(opts.plain, plain_fill_color, alpha_fill_color),
         mode: opts.mode
     });
-    // FIXME there must be a better way to do this.
+
+    /* We pass the gl_Position attribute explicitly because some other
+     call might want to explicitly use the same position of the dots marks.
+
+     This is the exact use case of dot-and-line graph drawing.
+     */
     result.gl_Position = gl_Position;
     return result;
 };

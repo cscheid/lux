@@ -1,12 +1,14 @@
 Shade.Optimizer = {};
 Shade.Optimizer.debug = false;
 
+Shade.Optimizer._debug_passes = false;
+
 Shade.Optimizer.transform_expression = function(operations)
 {
     return function(v) {
         var old_v;
         for (var i=0; i<operations.length; ++i) {
-            if (Shade.Optimizer.debug) {
+            if (Shade.debug && Shade.Optimizer._debug_passes) {
                 old_v = v;
             }
             var test = operations[i][0];
@@ -22,7 +24,8 @@ Shade.Optimizer.transform_expression = function(operations)
                 v = v.replace_if(test, fun);
             }
             var new_guid = v.guid;
-            if (Shade.Optimizer.debug && old_guid != new_guid) {
+            if (Shade.debug && Shade.Optimizer._debug_passes &&
+                old_guid != new_guid) {
                 console.log("Pass",operations[i][2],"succeeded");
                 console.log("Before: ");
                 old_v.debug_print();
@@ -51,12 +54,12 @@ Shade.Optimizer.is_zero = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = constant_type(v);
+    var t = facet_constant_type(v);
     if (t === 'number')
         return v === 0;
     if (t === 'vector')
         return _.all(v, function (x) { return x === 0; });
-    if (typeof(v) === 'matrix')
+    if (facet_typeOf(v) === 'matrix')
         return _.all(v, function (x) { return x === 0; });
     return false;
 };
@@ -66,7 +69,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = constant_type(v);
+    var t = facet_constant_type(v);
     if (t === 'number')
         return v === 1;
     if (t === 'vector') {
@@ -75,7 +78,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
         case 3: return vec.equal(v, vec.make([1,1,1]));
         case 4: return vec.equal(v, vec.make([1,1,1,1]));
         default:
-            throw "Bad vec length: " + v.length;    
+            throw "bad vec length: " + v.length;    
         }
     }
     if (t === 'matrix')
@@ -103,7 +106,7 @@ Shade.Optimizer.replace_with_nonzero = function(exp)
         return exp.parents[1];
     if (Shade.Optimizer.is_zero(exp.parents[1]))
         return exp.parents[0];
-    throw "no zero value on input to replace_with_nonzero?!";
+    throw "internal error: no zero value on input to replace_with_nonzero";
 };
 
 
@@ -125,7 +128,7 @@ Shade.Optimizer.is_times_one = function(exp)
     } else if (t1.is_mat() && t2.is_vec()) {
         return Shade.Optimizer.is_mul_identity(exp.parents[0]);
     } else {
-        throw "Internal error, never should have gotten here";
+        throw "internal error on Shade.Optimizer.is_times_one";
     }
 };
 
@@ -139,14 +142,14 @@ Shade.Optimizer.replace_with_notone = function(exp)
         } else if (Shade.Optimizer.is_mul_identity(exp.parents[1])) {
             return exp.parents[0];
         } else {
-            throw "Intenal error, never should have gotten here";
+            throw "internal error on Shade.Optimizer.replace_with_notone";
         }
     } else if (!t1.equals(ft) && t2.equals(ft)) {
         return exp.parents[0];
     } else if (t1.equals(ft) && !t2.equals(ft)) {
         return exp.parents[1];
     }
-    throw "no is_mul_identity value on input to replace_with_notone?!";
+    throw "internal error: no is_mul_identity value on input to replace_with_notone";
 };
 
 Shade.Optimizer.replace_with_zero = function(x)
@@ -167,7 +170,7 @@ Shade.Optimizer.replace_with_zero = function(x)
         return Shade.constant(mat3.create());
     if (x.type.equals(Shade.Types.mat4))
         return Shade.constant(mat4.create());
-    throw "not a type replaceable with zero!?";
+    throw "internal error: not a type replaceable with zero";
 };
 
 Shade.Optimizer.vec_at_constant_index = function(exp)
@@ -177,7 +180,7 @@ Shade.Optimizer.vec_at_constant_index = function(exp)
     if (!exp.parents[1].is_constant())
         return false;
     var v = exp.parents[1].constant_value();
-    if (typeOf(v) !== "number")
+    if (facet_typeOf(v) !== "number")
         return false;
     var t = exp.parents[0].type;
     if (t.equals(Shade.Types.vec2) && (v >= 0) && (v <= 1))
@@ -192,11 +195,11 @@ Shade.Optimizer.vec_at_constant_index = function(exp)
 Shade.Optimizer.replace_vec_at_constant_with_swizzle = function(exp)
 {
     var v = exp.parents[1].constant_value();
-    if (v == 0) return exp.parents[0].swizzle("x");
-    if (v == 1) return exp.parents[0].swizzle("y");
-    if (v == 2) return exp.parents[0].swizzle("z");
-    if (v == 3) return exp.parents[0].swizzle("w");
-    throw "Internal error, shouldn't get here";
+    if (v === 0) return exp.parents[0].swizzle("x");
+    if (v === 1) return exp.parents[0].swizzle("y");
+    if (v === 2) return exp.parents[0].swizzle("z");
+    if (v === 3) return exp.parents[0].swizzle("w");
+    throw "internal error on Shade.Optimizer.replace_vec_at_constant_with_swizzle";
 };
 
 Shade.Optimizer.is_logical_and_with_constant = function(exp)
@@ -257,24 +260,58 @@ Shade.Optimizer.prune_selection_branch = function(exp)
     }
 };
 
+// We provide saner names for program targets so users don't
+// need to memorize gl_FragColor, gl_Position and gl_PointSize.
+//
+// However, these names should still work, in case the users
+// want to have GLSL-familiar names.
+Shade.canonicalize_program_object = function(program_obj)
+{
+    var result = {};
+    var canonicalization_map = {
+        'color': 'gl_FragColor',
+        'position': 'gl_Position',
+        'point_size': 'gl_PointSize'
+    };
+
+    _.each(program_obj, function(v, k) {
+        var transposed_key = (k in canonicalization_map) ?
+            canonicalization_map[k] : k;
+        result[transposed_key] = v;
+    });
+    return result;
+};
+
 Shade.program = function(program_obj)
 {
+    program_obj = Shade.canonicalize_program_object(program_obj);
     var vp_obj = {}, fp_obj = {};
 
-    // We provide saner names for program targets so users don't
-    // need to memorize gl_FragColor, gl_Position and gl_PointSize.
-    //
-    // However, these names should still work, in case the users
-    // want to have GLSL-familiar names.
     _.each(program_obj, function(v, k) {
-        if (k === 'color' || k === 'gl_FragColor') {
-            fp_obj['gl_FragColor'] = Shade.make(v);
-        } else if (k === 'position') {
-            vp_obj['gl_Position'] = Shade.make(v);
-        } else if (k === 'point_size') {
-            vp_obj['gl_PointSize'] = Shade.make(v);
+        v = Shade.make(v);
+        if (k === 'gl_FragColor') {
+            if (!v.type.equals(Shade.Types.vec4)) {
+                throw "color attribute must be of type vec4, got " +
+                    v.type.repr() + " instead";
+            }
+            fp_obj.gl_FragColor = v;
+        } else if (k === 'gl_Position') {
+            if (!v.type.equals(Shade.Types.vec4)) {
+                throw "position attribute must be of type vec4, got " +
+                    v.type.repr() + " instead";
+            }
+            vp_obj.gl_Position = v;
+        } else if (k === 'gl_PointSize') {
+            if (!v.type.equals(Shade.Types.float_t)) {
+                throw "color attribute must be of type float, got " +
+                    v.type.repr() + " instead";
+            }
+            vp_obj.gl_PointSize = v;
+        } else if (k.substr(0, 3) === 'gl_') {
+            // FIXME: Can we sensibly work around these?
+            throw "gl_* are reserved GLSL names";
         } else
-            vp_obj[k] = Shade.make(v);
+            vp_obj[k] = v;
     });
 
     var vp_compile = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE),
@@ -297,7 +334,7 @@ Shade.program = function(program_obj)
         vp_obj[varying_name] = exp;
         varying_names.push(varying_name);
         return Shade.varying(varying_name, exp.type);
-    };
+    }
 
     // explicit per-vertex hoisting must happen before is_attribute hoisting,
     // otherwise we might end up reading from a varying in the vertex program,
@@ -338,7 +375,7 @@ Shade.program = function(program_obj)
         used_varying_names.push.apply(used_varying_names,
                                       _.map(v.find_if(is_varying),
                                             function (v) { 
-                                                return v.eval();
+                                                return v.evaluate();
                                             }));
         fp_exprs.push(Shade.set(v, k));
     });
@@ -357,12 +394,17 @@ Shade.program = function(program_obj)
     var vp_source = vp_compile.source(),
         fp_source = fp_compile.source();
     if (Shade.debug) {
-        console.log("Vertex program final AST:");
-        vp_exp.debug_print();
+        if (Shade.debug && Shade.Optimizer._debug_passes) {
+            console.log("Vertex program final AST:");
+            vp_exp.debug_print();
+        }
         console.log("Vertex program source:");
         console.log(vp_source);
-        console.log("Fragment program final AST:");
-        fp_exp.debug_print();
+        
+        if (Shade.debug && Shade.Optimizer._debug_passes) {
+            console.log("Fragment program final AST:");
+            fp_exp.debug_print();
+        }
         console.log("Fragment program source:");
         console.log(fp_source);
     }
