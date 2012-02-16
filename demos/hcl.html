@@ -91,8 +91,10 @@ be perceptually uniform, but its uv coordinates are not very
   differently. Instead of using the closest point inside the RGB gamut
   after transform, the alternative is to use the transform of the
   closest point in HCL space that still transforms inside the RGB
-  gamut. Unfortunately, this is computationally much more intensive,
-  because the RGB gamut boundary in HCL is a complicated surface.</p>
+  gamut. Unfortunately, this is computationally non-trivial, because
+  the RGB gamut boundary in HCL is a complicated surface, defined only
+  implicitly through the conversion defined by the chain 
+  HCL->LUV->XYZ->RGB.</p>
 
 <p>Back to the <a href="index.html">index</a>.</p>
 
