@@ -29,7 +29,7 @@ function data_buffers()
         species:     tt.at(point_index, 4),
         columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species'],
         n_rows: d.data.length,
-        n_columns: 5,
+        n_columns: 5
     };
 }
 
@@ -55,7 +55,8 @@ function init_webgl()
         x_scale: S.Utils.linear(4, 8, 0, 1),
         y_scale: S.Utils.linear(1, 7, 0, 1),
         fill_color: species_color,
-        stroke_width: 0, // stroke_width,
+        stroke_width: stroke_width,
+        stroke_color: S.mix(species_color, S.color("black", point_alpha), 0.5),
         point_diameter: point_diameter,
         mode: Facet.DrawingMode.over
     });
