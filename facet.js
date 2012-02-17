@@ -4491,11 +4491,11 @@ Facet.Data.texture_table = function(table)
 
     var index = Shade.make(function(row, col) {
         var linear_index    = row.mul(table_ncols).add(col);
-        var texel_index     = linear_index.div(4).floor();
         var in_texel_offset = linear_index.mod(4);
-        var x = texel_index.mod(texture_width); // linear_index.sub(y.mul(texture_width));
-        var y = texel_index.div(texture_width).floor();
-        var result = Shade.vec(x, y, in_texel_offset);
+        var texel_index     = linear_index.div(4).floor();
+        var x               = texel_index.mod(texture_width);
+        var y               = texel_index.div(texture_width).floor();
+        var result          = Shade.vec(x, y, in_texel_offset);
         return result;
     });
     var at = Shade.make(function(row, col) {
@@ -5734,12 +5734,6 @@ Shade.Exp = {
         }));
     },
 
-    //////////////////////////////////////////////////////////////////////////
-    // forcing expressions to be wrapped in function calls
-
-    
-    
-    //////////////////////////////////////////////////////////////////////////
     // simple re-writing of shaders, useful for moving expressions
     // around, such as the things we move around when attributes are 
     // referenced in fragment programs
