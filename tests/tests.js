@@ -522,10 +522,12 @@ test("Texture tables", function() {
     for (var row_ix=0; row_ix<3; ++row_ix) {
         for (var col_ix=0; col_ix<3; ++col_ix) {
             var linear_index = row_ix * 3 + col_ix;
-            var tex_y = Math.floor(linear_index / 4);
-            var tex_x = linear_index - tex_y * 4;
+            var texel_index = Math.floor(linear_index / 4);
+            var texel_offset = linear_index % 4;
+            var tex_y = Math.floor(texel_index / 2);
+            var tex_x = texel_index % 2;
             ok(vec.equal(table.index(row_ix, col_ix).constant_value(),
-                         vec.make([tex_x, tex_y])));
+                         vec.make([tex_x, tex_y, texel_offset])));
         }
     }
 });
