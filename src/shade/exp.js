@@ -109,6 +109,9 @@ Shade.Exp = {
     div: function(op) {
         return Shade.div(this, op);
     },
+    mod: function(op) {
+        return Shade.mod(this, op);
+    },
     sub: function(op) {
         return Shade.sub(this, op);
     },
@@ -236,7 +239,12 @@ Shade.Exp = {
             parents: [parent],
             type: parent.type.swizzle(pattern),
             expression_type: "swizzle{" + pattern + "}",
-            evaluate: function() { return this.parents[0].evaluate() + "." + pattern; },
+            evaluate: function() {
+                if (this._must_be_function_call)
+                    return this.glsl_name + "()";
+                else
+                    return this.parents[0].evaluate() + "." + pattern; 
+            },
             is_constant: Shade.memoize_on_field("_is_constant", function () {
                 var that = this;
                 return _.all(indices, function(i) {
@@ -270,7 +278,15 @@ Shade.Exp = {
             element_constant_value: Shade.memoize_on_field("_element_constant_value", function(i) {
                 return this.parents[0].element_constant_value(indices[i]);
             }),
-            compile: function() {}
+            compile: function(ctx) {
+                if (this._must_be_function_call) {
+                    this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
+                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                    ctx.add_initialization(this.precomputed_value_glsl_name + " = " + 
+                                           this.parents[0].evaluate() + "." + pattern);
+                    ctx.value_function(this, this.precomputed_value_glsl_name);
+                }
+            }
         });
     },
     at: function(index) {
@@ -288,7 +304,7 @@ Shade.Exp = {
             parents: [parent, index],
             type: parent.type.array_base(),
             expression_type: "index",
-            evaluate: function() { 
+            evaluate: function() {
                 if (this.parents[1].type.is_integral()) {
                     return this.parents[0].evaluate() + 
                         "[" + this.parents[1].evaluate() + "]"; 
