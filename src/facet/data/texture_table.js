@@ -14,9 +14,6 @@ Facet.Data.texture_table = function(table)
             if (typeof val !== "number")
                 throw "texture_table requires numeric values";
             elements.push(val);
-            elements.push(val);
-            elements.push(val);
-            elements.push(val);
         }
     }
 
@@ -27,14 +24,13 @@ Facet.Data.texture_table = function(table)
     while (4 * texture_width * texture_width < elements.length) {
         texture_width = texture_width * 2;
     }
-
     var texture_height = Math.ceil(elements.length / (4 * texture_width));
-    while (elements.length < 4 * texture_height * texture_width) {
-        elements.push(0);
-        elements.push(0);
-        elements.push(0);
-        elements.push(0);
-    }
+
+    // Tested on Chrome: the Float32Array constructor interprets "undefined" as 0
+    // so no push to pad array is necessary; we simply set the last
+    // padded value of the array to 0.
+    if (elements.length < 4 * texture_height * texture_width)
+        elements[4 * texture_height * texture_width - 1] = 0;
 
     var texture = Facet.texture({
         width: texture_width,
@@ -47,19 +43,22 @@ Facet.Data.texture_table = function(table)
     });
 
     var index = Shade.make(function(row, col) {
-        var linear_index = row.mul(table_ncols).add(col);
-        var x = Shade.mod(linear_index, texture_width); // linear_index.sub(y.mul(texture_width));
-        var y = linear_index.div(texture_width).floor();
-        var result = Shade.vec(x, y);
+        var linear_index    = row.mul(table_ncols).add(col);
+        var in_texel_offset = linear_index.mod(4);
+        var texel_index     = linear_index.div(4).floor();
+        var x               = texel_index.mod(texture_width);
+        var y               = texel_index.div(texture_width).floor();
+        var result          = Shade.vec(x, y, in_texel_offset);
         return result;
     });
     var at = Shade.make(function(row, col) {
         // returns Shade expression with value at row, col
-        var uv = index(row, col)
+        var ix = index(row, col);
+        var uv = ix.swizzle("xy")
             .add(Shade.vec(0.5, 0.5))
             .div(Shade.vec(texture_width, texture_height))
             ;
-        return Shade.texture2D(texture, uv).at(0);
+        return Shade.texture2D(texture, uv).at(ix.z());
     });
 
     return {
