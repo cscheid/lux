@@ -402,6 +402,9 @@ test("Shade constant folding", function() {
            "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 6");
     })();
 
+    equal(Shade.make(2).length().constant_value(), 2,  "length constant evaluator");
+    equal(Shade.make(-2).length().constant_value(), 2, "length constant evaluator");
+
     //////////////////////////////////////////////////////////////////////////
     // constant folding on elements
 
@@ -414,6 +417,16 @@ test("Shade constant folding", function() {
     equal(Shade.lessThanEqual(Shade.vec(1,2,3,4),
                               Shade.vec(4,3,2,1)).element(1).constant_value(), true,
           "partially constant folding on element-wise comparisons");
+
+    //////////////////////////////////////////////////////////////////////////
+    // 
+
+    (function() {
+        var nonconst = Shade.uniform("float");
+        var exp = Shade.array([Shade.vec(1,1), Shade.vec(1,1)]).at(nonconst).sub(Shade.vec(2,3));
+        exp.debug_print();
+        ok(exp.element(0));
+    })();
 });
 
 test("Shade optimizer", function() {
