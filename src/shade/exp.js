@@ -324,17 +324,33 @@ Shade.Exp = {
                 var ix = Math.floor(this.parents[1].constant_value());
                 return this.parents[0].element_constant_value(ix);
             }),
-            // the reason for the (if x === this) checks here is that sometimes
-            // the only appropriate description of an element() of an
-            // opaque object (uniforms and attributes, notably) is an at() call.
-            // This means that (this.parents[0].element(ix) === this) is
-            // sometimes true, and we're stuck in an infinite loop.
+
             element: Shade.memoize_on_field("_element", function(i) {
-                if (!this.parents[1].is_constant()) {
-                    throw "at().element cannot be called with non-constant index";
+                // FIXME I suspect that a bug here might still arise
+                // out of some interaction between the two conditions
+                // described below. The right fix will require rewriting the whole
+                // constant-folding system :) so it will be a while.
+
+                var array = this.parents[0], 
+                    index = this.parents[1];
+
+                if (!index.is_constant()) {
+                    // If index is not constant, then we use the following equation:
+                    // element(Array(a_1 .. a_n).at(ix), i) ==
+                    // Array(element(a_1, i) .. element(a_n, i)).at(ix)
+                    var elts = _.map(array.parents, function(parent) {
+                        return parent.element(i);
+                    });
+                    return Shade.array(elts).at(index);
                 }
-                var ix = this.parents[1].constant_value();
-                var x = this.parents[0].element(ix);
+                var index_value = this.parents[1].constant_value();
+                var x = this.parents[0].element(index_value);
+
+                // the reason for the (if x === this) checks here is that sometimes
+                // the only appropriate description of an element() of an
+                // opaque object (uniforms and attributes, notably) is an at() call.
+                // This means that (this.parents[0].element(ix) === this) is
+                // sometimes true, and we're stuck in an infinite loop.
                 if (x === this) {
                     return x.at(i);
                 } else
