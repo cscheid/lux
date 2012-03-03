@@ -3,6 +3,8 @@ The Big List of Facet TODOs
 * BUGS
 ** OpenStreetMap globe is broken on MacBook Air 11" (is it a precision problem?)
 ** Grand Tour demo is broken on MacBook Air 11" as well
+** Fix graph visualization colors on github
+** Documentation fixes
 * Optimizer
 ** TODO Common subexpression elimination
     
@@ -95,6 +97,10 @@ the different attributes when switching state.
 The main difficulty is that I currently
 assume a one-to-one relationship between array buffers and attributes
 throughout the API.
+** TODO Fix inconsistent case conventions between Shade and GLSL
+The way to do this is to *add* underscore_equivalents of the GLSL ugly
+camelCase functions. This way, people familiar with GLSL can use them,
+while people coming directly to Facet will use underscore
 * Testing/Engineering
 ** TODO fix the _shade_type ugliness
 One possibility is to create a WebGLObject prototype that knows how to
@@ -114,11 +120,6 @@ stricter type checking.
 ** TODO Code review on FIXMEs
 ** TODO Review best practices on exception raising/handling in JS.
 * Features
-** Unprojecting
-Since I can't read from the depth buffer, I need a WebGL unproject by
-rendering the Z value into RGBA and reading back the same way as we do
-picking.
-
 ** Multiple WebGL canvases in a same page
 This means multiple contexts, and lots of things are going to break.
 ** TEXT SUPPORT
