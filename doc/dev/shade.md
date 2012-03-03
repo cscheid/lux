@@ -86,6 +86,7 @@ We use the following GLSL types and expressions:
 * `ivec2`, `ivec3`, `ivec4`: fixed-size integer vectors
 * `bvec2`, `bvec3`, `bvec4`: fixed-size integer vectors
 * `mat2`, `mat3`, `mat4`: fixed-size floating point square matrices
+* `sampler2D`, opaque texture reference type
 
 Values of type `vec[234]` and `mat[234]` are denoted as `vec3(a, b,
 c)`, `mat2(vec2(a, b), vec2(c, d))`, and so on. If `v` is of type
@@ -112,15 +113,17 @@ takes three parameters of types `t1`, `t2` and `t3` respectively. To
 give a particular semantics for Shade, all we have to do is provide
 functions for each of these types.
 
-### abs
+### Base values
+
+#### abs
 * `abs(float)`
 * `abs(vecX)`, X in [2, 3, 4]
 
-### acos
+#### acos
 * `acos(float)`
 * `acos(vecX)`, X in [2, 3, 4]
 
-### add
+#### add
 * `add(float, float)`
 * `add(vecX, vecX)`, X in [2, 3, 4]
 * `add(matX, matX)`, X in [2, 3, 4]
@@ -129,18 +132,18 @@ functions for each of these types.
 * `add(float, vecX)`, X in [2, 3, 4]
 * `add(float, matX)`, X in [2, 3, 4]
 
-### all
+#### all
 * `all(bool)`
 * `all(bvecX)`, X in [2, 3, 4]
 
-### and
+#### and
 * `and(bool, bool)`
 
-### any
+#### any
 * `any(bool)`
 * `any(bvecX)`, X in [2, 3, 4]
 
-### array
+#### array
 * `array([list of float])
 * `array([list of bool])
 * `array([list of vecX]), X in [2, 3, 4]
@@ -148,49 +151,49 @@ functions for each of these types.
 * `array([list of ivecX]), X in [2, 3, 4]
 * `array([list of matX]), X in [2, 3, 4]
 
-### asin
+#### asin
 * `asin(float)`
 * `asin(vecX)`, X in [2, 3, 4]
 
-### atan
+#### atan
 * `atan(float, float)`
 * `atan(vecX, vecX)`, X in [2, 3, 4]
 
-### attribute
+#### attribute
 
-### ceil
+#### ceil
 * `ceil(float)`
 * `ceil(vecX)`, X in [2, 3, 4]
 
-### clamp
+#### clamp
 * `clamp(float, float, float)`
 * `clamp(vecX, vecX, float)`, X in [2, 3, 4]
 * `clamp(matX, matX, float)`, X in [2, 3, 4]
 
-### color
+#### color
 
-### cos
+#### cos
 * `cos(float)`
-* `cos(matX)`, X in [2, 3, 4]
+* `cos(vecX)`, X in [2, 3, 4]
 
-### cosh
+#### cosh
 * `cosh(float)`
-* `cosh(matX)`, X in [2, 3, 4]
+* `cosh(vecX)`, X in [2, 3, 4]
 
-### cross
+#### cross
 * `cross(vec3, vec3)`
 
-### degrees
+#### degrees
 * `degrees(float)`
 
-### discard_if
+#### discard_if
 * `discard_if(ANY, bool)`
 
-### distance
+#### distance
 * `distance(float, float)`
 * `distance(vecX, vecX)`, X in [2, 3, 4]
 
-### div
+#### div
 * `div(float, float)`
 * `div(vecX, vecX)`, X in [2, 3, 4]
 * `div(matX, matX)`, X in [2, 3, 4]
@@ -199,11 +202,11 @@ functions for each of these types.
 * `div(float, vecX)`, X in [2, 3, 4]
 * `div(float, matX)`, X in [2, 3, 4]
 
-### dot
+#### dot
 * `dot(float, float)`
 * `dot(vecX, vecX)`, X in [2, 3, 4]
 
-### eq
+#### eq
 * `eq(float, float)`
 * `eq(int, int)`
 * `eq(bool, bool)`
@@ -212,35 +215,35 @@ functions for each of these types.
 * `eq(ivecX, ivecX)`, X in [2, 3, 4]
 * `eq(matX, matX)`, X in [2, 3, 4]
 
-### equal
+#### equal
 * `equal(vecX, vecX)`
 * `equal(bvecX, bvecX)`
 * `equal(ivecX, ivecX)`
 
-### exp
+#### exp
 * `exp(float, float)`
 * `exp(vecX, vecX)`, X in [2, 3, 4]
 
-### exp2
+#### exp2
 * `exp2(float, float)`
 * `exp2(vecX, vecX)`, X in [2, 3, 4]
 
-### faceforward
+#### faceforward
 * `faceforward(float, float, float)`
 * `faceforward(vecX, vecX, vecX)`, X in [2, 3, 4]
 
-### floor
+#### floor
 * `floor(float, float)`
 * `floor(vecX, vecX)`, X in [2, 3, 4]
 
-### fract
+#### fract
 * `fract(float, float)`
 * `fract(vecX, vecX)`, X in [2, 3, 4]
 
-### fragCoord
+#### fragCoord
 * `fragCoord`
 
-### ge
+#### ge
 * `ge(float, float)`
 * `ge(int, int)`
 * `ge(bool, bool)`
@@ -249,15 +252,15 @@ functions for each of these types.
 * `ge(ivecX, ivecX)`, X in [2, 3, 4]
 * `ge(matX, matX)`, X in [2, 3, 4]
 
-### greaterThan
+#### greaterThan
 * `greaterThan(vecX, vecX)`, X in [2, 3, 4]
 * `greaterThan(ivecX, ivecX)`, X in [2, 3, 4]
 
-### greaterThanEqual
+#### greaterThanEqual
 * `greaterThanEqual(vecX, vecX)`, X in [2, 3, 4]
 * `greaterThanEqual(ivecX, ivecX)`, X in [2, 3, 4]
 
-### gt
+#### gt
 * `gt(float, float)`
 * `gt(int, int)`
 * `gt(bool, bool)`
@@ -266,11 +269,11 @@ functions for each of these types.
 * `gt(ivecX, ivecX)`, X in [2, 3, 4]
 * `gt(matX, matX)`, X in [2, 3, 4]
 
-### inversesqrt
+#### inversesqrt
 * `inversesqrt(float, float)`
 * `inversesqrt(vecX, vecX)`, X in [2, 3, 4]
 
-### le
+#### le
 * `le(float, float)`
 * `le(int, int)`
 * `le(bool, bool)`
@@ -279,30 +282,30 @@ functions for each of these types.
 * `le(ivecX, ivecX)`, X in [2, 3, 4]
 * `le(matX, matX)`, X in [2, 3, 4]
 
-### length
+#### length
 * `length(float)`
 * `length(vecX)`, X in [2, 3, 4]
 
-### lessThan
+#### lessThan
 * `lessThan(vecX, vecX)`, X in [2, 3, 4]
 * `lessThan(ivecX, ivecX)`, X in [2, 3, 4]
 
-### lessThanEqual
+#### lessThanEqual
 * `lessThanEqual(vecX, vecX)`, X in [2, 3, 4]
 * `lessThanEqual(ivecX, ivecX)`, X in [2, 3, 4]
 
-### log
+#### log
 * `log(float)`
 * `log(vecX)`, X in [2, 3, 4]
 
-### log2
+#### log2
 * `log2(float)`
 * `log2(vecX)`, X in [2, 3, 4]
 
-### look_at
+#### look_at
 * `look_at(vec3, vec3, vec3)`
 
-### lt
+#### lt
 * `lt(float, float)`
 * `lt(int, int)`
 * `lt(bool, bool)`
@@ -311,7 +314,7 @@ functions for each of these types.
 * `lt(ivecX, ivecX)`, X in [2, 3, 4]
 * `lt(matX, matX)`, X in [2, 3, 4]
 
-### mat
+#### mat
 * `mat(float, float, float, float)`
 * `mat(float, ..., float)` (9 parameters for a mat3)
 * `mat(float, ..., float)` (16 parameters for a mat4)
@@ -319,36 +322,36 @@ functions for each of these types.
 * `mat(vec3, vec3, vec3)`
 * `mat(vec4, vec4, vec4, vec4)`
 
-### mat3
+#### mat3
 * `mat3(vec3, vec3, vec3)` FIXME WHY DO WE HAVE THIS?
 
-### matrixCompMult
+#### matrixCompMult
 * `matrixCompMult(matX, matX)`, X in [2, 3, 4]
 
-### max
+#### max
 * `max(int, int)`
 * `max(float, float)`
 * `max(vecX, vecX)`, X in [2, 3, 4]
 * `max(vecX, float)`, X in [2, 3, 4]
 
-### min
+#### min
 * `min(int, int)`
 * `min(float, float)`
 * `min(vecX, vecX)`, X in [2, 3, 4]
 * `min(vecX, float)`, X in [2, 3, 4]
 
-### mix
+#### mix
 * `mix(float, float, float)`
 * `mix(vecX, vecX, float)`, X in [2, 3, 4]
 * `mix(vecX, vecX, vecX)`, X in [2, 3, 4]
 
-### mod
+#### mod
 * `mod(int, int)`
 * `mod(float, float)`
 * `mod(vecX, vecX)`, X in [2, 3, 4]
 * `mod(vecX, float)`, X in [2, 3, 4]
 
-### mul
+#### mul
 * `mul(float, float)`
 * `mul(int, int)`
 * `mul(vecX, vecX)`, X in [2, 3, 4]
@@ -356,7 +359,7 @@ functions for each of these types.
 * `mul(matX, vecX)`, X in [2, 3, 4]
 * `mul(vecX, matX)`, X in [2, 3, 4]
 
-### ne
+#### ne
 * `ne(float, float)`
 * `ne(int, int)`
 * `ne(bool, bool)`
@@ -365,68 +368,124 @@ functions for each of these types.
 * `ne(ivecX, ivecX)`, X in [2, 3, 4]
 * `ne(matX, matX)`, X in [2, 3, 4]
 
-### neg
+#### neg
 
-### normalize
+#### normalize
 * `normalize(float)`
 * `normalize(vecX)`, X in [2, 3, 4]
 
-### not
+#### not
 * `not(bool)`
 
-### notEqual
+#### notEqual
 * `notEqual(vecX, vecX)`
 * `notEqual(ivecX, ivecX)`
 * `notEqual(bvecX, bvecX)`
 
-### or
+#### or
 * `or(bool, bool)`
 
-### per_vertex
+#### per_vertex
 * `per_vertex(ANY)`
 
-### pointCoord
+#### pointCoord
 * `pointCoord`
 
-### pow
+#### pow
 * `pow(float, float)`
 * `pow(vecX, vecX)`, X in [2, 3, 4]
 
-### radians
+#### radians
 * `radians(float)`
 
-### reflect
+#### reflect
 * `reflect(float, float, float)`
 * `reflect(vecX, vecX, vecX)`, X in [2, 3, 4]
 
-### refract
+#### refract
 * `refract(float, float, float)`
 * `refract(vecX, vecX, vecX)`, X in [2, 3, 4]
 
-### rotation
+#### selection
+* `selection(bool, ANY, ANY)`
 
-### round_dot
-### selection
-### sign
-### sin
-### sinh
-### smoothstep
-### sqrt
-### step
-### sub
-### swizzle
-### tan
-### texture2D
-### translation
-### uniform
-### vec
-### xor
+#### sign
+* `sign(float)`
+* `sign(vecX)`, X in [2, 3, 4]
 
-Internal use only:
+#### sin
+* `sin(float)`
+* `sin(vecX)`, X in [2, 3, 4]
 
-### seq
-### set
-### varying
+#### smoothstep
+* `smoothstep(float, float, float)`
+* `smoothstep(vecX, vecX, vecX)`, X in [2, 3, 4]
+* `smoothstep(float, float, vecX)`, X in [2, 3, 4]
+
+#### sqrt
+* `sqrt(float)`
+* `sqrt(vecX)`, X in [2, 3, 4]
+
+#### step
+* `step(float,float)`
+* `step(vecX, vecX)`, X in [2, 3, 4]
+* `step(float,vecX)`, X in [2, 3, 4]
+
+#### sub
+* `sub(float, float)`
+* `sub(vecX, vecX)`, X in [2, 3, 4]
+* `sub(matX, matX)`, X in [2, 3, 4]
+* `sub(vecX, float)`, X in [2, 3, 4]
+* `sub(matX, float)`, X in [2, 3, 4]
+* `sub(float, vecX)`, X in [2, 3, 4]
+* `sub(float, matX)`, X in [2, 3, 4]
+
+#### swizzle
+* `swizzle(string, vec2)`
+* `swizzle(string, vec3)`
+* `swizzle(string, vec4)`
+
+#### tan
+* `tan(float)`
+* `tan(vecX)`, X in [2, 3, 4]
+
+#### texture2D
+* `texture2D(sampler2D, vec4)`
+
+#### uniform
+* `uniform()` This one is ugly: in the code, it takes as a parameter
+  the string corresponding to the appropriate type.
+
+#### vec
+* `vec(float)`
+* `vec(vec2)`
+* `vec(vec3)`
+* `vec(vec4)`
+* `vec(float, float)`
+* `vec(float, float, float)`
+* `vec(float, float, float, float)`
+* `vec(vec2, float, float)`
+* `vec(float, vec2, float)`
+* `vec(float, float, vec2)`
+* `vec(vec2, vec2)`
+* `vec(vec3, float)`
+* `vec(float, vec3)`
+
+#### xor
+* `xor(bool, bool)`
+
+### Derived values
+
+#### cosh
+#### sinh
+#### rotation
+#### translation
+
+### Internal use only:
+
+#### seq
+#### set
+#### varying
 
 ## Shade Semantics
 
@@ -473,115 +532,197 @@ spec, we will also use the `Unknown` value.
 
 Values in the Shade language are typeset `in monospace`. Values in the
 target set are typeset normally. Some functions on the target set are
-left implicitly define (such as sines, cosines, etc).
+left implicitly defined (such as sines, cosines, etc).
 
 ### Constant semantics
 
 `Const[expression]: S -> {true,false}`
 
+#### abs
+#### acos
+#### add
+#### all
+#### and
+#### any
+#### array
+#### asin
+#### atan
+#### attribute
+#### ceil
+#### clamp
+#### color
+#### cos
+#### cosh
+#### cross
+#### degrees
+#### discard_if
+#### distance
+#### div
+#### dot
+#### eq
+#### equal
+#### exp
+#### exp2
+#### faceforward
+#### floor
+#### fract
+#### fragCoord
+#### ge
+#### gl_fog
+#### gl_light
+#### greaterThan
+#### greaterThanEqual
+#### gt
+#### id
+#### inversesqrt
+#### le
+#### length
+#### lessThan
+#### lessThanEqual
+#### log
+#### log2
+#### look_at
+#### lt
+#### mat
+#### mat3
+#### matrixCompMult
+#### max
+#### min
+#### mix
+#### mod
+#### mul
+#### ne
+#### neg
+#### normalize
+#### not
+#### notEqual
+#### or
+#### per_vertex
+#### pointCoord
+#### pow
+#### radians
+#### reflect
+#### refract
+#### rotation
+#### round_dot
+#### selection
+#### sign
+#### sin
+#### sinh
+#### smoothstep
+#### sqrt
+#### step
+#### sub
+#### swizzle
+#### tan
+#### texture2D
+#### translation
+#### uniform
+#### vec
+#### xor
 
 ### Value semantics
 
 `Val[expression]: S -> GLSL_value`
 
-* abs
-** Val[`abs(float(x))`] = |x|
-** Val[`abs(vec2(x, y))`] = vec2(Val[`abs(x)`], Val[`abs(y)`])
-** Val[`abs(vec3(x, y, z))`] = vec3(Val[`abs(x)`], Val[`abs(y)`], Val[`abs(z)`])`
-** Val[`abs(vec4(x, y, z, w))`] = vec4(Val[`abs(x)`], Val[`abs(y)`], Val[`abs(z)`])
+#### abs
+* Val[`abs(float(x))`] = |x|
+* Val[`abs(vec2(x, y))`] = vec2(Val[`abs(x)`], Val[`abs(y)`])
+* Val[`abs(vec3(x, y, z))`] = vec3(Val[`abs(x)`], Val[`abs(y)`], Val[`abs(z)`])
+* Val[`abs(vec4(x, y, z, w))`] = vec4(Val[`abs(x)`], Val[`abs(y)`], Val[`abs(z)`])
 
-* acos
-** Val[`acos(float(x))`] = acos(x)
-** Val[`acos(vec2(x, y))`] = vec2(Val[`acos(x)`], Val[`acos(y)`])
-** Val[`acos(vec3(x, y, z))`] = vec3(Val[`acos(x)`], Val[`acos(y)`], Val[`acos(z)`])`
-** Val[`acos(vec4(x, y, z, w))`] = vec4(Val[`acos(x)`], Val[`acos(y)`], Val[`acos(z)`])
+#### acos
+* Val[`acos(float(x))`] = acos(x)
+* Val[`acos(vec2(x, y))`] = vec2(Val[`acos(x)`], Val[`acos(y)`])
+* Val[`acos(vec3(x, y, z))`] = vec3(Val[`acos(x)`], Val[`acos(y)`], Val[`acos(z)`])
+* Val[`acos(vec4(x, y, z, w))`] = vec4(Val[`acos(x)`], Val[`acos(y)`], Val[`acos(z)`])
 
-* add
-** Val[`add(float(x), float(y))`] = x + y
-** Val[`add(vec2(x1, y1), vec2(x2, y2)`] = vec2(Val[`add(x1, x2)`], Val[`add(y1, y2)`])
-** Val[`add(vec3(x1, y1, z1), vec2(x2, y2, z2)`] = vec2(Val[`add(x1, x2)`], Val[`add(y1, y2)`], Val[`add(z1, z2)`])
-** Val[`add(vec4(x1, y1, z1, w1), vec2(x2, y2, z2, w2)`] = vec2(Val[`add(x1, x2)`], Val[`add(y1, y2)`], Val[`add(z1, z2)`], Val[`add(w1, w2)`])
+#### add
+* Val[`add(float(x), float(y))`] = x + y
+* Val[`add(vec2(x1, y1), vec2(x2, y2)`] = vec2(Val[`add(x1, x2)`], Val[`add(y1, y2)`])
+* Val[`add(vec3(x1, y1, z1), vec2(x2, y2, z2)`] = vec2(Val[`add(x1, x2)`], Val[`add(y1, y2)`], Val[`add(z1, z2)`])
+* Val[`add(vec4(x1, y1, z1, w1), vec2(x2, y2, z2, w2)`] = vec2(Val[`add(x1, x2)`], Val[`add(y1, y2)`], Val[`add(z1, z2)`], Val[`add(w1, w2)`])
 
-* all
-** 
-* and
-* any
-* array
-* asin
-* atan
-* attribute
-* ceil
-* clamp
-* color
-* cos
-* cosh
-* cross
-* degrees
-* discard_if
-* distance
-* div
-* dot
-* eq
-* equal
-* exp
-* exp2
-* faceforward
-* floor
-* fract
-* fragCoord
-* ge
-* gl_fog
-* gl_light
-* greaterThan
-* greaterThanEqual
-* gt
-* id
-* inversesqrt
-* le
-* length
-* lessThan
-* lessThanEqual
-* log
-* log2
-* look_at
-* lt
-* mat
-* mat3
-* matrixCompMult
-* max
-* min
-* mix
-* mod
-* mul
-* ne
-* neg
-* normalize
-* not
-* notEqual
-* or
-* per_vertex
-* pointCoord
-* pow
-* radians
-* reflect
-* refract
-* rotation
-* round_dot
-* selection
-* sign
-* sin
-* sinh
-* smoothstep
-* sqrt
-* step
-* sub
-* swizzle
-* tan
-* texture2D
-* translation
-* uniform
-* vec
-* xor
+#### all
+
+#### and
+#### any
+#### array
+#### asin
+#### atan
+#### attribute
+#### ceil
+#### clamp
+#### color
+#### cos
+#### cosh
+#### cross
+#### degrees
+#### discard_if
+#### distance
+#### div
+#### dot
+#### eq
+#### equal
+#### exp
+#### exp2
+#### faceforward
+#### floor
+#### fract
+#### fragCoord
+#### ge
+#### gl_fog
+#### gl_light
+#### greaterThan
+#### greaterThanEqual
+#### gt
+#### id
+#### inversesqrt
+#### le
+#### length
+#### lessThan
+#### lessThanEqual
+#### log
+#### log2
+#### look_at
+#### lt
+#### mat
+#### mat3
+#### matrixCompMult
+#### max
+#### min
+#### mix
+#### mod
+#### mul
+#### ne
+#### neg
+#### normalize
+#### not
+#### notEqual
+#### or
+#### per_vertex
+#### pointCoord
+#### pow
+#### radians
+#### reflect
+#### refract
+#### rotation
+#### round_dot
+#### selection
+#### sign
+#### sin
+#### sinh
+#### smoothstep
+#### sqrt
+#### step
+#### sub
+#### swizzle
+#### tan
+#### texture2D
+#### translation
+#### uniform
+#### vec
+#### xor
 
 
 
