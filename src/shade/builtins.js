@@ -407,7 +407,7 @@ var length = builtin_glsl_function({
     constant_evaluator: function(exp) {
         var v = exp.parents[0].constant_value();
         if (exp.parents[0].type.equals(Shade.Types.float_t))
-            return v * v;
+            return Math.abs(v);
         else
             return vec.length(v);
     }});
