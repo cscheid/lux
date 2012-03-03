@@ -554,6 +554,7 @@ var texture2D = builtin_glsl_function({
 });
 Shade.texture2D = texture2D;
 
+// FIXME BUG?
 Shade.equal = builtin_glsl_function({
     name: "equal", 
     type_resolving_list: [
