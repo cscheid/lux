@@ -174,15 +174,9 @@ functions for each of these types.
 * `clamp(vecX, vecX, float)`, X in [2, 3, 4]
 * `clamp(matX, matX, float)`, X in [2, 3, 4]
 
-#### color
-
 #### cos
 * `cos(float)`
 * `cos(vecX)`, X in [2, 3, 4]
-
-#### cosh
-* `cosh(float)`
-* `cosh(vecX)`, X in [2, 3, 4]
 
 #### cross
 * `cross(vec3, vec3)`
@@ -457,8 +451,14 @@ functions for each of these types.
 * `texture2D(sampler2D, vec4)`
 
 #### uniform
-* `uniform()` This one is ugly: in the code, it takes as a parameter
-  the string corresponding to the appropriate type.
+
+  This one is ugly: in the code, it takes as a parameter the string
+  corresponding to the appropriate type. Here we will use different uniform
+  constructors to denote uniforms of different types.
+  
+* `uniform_float()`
+* `uniform_vecX()`, X in [2, 3, 4]
+* `uniform_matX()`, X in [2, 3, 4]
 
 #### vec
 * `vec(float)`
@@ -477,13 +477,6 @@ functions for each of these types.
 
 #### xor
 * `xor(bool, bool)`
-
-### Derived values
-
-#### cosh
-#### sinh
-#### rotation
-#### translation
 
 ### Internal use only:
 
@@ -536,27 +529,81 @@ spec, we will also use the `Unknown` value.
 
 Values in the Shade language are typeset `in monospace`. Values in the
 target set are typeset normally. Some functions on the target set are
-left implicitly defined (such as sines, cosines, etc).
+left implicitly defined (such as sines, cosines, etc).  When there's
+overlap in the structural matching rules described below, the rule
+described first in the list takes precedence.
 
 ### Constant semantics
 
-`Const[expression]: S -> {true,false}`
+Const[`expression`]: S -> {true,false}
+
+The constant semantics function is conservative: it is possible to
+write more specific rules which would let us determine with a finer
+granularity values that are computable at compile-time. As a very
+simple example, the following rule would be valid:
+
+Const[`sub(floor(x), sub(x, fract(x)))`] = true
+
+However, with the specification below, the constant semantics would
+evaluate `sub(floor(x), sub(x, fract(x)))` to Const[`x`], which could
+be false. This is unavoidable: there is no computable function
+PerfectConst that perfectly determines whether every well-formed
+expression is constant. (big hammer: Rice's theorem; small hammer,
+consider trying to compute PerfectConst[`(quintic_polynomial over a uniform)^2 == 0`])
+
+#### Basic values
+
+* Const[`float(x)`] = true
+* Const[`bool(x)`] = true
 
 #### abs
+* Const[`abs(x)`] = Const[`x`]
+
 #### acos
+* Const[`acos(x)`] = Const[`x`]
+
 #### add
+* Const[`add(x, y)`] = Const[`x`] && Const[`y`]
+
 #### all
+* Const[`all(bool(x))`] = Const[`bool(x)`]
+* Const[`all(bvec2(x, y))`] = Const[`and(x, y)`]
+* Const[`all(bvec3(x, y, z))`] = Const[`and(x, and(y, z))`]
+* Const[`all(bvec4(x, y, z, w))`] = Const[`and(x, and(y, and(z, w)))`]
+
 #### and
+* Const[`and(x, y)`] = (Const[`x`] && Val[`x`] == false) || (Const[`y`] && Val[`y`] == false)
+
 #### any
+* Const[`any(bool(x))`] = Const[`bool(x)`]
+* Const[`any(bvec2(x, y))`] = Const[`or(x, y)`]
+* Const[`any(bvec3(x, y, z))`] = Const[`or(x, or(y, z))`]
+* Const[`any(bvec4(x, y, z, w))`] = Const[`or(x, or(y, or(z, w)))`]
+
 #### array
+* Const[`array(x)`] = false
+
 #### asin
+* Const[`asin(x)`] = Const[`x`]
+
+#### at
+* FIXME
+
 #### atan
+* Const[`atan(x)`] = Const[`x`]
+* Const[`atan(x, y)`] = Const[`x`] && Const[`y`]
+
 #### attribute
+* Const[`attribute_float`] = false
+* Const[`attribute_vecX`] = false, X in [2, 3, 4]
+* Const[`attribute_matX`] = false, X in [2, 3, 4]
+
 #### ceil
+* Const[`ceil(x)`] = Const(`x`)
+
+### FIXME FINISH
 #### clamp
-#### color
 #### cos
-#### cosh
 #### cross
 #### degrees
 #### discard_if
@@ -627,7 +674,7 @@ left implicitly defined (such as sines, cosines, etc).
 
 ### Value semantics
 
-`Val[expression]: S -> GLSL_value`
+Val[`expression`]: S -> GLSL_value
 
 To show that `Val` uniquely defines a value for every finite
 expression, all we have to show is that there every equation for a
@@ -636,7 +683,14 @@ prove that the structural recursion that `Val` gives terminates by
 structural induction. This is tedious, but easy enough to do (although
 it's not in here yet).
 
-`Val[]` behaves like you expect with respect to constants:
+`Val[]` behaves like you expect with respect to constants.
+
+Some operators are extended to behave well with respect to unknown
+values, to allow short-circuit optimizations:
+
+* `Unknown` || true = true
+* `Unknown` && false = false
+* `Unknown` * 0 = 0
 
 #### basic types
 * `Val[float(3)]` = 3
@@ -646,38 +700,47 @@ it's not in here yet).
 * ...
 
 #### abs
-* Val[`abs(float(x))`] = |Val[`float(x)`]|
-* Val[`abs(vec2(x, y))`] = Val[`vec2(abs(x), abs(y))`]
-* Val[`abs(vec3(x, y, z))`] = Val[`vec3(abs(x), abs(y), abs(z))`]
-* Val[`abs(vec4(x, y, z, w))`] = Val[`vec4(abs(x), abs(y), abs(z), abs(w))`]
+* Val[`abs(x)`] = case Val[`x`] of:
+    - float(a) -> |a|
+    - vec2(a, b) -> vec2(|a|, |b|)
+    - vec3(a, b, c) -> vec3(|a|, |b|, |c|)
+    - vec4(a, b, c, d) -> vec4(|a|, |b|, |c|, |d|)
 
 #### acos
-* Val[`acos(float(x))`] = acos(Val[`float(x)`])
-* Val[`acos(vec2(x, y))`] = Val[`vec2(acos(x), acos(y))`]
-* Val[`acos(vec3(x, y, z))`] = Val[`vec3(acos(x), acos(y), acos(z))`]
-* Val[`acos(vec4(x, y, z, w))`] = Val[`vec4(acos(x), acos(y), acos(z), acos(w))`]
+* Val[`acos(x)`] = case Val[`x`] of:
+    - float(a) -> acos(a)
+    - vec2(a, b) -> vec2(acos(a), acos(b))
+    - vec3(a, b, c) -> vec3(acos(a), acos(b), acos(c))
+    - vec4(a, b, c, d) -> vec4(acos(a), acos(b), acos(c), acos(d))
 
 #### add
-* Val[`add(float(x), float(y))`] = Val[`float(x)`] + Val[`float(y)`]
-* Val[`add(vec2(x1, y1), vec2(x2, y2)`] = Val[`vec2(add(x1, x2), add(y1, y2)`)]
-* Val[`add(vec3(x1, y1, z1), vec3(x2, y2, z2)`] = Val[`vec3(add(x1, x2), add(y1, y2), add(z1, z2)`)]
-* Val[`add(vec4(x1, y1, z1, w1), vec4(x2, y2, z2, w2)`] = Val[`vec4(add(x1, x2), add(y1, y2), add(z1, z2), add(w1, w2)`)]
-* ...
+* Val[`add(x, y)`] = case Val[`x`], Val[`y`] of:
+    - float(a), float(b) -> a + b
+    - vec2(a, b), float(c) -> vec2(a+c, b+c)
+    - vec3(a, b, c), float(d) -> vec2(a+d, b+d, c+d)
+    - vec4(a, b, c, d), float(e) -> vec4(a+e, b+e, c+e, d+e)
+    - float(c), vec2(a, b) -> vec2(a+c, b+c)
+    - float(d), vec3(a, b, c) -> vec2(a+d, b+d, c+d)
+    - float(e), vec4(a, b, c, d) -> vec4(a+e, b+e, c+e, d+e)
+    - vec2(a, b), vec2(c, d) -> vec2(a+c, b+d)
+    - ... FIXME FINISH
 
 #### all
-* Val[`all(bool(x))`] = Val[`bool(x)`]
-* Val[`all(bvec2(x, y))`] = Val[`x`] && Val[`y`]
-* Val[`all(bvec3(x, y, z))`] = Val[`x`] && Val[`y`] && Val[`z`]
-* Val[`all(bvec3(x, y, z, w))`] = Val[`x`] && Val[`y`] && Val[`z`] && Val[`w`]
+* Val[`all(x)`] = case Val[`x`] of:
+    - bool(a) -> x
+    - bvec2(a, b) -> a && b
+    - bvec2(a, b, c) -> a && b && c
+    - bvec2(a, b, c, d) -> a && b && c && d
 
 #### and
-* Val[`and(bool(x), bool(y)`] = Val[`bool(x)`] && Val[`bool(y)`]
+* Val[`and(x, y)`] = Val[`x`] && Val[`y`]
 
 #### any
-* Val[`all(bool(x))`] = Val[`bool(x)`]
-* Val[`all(bvec2(x, y))`] = Val[`x`] || Val[`y`]
-* Val[`all(bvec3(x, y, z))`] = Val[`x`] || Val[`y`] || Val[`z`]
-* Val[`all(bvec3(x, y, z, w))`] = Val[`x`] || Val[`y`] || Val[`z`] || Val[`w`]
+* Val[`any(x)`] = case Val[`x`] of:
+    - bool(a) -> x
+    - bvec2(a, b) -> a || b
+    - bvec2(a, b, c) -> a || b || c
+    - bvec2(a, b, c, d) -> a || b || c || d
 
 #### array
 * Val[`array(ANY)`] = `Unknown`
@@ -686,10 +749,11 @@ it's not in here yet).
   produce a GLSL value.
 
 #### asin
-* Val[`asin(float(x))`] = asin(Val[`float(x)`])
-* Val[`asin(vec2(x, y))`] = Val[`vec2(asin(x), asin(y))`]
-* Val[`asin(vec3(x, y, z))`] = Val[`vec3(asin(x), asin(y), asin(z))`]
-* Val[`asin(vec4(x, y, z, w))`] = Val[`vec3(asin(x), asin(y), asin(z), asin(w))`]
+* Val[`asin(x)`] = case Val[`x`] of:
+    - float(a) -> asin(a)
+    - vec2(a, b) -> vec2(asin(a), asin(b))
+    - vec3(a, b, c) -> vec3(asin(a), asin(b), asin(c))
+    - vec4(a, b, c, d) -> vec4(asin(a), asin(b), asin(c), asin(d))
 
 #### at
 * Val[`at(array([a\_0, a\_1, ..., a\_n-1]), index)`] = (Val[`a_i`], where i = Val[`index`])
@@ -697,49 +761,49 @@ it's not in here yet).
 #### atan
 * atan(x) = arc tangent of x, in radians
 * atan2(y, x) = arc tangent of y/x, in radians, using signs of y and x to determine quadrant.
-* Val[`atan(float(x))`] = atan(Val[`float(x)`])
-* Val[`atan(vec2(x, y))`] = Val[`vec2(atan(x), atan(y))`]
-* Val[`atan(vec3(x, y, z))`] = Val[`vec3(atan(x), atan(y), atan(z))`]
-* Val[`atan(vec4(x, y, z, w))`] = Val[`vec3(atan(x), atan(y), atan(z), atan(w))`]
-* Val[`atan(float(x), float(y))`] = atan2(Val[`float(x)`], Val[`float(y)`])
-* Val[`atan(vec2(x1, y1), vec2(x2, y2))`] = Val[`vec2(atan(x1, x2), atan(y1, y2))`]
-* Val[`atan(vec3(x1, y1, z1), vec3(x2, y2, z2))`] = Val[`vec3(atan(x1, x2), atan(y1, y2), atan(z1, z2))`]
-* Val[`atan(vec4(x1, y1, z1, w1), vec4(x2, y2, z2, w2))`] = Val[`vec3(atan(x1, x2), atan(y1, y2), atan(z1, z2), atan(w1, w2))`]
+* Val[`atan(x)`] = case Val[`x`] of:
+    - float(a) -> atan(a)
+    - vec2(a, b) -> vec2(atan(a), atan(b))
+    - vec3(a, b, c) -> vec3(atan(a), atan(b), atan(c))
+    - vec4(a, b, c, d) -> vec4(atan(a), atan(b), atan(c), atan(d))
+* Val[`atan(x, y)`] = case Val[`x`], Val[`y`] of:
+    - float(a), float(b) -> atan2(a, b)
+    - vec2(a, b), vec2(c, d) -> vec2(atan2(a,c), atan2(b,d))
+    - vec3(a, b, c), vec3(d, e, f) -> vec3(atan2(a, d), atan2(b, e), atan2(c, f))
+    - vec4(a, b, c, d), vec4(e, f, g, h) -> vec4(atan2(a, e), atan2(b, f), atan2(c, g), atan2(d, h))
 
 #### attribute
-* ...
+* FIXME
 
 #### ceil
 * ceil(x) = value of x rounded towards +infinity
-* Val[`ceil(float(x))`] = ceil(Val[`float(x)`])
-* Val[`ceil(vec2(x, y))`] = Val[`vec2(ceil(x), ceil(y))`]
-* Val[`ceil(vec3(x, y, z))`] = Val[`vec3(ceil(x), ceil(y), ceil(z))`]
-* Val[`ceil(vec4(x, y, z, w))`] = Val[`vec3(ceil(x), ceil(y), ceil(z), ceil(w))`]
+* Val[`ceil(x)`] = case Val[`x`] of:
+    - float(a) -> ceil(a)
+    - vec2(a, b) -> vec2(ceil(a), ceil(b))
+    - vec3(a, b, c) -> vec3(ceil(a), ceil(b), ceil(c))
+    - vec4(a, b, c, d) -> vec4(ceil(a), ceil(b), ceil(c), ceil(d))
 
 #### clamp
-* Val[`clamp(float(v), float(mn), float(mx))`] = Val[`max(mn, min(mx, v))`]
-* Val[`clamp(vec2(x1, y1), vec2(x2, y2), vec2(x3, y3))`] = Val[`vec2(clamp(x1, x2, x3), clamp(y1, y2, y3))`]
-* Val[`clamp(vec3(x1, y1, z1), vec3(x2, y2, z2), vec3(x3, y3, z3))`] = Val[`vec3(clamp(x1, x2, x3), clamp(y1, y2, y3), clamp(z1, z2, z3))`]
-* Val[`clamp(vec4(x1, y1, z1, w1), vec4(x2, y2, z2, w2), vec4(x3, y3, z3, w2))`] = Val[`vec3(clamp(x1, x2, x3), clamp(y1, y2, y3), clamp(z1, z2, z3), clamp(w1, w2, w3))`]
-
+* max(a, b) = if a > b then a else b
+* min(a, b) = if a < b then a else b
+* Val[`clamp(v, mn, mx)` = case Val[`v`], Val[`mn`], Val[`mx`] of:
+    - float(v), float(mn), float(mx) -> max(mn, min(mx, v))
+    - vec2(v1, v2), vec2(mn1, mn2), vec2(mx1, mx2) -> vec2(max(mn1, min(mx1, v1)), max(mn2, min(mx2, v2)))
+    - vec3(v1, v2, v3), vec2(mn1, mn2, mn3), vec2(mx1, mx2, mx3) -> vec2(max(mn1, min(mx1, v1)), max(mn2, min(mx2, v2)), max(mn3, min(mx3, v3)))
+    - FIXME FINISH
+    
 #### cos
 * cos(x) = cosine of x given in radians
-* Val[`cos(float(x))`] = cos(Val[`float(x)`])
-* Val[`cos(vec2(x, y))`] = Val[`vec2(cos(x), cos(y))`]
-* Val[`cos(vec3(x, y, z))`] = Val[`vec3(cos(x), cos(y), cos(z))`]
-* Val[`cos(vec4(x, y, z, w))`] = Val[`vec3(cos(x), cos(y), cos(z), cos(w))`]
-
-#### cosh
-* Val[`cosh(x)`] = Val[`div(add(exp(v),exp(neg(v))), float(2))`]
+* Val[`cos(x)`] = case Val[`x`] of:
+    - float(a) -> cos(a)
+    - vec2(a, b) -> vec2(cos(a), cos(b))
+    - vec3(a, b, c) -> vec3(cos(a), cos(b), cos(c))
+    - vec4(a, b, c, d) -> vec4(cos(a), cos(b), cos(c), cos(d))
 
 #### cross
-* Val[`cross(v1, v2)`] = Val[`vec3(x, y, z)`], where
-  x = `sub(mul(at(v1, 1), at(v2, 2)), mul(at(v1, 2), at(v2, 1)))`,
-  y = `sub(mul(at(v1, 2), at(v2, 0)), mul(at(v1, 0), at(v2, 2)))`, and
-  z = `sub(mul(at(v1, 0), at(v2, 1)), mul(at(v1, 1), at(v2, 0)))`
-
+* Val[`cross(v1, v2)`] = Val[`vec3(sub(mul(at(v1, 1), at(v2, 2)), mul(at(v1, 2), at(v2, 1))), sub(mul(at(v1, 2), at(v2, 0)), mul(at(v1, 0), at(v2, 2))), sub(mul(at(v1, 0), at(v2, 1)), mul(at(v1, 1), at(v2, 0))))`]
 #### degrees
-* Val[`degrees(float(x))`] = Val[`float(x)`] * (180/pi)
+* Val[`degrees(x)`] = Val[`x`] * (180/pi)
 
 #### discard_if
 * Val[`discard_if(x, bool(true))`] = `Unknown`
@@ -750,6 +814,8 @@ it's not in here yet).
   program is terminated and that fragment is not processed any
   further. When used judiciously, it can be a powerful way to avoid
   unnecessary generation of large numbers of polygons.
+
+### FIXME FINISH
   
 #### distance
 #### div
@@ -816,6 +882,8 @@ it's not in here yet).
 #### vec
 #### xor
 
+
+
 ### Element constant semantics
 
 #### abs
@@ -830,9 +898,7 @@ it's not in here yet).
 #### attribute
 #### ceil
 #### clamp
-#### color
 #### cos
-#### cosh
 #### cross
 #### degrees
 #### discard_if
@@ -888,7 +954,6 @@ it's not in here yet).
 #### selection
 #### sign
 #### sin
-#### sinh
 #### smoothstep
 #### sqrt
 #### step
@@ -915,9 +980,7 @@ it's not in here yet).
 #### attribute
 #### ceil
 #### clamp
-#### color
 #### cos
-#### cosh
 #### cross
 #### degrees
 #### discard_if
@@ -973,7 +1036,6 @@ it's not in here yet).
 #### selection
 #### sign
 #### sin
-#### sinh
 #### smoothstep
 #### sqrt
 #### step
