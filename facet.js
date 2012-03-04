@@ -6835,6 +6835,10 @@ Shade.mul = function() {
     return current_result;
 };
 })();
+// FIXME This should be Shade.neg = Shade.make(function() ...
+// but before I do that I have to make sure that at this point
+// in the source Shade.make actually exists.
+
 Shade.neg = function(x)
 {
     return Shade.sub(0, x);
@@ -7578,6 +7582,7 @@ var texture2D = builtin_glsl_function({
 });
 Shade.texture2D = texture2D;
 
+// FIXME BUG?
 Shade.equal = builtin_glsl_function({
     name: "equal", 
     type_resolving_list: [
@@ -8610,6 +8615,10 @@ Shade.Exp.selection = function(if_true, if_false)
 {
     return Shade.selection(this, if_true, if_false);
 };
+// FIXME This should be Shade.look_at = Shade.make(function() ...
+// but before I do that I have to make sure that at this point
+// in the source Shade.make actually exists.
+
 Shade.rotation = function(angle, axis)
 {
     angle = Shade.make(angle);
@@ -8645,6 +8654,10 @@ Shade.translation = function(t)
                      Shade.vec(0,0,1,0),
                      Shade.vec(t, 1));
 };
+// FIXME This should be Shade.look_at = Shade.make(function() ...
+// but before I do that I have to make sure that at this point
+// in the source Shade.make actually exists.
+
 Shade.look_at = function(eye, center, up)
 {
     eye = Shade.make(eye);
