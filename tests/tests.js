@@ -4,6 +4,16 @@ var canvas = document.getElementById("webgl");
 var gl = Facet.init(canvas);
 $(canvas).hide();
 
+// returns a uniformly distributed random integer x such mn <= x < mx
+function random_int(mn, mx) {
+    return Math.floor(Math.random() * (mx - mn)) + mn;
+}
+
+function almost_equal(expected, got, msg, eps) {
+    eps = eps || 1e-4;
+    ok(Math.abs(expected - got) < eps, msg + " expected: " + expected + " got: " + got);
+}
+
 test("Shade types", function() {
     var x = Shade.basic('float');
     expect(21);
@@ -424,7 +434,6 @@ test("Shade constant folding", function() {
     (function() {
         var nonconst = Shade.uniform("float");
         var exp = Shade.array([Shade.vec(1,1), Shade.vec(1,1)]).at(nonconst).sub(Shade.vec(2,3));
-        exp.debug_print();
         ok(exp.element(0));
     })();
 });
@@ -637,5 +646,68 @@ test("color conversion", function() {
         check(hsv.h, hsv.s, hsv.v, "hsv", "srgb");
         check(hsv.h, hsv.s, hsv.v, "hsv", "xyz");
         check(hsv.h, hsv.s, hsv.v, "hsv", "luv");
+    })();
+});
+
+test("Shade Bits", function() {
+    (function() {
+        for (var i=0; i<24; ++i) {
+            var t = i;
+            var t1 = 1 << t;
+            var t2 = Shade.Bits.shift_left(1, t).constant_value();
+            var t3 = Shade.Bits.shift_right(t1, t).constant_value();
+            almost_equal(t1, t2, "shift left");
+            almost_equal(1, t3, "shift right (" + t + " " + t1 + ") ");
+        }
+        for (i=0; i<10; ++i) {
+            var v = random_int(0, 65536);
+            var amt = random_int(0, 16);
+            var t1 = v >> amt;
+            var t2 = Shade.Bits.shift_right(v, amt).constant_value(); 
+            almost_equal(t1, t2, "shift right (" + v + ", " + amt + ")");
+        }
+    })();
+
+    (function() {
+        for (var i=0; i<10; ++i) {
+            var v = random_int(0, 65536);
+            var bits = random_int(0, 16);
+
+            // straight from the spec
+            var t3 = v % (1 << bits);
+            var t4 = Shade.Bits.mask_last(v, bits).constant_value();
+            almost_equal(t3, t4, "mask_last (" + v + ", " + bits + ")");
+        }
+    })();
+
+    (function() {
+        for (var i=0; i<10; ++i) {
+            var num = random_int(0, 256);
+            var from = random_int(0, 7);
+            var to = random_int(from+1, 8);
+       
+            // var num = 255;
+            // var from = 0;
+            // var to = 1;
+            // straight from the spec
+            var t3 = (num >> from) & ((1 << (to - from)) - 1);
+            var t4 = Shade.Bits.extract_bits(num, from, to).constant_value();
+            almost_equal(t3, t4, "extract_bits (" + num + ", " + from + ", " + to + ") ");
+        }
+    })();
+
+    (function() {
+        function convert_through_encode(t) {
+            var v = Shade.Bits.encode_float(t).constant_value();
+            var v1 = new ArrayBuffer(4);
+            var v2 = new DataView(v1);
+            for (var i=0; i<4; ++i)
+                v2.setInt8(i, Math.round(v[i] * 255));
+            return v2.getFloat32(0);
+        }
+        for (var i=0; i<10; ++i) {
+            var t = Math.random() * 1000 - 500;
+            almost_equal(t, convert_through_encode(t), "encode_float");
+        }
     })();
 });
