@@ -49,11 +49,11 @@ Facet.render_buffer = function(opts)
         width: rttFramebuffer.width,
         height: rttFramebuffer.height,
         frame_buffer: rttFramebuffer,
-        render_to_buffer: function (render) {
+        with_bound_buffer: function (what) {
             try {
                 ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
                 ctx.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
-                render();
+                return what();
             } finally {
                 ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
             }

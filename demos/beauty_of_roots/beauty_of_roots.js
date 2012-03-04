@@ -23,7 +23,7 @@ function get_buffers(urls, alldone)
 
 function draw_it()
 {
-    rb.render_to_buffer(function() {
+    rb.with_bound_buffer(function() {
         gl.clear(gl.COLOR_BUFFER_BIT);
         if (points_batch)
             points_batch.draw();

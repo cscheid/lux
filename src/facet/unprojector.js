@@ -38,7 +38,7 @@ Facet.Unprojector = {
         callback = callback || _globals.display_callback;
         var old_scene_render_mode = _globals.batch_render_mode;
         _globals.batch_render_mode = 2;
-        rb.render_to_buffer(function() {
+        rb.with_bound_buffer(function() {
             var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
             var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
             ctx.clearColor(old_clear_depth,
@@ -64,7 +64,7 @@ Facet.Unprojector = {
         var result_bytes = new Uint8Array(4);
         ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                        result_bytes);
-        rb.render_to_buffer(function() {
+        rb.with_bound_buffer(function() {
             ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                            result_bytes);
         });

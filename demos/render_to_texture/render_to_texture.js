@@ -148,7 +148,7 @@ $().ready(function () {
         display: function() {
             cube.draw();
 
-            rb.render_to_buffer(function() {
+            rb.with_bound_buffer(function() {
                 gl.clearColor(0.1,0.2,0.3,1);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 scene.draw();

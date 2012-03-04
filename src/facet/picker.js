@@ -19,7 +19,7 @@ Facet.Picker = {
         var old_scene_render_mode = _globals.batch_render_mode;
         _globals.batch_render_mode = 1;
         try {
-            rb.render_to_buffer(function() {
+            rb.with_bound_buffer(function() {
                 ctx.clearColor(0,0,0,0);
                 ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
                 callback();
@@ -34,7 +34,7 @@ Facet.Picker = {
         var result_bytes = new Uint8Array(4);
         ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                        result_bytes);
-        rb.render_to_buffer(function() {
+        rb.with_bound_buffer(function() {
             ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                            result_bytes);
         });
