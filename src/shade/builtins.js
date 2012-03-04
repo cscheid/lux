@@ -145,7 +145,7 @@ var funcs_1op = {
     "fract": function(v) { return v - Math.floor(v); },
     "exp": Math.exp, 
     "log": Math.log, 
-    "exp2": function(v) { return Math.exp(v * Math.log(v, 2));},
+    "exp2": function(v) { return Math.exp(v * Math.log(2)); },
     "log2": function(v) { return Math.log(v) / Math.log(2); },
     "sqrt": Math.sqrt,
     "inversesqrt": function(v) { return 1 / Math.sqrt(v); }
