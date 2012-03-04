@@ -144,16 +144,20 @@ functions for each of these types.
 * `any(bvecX)`, X in [2, 3, 4]
 
 #### array
-* `array([list of float])
-* `array([list of bool])
-* `array([list of vecX]), X in [2, 3, 4]
-* `array([list of bvecX]), X in [2, 3, 4]
-* `array([list of ivecX]), X in [2, 3, 4]
-* `array([list of matX]), X in [2, 3, 4]
+* `array([list of float])`
+* `array([list of bool])`
+* `array([list of vecX])`, X in [2, 3, 4]
+* `array([list of bvecX])`, X in [2, 3, 4]
+* `array([list of ivecX])`, X in [2, 3, 4]
+* `array([list of matX])`, X in [2, 3, 4]
 
 #### asin
 * `asin(float)`
 * `asin(vecX)`, X in [2, 3, 4]
+
+#### at
+* `at(vecX, int)`, X in [2, 3, 4]
+* `at(matX, int)`, X in [2, 3, 4]
 
 #### atan
 * `atan(float, float)`
@@ -495,16 +499,16 @@ will model the semantics of Shade as functions from the set of
 about. (In case the phrase "denotational semantics" scares you: GLSL
 does not allow recursive functions, so all the scary math of
 lambda-calculus denotational semantics is not needed).  More
-concretely, we will define there different semantic functions:
+concretely, we will define four different semantic functions:
 *constant semantics*, *value semantics*, *element constant semantics*
 and *element value semantics*. The set corresponding to the range of
 the semantics function will be known as the *target* of that
 semantics. Our target for the constant semantics will be values in
-boolean algebra. For the other remaining semantics, they will be
+boolean algebra. For the other semantics, it will be
 values in an algebra of scalars, vectors and matrices. A semantics and
-its element correspondent are closely related, and are used to model the fact
+its corresponding element semantics are closely related, which models the fact
 that we can construct vectors out of scalars, and that we can examine
-particular components out of scalars.
+particular components out of scalars (similarly for vectors and matrices).
 
 Semantic function application will be denoted with square brackets to
 avoid confusion with the constructor notation of Shade values, which
@@ -625,26 +629,199 @@ left implicitly defined (such as sines, cosines, etc).
 
 `Val[expression]: S -> GLSL_value`
 
+To show that `Val` uniquely defines a value for every finite
+expression, all we have to show is that there every equation for a
+term is is defined in terms of "simpler" terms. In other words, we can
+prove that the structural recursion that `Val` gives terminates by
+structural induction. This is tedious, but easy enough to do (although
+it's not in here yet).
+
+`Val[]` behaves like you expect with respect to constants:
+
+#### basic types
+* `Val[float(3)]` = 3
+* `Val[vec2(4, 5)]` = vec2(4, 5)
+* `Val[vec2(x, y)]` = vec2(Val[`x`], Val[`y`])
+* `Val[vec3(x, y, z)]` = vec3(Val[`x`], Val[`y`], Val[`z`])
+* ...
+
 #### abs
-* Val[`abs(float(x))`] = |x|
-* Val[`abs(vec2(x, y))`] = vec2(Val[`abs(x)`], Val[`abs(y)`])
-* Val[`abs(vec3(x, y, z))`] = vec3(Val[`abs(x)`], Val[`abs(y)`], Val[`abs(z)`])
-* Val[`abs(vec4(x, y, z, w))`] = vec4(Val[`abs(x)`], Val[`abs(y)`], Val[`abs(z)`])
+* Val[`abs(float(x))`] = |Val[`float(x)`]|
+* Val[`abs(vec2(x, y))`] = Val[`vec2(abs(x), abs(y))`]
+* Val[`abs(vec3(x, y, z))`] = Val[`vec3(abs(x), abs(y), abs(z))`]
+* Val[`abs(vec4(x, y, z, w))`] = Val[`vec4(abs(x), abs(y), abs(z), abs(w))`]
 
 #### acos
-* Val[`acos(float(x))`] = acos(x)
-* Val[`acos(vec2(x, y))`] = vec2(Val[`acos(x)`], Val[`acos(y)`])
-* Val[`acos(vec3(x, y, z))`] = vec3(Val[`acos(x)`], Val[`acos(y)`], Val[`acos(z)`])
-* Val[`acos(vec4(x, y, z, w))`] = vec4(Val[`acos(x)`], Val[`acos(y)`], Val[`acos(z)`])
+* Val[`acos(float(x))`] = acos(Val[`float(x)`])
+* Val[`acos(vec2(x, y))`] = Val[`vec2(acos(x), acos(y))`]
+* Val[`acos(vec3(x, y, z))`] = Val[`vec3(acos(x), acos(y), acos(z))`]
+* Val[`acos(vec4(x, y, z, w))`] = Val[`vec4(acos(x), acos(y), acos(z), acos(w))`]
 
 #### add
-* Val[`add(float(x), float(y))`] = x + y
-* Val[`add(vec2(x1, y1), vec2(x2, y2)`] = vec2(Val[`add(x1, x2)`], Val[`add(y1, y2)`])
-* Val[`add(vec3(x1, y1, z1), vec2(x2, y2, z2)`] = vec2(Val[`add(x1, x2)`], Val[`add(y1, y2)`], Val[`add(z1, z2)`])
-* Val[`add(vec4(x1, y1, z1, w1), vec2(x2, y2, z2, w2)`] = vec2(Val[`add(x1, x2)`], Val[`add(y1, y2)`], Val[`add(z1, z2)`], Val[`add(w1, w2)`])
+* Val[`add(float(x), float(y))`] = Val[`float(x)`] + Val[`float(y)`]
+* Val[`add(vec2(x1, y1), vec2(x2, y2)`] = Val[`vec2(add(x1, x2), add(y1, y2)`)]
+* Val[`add(vec3(x1, y1, z1), vec3(x2, y2, z2)`] = Val[`vec3(add(x1, x2), add(y1, y2), add(z1, z2)`)]
+* Val[`add(vec4(x1, y1, z1, w1), vec4(x2, y2, z2, w2)`] = Val[`vec4(add(x1, x2), add(y1, y2), add(z1, z2), add(w1, w2)`)]
+* ...
 
 #### all
+* Val[`all(bool(x))`] = Val[`bool(x)`]
+* Val[`all(bvec2(x, y))`] = Val[`x`] && Val[`y`]
+* Val[`all(bvec3(x, y, z))`] = Val[`x`] && Val[`y`] && Val[`z`]
+* Val[`all(bvec3(x, y, z, w))`] = Val[`x`] && Val[`y`] && Val[`z`] && Val[`w`]
 
+#### and
+* Val[`and(bool(x), bool(y)`] = Val[`bool(x)`] && Val[`bool(y)`]
+
+#### any
+* Val[`all(bool(x))`] = Val[`bool(x)`]
+* Val[`all(bvec2(x, y))`] = Val[`x`] || Val[`y`]
+* Val[`all(bvec3(x, y, z))`] = Val[`x`] || Val[`y`] || Val[`z`]
+* Val[`all(bvec3(x, y, z, w))`] = Val[`x`] || Val[`y`] || Val[`z`] || Val[`w`]
+
+#### array
+* Val[`array(ANY)`] = `Unknown`
+  More precisely, `array` does not have a GLSL value associated with
+  it. However, it can be combined with `at()` to
+  produce a GLSL value.
+
+#### asin
+* Val[`asin(float(x))`] = asin(Val[`float(x)`])
+* Val[`asin(vec2(x, y))`] = Val[`vec2(asin(x), asin(y))`]
+* Val[`asin(vec3(x, y, z))`] = Val[`vec3(asin(x), asin(y), asin(z))`]
+* Val[`asin(vec4(x, y, z, w))`] = Val[`vec3(asin(x), asin(y), asin(z), asin(w))`]
+
+#### at
+* Val[`at(array([a\_0, a\_1, ..., a\_n-1]), index)`] = (Val[`a_i`], where i = Val[`index`])
+
+#### atan
+* atan(x) = arc tangent of x, in radians
+* atan2(y, x) = arc tangent of y/x, in radians, using signs of y and x to determine quadrant.
+* Val[`atan(float(x))`] = atan(Val[`float(x)`])
+* Val[`atan(vec2(x, y))`] = Val[`vec2(atan(x), atan(y))`]
+* Val[`atan(vec3(x, y, z))`] = Val[`vec3(atan(x), atan(y), atan(z))`]
+* Val[`atan(vec4(x, y, z, w))`] = Val[`vec3(atan(x), atan(y), atan(z), atan(w))`]
+* Val[`atan(float(x), float(y))`] = atan2(Val[`float(x)`], Val[`float(y)`])
+* Val[`atan(vec2(x1, y1), vec2(x2, y2))`] = Val[`vec2(atan(x1, x2), atan(y1, y2))`]
+* Val[`atan(vec3(x1, y1, z1), vec3(x2, y2, z2))`] = Val[`vec3(atan(x1, x2), atan(y1, y2), atan(z1, z2))`]
+* Val[`atan(vec4(x1, y1, z1, w1), vec4(x2, y2, z2, w2))`] = Val[`vec3(atan(x1, x2), atan(y1, y2), atan(z1, z2), atan(w1, w2))`]
+
+#### attribute
+* ...
+
+#### ceil
+* ceil(x) = value of x rounded towards +infinity
+* Val[`ceil(float(x))`] = ceil(Val[`float(x)`])
+* Val[`ceil(vec2(x, y))`] = Val[`vec2(ceil(x), ceil(y))`]
+* Val[`ceil(vec3(x, y, z))`] = Val[`vec3(ceil(x), ceil(y), ceil(z))`]
+* Val[`ceil(vec4(x, y, z, w))`] = Val[`vec3(ceil(x), ceil(y), ceil(z), ceil(w))`]
+
+#### clamp
+* Val[`clamp(float(v), float(mn), float(mx))`] = Val[`max(mn, min(mx, v))`]
+* Val[`clamp(vec2(x1, y1), vec2(x2, y2), vec2(x3, y3))`] = Val[`vec2(clamp(x1, x2, x3), clamp(y1, y2, y3))`]
+* Val[`clamp(vec3(x1, y1, z1), vec3(x2, y2, z2), vec3(x3, y3, z3))`] = Val[`vec3(clamp(x1, x2, x3), clamp(y1, y2, y3), clamp(z1, z2, z3))`]
+* Val[`clamp(vec4(x1, y1, z1, w1), vec4(x2, y2, z2, w2), vec4(x3, y3, z3, w2))`] = Val[`vec3(clamp(x1, x2, x3), clamp(y1, y2, y3), clamp(z1, z2, z3), clamp(w1, w2, w3))`]
+
+#### cos
+* cos(x) = cosine of x given in radians
+* Val[`cos(float(x))`] = cos(Val[`float(x)`])
+* Val[`cos(vec2(x, y))`] = Val[`vec2(cos(x), cos(y))`]
+* Val[`cos(vec3(x, y, z))`] = Val[`vec3(cos(x), cos(y), cos(z))`]
+* Val[`cos(vec4(x, y, z, w))`] = Val[`vec3(cos(x), cos(y), cos(z), cos(w))`]
+
+#### cosh
+* Val[`cosh(x)`] = Val[`div(add(exp(v),exp(neg(v))), float(2))`]
+
+#### cross
+* Val[`cross(v1, v2)`] = Val[`vec3(x, y, z)`], where
+  x = `sub(mul(at(v1, 1), at(v2, 2)), mul(at(v1, 2), at(v2, 1)))`,
+  y = `sub(mul(at(v1, 2), at(v2, 0)), mul(at(v1, 0), at(v2, 2)))`, and
+  z = `sub(mul(at(v1, 0), at(v2, 1)), mul(at(v1, 1), at(v2, 0)))`
+
+#### degrees
+* Val[`degrees(float(x))`] = Val[`float(x)`] * (180/pi)
+
+#### discard_if
+* Val[`discard_if(x, bool(true))`] = `Unknown`
+* Val[`discard_if(x, bool(false))`] = x
+
+  The semantics of `discard_if` involve a side-effect in the
+  pipeline. If the condition is true, the evaluation of the fragment
+  program is terminated and that fragment is not processed any
+  further. When used judiciously, it can be a powerful way to avoid
+  unnecessary generation of large numbers of polygons.
+  
+#### distance
+#### div
+#### dot
+#### eq
+#### equal
+#### exp
+#### exp2
+#### faceforward
+#### floor
+#### fract
+#### fragCoord
+#### ge
+#### gl_fog
+#### gl_light
+#### greaterThan
+#### greaterThanEqual
+#### gt
+#### id
+#### inversesqrt
+#### le
+#### length
+#### lessThan
+#### lessThanEqual
+#### log
+#### log2
+#### look_at
+#### lt
+#### mat
+#### mat3
+#### matrixCompMult
+#### max
+#### min
+#### mix
+#### mod
+#### mul
+#### ne
+#### neg
+#### normalize
+#### not
+#### notEqual
+#### or
+#### per_vertex
+#### pointCoord
+#### pow
+#### radians
+#### reflect
+#### refract
+#### rotation
+#### round_dot
+#### selection
+#### sign
+#### sin
+#### sinh
+#### smoothstep
+#### sqrt
+#### step
+#### sub
+#### swizzle
+#### tan
+#### texture2D
+#### translation
+#### uniform
+#### vec
+#### xor
+
+### Element constant semantics
+
+#### abs
+#### acos
+#### add
+#### all
 #### and
 #### any
 #### array
@@ -724,7 +901,90 @@ left implicitly defined (such as sines, cosines, etc).
 #### vec
 #### xor
 
+### Element value semantics
 
+#### abs
+#### acos
+#### add
+#### all
+#### and
+#### any
+#### array
+#### asin
+#### atan
+#### attribute
+#### ceil
+#### clamp
+#### color
+#### cos
+#### cosh
+#### cross
+#### degrees
+#### discard_if
+#### distance
+#### div
+#### dot
+#### eq
+#### equal
+#### exp
+#### exp2
+#### faceforward
+#### floor
+#### fract
+#### fragCoord
+#### ge
+#### gl_fog
+#### gl_light
+#### greaterThan
+#### greaterThanEqual
+#### gt
+#### id
+#### inversesqrt
+#### le
+#### length
+#### lessThan
+#### lessThanEqual
+#### log
+#### log2
+#### look_at
+#### lt
+#### mat
+#### mat3
+#### matrixCompMult
+#### max
+#### min
+#### mix
+#### mod
+#### mul
+#### ne
+#### neg
+#### normalize
+#### not
+#### notEqual
+#### or
+#### per_vertex
+#### pointCoord
+#### pow
+#### radians
+#### reflect
+#### refract
+#### rotation
+#### round_dot
+#### selection
+#### sign
+#### sin
+#### sinh
+#### smoothstep
+#### sqrt
+#### step
+#### sub
+#### swizzle
+#### tan
+#### texture2D
+#### translation
+#### uniform
+#### vec
+#### xor
 
 ### Relationship between semantic functions
 
