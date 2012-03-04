@@ -2,7 +2,7 @@
  * Facet: An EDSL for WebGL graphics
  * By Carlos Scheidegger, cscheid@research.att.com
  * 
- * Copyright (c) 2011 AT&T Intellectual Property
+ * Copyright (c) 2011, 2012 AT&T Intellectual Property
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -3953,7 +3953,7 @@ Facet.Picker = {
         var old_scene_render_mode = _globals.batch_render_mode;
         _globals.batch_render_mode = 1;
         try {
-            rb.render_to_buffer(function() {
+            rb.with_bound_buffer(function() {
                 ctx.clearColor(0,0,0,0);
                 ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
                 callback();
@@ -3968,7 +3968,7 @@ Facet.Picker = {
         var result_bytes = new Uint8Array(4);
         ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                        result_bytes);
-        rb.render_to_buffer(function() {
+        rb.with_bound_buffer(function() {
             ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                            result_bytes);
         });
@@ -4088,11 +4088,11 @@ Facet.render_buffer = function(opts)
         width: rttFramebuffer.width,
         height: rttFramebuffer.height,
         frame_buffer: rttFramebuffer,
-        render_to_buffer: function (render) {
+        with_bound_buffer: function (what) {
             try {
                 ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
                 ctx.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
-                render();
+                return what();
             } finally {
                 ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
             }
@@ -4232,7 +4232,7 @@ Facet.Unprojector = {
         callback = callback || _globals.display_callback;
         var old_scene_render_mode = _globals.batch_render_mode;
         _globals.batch_render_mode = 2;
-        rb.render_to_buffer(function() {
+        rb.with_bound_buffer(function() {
             var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
             var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
             ctx.clearColor(old_clear_depth,
@@ -4258,7 +4258,7 @@ Facet.Unprojector = {
         var result_bytes = new Uint8Array(4);
         ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                        result_bytes);
-        rb.render_to_buffer(function() {
+        rb.with_bound_buffer(function() {
             ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                            result_bytes);
         });
@@ -7173,7 +7173,7 @@ var funcs_1op = {
     "fract": function(v) { return v - Math.floor(v); },
     "exp": Math.exp, 
     "log": Math.log, 
-    "exp2": function(v) { return Math.exp(v * Math.log(v, 2));},
+    "exp2": function(v) { return Math.exp(v * Math.log(2)); },
     "log2": function(v) { return Math.log(v) / Math.log(2); },
     "sqrt": Math.sqrt,
     "inversesqrt": function(v) { return 1 / Math.sqrt(v); }
@@ -8185,6 +8185,10 @@ Shade.is_program_parameter = function(key)
     return ["color", "position", "point_size",
             "gl_FragColor", "gl_Position", "gl_PointSize"].indexOf(key) != -1;
 };
+Shade.round = Shade.make(function(v) {
+    return v.add(0.5).floor();
+});
+Shade.Exp.round = function() { return Shade.round(this); };
 Shade.Utils = {};
 // given a list of values, returns a function which, when given a
 // value between 0 and 1, returns the appropriate linearly interpolated
@@ -9524,6 +9528,117 @@ var white_point_uv = xyz_to_uv(white_point);
 Shade.Colors.shadetable = table;
 
 })();
+/* These are all pretty sketchily dependent on the underlying
+ precision of the FP units.
+
+ It is likely that the only correct and portable implementations are
+ through the use of texture lookup tables.
+
+ */
+Shade.Bits = {};
+/* Shade.Bits.encode_float encodes a single 32-bit IEEE 754
+   floating-point number as a 32-bit RGBA value, so that when rendered
+   to a non-floating-point render uffer and read with readPixels, the
+   resulting ArrayBufferView can be cast directly as a Float32Array,
+   which will encode the correct value.
+
+   These gymnastics are necessary because, shockingly, readPixels does
+   not support reading off floating-point values of an FBO bound to a
+   floating-point texture (!):
+
+   https://www.khronos.org/webgl/public-mailing-list/archives/1108/threads.html#00020
+
+   WebGL does not support bitwise operators. As a result, much of what
+   is happening here is less efficient than it should be, and incurs
+   precision losses. That is unfortunate, but currently unavoidable as
+   well.
+
+*/
+
+// This function is currently only defined for "well-behaved" IEEE 754
+// numbers. No denormals, NaN, infinities, etc.
+Shade.Bits.encode_float = Shade.make(function(val) {
+
+    var byte1, byte2, byte3, byte4;
+
+    var is_zero = val.eq(0);
+
+    var sign = val.gt(0).selection(0, 1);
+    val = val.abs();
+
+    var exponent = val.log2().floor();
+    var biased_exponent = exponent.add(127);
+    var fraction = val.div(exponent.exp2()).sub(1).mul(8388608); // 2^23
+
+    var t = biased_exponent.div(2);
+    var last_bit_of_biased_exponent = t.fract().mul(2);
+    var remaining_bits_of_biased_exponent = t.floor();
+
+    byte4 = Shade.Bits.extract_bits(fraction, 0, 8).div(255);
+    byte3 = Shade.Bits.extract_bits(fraction, 8, 16).div(255);
+    byte2 = last_bit_of_biased_exponent.mul(128)
+        .add(Shade.Bits.extract_bits(fraction, 16, 23)).div(255);
+    byte1 = sign.mul(128).add(remaining_bits_of_biased_exponent).div(255);
+
+    return is_zero.selection(Shade.vec(0, 0, 0, 0),
+                             Shade.vec(byte1, byte2, byte3, byte4));
+});
+/* Shade.Bits.extract_bits returns a certain bit substring of the
+   original number using no bitwise operations, which are not available in WebGL.
+
+   if they were, then the definition of extract_bits would be:
+
+     extract_bits(num, from, to) = (num >> from) & ((1 << (to - from)) - 1)
+
+   Shade.Bits.extract_bits assumes:
+
+     num > 0
+     from < to
+*/
+
+Shade.Bits.extract_bits = Shade.make(function(num, from, to) {
+    from = from.add(0.5).floor();
+    to = to.add(0.5).floor();
+    return Shade.Bits.mask_last(Shade.Bits.shift_right(num, from), to.sub(from));
+});
+/* If webgl supported bitwise operations,
+   mask_last(v, bits) = v & ((1 << bits) - 1)
+
+   We use the slower version via mod():
+
+   v & ((1 << k) - 1) = v % (1 << k)
+*/
+Shade.Bits.mask_last = Shade.make(function(v, bits) {
+    return v.mod(Shade.Bits.shift_left(1, bits));
+});
+Shade.Bits.shift_left = Shade.make(function(v, amt) {
+    return v.mul(amt.exp2()).round();
+});
+Shade.Bits.shift_right = Shade.make(function(v, amt) {
+    // NB: this is *not* equivalent to any sequence of operations
+    // involving round()
+
+    // The extra gymnastics are necessary because
+    //
+    // 1. we cannot round the result, since some of the fractional values
+    // might be larger than 0.5
+    //
+    // 2. shifting right by a large number (>22 in my tests) creates
+    // a large enough float that precision is an issue (2^22 / exp2(22) < 1, for example). 
+    // So we divide an ever so slightly larger number so that flooring
+    // does the right thing.
+    //
+    // THIS REMAINS TO BE THOROUGHLY TESTED.
+    //
+    // There's possibly a better alternative involving integer arithmetic,
+    // but GLSL ES allows implementations to use floating-point in place of integers.
+    // 
+    // It's likely that the only portably correct implementation of this
+    // uses look-up tables. I won't fix this for now.
+
+    v = v.floor().add(0.5);
+    return v.div(amt.exp2()).floor();
+});
 Facet.Marks = {};
 Facet.Marks.dots = function(opts)
 {

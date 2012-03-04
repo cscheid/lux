@@ -101,6 +101,7 @@ throughout the API.
 The way to do this is to *add* underscore_equivalents of the GLSL ugly
 camelCase functions. This way, people familiar with GLSL can use them,
 while people coming directly to Facet will use underscore
+** TODO "Selection" is a terrible name. Fix it.
 * Testing/Engineering
 ** TODO fix the _shade_type ugliness
 One possibility is to create a WebGLObject prototype that knows how to

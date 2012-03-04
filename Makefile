@@ -97,6 +97,7 @@ facet.js:					\
 	src/shade/seq.js			\
 	src/shade/program.js			\
 	src/shade/is_program_parameter.js	\
+	src/shade/round.js			\
 	src/shade/utils/_begin.js		\
 	src/shade/utils/lerp.js			\
 	src/shade/utils/choose.js		\
@@ -118,6 +119,12 @@ facet.js:					\
 	src/shade/colors/alpha.js		\
 	src/shade/colors/convert.js		\
 	src/shade/colors/convert_shade.js	\
+	src/shade/bits/_begin.js		\
+	src/shade/bits/encode_float.js		\
+	src/shade/bits/extract_bits.js		\
+	src/shade/bits/mask_last.js		\
+	src/shade/bits/shift_left.js		\
+	src/shade/bits/shift_right.js		\
 	src/facet/marks/_begin.js		\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\
