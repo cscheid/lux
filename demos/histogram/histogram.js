@@ -33,16 +33,14 @@ function histo_buffer(opts)
     });
 
     function bin_to_texcoord(pos) {
-        var y = pos.div(sz).floor().add(0.5/sz);
-        var x = pos.mod(sz).add(0.5/sz);
-        var map = Shade.Utils.linear(0, sz, 0, 1);
-        return Shade.vec(map(x), map(y));
+        // the call to floor() prevents spillage when pos is fractional
+        return Shade.vec(pos.mod(sz), pos.div(sz)).floor().add(0.5).div(sz);
     }
     function bin_to_screen(pos) {
-        var y = pos.div(sz).floor().add(0.5/sz);
-        var x = pos.mod(sz).add(0.5/sz);
+        // the call to floor() prevents spillage when pos is fractional
+        var xy = Shade.vec(pos.mod(sz), pos.div(sz)).floor().add(0.5);
         var map = Shade.Utils.linear(0, sz, -1, 1);
-        return Shade.vec(map(x), map(y), 0, 1);
+        return Shade.vec(map(xy), 0, 1);
     }
 
     var convert_batch = render_buffer.make_screen_batch(function(texel) {
@@ -112,6 +110,7 @@ function data_buffers()
 {
     var d = Data.flowers();
     var tt = Facet.Data.texture_table(d);
+
     var point_index = Facet.attribute_buffer(_.range(tt.n_rows), 1);
     
     return {
@@ -130,7 +129,8 @@ function init_webgl()
 {
     var canvas = document.getElementById("scatterplot");
     gl = Facet.init(canvas, { attributes: { alpha: true,
-                                            depth: true
+                                            depth: true,
+                                            antialias: false
                                           },
                               debugging: true,
                               display: function() {
@@ -140,13 +140,14 @@ function init_webgl()
                             });
     Facet.set_context(gl);
     data = data_buffers();
-    var bin_count = 16;
+    var bin_count = 24;
     histo = histo_buffer({
         bin_count: bin_count,
-        bin: Shade.Utils.linear(5, 8, 0, 16)(data.sepalLength),
+        bin: Shade.Utils.linear(4, 8, 0, bin_count)(data.sepalLength),
         elements: data.n_rows
     });
     histo.compute();
+    console.log(histo.read());
 
     // FIXME: compute maximum histogram height.
     // This will require texture reductions.. More GPGPU, yay
@@ -159,7 +160,7 @@ function init_webgl()
     var which_vertex = Shade.mod(vertex_index, 6);
 
     var bin_value = histo.bin_value(bin_index);
-    var bar_height = bin_value.div(20);
+    var bar_height = bin_value.div(30);
     
     var bottom = 0, 
         top = bar_height,
@@ -177,7 +178,7 @@ function init_webgl()
         type: "triangles",
         elements: vertex_index
     }, {
-        color: Shade.Colors.shadetable.hcl.create(0, 50, bin_value.mul(5)).as_shade(),
+        color: Shade.Colors.shadetable.hcl.create(0, 50, bin_value.mul(3)).as_shade(),
         position: Shade.vec(vertex_map.at(which_vertex).mul(2).sub(1), 0, 1)
     });
 }
