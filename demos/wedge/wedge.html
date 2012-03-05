@@ -1,0 +1,43 @@
+<html>
+<head><title>Drawing Wedges in Facet</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <link rel="stylesheet" href="../css/mchighlight-javascript.css"/>
+  <script src="../../lib/jquery-1.6.2.min.js"></script>
+  <script src="../../facet.js"></script>
+  <script src="../js/mclexer.js"></script>
+  <script src="../js/mchighlight.js"></script>
+  <script src="../js/mchighlight-javascript.js"></script>
+  <script src="wedge.js"></script>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>Wedges</h1>
+<div style="position: relative">
+<canvas id="webgl" width="720" height="480"></canvas>
+<div id="pickresult" style="position: absolute; top: 5px; right: 5px;
+			    color: white"></div>
+</div>
+<div style="text-align: right">View the <a href="wedge.js">full source</a>.</div>
+<p>A wedge is a simple example of a custom shape which you might want
+  to draw using Facet.
+</p>
+<p>One thing to notice is that you get pixel-accurate picking for
+  free, even when your batch includes discarding fragments (like this
+  one does). If Facet required you to write GLSL shaders, it would
+  have no way to turn your drawing specification into a picking
+  one. But because Facet actually has a language which gives the
+  semantics of the drawing and knows how to manipulate that language,
+  it can automatically create picking code.</p>
+
+<p><b>Please do not take this example as an endorsement of pie charts!</b>
+  Chances are they are the last thing you should ever consider using
+  for displaying quantitative data.</p>
+<p>Back to the <a href="index.html">index</a>.</p>
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</body>
+</html>
+

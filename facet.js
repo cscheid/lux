@@ -2,7 +2,7 @@
  * Facet: An EDSL for WebGL graphics
  * By Carlos Scheidegger, cscheid@research.att.com
  * 
- * Copyright (c) 2011 AT&T Intellectual Property
+ * Copyright (c) 2011, 2012 AT&T Intellectual Property
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -3944,8 +3944,8 @@ Facet.Picker = {
             rb = Facet.render_buffer({
                 width: ctx.viewportWidth,
                 height: ctx.viewportHeight,
-                TEXTURE_MAG_FILTER: ctx.NEAREST,
-                TEXTURE_MIN_FILTER: ctx.NEAREST
+                mag_filter: ctx.NEAREST,
+                min_filter: ctx.NEAREST
             });
         }
 
@@ -3953,7 +3953,7 @@ Facet.Picker = {
         var old_scene_render_mode = _globals.batch_render_mode;
         _globals.batch_render_mode = 1;
         try {
-            rb.render_to_buffer(function() {
+            rb.with_bound_buffer(function() {
                 ctx.clearColor(0,0,0,0);
                 ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
                 callback();
@@ -3968,7 +3968,7 @@ Facet.Picker = {
         var result_bytes = new Uint8Array(4);
         ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                        result_bytes);
-        rb.render_to_buffer(function() {
+        rb.with_bound_buffer(function() {
             ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                            result_bytes);
         });
@@ -4044,9 +4044,24 @@ Facet.render_buffer = function(opts)
     ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
     opts = _.defaults(opts || {}, {
         width: 512,
-        height: 512
+        height: 512,
+        mag_filter: ctx.LINEAR,
+        min_filter: ctx.LINEAR,
+        wrap_s: ctx.CLAMP_TO_EDGE,
+        wrap_t: ctx.CLAMP_TO_EDGE
     });
-    rttFramebuffer.width  =  opts.width;
+
+    // Weird:
+    // http://www.khronos.org/registry/gles/specs/2.0/es_full_spec_2.0.25.pdf
+    // Page 118
+    // 
+    // Seems unenforced in my implementations of WebGL, even though 
+    // the WebGL spec defers to GLSL ES spec.
+    // 
+    // if (opts.width != opts.height)
+    //     throw "renderbuffers must be square (blame GLSL ES!)";
+
+    rttFramebuffer.width  = opts.width;
     rttFramebuffer.height = opts.height;
 
     var rttTexture = Facet.texture(opts);
@@ -4084,11 +4099,11 @@ Facet.render_buffer = function(opts)
         width: rttFramebuffer.width,
         height: rttFramebuffer.height,
         frame_buffer: rttFramebuffer,
-        render_to_buffer: function (render) {
+        with_bound_buffer: function (what) {
             try {
                 ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
                 ctx.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
-                render();
+                return what();
             } finally {
                 ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
             }
@@ -4228,7 +4243,7 @@ Facet.Unprojector = {
         callback = callback || _globals.display_callback;
         var old_scene_render_mode = _globals.batch_render_mode;
         _globals.batch_render_mode = 2;
-        rb.render_to_buffer(function() {
+        rb.with_bound_buffer(function() {
             var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
             var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
             ctx.clearColor(old_clear_depth,
@@ -4254,7 +4269,7 @@ Facet.Unprojector = {
         var result_bytes = new Uint8Array(4);
         ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                        result_bytes);
-        rb.render_to_buffer(function() {
+        rb.with_bound_buffer(function() {
             ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                            result_bytes);
         });
@@ -4439,6 +4454,77 @@ Facet.DrawingMode.standard = {
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
     }
+};
+Facet.Data = {};
+// NB: Luminance float textures appear to clamp to [0,1] on Chrome 15
+// on Linux...
+
+Facet.Data.texture_table = function(table)
+{
+    var ctx = Facet._globals.ctx;
+
+    var elements = [];
+    for (var row_ix = 0; row_ix < table.data.length; ++row_ix) {
+        var row = table.data[row_ix];
+        for (var col_ix = 0; col_ix < table.number_columns.length; ++col_ix) {
+            var col_name = table.columns[table.number_columns[col_ix]];
+            var val = row[col_name];
+            if (typeof val !== "number")
+                throw "texture_table requires numeric values";
+            elements.push(val);
+        }
+    }
+
+    var table_ncols = table.number_columns.length;
+    var table_nrows = table.data.length;
+    var texture_width = 1;
+
+    while (4 * texture_width * texture_width < elements.length) {
+        texture_width = texture_width * 2;
+    }
+    var texture_height = Math.ceil(elements.length / (4 * texture_width));
+
+    // Tested on Chrome: the Float32Array constructor interprets "undefined" as 0
+    // so no push to pad array is necessary; we simply set the last
+    // padded value of the array to 0.
+    if (elements.length < 4 * texture_height * texture_width)
+        elements[4 * texture_height * texture_width - 1] = 0;
+
+    var texture = Facet.texture({
+        width: texture_width,
+        height: texture_height,
+        buffer: new Float32Array(elements),
+        type: ctx.FLOAT,
+        format: ctx.RGBA,
+        min_filter: ctx.NEAREST,
+        mag_filter: ctx.NEAREST
+    });
+
+    var index = Shade.make(function(row, col) {
+        var linear_index    = row.mul(table_ncols).add(col);
+        var in_texel_offset = linear_index.mod(4);
+        var texel_index     = linear_index.div(4).floor();
+        var x               = texel_index.mod(texture_width);
+        var y               = texel_index.div(texture_width).floor();
+        var result          = Shade.vec(x, y, in_texel_offset);
+        return result;
+    });
+    var at = Shade.make(function(row, col) {
+        // returns Shade expression with value at row, col
+        var ix = index(row, col);
+        var uv = ix.swizzle("xy")
+            .add(Shade.vec(0.5, 0.5))
+            .div(Shade.vec(texture_width, texture_height))
+            ;
+        return Shade.texture2D(texture, uv).at(ix.z());
+    });
+
+    return {
+        n_rows: table_nrows,
+        n_cols: table_ncols,
+        at: at,
+        index: index
+    };
 };
 /*
  * Shade is the javascript DSL for writing GLSL shaders, part of Facet.
@@ -4673,8 +4759,8 @@ Shade.range = function(range_begin, range_end)
 {
     var beg = Shade.make(range_begin).as_int(),
         end = Shade.make(range_end).as_int();
-    console.log(beg, beg.type.repr());
-    console.log(end, end.type.repr());
+//     console.log(beg, beg.type.repr());
+//     console.log(end, end.type.repr());
     return {
         begin: beg,
         end: end,
@@ -5141,6 +5227,24 @@ Shade.make = function(exp)
         return Shade.constant(exp);
     } else if (t === 'array') {
         return Shade.seq(exp);
+    } else if (t === 'function') {
+        /* lifts the passed function to a "shade function".
+        
+        In other words, this creates a function that replaces every
+        passed parameter p by Shade.make(p) This way, we save a lot of
+        typing and errors. If a javascript function is expected to
+        take shade values and produce shade expressions as a result,
+        simply wrap that function around a call to Shade.make()
+
+         */
+
+        return function() {
+            var wrapped_arguments = [];
+            for (var i=0; i<arguments.length; ++i) {
+                wrapped_arguments.push(Shade.make(arguments[i]));
+            }
+            return exp.apply(this, wrapped_arguments);
+        };
     }
     t = facet_constant_type(exp);
     if (t === 'vector' || t === 'matrix') {
@@ -5373,6 +5477,9 @@ Shade.Exp = {
     div: function(op) {
         return Shade.div(this, op);
     },
+    mod: function(op) {
+        return Shade.mod(this, op);
+    },
     sub: function(op) {
         return Shade.sub(this, op);
     },
@@ -5500,7 +5607,12 @@ Shade.Exp = {
             parents: [parent],
             type: parent.type.swizzle(pattern),
             expression_type: "swizzle{" + pattern + "}",
-            evaluate: function() { return this.parents[0].evaluate() + "." + pattern; },
+            evaluate: function() {
+                if (this._must_be_function_call)
+                    return this.glsl_name + "()";
+                else
+                    return this.parents[0].evaluate() + "." + pattern; 
+            },
             is_constant: Shade.memoize_on_field("_is_constant", function () {
                 var that = this;
                 return _.all(indices, function(i) {
@@ -5534,7 +5646,15 @@ Shade.Exp = {
             element_constant_value: Shade.memoize_on_field("_element_constant_value", function(i) {
                 return this.parents[0].element_constant_value(indices[i]);
             }),
-            compile: function() {}
+            compile: function(ctx) {
+                if (this._must_be_function_call) {
+                    this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
+                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                    ctx.add_initialization(this.precomputed_value_glsl_name + " = " + 
+                                           this.parents[0].evaluate() + "." + pattern);
+                    ctx.value_function(this, this.precomputed_value_glsl_name);
+                }
+            }
         });
     },
     at: function(index) {
@@ -5552,7 +5672,7 @@ Shade.Exp = {
             parents: [parent, index],
             type: parent.type.array_base(),
             expression_type: "index",
-            evaluate: function() { 
+            evaluate: function() {
                 if (this.parents[1].type.is_integral()) {
                     return this.parents[0].evaluate() + 
                         "[" + this.parents[1].evaluate() + "]"; 
@@ -5572,17 +5692,33 @@ Shade.Exp = {
                 var ix = Math.floor(this.parents[1].constant_value());
                 return this.parents[0].element_constant_value(ix);
             }),
-            // the reason for the (if x === this) checks here is that sometimes
-            // the only appropriate description of an element() of an
-            // opaque object (uniforms and attributes, notably) is an at() call.
-            // This means that (this.parents[0].element(ix) === this) is
-            // sometimes true, and we're stuck in an infinite loop.
+
             element: Shade.memoize_on_field("_element", function(i) {
-                if (!this.parents[1].is_constant()) {
-                    throw "at().element cannot be called with non-constant index";
+                // FIXME I suspect that a bug here might still arise
+                // out of some interaction between the two conditions
+                // described below. The right fix will require rewriting the whole
+                // constant-folding system :) so it will be a while.
+
+                var array = this.parents[0], 
+                    index = this.parents[1];
+
+                if (!index.is_constant()) {
+                    // If index is not constant, then we use the following equation:
+                    // element(Array(a_1 .. a_n).at(ix), i) ==
+                    // Array(element(a_1, i) .. element(a_n, i)).at(ix)
+                    var elts = _.map(array.parents, function(parent) {
+                        return parent.element(i);
+                    });
+                    return Shade.array(elts).at(index);
                 }
-                var ix = this.parents[1].constant_value();
-                var x = this.parents[0].element(ix);
+                var index_value = this.parents[1].constant_value();
+                var x = this.parents[0].element(index_value);
+
+                // the reason for the (if x === this) checks here is that sometimes
+                // the only appropriate description of an element() of an
+                // opaque object (uniforms and attributes, notably) is an at() call.
+                // This means that (this.parents[0].element(ix) === this) is
+                // sometimes true, and we're stuck in an infinite loop.
                 if (x === this) {
                     return x.at(i);
                 } else
@@ -5672,7 +5808,8 @@ Shade.Exp = {
 };
 
 _.each(["r", "g", "b", "a",
-        "x", "y", "z", "w"], function(v) {
+        "x", "y", "z", "w",
+        "s", "t", "p", "q"], function(v) {
             Shade.Exp[v] = function() {
                 return this.swizzle(v);
             };
@@ -5940,9 +6077,6 @@ Shade.array = function(v)
         if (_.any(new_types, function(t) { return !t.equals(new_types[0]); })) {
             throw "array elements must have identical types";
         }
-        // if (_.any(new_v, function(el) { return !el.is_constant(); })) {
-        //     throw "constant array elements must be constant as well";
-        // }
         return Shade._create_concrete_exp( {
             parents: new_v,
             type: array_type,
@@ -6712,6 +6846,10 @@ Shade.mul = function() {
     return current_result;
 };
 })();
+// FIXME This should be Shade.neg = Shade.make(function() ...
+// but before I do that I have to make sure that at this point
+// in the source Shade.make actually exists.
+
 Shade.neg = function(x)
 {
     return Shade.sub(0, x);
@@ -7046,7 +7184,7 @@ var funcs_1op = {
     "fract": function(v) { return v - Math.floor(v); },
     "exp": Math.exp, 
     "log": Math.log, 
-    "exp2": function(v) { return Math.exp(v * Math.log(v, 2));},
+    "exp2": function(v) { return Math.exp(v * Math.log(2)); },
     "log2": function(v) { return Math.log(v) / Math.log(2); },
     "sqrt": Math.sqrt,
     "inversesqrt": function(v) { return 1 / Math.sqrt(v); }
@@ -7308,7 +7446,7 @@ var length = builtin_glsl_function({
     constant_evaluator: function(exp) {
         var v = exp.parents[0].constant_value();
         if (exp.parents[0].type.equals(Shade.Types.float_t))
-            return v * v;
+            return Math.abs(v);
         else
             return vec.length(v);
     }});
@@ -7455,6 +7593,7 @@ var texture2D = builtin_glsl_function({
 });
 Shade.texture2D = texture2D;
 
+// FIXME BUG?
 Shade.equal = builtin_glsl_function({
     name: "equal", 
     type_resolving_list: [
@@ -7638,6 +7777,7 @@ Shade.seq = function(parents)
     });
 };
 Shade.Optimizer = {};
+Shade.Optimizer.debug = false;
 
 Shade.Optimizer._debug_passes = false;
 
@@ -8056,6 +8196,10 @@ Shade.is_program_parameter = function(key)
     return ["color", "position", "point_size",
             "gl_FragColor", "gl_Position", "gl_PointSize"].indexOf(key) != -1;
 };
+Shade.round = Shade.make(function(v) {
+    return v.add(0.5).floor();
+});
+Shade.Exp.round = function() { return Shade.round(this); };
 Shade.Utils = {};
 // given a list of values, returns a function which, when given a
 // value between 0 and 1, returns the appropriate linearly interpolated
@@ -8486,6 +8630,10 @@ Shade.Exp.selection = function(if_true, if_false)
 {
     return Shade.selection(this, if_true, if_false);
 };
+// FIXME This should be Shade.look_at = Shade.make(function() ...
+// but before I do that I have to make sure that at this point
+// in the source Shade.make actually exists.
+
 Shade.rotation = function(angle, axis)
 {
     angle = Shade.make(angle);
@@ -8521,6 +8669,10 @@ Shade.translation = function(t)
                      Shade.vec(0,0,1,0),
                      Shade.vec(t, 1));
 };
+// FIXME This should be Shade.look_at = Shade.make(function() ...
+// but before I do that I have to make sure that at this point
+// in the source Shade.make actually exists.
+
 Shade.look_at = function(eye, center, up)
 {
     eye = Shade.make(eye);
@@ -9387,6 +9539,117 @@ var white_point_uv = xyz_to_uv(white_point);
 Shade.Colors.shadetable = table;
 
 })();
+/* These are all pretty sketchily dependent on the underlying
+ precision of the FP units.
+
+ It is likely that the only correct and portable implementations are
+ through the use of texture lookup tables.
+
+ */
+Shade.Bits = {};
+/* Shade.Bits.encode_float encodes a single 32-bit IEEE 754
+   floating-point number as a 32-bit RGBA value, so that when rendered
+   to a non-floating-point render uffer and read with readPixels, the
+   resulting ArrayBufferView can be cast directly as a Float32Array,
+   which will encode the correct value.
+
+   These gymnastics are necessary because, shockingly, readPixels does
+   not support reading off floating-point values of an FBO bound to a
+   floating-point texture (!):
+
+   https://www.khronos.org/webgl/public-mailing-list/archives/1108/threads.html#00020
+
+   WebGL does not support bitwise operators. As a result, much of what
+   is happening here is less efficient than it should be, and incurs
+   precision losses. That is unfortunate, but currently unavoidable as
+   well.
+
+*/
+
+// This function is currently only defined for "well-behaved" IEEE 754
+// numbers. No denormals, NaN, infinities, etc.
+Shade.Bits.encode_float = Shade.make(function(val) {
+
+    var byte1, byte2, byte3, byte4;
+
+    var is_zero = val.eq(0);
+
+    var sign = val.gt(0).selection(0, 1);
+    val = val.abs();
+
+    var exponent = val.log2().floor();
+    var biased_exponent = exponent.add(127);
+    var fraction = val.div(exponent.exp2()).sub(1).mul(8388608); // 2^23
+
+    var t = biased_exponent.div(2);
+    var last_bit_of_biased_exponent = t.fract().mul(2);
+    var remaining_bits_of_biased_exponent = t.floor();
+
+    byte4 = Shade.Bits.extract_bits(fraction, 0, 8).div(255);
+    byte3 = Shade.Bits.extract_bits(fraction, 8, 16).div(255);
+    byte2 = last_bit_of_biased_exponent.mul(128)
+        .add(Shade.Bits.extract_bits(fraction, 16, 23)).div(255);
+    byte1 = sign.mul(128).add(remaining_bits_of_biased_exponent).div(255);
+
+    return is_zero.selection(Shade.vec(0, 0, 0, 0),
+                             Shade.vec(byte4, byte3, byte2, byte1));
+});
+/* Shade.Bits.extract_bits returns a certain bit substring of the
+   original number using no bitwise operations, which are not available in WebGL.
+
+   if they were, then the definition of extract_bits would be:
+
+     extract_bits(num, from, to) = (num >> from) & ((1 << (to - from)) - 1)
+
+   Shade.Bits.extract_bits assumes:
+
+     num > 0
+     from < to
+*/
+
+Shade.Bits.extract_bits = Shade.make(function(num, from, to) {
+    from = from.add(0.5).floor();
+    to = to.add(0.5).floor();
+    return Shade.Bits.mask_last(Shade.Bits.shift_right(num, from), to.sub(from));
+});
+/* If webgl supported bitwise operations,
+   mask_last(v, bits) = v & ((1 << bits) - 1)
+
+   We use the slower version via mod():
+
+   v & ((1 << k) - 1) = v % (1 << k)
+*/
+Shade.Bits.mask_last = Shade.make(function(v, bits) {
+    return v.mod(Shade.Bits.shift_left(1, bits));
+});
+Shade.Bits.shift_left = Shade.make(function(v, amt) {
+    return v.mul(amt.exp2()).round();
+});
+Shade.Bits.shift_right = Shade.make(function(v, amt) {
+    // NB: this is *not* equivalent to any sequence of operations
+    // involving round()
+
+    // The extra gymnastics are necessary because
+    //
+    // 1. we cannot round the result, since some of the fractional values
+    // might be larger than 0.5
+    //
+    // 2. shifting right by a large number (>22 in my tests) creates
+    // a large enough float that precision is an issue (2^22 / exp2(22) < 1, for example). 
+    // So we divide an ever so slightly larger number so that flooring
+    // does the right thing.
+    //
+    // THIS REMAINS TO BE THOROUGHLY TESTED.
+    //
+    // There's possibly a better alternative involving integer arithmetic,
+    // but GLSL ES allows implementations to use floating-point in place of integers.
+    // 
+    // It's likely that the only portably correct implementation of this
+    // uses look-up tables. I won't fix this for now.
+
+    v = v.floor().add(0.5);
+    return v.div(amt.exp2()).floor();
+});
 Facet.Marks = {};
 Facet.Marks.dots = function(opts)
 {
@@ -9468,10 +9731,10 @@ Facet.Marks.scatterplot = function(opts)
 
     var position, elements;
 
-    if (opts.x) {
+    if (!_.isUndefined(opts.x)) {
         position = S.vec(to_opengl(opts.x_scale(opts.x)), 
                          to_opengl(opts.y_scale(opts.y)));
-    } else if (opts.xy) {
+    } else if (!_.isUndefined(opts.xy)) {
         position = opts.xy_scale(opts.xy).mul(2).sub(S.vec(1,1));
     }
 
@@ -9548,8 +9811,8 @@ Facet.Marks.globe = function(opts)
     var texture = Facet.texture({
         width: 2048,
         height: 2048,
-        TEXTURE_MAG_FILTER: gl.LINEAR,
-        TEXTURE_MIN_FILTER: gl.LINEAR
+        mag_filter: gl.LINEAR,
+        min_filter: gl.LINEAR
     });
 
     min_x = Shade.uniform("float");
