@@ -125,6 +125,46 @@ function data_buffers()
     };
 }
 
+function aligned_quad_batch(opts)
+{
+    opts = _.defaults(opts || {}, {
+        mode: Facet.DrawingMode.standard
+    });
+    if (!opts.elements) throw "elements is a required field";
+    if (!opts.left)     throw "left is a required field";
+    if (!opts.right)    throw "right is a required field";
+    if (!opts.top)      throw "top is a required field";
+    if (!opts.bottom)   throw "bottom is a required field";
+    if (!opts.color)    throw "color is a required field";
+
+    var vertex_index = Facet.attribute_buffer(_.range(opts.elements * 6), 1);
+    var primitive_index = Shade.div(vertex_index, 6).floor();
+    var vertex_in_primitive = Shade.mod(vertex_index, 6).floor();
+
+    var left   = opts.left  (primitive_index),
+        right  = opts.right (primitive_index),
+        bottom = opts.bottom(primitive_index),
+        top    = opts.top   (primitive_index);
+
+    var lower_left  = Shade.vec(left,  bottom);
+    var lower_right = Shade.vec(right, bottom);
+    var upper_left  = Shade.vec(left,  top);
+    var upper_right = Shade.vec(right, top);
+    var vertex_map  = Shade.array([lower_left, upper_right, upper_left,
+                                   lower_left, lower_right, upper_right]);
+    var index_array = Shade.array([0, 2, 3, 0, 1, 2]);
+    var index_in_vertex_primitive = index_array.at(vertex_in_primitive);
+
+    return Facet.bake({
+        type: "triangles",
+        elements: vertex_index,
+        mode: opts.mode
+    }, {
+        position: Shade.vec(vertex_map.at(vertex_in_primitive).mul(2).sub(1), 0, 1),
+        color: opts.color(primitive_index, index_in_vertex_primitive)
+    });
+}
+
 function init_webgl()
 {
     var canvas = document.getElementById("scatterplot");
@@ -155,31 +195,15 @@ function init_webgl()
     //////////////////////////////////////////////////////////////////////////
     // This is like a poor man's instancing/geometry shader. I need an API for it.
 
-    var vertex_index = Facet.attribute_buffer(_.range(bin_count * 6), 1);
-    var bin_index = Shade.div(vertex_index, 6).floor();
-    var which_vertex = Shade.mod(vertex_index, 6);
-
-    var bin_value = histo.bin_value(bin_index);
-    var bar_height = bin_value.div(30);
-    
-    var bottom = 0, 
-        top = bar_height,
-        left = Shade.div(bin_index, bin_count), 
-        right = Shade.div(bin_index.add(1), bin_count);
-
-    var lower_left  = Shade.vec(left, bottom);
-    var lower_right = Shade.vec(right, bottom);
-    var upper_left  = Shade.vec(left, top);
-    var upper_right = Shade.vec(right, top);
-    var vertex_map  = Shade.array([lower_left, upper_right, upper_left,
-                                   lower_left, lower_right, upper_right]);
-
-    points_batch = Facet.bake({
-        type: "triangles",
-        elements: vertex_index
-    }, {
-        color: Shade.Colors.shadetable.hcl.create(0, 50, bin_value.mul(3)).as_shade(),
-        position: Shade.vec(vertex_map.at(which_vertex).mul(2).sub(1), 0, 1)
+    points_batch = aligned_quad_batch({
+        elements: bin_count,
+        bottom: function(i) { return 0; },
+        top:    function(i) { return histo.bin_value(i).div(30); },
+        left:   function(i) { return i.div(bin_count); },
+        right:  function(i) { return i.add(1).div(bin_count); },
+        color: function(i, which_vertex) {
+            return Shade.Colors.shadetable.hcl.create(0, 50, histo.bin_value(i).mul(3)).as_shade();
+        }
     });
 }
 
