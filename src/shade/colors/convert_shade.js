@@ -1,3 +1,8 @@
+/*
+ * FIXME The API in Shade.Colors is a disgusting mess. My apologies.
+ * 
+ */
+
 (function() {
 
 function compose(g, f)
