@@ -3680,12 +3680,21 @@ Facet.init = function(canvas, opts)
     Facet._globals.display_callback = (opts.display || function() {});
 
     try {
-        if ("attributes" in opts)
+        if ("attributes" in opts) {
             gl = WebGLUtils.setupWebGL(canvas, opts.attributes);
-        else
+            var x = gl.getContextAttributes();
+            for (var key in opts.attributes) {
+                if (opts.attributes[key] !== x[key]) {
+                    throw ("requested attribute " + 
+                           key + ": " + opts.attributes[key] +
+                           " could not be satisfied");
+                }
+            }
+        } else
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
             throw "failed context creation";
+        
         if (opts.debugging) {
             var throwOnGLError = function(err, funcName, args) {
                 throw WebGLDebugUtils.glEnumToString(err) + 
