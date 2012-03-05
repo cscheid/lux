@@ -126,6 +126,7 @@ facet.js:					\
 	src/shade/bits/shift_left.js		\
 	src/shade/bits/shift_right.js		\
 	src/facet/marks/_begin.js		\
+	src/facet/marks/aligned_rects.js	\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\
 	src/facet/marks/globe.js		\
