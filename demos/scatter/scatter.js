@@ -38,9 +38,9 @@ function init_webgl()
     point_alpha    = S.uniform("float", 1.0);
 
     var species_color = S.Utils.choose(
-        [S.vec(1,0,0,point_alpha),
-         S.vec(0,1,0,point_alpha),
-         S.vec(0,0,1,point_alpha)])(data.species);
+        [S.vec(1, 0, 0, point_alpha),
+         S.vec(0, 1, 0, point_alpha),
+         S.vec(0, 0, 1, point_alpha)])(data.species);
 
     scatterplot_drawable = Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
@@ -49,7 +49,7 @@ function init_webgl()
         x_scale: S.Utils.fit(data.sepalLength),
         y_scale: S.Utils.fit(data.petalLength),
         fill_color: species_color,
-        stroke_color: S.mix(species_color, S.color("black"), 0.5), // mul(S.vec(0.5, 0.5, 0.5, 0.5)),
+        stroke_color: S.mix(species_color, S.color("black"), 0.5),
         stroke_width: stroke_width,
         point_diameter: point_diameter,
         mode: Facet.DrawingMode.over

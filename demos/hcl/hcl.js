@@ -75,7 +75,7 @@ $().ready(function () {
         luminance_uniform).as_shade(1);
     hcl_batch = Facet.bake(hcl_mesh, {
         mode: Facet.DrawingMode.over,
-        position: Shade.vec(hcl_mesh.vertex, 0, 1),
+        position: hcl_mesh.vertex,
         color: Shade.selection(out_of_gamut(color).and(show_out_of_gamut),
                                out_of_gamut_pattern(color),
                                color)

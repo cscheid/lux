@@ -160,7 +160,7 @@ function aligned_quad_batch(opts)
         elements: vertex_index,
         mode: opts.mode
     }, {
-        position: Shade.vec(vertex_map.at(vertex_in_primitive).mul(2).sub(1), 0, 1),
+        position: vertex_map.at(vertex_in_primitive).mul(2).sub(1),
         color: opts.color(primitive_index, index_in_vertex_primitive)
     });
 }

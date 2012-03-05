@@ -99,9 +99,9 @@ function init_webgl()
     };
 
     var species_color = S.Utils.choose(
-        [S.vec(1,0,0,point_alpha),
-         S.vec(0,1,0,point_alpha),
-         S.vec(0,0,1,point_alpha)])(data.species);
+        [S.vec(1, 0, 0, point_alpha),
+         S.vec(0, 1, 0, point_alpha),
+         S.vec(0, 0, 1, point_alpha)])(data.species);
 
     tour_batch = Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,

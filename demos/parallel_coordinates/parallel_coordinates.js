@@ -62,7 +62,7 @@ function create_parallel_coords_batch()
         type: "lines",
         elements: elements
     }),{
-        position: Shade.vec(x,y,0,1),
+        position: Shade.vec(x,y),
         color: Shade.mix(Shade.color("brown"),
                          Shade.color("steelblue"),
                          Shade.Utils.linear(0, table.n_rows, 0, 1)(table.row))

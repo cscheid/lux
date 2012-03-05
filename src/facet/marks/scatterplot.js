@@ -27,7 +27,7 @@ Facet.Marks.scatterplot = function(opts)
         elements = opts.elements;
     }
     return Facet.Marks.dots({
-        position: S.vec(position, 0, 1),
+        position: position,
         elements: elements,
         fill_color: opts.fill_color,
         stroke_color: opts.stroke_color,

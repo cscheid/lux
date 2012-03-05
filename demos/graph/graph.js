@@ -24,11 +24,11 @@ function make_graph_model(graph)
     };
 }
 
-function make_graph_drawable(model, center, zoom)
+function make_graph_batch(model, center, zoom)
 {
     var half_width  = Shade.div(720, zoom).div(2);
     var half_height = Shade.div(480, zoom).div(2);
-    var dots_drawable = Facet.Marks.scatterplot({
+    var dots_batch = Facet.Marks.scatterplot({
         elements: model.node_elements,
         x: model.position.at(0),
         y: model.position.at(1),
@@ -40,32 +40,30 @@ function make_graph_drawable(model, center, zoom)
         stroke_width: zoom
     });
 
-    var lines_drawable = Facet.bake({
+    var lines_batch = Facet.bake({
         type: 'lines',
         elements: model.edge_elements
     }, {
-        point_size: 10,
-        position: dots_drawable.gl_Position.add(Shade.vec(0,0,0.1,0)),
+        position: Shade.vec(dots_batch.gl_Position.swizzle("xy"), 0.1),
         color: Shade.vec(1, 1, 1, 0.1),
         mode: Facet.DrawingMode.over
     });
 
     return {
         draw: function() {
-            dots_drawable.draw();
-            // console.log("Will draw lines");
-            lines_drawable.draw();
+            dots_batch.draw();
+            lines_batch.draw();
         }
     };
 }
 
-var graph_drawable;
+var graph_batch;
 
 function draw_it()
 {
     gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-    if (graph_drawable) {
-        graph_drawable.draw();
+    if (graph_batch) {
+        graph_batch.draw();
     }
 }
 
@@ -80,7 +78,7 @@ $().ready(function () {
                    function (data) {
                        graph = data;
                        model = make_graph_model(graph);
-                       graph_drawable = make_graph_drawable(model, center, zoom);
+                       graph_batch = make_graph_batch(model, center, zoom);
                        gl.display();
                    });
     gl = Facet.init(canvas, {

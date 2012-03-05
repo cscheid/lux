@@ -29,7 +29,7 @@ function init_webgl()
 
     var square_model = Models.square();
     drawable = Facet.bake(square_model, {
-        position: S.vec(square_model.vertex, 0, 1),
+        position: square_model.vertex,
         color: S.texture2D(tex, square_model.tex_coord)
     });
 }
