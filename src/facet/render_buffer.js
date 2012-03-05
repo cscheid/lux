@@ -11,6 +11,17 @@ Facet.render_buffer = function(opts)
         wrap_s: ctx.CLAMP_TO_EDGE,
         wrap_t: ctx.CLAMP_TO_EDGE
     });
+
+    // Weird:
+    // http://www.khronos.org/registry/gles/specs/2.0/es_full_spec_2.0.25.pdf
+    // Page 118
+    // 
+    // Seems unenforced in my implementations of WebGL, even though 
+    // the WebGL spec defers to GLSL ES spec.
+    // 
+    // if (opts.width != opts.height)
+    //     throw "renderbuffers must be square (blame GLSL ES!)";
+
     rttFramebuffer.width  = opts.width;
     rttFramebuffer.height = opts.height;
 
