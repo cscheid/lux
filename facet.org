@@ -124,6 +124,9 @@ stricter type checking.
 ** Multiple WebGL canvases in a same page
 This means multiple contexts, and lots of things are going to break.
 ** TEXT SUPPORT
+** WebGL FBOs are square?!
+According to the spec, they must be square. But I can create them in
+WebGL without any trouble. I wonder if things will break.
 ** Mousewheel support
 *** Integrate https://github.com/brandonaaron/jquery-mousewheel ?
 * Other

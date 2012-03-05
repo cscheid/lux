@@ -4050,6 +4050,17 @@ Facet.render_buffer = function(opts)
         wrap_s: ctx.CLAMP_TO_EDGE,
         wrap_t: ctx.CLAMP_TO_EDGE
     });
+
+    // Weird:
+    // http://www.khronos.org/registry/gles/specs/2.0/es_full_spec_2.0.25.pdf
+    // Page 118
+    // 
+    // Seems unenforced in my implementations of WebGL, even though 
+    // the WebGL spec defers to GLSL ES spec.
+    // 
+    // if (opts.width != opts.height)
+    //     throw "renderbuffers must be square (blame GLSL ES!)";
+
     rttFramebuffer.width  = opts.width;
     rttFramebuffer.height = opts.height;
 
@@ -9581,7 +9592,7 @@ Shade.Bits.encode_float = Shade.make(function(val) {
     byte1 = sign.mul(128).add(remaining_bits_of_biased_exponent).div(255);
 
     return is_zero.selection(Shade.vec(0, 0, 0, 0),
-                             Shade.vec(byte1, byte2, byte3, byte4));
+                             Shade.vec(byte4, byte3, byte2, byte1));
 });
 /* Shade.Bits.extract_bits returns a certain bit substring of the
    original number using no bitwise operations, which are not available in WebGL.
