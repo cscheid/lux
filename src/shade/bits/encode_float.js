@@ -43,5 +43,5 @@ Shade.Bits.encode_float = Shade.make(function(val) {
     byte1 = sign.mul(128).add(remaining_bits_of_biased_exponent).div(255);
 
     return is_zero.selection(Shade.vec(0, 0, 0, 0),
-                             Shade.vec(byte1, byte2, byte3, byte4));
+                             Shade.vec(byte4, byte3, byte2, byte1));
 });

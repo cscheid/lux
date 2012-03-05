@@ -701,8 +701,10 @@ test("Shade Bits", function() {
             var v = Shade.Bits.encode_float(t).constant_value();
             var v1 = new ArrayBuffer(4);
             var v2 = new DataView(v1);
+
+            // this is flipped because RGBA is stored ABGR
             for (var i=0; i<4; ++i)
-                v2.setInt8(i, Math.round(v[i] * 255));
+                v2.setInt8(i, Math.round(v[3-i] * 255));
             return v2.getFloat32(0);
         }
         for (var i=0; i<10; ++i) {
