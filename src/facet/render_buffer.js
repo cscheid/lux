@@ -72,7 +72,7 @@ Facet.render_buffer = function(opts)
         make_screen_batch: function (with_texel_at_uv) {
             var sq = Facet.Models.square();
             return Facet.bake(sq, {
-                position: Shade.vec(sq.vertex.mul(2).sub(Shade.vec(1, 1)), 0, 1),
+                position: sq.vertex.mul(2).sub(1),
                 color: with_texel_at_uv(Shade.texture2D(rttTexture, sq.tex_coord), sq.tex_coord)
             });
         }

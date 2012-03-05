@@ -91,6 +91,15 @@ var largest_batch_id = 1;
 Facet.bake = function(model, appearance)
 {
     appearance = Shade.canonicalize_program_object(appearance);
+
+    if (appearance.gl_Position.type.equals(Shade.Types.vec2)) {
+        appearance.gl_Position = Shade.vec(appearance.gl_Position, 0, 1);
+    } else if (appearance.gl_Position.type.equals(Shade.Types.vec3)) {
+        appearance.gl_Position = Shade.vec(appearance.gl_Position, 1);
+    } else if (!appearance.gl_Position.type.equals(Shade.Types.vec4)) {
+        throw "position appearance attribute must be vec2, vec3 or vec4";
+    }
+
     var ctx = Facet._globals.ctx;
 
     var batch_id = Facet.fresh_pick_id();
@@ -234,7 +243,6 @@ Facet.bake = function(model, appearance)
     var draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
     var pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
     var unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
-
     var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {

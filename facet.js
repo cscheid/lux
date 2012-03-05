@@ -3252,6 +3252,15 @@ var largest_batch_id = 1;
 Facet.bake = function(model, appearance)
 {
     appearance = Shade.canonicalize_program_object(appearance);
+
+    if (appearance.gl_Position.type.equals(Shade.Types.vec2)) {
+        appearance.gl_Position = Shade.vec(appearance.gl_Position, 0, 1);
+    } else if (appearance.gl_Position.type.equals(Shade.Types.vec3)) {
+        appearance.gl_Position = Shade.vec(appearance.gl_Position, 1);
+    } else if (!appearance.gl_Position.type.equals(Shade.Types.vec4)) {
+        throw "position appearance attribute must be vec2, vec3 or vec4";
+    }
+
     var ctx = Facet._globals.ctx;
 
     var batch_id = Facet.fresh_pick_id();
@@ -3395,7 +3404,6 @@ Facet.bake = function(model, appearance)
     var draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
     var pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
     var unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
-
     var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {
@@ -4120,7 +4128,7 @@ Facet.render_buffer = function(opts)
         make_screen_batch: function (with_texel_at_uv) {
             var sq = Facet.Models.square();
             return Facet.bake(sq, {
-                position: Shade.vec(sq.vertex.mul(2).sub(Shade.vec(1, 1)), 0, 1),
+                position: sq.vertex.mul(2).sub(1),
                 color: with_texel_at_uv(Shade.texture2D(rttTexture, sq.tex_coord), sq.tex_coord)
             });
         }
@@ -4244,7 +4252,7 @@ Facet.Unprojector = {
             });
             depth_value = Shade.uniform("float");
             clear_batch = Facet.bake(model, {
-                position: Shade.vec(xy, depth_value, 1.0),
+                position: Shade.vec(xy, depth_value),
                 color: Shade.vec(1,1,1,1)
             });
         }
@@ -9196,6 +9204,11 @@ var white_point_uv = xyz_to_uv(white_point);
 Shade.Colors.jstable = table;
 
 })();
+/*
+ * FIXME The API in Shade.Colors is a disgusting mess. My apologies.
+ * 
+ */
+
 (function() {
 
 function compose(g, f)
