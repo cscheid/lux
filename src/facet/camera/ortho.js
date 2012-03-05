@@ -3,7 +3,7 @@ Facet.Camera.ortho = function(opts)
     opts = _.defaults(opts || {}, {
         aspect_ratio: 1,
         left: -1,
-        right: -1,
+        right: 1,
         bottom: -1,
         top: 1,
         near: -1,
