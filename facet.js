@@ -4483,6 +4483,31 @@ Facet.DrawingMode.standard = {
     }
 };
 Facet.Data = {};
+Facet.Data.table = function(obj) {
+    obj = _.defaults(obj || {}, {
+        number_columns: []
+    });
+    if (_.isUndefined(obj.data)) throw "data is a required field";
+    if (_.isUndefined(obj.data)) throw "columns is a required field";
+    function table() {
+    };
+    table.prototype = {
+        is_numeric_row_complete: function(row) {
+            for (var i=0; i<this.number_columns.length; ++i) {
+                var col = this.columns[i];
+                var val = row[col];
+                if (typeof val !== "number")
+                    return false;
+            }
+            return this.number_columns.length > 0;
+        }
+    };
+    var result = new table();
+    for (var key in obj) {
+        result[key] = obj[key];
+    }
+    return result;
+};
 // NB: Luminance float textures appear to clamp to [0,1] on Chrome 15
 // on Linux...
 
@@ -4493,6 +4518,8 @@ Facet.Data.texture_table = function(table)
     var elements = [];
     for (var row_ix = 0; row_ix < table.data.length; ++row_ix) {
         var row = table.data[row_ix];
+        if (!table.is_numeric_row_complete(row))
+            continue;
         for (var col_ix = 0; col_ix < table.number_columns.length; ++col_ix) {
             var col_name = table.columns[table.number_columns[col_ix]];
             var val = row[col_name];
@@ -4503,7 +4530,8 @@ Facet.Data.texture_table = function(table)
     }
 
     var table_ncols = table.number_columns.length;
-    var table_nrows = table.data.length;
+    // can't be table.data.length because not all rows are valid.
+    var table_nrows = elements.length / table.number_columns.length;
     var texture_width = 1;
 
     while (4 * texture_width * texture_width < elements.length) {
@@ -9745,6 +9773,38 @@ Facet.Marks.aligned_rects = function(opts)
         position: Shade.vec(vertex_map.at(vertex_in_primitive), 
                             opts.z(vertex_in_primitive)),
         color: opts.color(primitive_index, index_in_vertex_primitive)
+    });
+};
+Facet.Marks.lines = function(opts)
+{
+    opts = _.defaults(opts || {}, {
+        mode: Facet.DrawingMode.standard,
+        z: function() { return 0; }
+    });
+
+    if (_.isUndefined(opts.elements)) throw "elements is a required field";
+    if (_.isUndefined(opts.color))    throw "color is a required field";
+    if (_.isUndefined(opts.position) && 
+        (_.isUndefined(opts.x) || _.isUndefined(opts.y))) {
+        throw "either position or x and y are required fields";
+    }
+
+    var vertex_index        = Facet.attribute_buffer(_.range(opts.elements * 2), 1);
+    var primitive_index     = Shade.div(vertex_index, 2).floor();
+    var vertex_in_primitive = Shade.mod(vertex_index, 2).floor();
+
+    var position = opts.position 
+        ? opts.position(primitive_index, vertex_in_primitive)
+        : Shade.vec(opts.x(primitive_index, vertex_in_primitive),
+                    opts.y(primitive_index, vertex_in_primitive),
+                    opts.z(primitive_index, vertex_in_primitive));
+    return Facet.bake({
+        type: "lines",
+        elements: vertex_index,
+        mode: opts.mode
+    }, {
+        position: position,
+        color: opts.color(primitive_index, vertex_in_primitive)
     });
 };
 Facet.Marks.dots = function(opts)

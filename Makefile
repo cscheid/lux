@@ -60,6 +60,7 @@ facet.js:					\
 	src/facet/drawing_mode/over.js		\
 	src/facet/drawing_mode/standard.js	\
 	src/facet/data/_begin.js		\
+	src/facet/data/table.js			\
 	src/facet/data/texture_table.js		\
 	src/shade/_begin.js			\
 	src/shade/color.js			\
@@ -128,6 +129,7 @@ facet.js:					\
 	src/shade/bits/shift_right.js		\
 	src/facet/marks/_begin.js		\
 	src/facet/marks/aligned_rects.js	\
+	src/facet/marks/lines.js		\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\
 	src/facet/marks/globe.js		\
