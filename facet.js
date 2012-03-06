@@ -3511,82 +3511,68 @@ Facet.Camera.ortho = function(opts)
     opts = _.defaults(opts || {}, {
         aspect_ratio: 1,
         left: -1,
-        right: -1,
+        right: 1,
         bottom: -1,
         top: 1,
         near: -1,
         far: 1
     });
 
-    var left = opts.left;
-    var right = opts.right;
-    var bottom = opts.bottom;
-    var top = opts.top;
-    var screen_ratio = opts.aspect_ratio;
+    var viewport_ratio = opts.aspect_ratio;
+    var left, right, bottom, top;
     var near = opts.near;
     var far = opts.far;
 
-    var proj_uniform = Shade.uniform("mat4");
-
-    function update_projection()
-    {
-        var view_ratio = (right - left) / (top - bottom);
-        var l, r, t, b;
-        var half_width, half_height;
-        if (view_ratio > screen_ratio) {
-            // fat view rectangle, "letterbox" the projection
-            var cy = (top + bottom) / 2;
-            half_width = (right - left) / 2;
-            half_height = half_width / screen_ratio;
-            l = left;
-            r = right;
-            t = cy + half_height;
-            b = cy - half_height;
-        } else {
-            // tall view rectangle, "pillarbox" the projection
-            var cx = (right + left) / 2;
-            half_height = (top - bottom) / 2;
-            half_width = half_height * screen_ratio;
-            l = cx - half_width;
-            r = cx + half_width;
-            t = top;
-            b = bottom;
-        }
-        proj_uniform.set(mat4.ortho(l, r, b, t, near, far));
+    if (!_.isUndefined(opts.center) && !_.isUndefined(opts.zoom)) {
+        var viewport_width = Shade.div(1, opts.zoom);
+        left   = opts.center.at(0).sub(viewport_width);
+        right  = opts.center.at(0).add(viewport_width);
+        bottom = opts.center.at(1).sub(viewport_width);
+        top    = opts.center.at(1).add(viewport_width);
+    } else {
+        left = opts.left;
+        right = opts.right;
+        bottom = opts.bottom;
+        top = opts.top;
     }
 
-    update_projection();
+    function letterbox_projection() {
+        var cy = Shade.add(top, bottom).div(2);
+        var half_width = Shade.sub(right, left).div(2);
+        var half_height = half_width.div(viewport_ratio);
+        var l = left;
+        var r = right;
+        var t = cy.add(half_height);
+        var b = cy.sub(half_height);
+        return Shade.ortho(l, r, b, t, near, far);
+    }
+
+    function pillarbox_projection() {
+        var cx = Shade.add(right, left).div(2);
+        var half_height = Shade.sub(top, bottom).div(2);
+        var half_width = half_height.mul(viewport_ratio);
+        var l = cx.sub(half_width);
+        var r = cx.add(half_width);
+        var t = top;
+        var b = bottom;
+        return Shade.ortho(l, r, b, t, near, far);
+    }
+
+    var view_ratio = Shade.sub(right, left).div(Shade.sub(top, bottom));
+    
+    var m = view_ratio.gt(viewport_ratio)
+        .selection(letterbox_projection(),
+                   pillarbox_projection());
 
     return {
-        set_aspect_ratio: function(new_aspect_ratio) {
-            screen_ratio = new_aspect_ratio;
-            update_projection();
-        },
-        set_bounds: function(opts) {
-            opts = _.defaults(opts, {
-                left: -1,
-                right: 1,
-                bottom: -1,
-                top: 1,
-                near: -1,
-                far: 1
-            });
-            left = opts.left;
-            right = opts.right;
-            bottom = opts.bottom;
-            top = opts.top;
-            near = opts.near;
-            far = opts.far;
-            update_projection();
-        },
-        project: function(model_vertex) {
+        project: function (model_vertex) {
             var t = model_vertex.type;
             if (t.equals(Shade.Types.vec2))
-                return proj_uniform.mul(Shade.vec(model_vertex, 0, 1));
+                return m.mul(Shade.vec(model_vertex, 0, 1));
             else if (t.equals(Shade.Types.vec3))
-                return proj_uniform.mul(Shade.vec(model_vertex, 1));
+                return m.mul(Shade.vec(model_vertex, 1));
             else if (t.equals(Shade.Types.vec4))
-                return proj_uniform.mul(model_vertex);
+                return m.mul(model_vertex);
             else
                 throw "expected vec, got " + t.repr();
         }
@@ -5863,6 +5849,8 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             else
                 throw this.type.repr() + " is an atomic type, got this: " + i;
         }
+        // FIXME TERRIBLE IDEA, should throw and
+        // force objects to define elements.
         return this.at(i);
     },
     compile: function(ctx) {
@@ -8603,6 +8591,11 @@ Shade.selection = function(condition, if_true, if_false)
                         this.parents[2].is_constant());
             }
         },
+        element: function(i) {
+            return Shade.selection(this.parents[0],
+                                   this.parents[1].element(i),
+                                   this.parents[2].element(i));
+        },
         element_constant_value: function(i) {
             if (!this.parents[0].is_constant()) {
                 // This only gets called when this.is_constant() holds, so
@@ -8686,6 +8679,18 @@ Shade.translation = function(t)
                      Shade.vec(0,0,1,0),
                      Shade.vec(t, 1));
 };
+Shade.ortho = Shade.make(function(left, right, bottom, top, near, far) {
+    var rl = right.sub(left);
+    var tb = top.sub(bottom);
+    var fn = far.sub(near);
+    return Shade.mat(Shade.vec(Shade.div(2, rl), 0, 0, 0),
+                     Shade.vec(0, Shade.div(2, tb), 0, 0),
+                     Shade.vec(0, 0, Shade.div(-2, fn), 0),
+                     Shade.vec(Shade.add(right, left).neg().div(rl),
+                               Shade.add(top, bottom).neg().div(tb),
+                               Shade.add(far, near).neg().div(fn),
+                               1));
+});
 // FIXME This should be Shade.look_at = Shade.make(function() ...
 // but before I do that I have to make sure that at this point
 // in the source Shade.make actually exists.
