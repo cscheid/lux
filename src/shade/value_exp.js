@@ -28,6 +28,8 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             else
                 throw this.type.repr() + " is an atomic type, got this: " + i;
         }
+        // FIXME TERRIBLE IDEA, should throw and
+        // force objects to define elements.
         return this.at(i);
     },
     compile: function(ctx) {

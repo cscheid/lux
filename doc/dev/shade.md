@@ -867,6 +867,9 @@ values, to allow short-circuit optimizations:
 #### rotation
 #### round_dot
 #### selection
+Val[`selection(x, when_true, when_false)`] = case Val[`x`] of
+    - bool(true) -> Val[`when_true`]
+    - bool(false) -> Val[`when_false`]
 #### sign
 #### sin
 #### sinh
@@ -884,7 +887,9 @@ values, to allow short-circuit optimizations:
 
 
 
-### Element constant semantics
+### Element semantics
+
+Elt[`expression`, index] : (S, Z) -> S
 
 #### abs
 #### acos
@@ -952,88 +957,7 @@ values, to allow short-circuit optimizations:
 #### rotation
 #### round_dot
 #### selection
-#### sign
-#### sin
-#### smoothstep
-#### sqrt
-#### step
-#### sub
-#### swizzle
-#### tan
-#### texture2D
-#### translation
-#### uniform
-#### vec
-#### xor
-
-### Element value semantics
-
-#### abs
-#### acos
-#### add
-#### all
-#### and
-#### any
-#### array
-#### asin
-#### atan
-#### attribute
-#### ceil
-#### clamp
-#### cos
-#### cross
-#### degrees
-#### discard_if
-#### distance
-#### div
-#### dot
-#### eq
-#### equal
-#### exp
-#### exp2
-#### faceforward
-#### floor
-#### fract
-#### fragCoord
-#### ge
-#### gl_fog
-#### gl_light
-#### greaterThan
-#### greaterThanEqual
-#### gt
-#### id
-#### inversesqrt
-#### le
-#### length
-#### lessThan
-#### lessThanEqual
-#### log
-#### log2
-#### look_at
-#### lt
-#### mat
-#### mat3
-#### matrixCompMult
-#### max
-#### min
-#### mix
-#### mod
-#### mul
-#### ne
-#### neg
-#### normalize
-#### not
-#### notEqual
-#### or
-#### per_vertex
-#### pointCoord
-#### pow
-#### radians
-#### reflect
-#### refract
-#### rotation
-#### round_dot
-#### selection
+Element[`selection(x, when_true, when_false)`, index] = `selection(x, y, z)`, where x == Element[`when_true`, index], y = Element[`when_false`, index]
 #### sign
 #### sin
 #### smoothstep

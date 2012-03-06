@@ -54,6 +54,11 @@ Shade.selection = function(condition, if_true, if_false)
                         this.parents[2].is_constant());
             }
         },
+        element: function(i) {
+            return Shade.selection(this.parents[0],
+                                   this.parents[1].element(i),
+                                   this.parents[2].element(i));
+        },
         element_constant_value: function(i) {
             if (!this.parents[0].is_constant()) {
                 // This only gets called when this.is_constant() holds, so
