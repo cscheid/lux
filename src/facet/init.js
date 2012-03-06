@@ -94,6 +94,12 @@ Facet.init = function(canvas, opts)
         Facet._globals.display_callback();
     };
     Facet.set_context(gl);
+    gl.resize = function(width, height) {
+        this.viewportWidth = width;
+        this.viewportHeight = height;
+        this.canvas.width = width;
+        this.canvas.height = height;
+    };
 
     return gl;
 };
