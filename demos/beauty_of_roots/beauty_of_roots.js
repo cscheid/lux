@@ -46,12 +46,12 @@ function change_pointweight()
 }
 
 function update_camera() {
-    var hw = 1.0/zoom.get();
-    var c = center.get();
-    camera.set_bounds({ left: c[0] - hw,
-                        right: c[0] + hw,
-                        bottom: c[1] - hw,
-                        top: c[1] + hw });
+    // var hw = 1.0/zoom.get();
+    // var c = center.get();
+    // camera.set_bounds({ left: c[0] - hw,
+    //                     right: c[0] + hw,
+    //                     bottom: c[1] - hw,
+    //                     top: c[1] + hw });
     gl.display();
 };
 
@@ -135,8 +135,12 @@ $().ready(function() {
         update_camera();
     });
 
+    var viewport_width = Shade.div(1,zoom);
     camera = Facet.Camera.ortho({
-        left: -1.5, right: 1.5, bottom: -1.5, top: 1.5,
+        left:   center.at(0).sub(viewport_width), // -1.5, 
+        right:  center.at(0).add(viewport_width), // 1.5, 
+        bottom: center.at(1).sub(viewport_width), // -1.5, 
+        top:    center.at(1).add(viewport_width), // 1.5,
         aspect_ratio: width/height
     });
 
@@ -158,7 +162,7 @@ $().ready(function() {
                         y: y,
                         type: "points"
                     });
-                    var pt = Shade.vec(points_model.x, points_model.y, 0, 1);
+                    var pt = Shade.vec(points_model.x, points_model.y);
                     points_batch = Facet.bake(points_model, {
                         position: camera.project(pt),
                         mode: Facet.DrawingMode.additive,

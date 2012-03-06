@@ -111,6 +111,7 @@ facet.js:					\
 	src/shade/selection.js			\
 	src/shade/rotation.js			\
 	src/shade/translation.js		\
+	src/shade/ortho.js			\
 	src/shade/look_at.js			\
 	src/shade/discard.js			\
 	src/shade/id.js				\
