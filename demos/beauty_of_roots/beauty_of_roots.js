@@ -3,6 +3,7 @@ var points_batch;
 var rb, rb_batch;
 var pointsize, pointweight;
 var camera, center, zoom;
+var aspect_ratio;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -13,7 +14,6 @@ function get_buffers(urls, alldone)
 
     function handler(buffer, url) {
         obj[url] = Facet.attribute_buffer(new Float32Array(buffer), 1);
-        console.log(obj[url].array.length);
         done(obj);
     };
     _.each(urls, function(url) {
@@ -75,13 +75,22 @@ function init_gui()
             update_camera();
         }
     });
+    $(window).resize(function(eventObject) {
+        if (!rb)
+            return;
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        aspect_ratio.set(w/h);
+        gl.resize(w, h);
+        rb.resize(w, h);
+        gl.display();
+    });
 }
 
 $().ready(function() {
     init_gui();
 
     $("#greeting").click(function() {
-        console.log("Hello!?");
         $("#greeting").fadeOut(500);
     });
 
@@ -129,10 +138,11 @@ $().ready(function() {
         update_camera();
     });
 
+    aspect_ratio = Shade.uniform("float", width/height);
     camera = Facet.Camera.ortho({
         center: center,
         zoom: zoom,
-        aspect_ratio: width/height
+        aspect_ratio: aspect_ratio
     });
 
     rb = Facet.render_buffer({ width: width, height: height, type: gl.FLOAT });
