@@ -46,12 +46,6 @@ function change_pointweight()
 }
 
 function update_camera() {
-    // var hw = 1.0/zoom.get();
-    // var c = center.get();
-    // camera.set_bounds({ left: c[0] - hw,
-    //                     right: c[0] + hw,
-    //                     bottom: c[1] - hw,
-    //                     top: c[1] + hw });
     gl.display();
 };
 
@@ -135,12 +129,9 @@ $().ready(function() {
         update_camera();
     });
 
-    var viewport_width = Shade.div(1,zoom);
     camera = Facet.Camera.ortho({
-        left:   center.at(0).sub(viewport_width), // -1.5, 
-        right:  center.at(0).add(viewport_width), // 1.5, 
-        bottom: center.at(1).sub(viewport_width), // -1.5, 
-        top:    center.at(1).add(viewport_width), // 1.5,
+        center: center,
+        zoom: zoom,
         aspect_ratio: width/height
     });
 

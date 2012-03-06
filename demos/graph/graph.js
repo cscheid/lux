@@ -1,4 +1,5 @@
 var gl;
+var height = 480;
 
 function make_graph_model(graph)
 {
@@ -26,18 +27,19 @@ function make_graph_model(graph)
 
 function make_graph_batch(model, center, zoom)
 {
-    var half_width  = Shade.div(720, zoom).div(2);
-    var half_height = Shade.div(480, zoom).div(2);
-    var dots_batch = Facet.Marks.scatterplot({
+    var camera = Facet.Camera.ortho({
+        center: center,
+        zoom: zoom,
+        aspect_ratio: 720/480
+    });
+
+    var dots_batch = Facet.Marks.dots({
         elements: model.node_elements,
-        x: model.position.at(0),
-        y: model.position.at(1),
-        x_scale: Shade.Utils.linear(center.at(0).sub(half_width), center.at(0).add(half_width), 0, 1),
-        y_scale: Shade.Utils.linear(center.at(1).sub(half_height), center.at(1).add(half_height), 0, 1),
-        stroke_color: Shade.color("slategray"),
+        position: camera.project(model.position),
+        stroke_color: Shade.color("black"),
         fill_color: Shade.color("slategray", 0.8),
-        point_diameter: zoom.mul(10),
-        stroke_width: zoom
+        point_diameter: zoom.mul(2000),
+        stroke_width: zoom.mul(200)
     });
 
     var lines_batch = Facet.bake({
@@ -71,10 +73,10 @@ $().ready(function () {
     var canvas = document.getElementById("webgl");
     var model;
     var graph;
-    var center = Shade.uniform("vec2", vec.make([250, 250]));
-    var zoom = Shade.uniform("float", 1);
+    var center = Shade.uniform("vec2", vec.make([450, 450]));
+    var zoom = Shade.uniform("float", 1/450);
     var prev_mouse_pos;
-    jQuery.getJSON("graph_extras/USAir97.graph",
+    jQuery.getJSON("graph_extras/1138_bus.graph",
                    function (data) {
                        graph = data;
                        model = make_graph_model(graph);
@@ -93,8 +95,8 @@ $().ready(function () {
             prev_mouse_pos = [event.offsetX, event.offsetY];
         }, mousemove: function(event) {
             if ((event.which & 1) && !event.shiftKey) {
-                var deltaX =  (event.offsetX - prev_mouse_pos[0]) / zoom.get();
-                var deltaY = -(event.offsetY - prev_mouse_pos[1]) / zoom.get();
+                var deltaX =  (event.offsetX - prev_mouse_pos[0]) / (height * zoom.get() / 2);
+                var deltaY = -(event.offsetY - prev_mouse_pos[1]) / (height * zoom.get() / 2);
                 var delta = vec.make([deltaX, deltaY]);
                 center.set(vec.minus(center.get(), delta));
             }
