@@ -3,6 +3,7 @@ var points_batch;
 var rb, rb_batch;
 var pointsize, pointweight;
 var camera, center, zoom;
+var aspect_ratio;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -13,7 +14,6 @@ function get_buffers(urls, alldone)
 
     function handler(buffer, url) {
         obj[url] = Facet.attribute_buffer(new Float32Array(buffer), 1);
-        console.log(obj[url].array.length);
         done(obj);
     };
     _.each(urls, function(url) {
@@ -46,12 +46,6 @@ function change_pointweight()
 }
 
 function update_camera() {
-    var hw = 1.0/zoom.get();
-    var c = center.get();
-    camera.set_bounds({ left: c[0] - hw,
-                        right: c[0] + hw,
-                        bottom: c[1] - hw,
-                        top: c[1] + hw });
     gl.display();
 };
 
@@ -81,13 +75,22 @@ function init_gui()
             update_camera();
         }
     });
+    $(window).resize(function(eventObject) {
+        if (!rb)
+            return;
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        aspect_ratio.set(w/h);
+        gl.resize(w, h);
+        rb.resize(w, h);
+        gl.display();
+    });
 }
 
 $().ready(function() {
     init_gui();
 
     $("#greeting").click(function() {
-        console.log("Hello!?");
         $("#greeting").fadeOut(500);
     });
 
@@ -135,9 +138,11 @@ $().ready(function() {
         update_camera();
     });
 
+    aspect_ratio = Shade.uniform("float", width/height);
     camera = Facet.Camera.ortho({
-        left: -1.5, right: 1.5, bottom: -1.5, top: 1.5,
-        aspect_ratio: width/height
+        center: center,
+        zoom: zoom,
+        aspect_ratio: aspect_ratio
     });
 
     rb = Facet.render_buffer({ width: width, height: height, type: gl.FLOAT });
@@ -158,20 +163,19 @@ $().ready(function() {
                         y: y,
                         type: "points"
                     });
-                    var pt = Shade.vec(points_model.x, points_model.y, 0, 1);
+                    var pt = Shade.vec(points_model.x, points_model.y);
                     points_batch = Facet.bake(points_model, {
                         position: camera.project(pt),
                         mode: Facet.DrawingMode.additive,
 
-                        color: Shade.round_dot(Shade.vec(0.1,0,0,1)),
+                        //color: Shade.round_dot(Shade.vec(0.1,0,0,1)),
                         color: Shade.pointCoord().sub(Shade.vec(0.5, 0.5))
                                     .length().pow(2).neg()
                                     .mul(20)
                                     .exp()
                                     .mul(pointweight)
                                     .mul(zoom.pow(0.33))
-                                    .mul(Shade.color("white"))
-                        ,
+                                    .mul(Shade.color("white")),
                         gl_PointSize: zoom.pow(0.5).mul(pointsize)
                     });
                     $("#loading").fadeOut(500);

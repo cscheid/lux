@@ -3252,6 +3252,15 @@ var largest_batch_id = 1;
 Facet.bake = function(model, appearance)
 {
     appearance = Shade.canonicalize_program_object(appearance);
+
+    if (appearance.gl_Position.type.equals(Shade.Types.vec2)) {
+        appearance.gl_Position = Shade.vec(appearance.gl_Position, 0, 1);
+    } else if (appearance.gl_Position.type.equals(Shade.Types.vec3)) {
+        appearance.gl_Position = Shade.vec(appearance.gl_Position, 1);
+    } else if (!appearance.gl_Position.type.equals(Shade.Types.vec4)) {
+        throw "position appearance attribute must be vec2, vec3 or vec4";
+    }
+
     var ctx = Facet._globals.ctx;
 
     var batch_id = Facet.fresh_pick_id();
@@ -3395,7 +3404,6 @@ Facet.bake = function(model, appearance)
     var draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
     var pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
     var unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
-
     var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {
@@ -3503,82 +3511,68 @@ Facet.Camera.ortho = function(opts)
     opts = _.defaults(opts || {}, {
         aspect_ratio: 1,
         left: -1,
-        right: -1,
+        right: 1,
         bottom: -1,
         top: 1,
         near: -1,
         far: 1
     });
 
-    var left = opts.left;
-    var right = opts.right;
-    var bottom = opts.bottom;
-    var top = opts.top;
-    var screen_ratio = opts.aspect_ratio;
+    var viewport_ratio = opts.aspect_ratio;
+    var left, right, bottom, top;
     var near = opts.near;
     var far = opts.far;
 
-    var proj_uniform = Shade.uniform("mat4");
-
-    function update_projection()
-    {
-        var view_ratio = (right - left) / (top - bottom);
-        var l, r, t, b;
-        var half_width, half_height;
-        if (view_ratio > screen_ratio) {
-            // fat view rectangle, "letterbox" the projection
-            var cy = (top + bottom) / 2;
-            half_width = (right - left) / 2;
-            half_height = half_width / screen_ratio;
-            l = left;
-            r = right;
-            t = cy + half_height;
-            b = cy - half_height;
-        } else {
-            // tall view rectangle, "pillarbox" the projection
-            var cx = (right + left) / 2;
-            half_height = (top - bottom) / 2;
-            half_width = half_height * screen_ratio;
-            l = cx - half_width;
-            r = cx + half_width;
-            t = top;
-            b = bottom;
-        }
-        proj_uniform.set(mat4.ortho(l, r, b, t, near, far));
+    if (!_.isUndefined(opts.center) && !_.isUndefined(opts.zoom)) {
+        var viewport_width = Shade.div(1, opts.zoom);
+        left   = opts.center.at(0).sub(viewport_width);
+        right  = opts.center.at(0).add(viewport_width);
+        bottom = opts.center.at(1).sub(viewport_width);
+        top    = opts.center.at(1).add(viewport_width);
+    } else {
+        left = opts.left;
+        right = opts.right;
+        bottom = opts.bottom;
+        top = opts.top;
     }
 
-    update_projection();
+    function letterbox_projection() {
+        var cy = Shade.add(top, bottom).div(2);
+        var half_width = Shade.sub(right, left).div(2);
+        var half_height = half_width.div(viewport_ratio);
+        var l = left;
+        var r = right;
+        var t = cy.add(half_height);
+        var b = cy.sub(half_height);
+        return Shade.ortho(l, r, b, t, near, far);
+    }
+
+    function pillarbox_projection() {
+        var cx = Shade.add(right, left).div(2);
+        var half_height = Shade.sub(top, bottom).div(2);
+        var half_width = half_height.mul(viewport_ratio);
+        var l = cx.sub(half_width);
+        var r = cx.add(half_width);
+        var t = top;
+        var b = bottom;
+        return Shade.ortho(l, r, b, t, near, far);
+    }
+
+    var view_ratio = Shade.sub(right, left).div(Shade.sub(top, bottom));
+    
+    var m = view_ratio.gt(viewport_ratio)
+        .selection(letterbox_projection(),
+                   pillarbox_projection());
 
     return {
-        set_aspect_ratio: function(new_aspect_ratio) {
-            screen_ratio = new_aspect_ratio;
-            update_projection();
-        },
-        set_bounds: function(opts) {
-            opts = _.defaults(opts, {
-                left: -1,
-                right: 1,
-                bottom: -1,
-                top: 1,
-                near: -1,
-                far: 1
-            });
-            left = opts.left;
-            right = opts.right;
-            bottom = opts.bottom;
-            top = opts.top;
-            near = opts.near;
-            far = opts.far;
-            update_projection();
-        },
-        project: function(model_vertex) {
+        project: function (model_vertex) {
             var t = model_vertex.type;
             if (t.equals(Shade.Types.vec2))
-                return proj_uniform.mul(Shade.vec(model_vertex, 0, 1));
+                return m.mul(Shade.vec(model_vertex, 0, 1));
             else if (t.equals(Shade.Types.vec3))
-                return proj_uniform.mul(Shade.vec(model_vertex, 1));
+                return m.mul(Shade.vec(model_vertex, 1));
             else if (t.equals(Shade.Types.vec4))
-                return proj_uniform.mul(model_vertex);
+                return m.mul(model_vertex);
             else
                 throw "expected vec, got " + t.repr();
         }
@@ -3680,12 +3674,21 @@ Facet.init = function(canvas, opts)
     Facet._globals.display_callback = (opts.display || function() {});
 
     try {
-        if ("attributes" in opts)
+        if ("attributes" in opts) {
             gl = WebGLUtils.setupWebGL(canvas, opts.attributes);
-        else
+            var x = gl.getContextAttributes();
+            for (var key in opts.attributes) {
+                if (opts.attributes[key] !== x[key]) {
+                    throw ("requested attribute " + 
+                           key + ": " + opts.attributes[key] +
+                           " could not be satisfied");
+                }
+            }
+        } else
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
             throw "failed context creation";
+        
         if (opts.debugging) {
             var throwOnGLError = function(err, funcName, args) {
                 throw WebGLDebugUtils.glEnumToString(err) + 
@@ -3731,6 +3734,12 @@ Facet.init = function(canvas, opts)
         Facet._globals.display_callback();
     };
     Facet.set_context(gl);
+    gl.resize = function(width, height) {
+        this.viewportWidth = width;
+        this.viewportHeight = height;
+        this.canvas.width = width;
+        this.canvas.height = height;
+    };
 
     return gl;
 };
@@ -4040,8 +4049,7 @@ Facet.program = function(vs_src, fs_src)
 Facet.render_buffer = function(opts)
 {
     var ctx = Facet._globals.ctx;
-    var rttFramebuffer = ctx.createFramebuffer();
-    ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
+    var frame_buffer = ctx.createFramebuffer();
     opts = _.defaults(opts || {}, {
         width: 512,
         height: 512,
@@ -4061,61 +4069,69 @@ Facet.render_buffer = function(opts)
     // if (opts.width != opts.height)
     //     throw "renderbuffers must be square (blame GLSL ES!)";
 
-    rttFramebuffer.width  = opts.width;
-    rttFramebuffer.height = opts.height;
-
     var rttTexture = Facet.texture(opts);
 
-    var renderbuffer = ctx.createRenderbuffer();
-    ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderbuffer);
-    ctx.renderbufferStorage(ctx.RENDERBUFFER, ctx.DEPTH_COMPONENT16, rttFramebuffer.width, rttFramebuffer.height);
+    frame_buffer.init = function(width, height) {
+        var ctx = Facet._globals.ctx;
+        this.width  = opts.width;
+        this.height = opts.height;
+        ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
+        var renderbuffer = ctx.createRenderbuffer();
+        ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderbuffer);
+        ctx.renderbufferStorage(ctx.RENDERBUFFER, ctx.DEPTH_COMPONENT16, this.width, this.height);
 
-    ctx.framebufferTexture2D(ctx.FRAMEBUFFER, ctx.COLOR_ATTACHMENT0, ctx.TEXTURE_2D, rttTexture, 0);
-    ctx.framebufferRenderbuffer(ctx.FRAMEBUFFER, ctx.DEPTH_ATTACHMENT, ctx.RENDERBUFFER, renderbuffer);
-
-    var status = ctx.checkFramebufferStatus(ctx.FRAMEBUFFER);
-    switch (status) {
-        case ctx.FRAMEBUFFER_COMPLETE:
-            break;
-        case ctx.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
-        case ctx.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
-        case ctx.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
-        case ctx.FRAMEBUFFER_UNSUPPORTED:
-            throw "incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED";
-        default:
-            throw "incomplete framebuffer: " + status;
-    }
-
-    ctx.bindTexture(ctx.TEXTURE_2D, null);
-    ctx.bindRenderbuffer(ctx.RENDERBUFFER, null);
-    ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
-
-    return {
-        _shade_type: 'render_buffer',
-        texture: rttTexture,
-        width: rttFramebuffer.width,
-        height: rttFramebuffer.height,
-        frame_buffer: rttFramebuffer,
-        with_bound_buffer: function (what) {
-            try {
-                ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
-                ctx.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
-                return what();
-            } finally {
-                ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+        ctx.framebufferTexture2D(ctx.FRAMEBUFFER, ctx.COLOR_ATTACHMENT0, ctx.TEXTURE_2D, rttTexture, 0);
+        ctx.framebufferRenderbuffer(ctx.FRAMEBUFFER, ctx.DEPTH_ATTACHMENT, ctx.RENDERBUFFER, renderbuffer);
+        var status = ctx.checkFramebufferStatus(ctx.FRAMEBUFFER);
+        try {
+            switch (status) {
+            case ctx.FRAMEBUFFER_COMPLETE:
+                break;
+            case ctx.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+            case ctx.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+            case ctx.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
+            case ctx.FRAMEBUFFER_UNSUPPORTED:
+                throw "incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED";
+            default:
+                throw "incomplete framebuffer: " + status;
             }
-        },
-        make_screen_batch: function (with_texel_at_uv) {
-            var sq = Facet.Models.square();
-            return Facet.bake(sq, {
-                position: Shade.vec(sq.vertex.mul(2).sub(Shade.vec(1, 1)), 0, 1),
-                color: with_texel_at_uv(Shade.texture2D(rttTexture, sq.tex_coord), sq.tex_coord)
-            });
+        } finally {
+            ctx.bindTexture(ctx.TEXTURE_2D, null);
+            ctx.bindRenderbuffer(ctx.RENDERBUFFER, null);
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
+
+    frame_buffer.init(opts.width, opts.height);
+    frame_buffer._shade_type = 'render_buffer';
+    frame_buffer.texture = rttTexture;
+    frame_buffer.resize = function(width, height) {
+        opts.width = width;
+        opts.height = height;
+        this.texture.init(opts);
+        this.init(width, height);
+    };
+    frame_buffer.with_bound_buffer = function(what) {
+        var ctx = Facet._globals.ctx;
+        try {
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
+            ctx.viewport(0, 0, this.width, this.height);
+            return what();
+        } finally {
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+        }
+    };
+    frame_buffer.make_screen_batch = function(with_texel_at_uv) {
+        var sq = Facet.Models.square();
+        return Facet.bake(sq, {
+            position: sq.vertex.mul(2).sub(1),
+            color: with_texel_at_uv(Shade.texture2D(this.texture, sq.tex_coord), sq.tex_coord)
+        });
+    };
+    return frame_buffer;
 };
 Facet.set_context = function(the_ctx)
 {
@@ -4129,78 +4145,89 @@ Facet.set_context = function(the_ctx)
 Facet.texture = function(opts)
 {
     var ctx = Facet._globals.ctx;
-    opts = _.defaults(opts, {
-        onload: function() {},
-        mipmaps: false,
-        mag_filter: ctx.LINEAR,
-        min_filter: ctx.LINEAR,
-        wrap_s: ctx.CLAMP_TO_EDGE,
-        wrap_t: ctx.CLAMP_TO_EDGE,
-        format: ctx.RGBA,
-        type: ctx.UNSIGNED_BYTE
-    });
-
-    function handler(texture) {
-        ctx.bindTexture(ctx.TEXTURE_2D, texture);
-        ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-        if (texture.image) {
-            ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
-            ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, 
-                            ctx.BROWSER_DEFAULT_WEBGL);
-            ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format, opts.format,
-                           opts.type, texture.image);
-        } else {
-            ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, false);
-            ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, ctx.NONE);
-            ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
-                           texture.width, texture.height,
-                           0, opts.format, opts.type, texture.buffer);
-        }
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
-        if (opts.mipmaps)
-            ctx.generateMipmap(ctx.TEXTURE_2D);
-        ctx.bindTexture(ctx.TEXTURE_2D, null);
-        opts.onload(texture);
-        // to ensure that all textures are bound correctly,
-        // we unload the current batch, forcing all uniforms to be re-evaluated.
-        Facet.unload_batch();
-    }
-
     var texture = ctx.createTexture();
     texture._shade_type = 'texture';
-    texture.width = opts.width;
-    texture.height = opts.height;
-    if (opts.src) {
-        var image = new Image();
-        image.onload = function() {
-            texture.width = image.width;
-            texture.height = image.height;
-            handler(texture);
-        };
-        texture.image = image;
-        if (opts.crossOrigin)
-            image.crossOrigin = opts.crossOrigin; // CORS support
-        image.src = opts.src;
-    } else if (opts.img) {
-        texture.image = opts.img;
-        if (texture.image.isComplete) {
-            texture.width = texture.image.width;
-            texture.height = texture.image.height;
-            handler(texture);
-        } else {
-            texture.image.onload = function() {
-                texture.width = texture.image.width;
-                texture.height = texture.image.height;
-                handler(texture);
-            };
+
+    texture.init = function(opts) {
+        var ctx = Facet._globals.ctx;
+        opts = _.defaults(opts, {
+            onload: function() {},
+            mipmaps: false,
+            mag_filter: ctx.LINEAR,
+            min_filter: ctx.LINEAR,
+            wrap_s: ctx.CLAMP_TO_EDGE,
+            wrap_t: ctx.CLAMP_TO_EDGE,
+            format: ctx.RGBA,
+            type: ctx.UNSIGNED_BYTE
+        });
+        this.width = opts.width;
+        this.height = opts.height;
+
+        var that = this;
+        function handler() {
+            var ctx = Facet._globals.ctx;
+            ctx.bindTexture(ctx.TEXTURE_2D, that);
+            ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+            if (that.image) {
+                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+                ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, 
+                                ctx.BROWSER_DEFAULT_WEBGL);
+                ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format, opts.format,
+                               opts.type, that.image);
+            } else {
+                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, false);
+                ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, ctx.NONE);
+                ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
+                               that.width, that.height,
+                               0, opts.format, opts.type, that.buffer);
+            }
+            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
+            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
+            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
+            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
+            if (opts.mipmaps)
+                ctx.generateMipmap(ctx.TEXTURE_2D);
+            ctx.bindTexture(ctx.TEXTURE_2D, null);
+            opts.onload(that);
+            // to ensure that all textures are bound correctly,
+            // we unload the current batch, forcing all uniforms to be re-evaluated.
+            Facet.unload_batch();
         }
-    } else {
-        texture.buffer = opts.buffer || null;
-        handler(texture);        
-    }
+
+        delete this.buffer;
+        delete this.image;
+
+        if (opts.src) {
+            var image = new Image();
+            image.onload = function() {
+                that.width = image.width;
+                that.height = image.height;
+                handler();
+            };
+            this.image = image;
+            if (opts.crossOrigin)
+                image.crossOrigin = opts.crossOrigin; // CORS support
+            image.src = opts.src;
+        } else if (opts.img) {
+            this.image = opts.img;
+            if (this.image.isComplete) {
+                this.width = this.image.width;
+                this.height = this.image.height;
+                handler();
+            } else {
+                this.image.onload = function() {
+                    that.width = that.image.width;
+                    that.height = that.image.height;
+                    handler();
+                };
+            }
+        } else {
+            this.buffer = opts.buffer || null;
+            handler();        
+        }
+    };
+    texture.init(opts);
+
     return texture;
 };
 (function() {
@@ -4235,7 +4262,7 @@ Facet.Unprojector = {
             });
             depth_value = Shade.uniform("float");
             clear_batch = Facet.bake(model, {
-                position: Shade.vec(xy, depth_value, 1.0),
+                position: Shade.vec(xy, depth_value),
                 color: Shade.vec(1,1,1,1)
             });
         }
@@ -4456,6 +4483,31 @@ Facet.DrawingMode.standard = {
     }
 };
 Facet.Data = {};
+Facet.Data.table = function(obj) {
+    obj = _.defaults(obj || {}, {
+        number_columns: []
+    });
+    if (_.isUndefined(obj.data)) throw "data is a required field";
+    if (_.isUndefined(obj.data)) throw "columns is a required field";
+    function table() {
+    };
+    table.prototype = {
+        is_numeric_row_complete: function(row) {
+            for (var i=0; i<this.number_columns.length; ++i) {
+                var col = this.columns[i];
+                var val = row[col];
+                if (typeof val !== "number")
+                    return false;
+            }
+            return this.number_columns.length > 0;
+        }
+    };
+    var result = new table();
+    for (var key in obj) {
+        result[key] = obj[key];
+    }
+    return result;
+};
 // NB: Luminance float textures appear to clamp to [0,1] on Chrome 15
 // on Linux...
 
@@ -4466,6 +4518,8 @@ Facet.Data.texture_table = function(table)
     var elements = [];
     for (var row_ix = 0; row_ix < table.data.length; ++row_ix) {
         var row = table.data[row_ix];
+        if (!table.is_numeric_row_complete(row))
+            continue;
         for (var col_ix = 0; col_ix < table.number_columns.length; ++col_ix) {
             var col_name = table.columns[table.number_columns[col_ix]];
             var val = row[col_name];
@@ -4476,7 +4530,8 @@ Facet.Data.texture_table = function(table)
     }
 
     var table_ncols = table.number_columns.length;
-    var table_nrows = table.data.length;
+    // can't be table.data.length because not all rows are valid.
+    var table_nrows = elements.length / table.number_columns.length;
     var texture_width = 1;
 
     while (4 * texture_width * texture_width < elements.length) {
@@ -5846,6 +5901,8 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             else
                 throw this.type.repr() + " is an atomic type, got this: " + i;
         }
+        // FIXME TERRIBLE IDEA, should throw and
+        // force objects to define elements.
         return this.at(i);
     },
     compile: function(ctx) {
@@ -8586,6 +8643,11 @@ Shade.selection = function(condition, if_true, if_false)
                         this.parents[2].is_constant());
             }
         },
+        element: function(i) {
+            return Shade.selection(this.parents[0],
+                                   this.parents[1].element(i),
+                                   this.parents[2].element(i));
+        },
         element_constant_value: function(i) {
             if (!this.parents[0].is_constant()) {
                 // This only gets called when this.is_constant() holds, so
@@ -8669,6 +8731,18 @@ Shade.translation = function(t)
                      Shade.vec(0,0,1,0),
                      Shade.vec(t, 1));
 };
+Shade.ortho = Shade.make(function(left, right, bottom, top, near, far) {
+    var rl = right.sub(left);
+    var tb = top.sub(bottom);
+    var fn = far.sub(near);
+    return Shade.mat(Shade.vec(Shade.div(2, rl), 0, 0, 0),
+                     Shade.vec(0, Shade.div(2, tb), 0, 0),
+                     Shade.vec(0, 0, Shade.div(-2, fn), 0),
+                     Shade.vec(Shade.add(right, left).neg().div(rl),
+                               Shade.add(top, bottom).neg().div(tb),
+                               Shade.add(far, near).neg().div(fn),
+                               1));
+});
 // FIXME This should be Shade.look_at = Shade.make(function() ...
 // but before I do that I have to make sure that at this point
 // in the source Shade.make actually exists.
@@ -9187,6 +9261,11 @@ var white_point_uv = xyz_to_uv(white_point);
 Shade.Colors.jstable = table;
 
 })();
+/*
+ * FIXME The API in Shade.Colors is a disgusting mess. My apologies.
+ * 
+ */
+
 (function() {
 
 function compose(g, f)
@@ -9651,6 +9730,83 @@ Shade.Bits.shift_right = Shade.make(function(v, amt) {
     return v.div(amt.exp2()).floor();
 });
 Facet.Marks = {};
+//////////////////////////////////////////////////////////////////////////
+// This is like a poor man's instancing/geometry shader. I need a
+// general API for it.
+
+Facet.Marks.aligned_rects = function(opts)
+{
+    opts = _.defaults(opts || {}, {
+        mode: Facet.DrawingMode.standard,
+        z: function() { return 0; }
+    });
+    if (!opts.elements) throw "elements is a required field";
+    if (!opts.left)     throw "left is a required field";
+    if (!opts.right)    throw "right is a required field";
+    if (!opts.top)      throw "top is a required field";
+    if (!opts.bottom)   throw "bottom is a required field";
+    if (!opts.color)    throw "color is a required field";
+
+    var vertex_index = Facet.attribute_buffer(_.range(opts.elements * 6), 1);
+    var primitive_index = Shade.div(vertex_index, 6).floor();
+    var vertex_in_primitive = Shade.mod(vertex_index, 6).floor();
+
+    var left   = opts.left  (primitive_index),
+        right  = opts.right (primitive_index),
+        bottom = opts.bottom(primitive_index),
+        top    = opts.top   (primitive_index);
+
+    var lower_left  = Shade.vec(left,  bottom);
+    var lower_right = Shade.vec(right, bottom);
+    var upper_left  = Shade.vec(left,  top);
+    var upper_right = Shade.vec(right, top);
+    var vertex_map  = Shade.array([lower_left, upper_right, upper_left,
+                                   lower_left, lower_right, upper_right]);
+    var index_array = Shade.array([0, 2, 3, 0, 1, 2]);
+    var index_in_vertex_primitive = index_array.at(vertex_in_primitive);
+
+    return Facet.bake({
+        type: "triangles",
+        elements: vertex_index,
+        mode: opts.mode
+    }, {
+        position: Shade.vec(vertex_map.at(vertex_in_primitive), 
+                            opts.z(vertex_in_primitive)),
+        color: opts.color(primitive_index, index_in_vertex_primitive)
+    });
+};
+Facet.Marks.lines = function(opts)
+{
+    opts = _.defaults(opts || {}, {
+        mode: Facet.DrawingMode.standard,
+        z: function() { return 0; }
+    });
+
+    if (_.isUndefined(opts.elements)) throw "elements is a required field";
+    if (_.isUndefined(opts.color))    throw "color is a required field";
+    if (_.isUndefined(opts.position) && 
+        (_.isUndefined(opts.x) || _.isUndefined(opts.y))) {
+        throw "either position or x and y are required fields";
+    }
+
+    var vertex_index        = Facet.attribute_buffer(_.range(opts.elements * 2), 1);
+    var primitive_index     = Shade.div(vertex_index, 2).floor();
+    var vertex_in_primitive = Shade.mod(vertex_index, 2).floor();
+
+    var position = opts.position 
+        ? opts.position(primitive_index, vertex_in_primitive)
+        : Shade.vec(opts.x(primitive_index, vertex_in_primitive),
+                    opts.y(primitive_index, vertex_in_primitive),
+                    opts.z(primitive_index, vertex_in_primitive));
+    return Facet.bake({
+        type: "lines",
+        elements: vertex_index,
+        mode: opts.mode
+    }, {
+        position: position,
+        color: opts.color(primitive_index, vertex_in_primitive)
+    });
+};
 Facet.Marks.dots = function(opts)
 {
     opts = _.defaults(opts, {
@@ -9744,7 +9900,7 @@ Facet.Marks.scatterplot = function(opts)
         elements = opts.elements;
     }
     return Facet.Marks.dots({
-        position: S.vec(position, 0, 1),
+        position: position,
         elements: elements,
         fill_color: opts.fill_color,
         stroke_color: opts.stroke_color,

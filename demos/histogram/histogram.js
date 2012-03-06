@@ -2,7 +2,7 @@ var S = Shade;
 
 var gl;
 var data;
-var points_batch;
+var bars_batch;
 var alive = false;
 var histo;
 
@@ -33,16 +33,14 @@ function histo_buffer(opts)
     });
 
     function bin_to_texcoord(pos) {
-        var y = pos.div(sz).floor().add(0.5/sz);
-        var x = pos.mod(sz).add(0.5/sz);
-        var map = Shade.Utils.linear(0, sz, 0, 1);
-        return Shade.vec(map(x), map(y));
+        // the call to floor() prevents spillage when pos is fractional
+        return Shade.vec(pos.mod(sz), pos.div(sz)).floor().add(0.5).div(sz);
     }
     function bin_to_screen(pos) {
-        var y = pos.div(sz).floor().add(0.5/sz);
-        var x = pos.mod(sz).add(0.5/sz);
+        // the call to floor() prevents spillage when pos is fractional
+        var xy = Shade.vec(pos.mod(sz), pos.div(sz)).floor().add(0.5);
         var map = Shade.Utils.linear(0, sz, -1, 1);
-        return Shade.vec(map(x), map(y), 0, 1);
+        return Shade.vec(map(xy), 0, 1);
     }
 
     var convert_batch = render_buffer.make_screen_batch(function(texel) {
@@ -112,6 +110,7 @@ function data_buffers()
 {
     var d = Data.flowers();
     var tt = Facet.Data.texture_table(d);
+
     var point_index = Facet.attribute_buffer(_.range(tt.n_rows), 1);
     
     return {
@@ -130,20 +129,21 @@ function init_webgl()
 {
     var canvas = document.getElementById("scatterplot");
     gl = Facet.init(canvas, { attributes: { alpha: true,
-                                            depth: true
+                                            depth: true,
+                                            antialias: false
                                           },
                               debugging: true,
                               display: function() {
-                                  points_batch.draw();
+                                  bars_batch.draw();
                               },
                               clearColor: [0, 0, 0, 0.2]
                             });
     Facet.set_context(gl);
     data = data_buffers();
-    var bin_count = 16;
+    var bin_count = 24;
     histo = histo_buffer({
         bin_count: bin_count,
-        bin: Shade.Utils.linear(5, 8, 0, 16)(data.sepalLength),
+        bin: Shade.Utils.linear(4, 8, 0, bin_count)(data.sepalLength),
         elements: data.n_rows
     });
     histo.compute();
@@ -151,34 +151,17 @@ function init_webgl()
     // FIXME: compute maximum histogram height.
     // This will require texture reductions.. More GPGPU, yay
 
-    //////////////////////////////////////////////////////////////////////////
-    // This is like a poor man's instancing/geometry shader. I need an API for it.
+    var project = Shade.make(function(x) { return x.mul(2).sub(1); });
 
-    var vertex_index = Facet.attribute_buffer(_.range(bin_count * 6), 1);
-    var bin_index = Shade.div(vertex_index, 6).floor();
-    var which_vertex = Shade.mod(vertex_index, 6);
-
-    var bin_value = histo.bin_value(bin_index);
-    var bar_height = bin_value.div(20);
-    
-    var bottom = 0, 
-        top = bar_height,
-        left = Shade.div(bin_index, bin_count), 
-        right = Shade.div(bin_index.add(1), bin_count);
-
-    var lower_left  = Shade.vec(left, bottom);
-    var lower_right = Shade.vec(right, bottom);
-    var upper_left  = Shade.vec(left, top);
-    var upper_right = Shade.vec(right, top);
-    var vertex_map  = Shade.array([lower_left, upper_right, upper_left,
-                                   lower_left, lower_right, upper_right]);
-
-    points_batch = Facet.bake({
-        type: "triangles",
-        elements: vertex_index
-    }, {
-        color: Shade.Colors.shadetable.hcl.create(0, 50, bin_value.mul(5)).as_shade(),
-        position: Shade.vec(vertex_map.at(which_vertex).mul(2).sub(1), 0, 1)
+    bars_batch = Facet.Marks.aligned_rects({
+        elements: bin_count,
+        bottom: _.compose(project, function(i) { return 0; }),
+        top:    _.compose(project, function(i) { return histo.bin_value(i).div(30); }),
+        left:   _.compose(project, function(i) { return i.div(bin_count); }),
+        right:  _.compose(project, function(i) { return i.add(1).div(bin_count); }),
+        color:  function(i) {
+            return Shade.Colors.shadetable.hcl.create(0, 50, histo.bin_value(i).mul(3)).as_shade();
+        }
     });
 }
 

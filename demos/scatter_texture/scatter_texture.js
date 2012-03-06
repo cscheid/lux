@@ -43,9 +43,9 @@ function init_webgl()
     point_alpha    = S.uniform("float", 1.0);
 
     var species_color = S.Utils.choose(
-        [S.vec(1,0,0,point_alpha),
-         S.vec(0,1,0,point_alpha),
-         S.vec(0,0,1,point_alpha)])(data.species);
+        [S.vec(1, 0, 0, point_alpha),
+         S.vec(0, 1, 0, point_alpha),
+         S.vec(0, 0, 1, point_alpha)])(data.species);
 
     // Shade.debug = true;
     scatterplot_batch = Facet.Marks.scatterplot({
