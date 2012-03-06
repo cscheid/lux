@@ -3734,6 +3734,12 @@ Facet.init = function(canvas, opts)
         Facet._globals.display_callback();
     };
     Facet.set_context(gl);
+    gl.resize = function(width, height) {
+        this.viewportWidth = width;
+        this.viewportHeight = height;
+        this.canvas.width = width;
+        this.canvas.height = height;
+    };
 
     return gl;
 };
@@ -4043,8 +4049,7 @@ Facet.program = function(vs_src, fs_src)
 Facet.render_buffer = function(opts)
 {
     var ctx = Facet._globals.ctx;
-    var rttFramebuffer = ctx.createFramebuffer();
-    ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
+    var frame_buffer = ctx.createFramebuffer();
     opts = _.defaults(opts || {}, {
         width: 512,
         height: 512,
@@ -4064,61 +4069,69 @@ Facet.render_buffer = function(opts)
     // if (opts.width != opts.height)
     //     throw "renderbuffers must be square (blame GLSL ES!)";
 
-    rttFramebuffer.width  = opts.width;
-    rttFramebuffer.height = opts.height;
-
     var rttTexture = Facet.texture(opts);
 
-    var renderbuffer = ctx.createRenderbuffer();
-    ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderbuffer);
-    ctx.renderbufferStorage(ctx.RENDERBUFFER, ctx.DEPTH_COMPONENT16, rttFramebuffer.width, rttFramebuffer.height);
+    frame_buffer.init = function(width, height) {
+        var ctx = Facet._globals.ctx;
+        this.width  = opts.width;
+        this.height = opts.height;
+        ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
+        var renderbuffer = ctx.createRenderbuffer();
+        ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderbuffer);
+        ctx.renderbufferStorage(ctx.RENDERBUFFER, ctx.DEPTH_COMPONENT16, this.width, this.height);
 
-    ctx.framebufferTexture2D(ctx.FRAMEBUFFER, ctx.COLOR_ATTACHMENT0, ctx.TEXTURE_2D, rttTexture, 0);
-    ctx.framebufferRenderbuffer(ctx.FRAMEBUFFER, ctx.DEPTH_ATTACHMENT, ctx.RENDERBUFFER, renderbuffer);
-
-    var status = ctx.checkFramebufferStatus(ctx.FRAMEBUFFER);
-    switch (status) {
-        case ctx.FRAMEBUFFER_COMPLETE:
-            break;
-        case ctx.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
-        case ctx.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
-        case ctx.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-            throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
-        case ctx.FRAMEBUFFER_UNSUPPORTED:
-            throw "incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED";
-        default:
-            throw "incomplete framebuffer: " + status;
-    }
-
-    ctx.bindTexture(ctx.TEXTURE_2D, null);
-    ctx.bindRenderbuffer(ctx.RENDERBUFFER, null);
-    ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
-
-    return {
-        _shade_type: 'render_buffer',
-        texture: rttTexture,
-        width: rttFramebuffer.width,
-        height: rttFramebuffer.height,
-        frame_buffer: rttFramebuffer,
-        with_bound_buffer: function (what) {
-            try {
-                ctx.bindFramebuffer(ctx.FRAMEBUFFER, rttFramebuffer);
-                ctx.viewport(0, 0, rttFramebuffer.width, rttFramebuffer.height);
-                return what();
-            } finally {
-                ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+        ctx.framebufferTexture2D(ctx.FRAMEBUFFER, ctx.COLOR_ATTACHMENT0, ctx.TEXTURE_2D, rttTexture, 0);
+        ctx.framebufferRenderbuffer(ctx.FRAMEBUFFER, ctx.DEPTH_ATTACHMENT, ctx.RENDERBUFFER, renderbuffer);
+        var status = ctx.checkFramebufferStatus(ctx.FRAMEBUFFER);
+        try {
+            switch (status) {
+            case ctx.FRAMEBUFFER_COMPLETE:
+                break;
+            case ctx.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+            case ctx.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+            case ctx.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
+            case ctx.FRAMEBUFFER_UNSUPPORTED:
+                throw "incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED";
+            default:
+                throw "incomplete framebuffer: " + status;
             }
-        },
-        make_screen_batch: function (with_texel_at_uv) {
-            var sq = Facet.Models.square();
-            return Facet.bake(sq, {
-                position: sq.vertex.mul(2).sub(1),
-                color: with_texel_at_uv(Shade.texture2D(rttTexture, sq.tex_coord), sq.tex_coord)
-            });
+        } finally {
+            ctx.bindTexture(ctx.TEXTURE_2D, null);
+            ctx.bindRenderbuffer(ctx.RENDERBUFFER, null);
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
+
+    frame_buffer.init(opts.width, opts.height);
+    frame_buffer._shade_type = 'render_buffer';
+    frame_buffer.texture = rttTexture;
+    frame_buffer.resize = function(width, height) {
+        opts.width = width;
+        opts.height = height;
+        this.texture.init(opts);
+        this.init(width, height);
+    };
+    frame_buffer.with_bound_buffer = function(what) {
+        var ctx = Facet._globals.ctx;
+        try {
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
+            ctx.viewport(0, 0, this.width, this.height);
+            return what();
+        } finally {
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+        }
+    };
+    frame_buffer.make_screen_batch = function(with_texel_at_uv) {
+        var sq = Facet.Models.square();
+        return Facet.bake(sq, {
+            position: sq.vertex.mul(2).sub(1),
+            color: with_texel_at_uv(Shade.texture2D(this.texture, sq.tex_coord), sq.tex_coord)
+        });
+    };
+    return frame_buffer;
 };
 Facet.set_context = function(the_ctx)
 {
@@ -4132,78 +4145,89 @@ Facet.set_context = function(the_ctx)
 Facet.texture = function(opts)
 {
     var ctx = Facet._globals.ctx;
-    opts = _.defaults(opts, {
-        onload: function() {},
-        mipmaps: false,
-        mag_filter: ctx.LINEAR,
-        min_filter: ctx.LINEAR,
-        wrap_s: ctx.CLAMP_TO_EDGE,
-        wrap_t: ctx.CLAMP_TO_EDGE,
-        format: ctx.RGBA,
-        type: ctx.UNSIGNED_BYTE
-    });
-
-    function handler(texture) {
-        ctx.bindTexture(ctx.TEXTURE_2D, texture);
-        ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-        if (texture.image) {
-            ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
-            ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, 
-                            ctx.BROWSER_DEFAULT_WEBGL);
-            ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format, opts.format,
-                           opts.type, texture.image);
-        } else {
-            ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, false);
-            ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, ctx.NONE);
-            ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
-                           texture.width, texture.height,
-                           0, opts.format, opts.type, texture.buffer);
-        }
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
-        ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
-        if (opts.mipmaps)
-            ctx.generateMipmap(ctx.TEXTURE_2D);
-        ctx.bindTexture(ctx.TEXTURE_2D, null);
-        opts.onload(texture);
-        // to ensure that all textures are bound correctly,
-        // we unload the current batch, forcing all uniforms to be re-evaluated.
-        Facet.unload_batch();
-    }
-
     var texture = ctx.createTexture();
     texture._shade_type = 'texture';
-    texture.width = opts.width;
-    texture.height = opts.height;
-    if (opts.src) {
-        var image = new Image();
-        image.onload = function() {
-            texture.width = image.width;
-            texture.height = image.height;
-            handler(texture);
-        };
-        texture.image = image;
-        if (opts.crossOrigin)
-            image.crossOrigin = opts.crossOrigin; // CORS support
-        image.src = opts.src;
-    } else if (opts.img) {
-        texture.image = opts.img;
-        if (texture.image.isComplete) {
-            texture.width = texture.image.width;
-            texture.height = texture.image.height;
-            handler(texture);
-        } else {
-            texture.image.onload = function() {
-                texture.width = texture.image.width;
-                texture.height = texture.image.height;
-                handler(texture);
-            };
+
+    texture.init = function(opts) {
+        var ctx = Facet._globals.ctx;
+        opts = _.defaults(opts, {
+            onload: function() {},
+            mipmaps: false,
+            mag_filter: ctx.LINEAR,
+            min_filter: ctx.LINEAR,
+            wrap_s: ctx.CLAMP_TO_EDGE,
+            wrap_t: ctx.CLAMP_TO_EDGE,
+            format: ctx.RGBA,
+            type: ctx.UNSIGNED_BYTE
+        });
+        this.width = opts.width;
+        this.height = opts.height;
+
+        var that = this;
+        function handler() {
+            var ctx = Facet._globals.ctx;
+            ctx.bindTexture(ctx.TEXTURE_2D, that);
+            ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+            if (that.image) {
+                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+                ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, 
+                                ctx.BROWSER_DEFAULT_WEBGL);
+                ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format, opts.format,
+                               opts.type, that.image);
+            } else {
+                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, false);
+                ctx.pixelStorei(ctx.UNPACK_COLORSPACE_CONVERSION_WEBGL, ctx.NONE);
+                ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
+                               that.width, that.height,
+                               0, opts.format, opts.type, that.buffer);
+            }
+            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MAG_FILTER, opts.mag_filter);
+            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
+            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
+            ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
+            if (opts.mipmaps)
+                ctx.generateMipmap(ctx.TEXTURE_2D);
+            ctx.bindTexture(ctx.TEXTURE_2D, null);
+            opts.onload(that);
+            // to ensure that all textures are bound correctly,
+            // we unload the current batch, forcing all uniforms to be re-evaluated.
+            Facet.unload_batch();
         }
-    } else {
-        texture.buffer = opts.buffer || null;
-        handler(texture);        
-    }
+
+        delete this.buffer;
+        delete this.image;
+
+        if (opts.src) {
+            var image = new Image();
+            image.onload = function() {
+                that.width = image.width;
+                that.height = image.height;
+                handler();
+            };
+            this.image = image;
+            if (opts.crossOrigin)
+                image.crossOrigin = opts.crossOrigin; // CORS support
+            image.src = opts.src;
+        } else if (opts.img) {
+            this.image = opts.img;
+            if (this.image.isComplete) {
+                this.width = this.image.width;
+                this.height = this.image.height;
+                handler();
+            } else {
+                this.image.onload = function() {
+                    that.width = that.image.width;
+                    that.height = that.image.height;
+                    handler();
+                };
+            }
+        } else {
+            this.buffer = opts.buffer || null;
+            handler();        
+        }
+    };
+    texture.init(opts);
+
     return texture;
 };
 (function() {
