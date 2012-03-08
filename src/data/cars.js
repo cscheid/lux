@@ -1,5 +1,5 @@
 Data.cars = function() {
-    return {
+    return Facet.Data.table({
         columns: ["mpg", "cyl", "dsp", "hp", "lbs", "acc", "year", "origin", "name"],
         number_columns: [0, 1, 2, 3, 4, 5, 6, 7],
         data: [
@@ -410,5 +410,5 @@ Data.cars = function() {
             {name:"ford ranger", mpg:28, cyl:4, dsp:120, hp:79, lbs:2625, acc:18.6, year:82, origin:1},
             {name:"chevy s-10", mpg:31, cyl:4, dsp:119, hp:82, lbs:2720, acc:19.4, year:82, origin:1}
         ]
-    };
+    });
 };

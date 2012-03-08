@@ -8,6 +8,8 @@ Facet.Data.texture_table = function(table)
     var elements = [];
     for (var row_ix = 0; row_ix < table.data.length; ++row_ix) {
         var row = table.data[row_ix];
+        if (!table.is_numeric_row_complete(row))
+            continue;
         for (var col_ix = 0; col_ix < table.number_columns.length; ++col_ix) {
             var col_name = table.columns[table.number_columns[col_ix]];
             var val = row[col_name];
@@ -18,7 +20,8 @@ Facet.Data.texture_table = function(table)
     }
 
     var table_ncols = table.number_columns.length;
-    var table_nrows = table.data.length;
+    // can't be table.data.length because not all rows are valid.
+    var table_nrows = elements.length / table.number_columns.length;
     var texture_width = 1;
 
     while (4 * texture_width * texture_width < elements.length) {

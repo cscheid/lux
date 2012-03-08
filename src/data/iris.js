@@ -1,5 +1,5 @@
 Data.flowers = function() {
-    return {
+    return Facet.Data.table({
         species_names: ["setosa", "versicolor", "virginica"],
         traits: ["sepalLength", "sepalWidth", "petalLength", "petalWidth"],
 
@@ -157,5 +157,5 @@ Data.flowers = function() {
             {sepalLength: 6.2, sepalWidth: 3.4, petalLength: 5.4, petalWidth: 2.3, species: 2},
             {sepalLength: 5.9, sepalWidth: 3.0, petalLength: 5.1, petalWidth: 1.8, species: 2}
         ]
-    };
+    });
 };
