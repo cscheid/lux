@@ -3,7 +3,6 @@ The Big List of Facet TODOs
 * BUGS
 ** OpenStreetMap globe is broken on MacBook Air 11" (is it a precision problem?)
 ** Grand Tour demo is broken on MacBook Air 11" as well
-** Fix graph visualization colors on github
 ** Documentation fixes
 * Optimizer
 ** TODO Common subexpression elimination
@@ -36,6 +35,9 @@ These will be useful when we have user-defined GLSL.
 ** TODO Typechecking code review 
 functions like cosh which just build other expressions should have
 stricter type checking.
+
+It should be possible to implement some form of static checking for
+Shade.make when passing functions.
 
 * Documentation
 ** TODO NeHe Lessons
@@ -115,19 +117,32 @@ some sort.
 I've been seeing a lot of infinite loops because of co-recursion in
 constant_value. What do I do about it?
 
+Update: the issue here is that many expressions lack a true definition
+of element(), and so when element(i) returns element.at(i),
+at(i).element() runs the risk of diverging.
+
 ** TODO Typechecking code review 
 functions like cosh which just build other expressions should have
 stricter type checking.
 ** TODO Code review on FIXMEs
 ** TODO Review best practices on exception raising/handling in JS.
-* Features
-** Multiple WebGL canvases in a same page
+** TODO Multiple WebGL canvases in a same page
 This means multiple contexts, and lots of things are going to break.
+We already have set_context, but many calls use a possibly stale
+context on the closure scope. A code review and tests are in order.
+* Features
+** More basic marks
+Now that I figured out a nice way to make aligned rects work, I should
+extend this to lines, etc. The main problem is interaction with
+attribute_buffer, but that's inevitable without geometry shaders. I'll
+need documentation.
 ** TEXT SUPPORT
 ** WebGL FBOs are square?!
 According to the spec, they must be square. But I can create them in
 WebGL without any trouble. I wonder if things will break.
 ** Mousewheel support
 *** Integrate https://github.com/brandonaaron/jquery-mousewheel ?
+I've done this one-off in the beauty of roots demo. Maybe I shouldn't
+integrate it and leave it instead to app writers. But it's a type of
+interaction that's bound to be necessary over and over again...
 * Other
-** FIXME what do we do on canvas resizing?
