@@ -70,7 +70,7 @@ $().ready(function () {
         vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2]
     });
 
-    var distance_from_origin = Shade.length(square.vertex);
+    var distance_from_origin = Shade.norm(square.vertex);
     var angle = Shade.selection(distance_from_origin.eq(0), 
                                 0, Shade.atan(square.vertex.at(1), 
                                               square.vertex.at(0)));
