@@ -156,6 +156,9 @@ test("Shade compilation", function() {
 });
 
 test("Shade constant folding", function() {
+    equal(Shade.unknown("float").guid, Shade.unknown("float").guid);
+    notEqual(Shade.unknown("float").guid, Shade.unknown("mat2").guid);
+
     var x = Shade.uniform("float");
     equal(Shade.mul(2, Shade.vec(2, 2)).element(1).constant_value(), 4, 
           "different dimensions on float-vec operations and element()");

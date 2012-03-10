@@ -4643,6 +4643,42 @@ Shade.make = function(exp)
     return exp;
 };
 
+
+// only memoizes on value of first argument, so will fail if function
+// takes more than one argument!!
+Shade.memoize_on_field = function(field_name, fun, key_fun)
+{
+    key_fun = key_fun || function(i) { return i; };
+    return function() {
+        if (_.isUndefined(this._caches[field_name])) {
+            this._caches[field_name] = {};
+        }
+        if (_.isUndefined(this._caches[field_name][arguments[0]])) {
+            this._caches[field_name][arguments[0]] = fun.apply(this, arguments);
+        }
+        return this._caches[field_name][arguments[0]];
+    };
+};
+// Shade.unknown encodes a Shade expression whose value
+// is not determinable at compile time.
+//
+// This is used only internally by the compiler
+
+(function() {
+    var obj = { _caches: {} };
+    obj.fun = Shade.memoize_on_field("_cache", function(type) {
+        return Shade._create_concrete_value_exp({
+            parents: [],
+            type: type,
+            value: function() { throw "<unknown> should never get to compilation"; }
+        });
+    }, function(type) { 
+        return type.repr();
+    });
+    Shade.unknown = function(type) {
+        return obj.fun(type);
+    };
+})();
 // Specifying colors in shade in an easier way
 
 (function() {
@@ -4979,21 +5015,6 @@ Shade._create_concrete = function(base, requirements)
         return Shade._create(base, new_obj);
     }
     return create_it;
-};
-
-// only memoizes on value of first argument, so will fail if function
-// takes more than one argument!!
-Shade.memoize_on_field = function(field_name, fun)
-{
-    return function() {
-        if (_.isUndefined(this._caches[field_name])) {
-            this._caches[field_name] = {};
-        }
-        if (_.isUndefined(this._caches[field_name][arguments[0]])) {
-            this._caches[field_name][arguments[0]] = fun.apply(this, arguments);
-        }
-        return this._caches[field_name][arguments[0]];
-    };
 };
 Shade.Types = {};
 Shade.Types.base_t = {
