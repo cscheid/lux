@@ -326,8 +326,8 @@ test("Shade constant folding", function() {
        "selection folding");
 
     equal(Shade.or(true).constant_value(), true, "single logical value");
-    equal(Shade.make(true).discard_if(false).is_constant(), true, "discard constant folding");
-    equal(Shade.make(false).discard_if(false).constant_value(), false, "discard constant folding");
+    equal(Shade(true).discard_if(false).is_constant(), true, "discard constant folding");
+    equal(Shade(false).discard_if(false).constant_value(), false, "discard constant folding");
 
     var tex = Shade.uniform("sampler2D");
     var texcoord = Shade.varying("fooobarasdf", "vec2");
@@ -412,8 +412,8 @@ test("Shade constant folding", function() {
            "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 6");
     })();
 
-    equal(Shade.make(2).length().constant_value(), 2,  "length constant evaluator");
-    equal(Shade.make(-2).length().constant_value(), 2, "length constant evaluator");
+    equal(Shade(2).norm().constant_value(), 2,  "norm constant evaluator");
+    equal(Shade(-2).norm().constant_value(), 2, "norm constant evaluator");
 
     //////////////////////////////////////////////////////////////////////////
     // constant folding on elements
