@@ -17,7 +17,7 @@ function histo_buffer(opts)
     if (_.isUndefined(opts.bin)) {
         throw "histo_buffer requires 'bin' field";
     }
-    opts.bin = Shade.make(opts.bin);
+    opts.bin = Shade(opts.bin);
 
     var sz = Math.ceil(Math.sqrt(opts.bin_count));
 
@@ -61,7 +61,7 @@ function histo_buffer(opts)
         read_buffer: read_render_buffer,
         bin_count: opts.bin_count,
         bin_address: bin_to_texcoord,
-        bin_value: Shade.make(function(pos) {
+        bin_value: Shade(function(pos) {
             return Shade.texture2D(this.buffer, this.bin_address(pos)).r();
         }),
         compute: function() {
@@ -151,7 +151,7 @@ function init_webgl()
     // FIXME: compute maximum histogram height.
     // This will require texture reductions.. More GPGPU, yay
 
-    var project = Shade.make(function(x) { return x.mul(2).sub(1); });
+    var project = Shade(function(x) { return x.mul(2).sub(1); });
 
     bars_batch = Facet.Marks.aligned_rects({
         elements: bin_count,
