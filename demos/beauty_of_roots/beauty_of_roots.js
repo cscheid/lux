@@ -170,7 +170,7 @@ $().ready(function() {
 
                         //color: Shade.round_dot(Shade.vec(0.1,0,0,1)),
                         color: Shade.pointCoord().sub(Shade.vec(0.5, 0.5))
-                                    .length().pow(2).neg()
+                                    .norm().pow(2).neg()
                                     .mul(20)
                                     .exp()
                                     .mul(pointweight)
