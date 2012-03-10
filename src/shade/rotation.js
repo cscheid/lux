@@ -1,4 +1,4 @@
-// FIXME This should be Shade.look_at = Shade.make(function() ...
+// FIXME This should be Shade.rotation = Shade.make(function() ...
 // but before I do that I have to make sure that at this point
 // in the source Shade.make actually exists.
 
@@ -9,12 +9,6 @@ Shade.rotation = function(angle, axis)
 
     var s = angle.sin(), c = angle.cos(), t = Shade.sub(1, c);
     var x = axis.at(0), y = axis.at(1), z = axis.at(2);
-    
-    // return Shade.mat(Shade.vec(1,0,0,0),
-    //                  Shade.vec(0,1,0,0),
-    //                  Shade.vec(0,0,1,0),
-    //                  Shade.vec(0,0,0,1));
-                    
 
     return Shade.mat(Shade.vec(x.mul(x).mul(t).add(c),
                                y.mul(x).mul(t).add(z.mul(s)),
