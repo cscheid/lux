@@ -58,15 +58,7 @@ Facet.Camera.ortho = function(opts)
 
     return {
         project: function (model_vertex) {
-            var t = model_vertex.type;
-            if (t.equals(Shade.Types.vec2))
-                return m.mul(Shade.vec(model_vertex, 0, 1));
-            else if (t.equals(Shade.Types.vec3))
-                return m.mul(Shade.vec(model_vertex, 1));
-            else if (t.equals(Shade.Types.vec4))
-                return m.mul(model_vertex);
-            else
-                throw "expected vec, got " + t.repr();
+            return m.mul(model_vertex);
         }
     };
 };
