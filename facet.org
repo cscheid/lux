@@ -4,6 +4,8 @@ The Big List of Facet TODOs
 ** OpenStreetMap globe is broken on MacBook Air 11" (is it a precision problem?)
 ** Grand Tour demo is broken on MacBook Air 11" as well
 ** Documentation fixes
+** Uniform -> Parameter
+Calling it "uniform" is just stupid. The name parameter is much better.
 * Optimizer
 ** TODO Common subexpression elimination
     

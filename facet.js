@@ -5900,10 +5900,10 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                 return this;
             else
                 throw this.type.repr() + " is an atomic type, got this: " + i;
+        } else {
+            this.debug_print();
+            throw "Internal error; this should have been overriden.";
         }
-        // FIXME TERRIBLE IDEA, should throw and
-        // force objects to define elements.
-        return this.at(i);
     },
     compile: function(ctx) {
         if (this._must_be_function_call) {
@@ -7566,7 +7566,10 @@ var normalize = builtin_glsl_function({
         [Shade.Types.vec4, Shade.Types.vec4]], 
     constant_evaluator: function(exp) {
         return exp.parents[0].div(exp.parents[0].length()).constant_value();
-    }});
+    }, element_evaluator: function(exp, i) {
+        return exp.parents[0].div(exp.parents[0].length()).element(i);
+    }
+});
 Shade.normalize = normalize;
 
 var faceforward = builtin_glsl_function({
@@ -7605,7 +7608,12 @@ var reflect = builtin_glsl_function({
         var I = exp.parents[0];
         var N = exp.parents[1];
         return I.sub(Shade.mul(2, N.dot(I), N)).constant_value();
-    }});
+    }, element_evaluator: function(exp, i) {
+        var I = exp.parents[0];
+        var N = exp.parents[1];
+        return I.sub(Shade.mul(2, N.dot(I), N)).element_constant_value(i);
+    }
+});
 Shade.reflect = reflect;
 
 var refract = builtin_glsl_function({
@@ -8692,7 +8700,7 @@ Shade.Exp.selection = function(if_true, if_false)
 {
     return Shade.selection(this, if_true, if_false);
 };
-// FIXME This should be Shade.look_at = Shade.make(function() ...
+// FIXME This should be Shade.rotation = Shade.make(function() ...
 // but before I do that I have to make sure that at this point
 // in the source Shade.make actually exists.
 
@@ -8703,12 +8711,6 @@ Shade.rotation = function(angle, axis)
 
     var s = angle.sin(), c = angle.cos(), t = Shade.sub(1, c);
     var x = axis.at(0), y = axis.at(1), z = axis.at(2);
-    
-    // return Shade.mat(Shade.vec(1,0,0,0),
-    //                  Shade.vec(0,1,0,0),
-    //                  Shade.vec(0,0,1,0),
-    //                  Shade.vec(0,0,0,1));
-                    
 
     return Shade.mat(Shade.vec(x.mul(x).mul(t).add(c),
                                y.mul(x).mul(t).add(z.mul(s)),
