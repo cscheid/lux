@@ -1,15 +1,12 @@
 var gl;
-var square_drawable, triangle_drawable;
-var model_mat;
+var square_batch, triangle_batch;
 
 //////////////////////////////////////////////////////////////////////////////
 
 function draw_it()
 {
-    model_mat.set(Facet.translation( 1.5, 0, 0));
-    square_drawable.draw();
-    model_mat.set(Facet.translation(-1.5, 0, 0));
-    triangle_drawable.draw();
+    square_batch.draw();
+    triangle_batch.draw();
 }
 
 $().ready(function () {
@@ -21,17 +18,15 @@ $().ready(function () {
         near_distance: 0.1,
         far_distance: 100
     });
-    model_mat = Shade.uniform("mat4");
 
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
-        clearColor: [0,0,0,0.2],
+        clearColor: [0.2,0.2,0.2,0.2],
         display: draw_it,
         attributes: {
             alpha: true,
             depth: true
-        },
-        debugging: true
+        }
     });
 
     var square = Facet.model({
@@ -48,13 +43,15 @@ $().ready(function () {
                 Shade.color('blue')]
     });
 
-    square_drawable = Facet.bake(square, {
-        position: camera.project(model_mat.mul(Shade.vec(square.vertex, 0, 1))),
+    square_batch = Facet.bake(square, {
+        position: camera(
+            Shade.translation(Shade.vec(1.5, 0, 0)).mul(square.vertex)),
         color: Shade.color('#88f')
     });
 
-    triangle_drawable = Facet.bake(triangle, {
-        position: camera.project(model_mat.mul(Shade.vec(triangle.vertex, 0, 1))),
+    triangle_batch = Facet.bake(triangle, {
+        position: camera(
+            Shade.translation(Shade.vec(-1.5, 0, 0)).mul(triangle.vertex)),
         color: triangle.color
     });
 

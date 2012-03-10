@@ -1,6 +1,5 @@
 var gl;
 var square_batch, triangle_batch;
-var model;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -19,7 +18,6 @@ $().ready(function () {
         near_distance: 0.1,
         far_distance: 100
     });
-    model = Shade.uniform("mat4");
 
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
@@ -28,8 +26,7 @@ $().ready(function () {
         attributes: {
             alpha: true,
             depth: true
-        },
-        debugging: true
+        }
     });
 
     var square = Facet.model({
@@ -43,16 +40,14 @@ $().ready(function () {
     });
 
     square_batch = Facet.bake(square, {
-        position: camera.project(
-            Shade.translation(Shade.vec(1.5, 0, 0))
-                 .mul(Shade.vec(square.vertex, 0, 1))),
+        position: camera(
+            Shade.translation(Shade.vec(1.5, 0, 0)).mul(square.vertex)),
         color: Shade.color('white')
     });
 
     triangle_batch = Facet.bake(triangle, {
-        position: camera.project(
-            Shade.translation(Shade.vec(-1.5, 0, 0))
-                .mul(Shade.vec(triangle.vertex, 0, 1))),
+        position: camera(
+            Shade.translation(Shade.vec(-1.5, 0, 0)).mul(triangle.vertex)),
         color: Shade.color('white')
     });
 
