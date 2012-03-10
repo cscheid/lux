@@ -510,6 +510,15 @@ test("Shade optimizer", function() {
     equal(Shade.Optimizer.prune_selection_branch(
         Shade.selection(false, uniform_logical, uniform_logical_2)).guid, 
           uniform_logical_2.guid, "optimize known branch");
+
+    ok(vec4.equal(Shade.mul(Shade.translation(Shade.vec(0,0,0)),
+                            Shade.vec(1, 0)).constant_value(),
+                  vec4.make([1,0,0,1])),
+       "Shade mat4 * vec2 shortcuts");
+    ok(vec4.equal(Shade.mul(Shade.translation(Shade.vec(0,0,0)),
+                            Shade.vec(1, 0, 2)).constant_value(),
+                  vec4.make([1,0,2,1])),
+       "Shade mat4 * vec3 shortcuts");
 });
 
 test("Shade programs", function() {
@@ -539,7 +548,7 @@ test("Texture tables", function() {
                 { 0: 3, 1: 4, 2: 5 },
                 { 0: 6, 1: 7, 2: 8 } ]
     };
-    var table = Facet.Data.texture_table(simple_data);
+    var table = Facet.Data.texture_table(Facet.Data.table(simple_data));
 
     for (var row_ix=0; row_ix<3; ++row_ix) {
         for (var col_ix=0; col_ix<3; ++col_ix) {

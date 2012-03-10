@@ -394,8 +394,8 @@ Shade.mul = function() {
                       matrix: function (x, y) { return mt.scaling(y, x); }
                     },
             vector: { number: function (x, y) { return vt.scaling(x, y); },
-                      vector: function (x, y) { 
-                          return vt.schur_product(x, y); 
+                      vector: function (x, y) {
+                          return vt.schur_product(x, y);
                       },
                       matrix: function (x, y) {
                           return mt.product_vec(mt.transpose(y), x);
@@ -493,6 +493,13 @@ Shade.mul = function() {
     };
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
+        if (current_result.type.equals(Shade.Types.mat4)) {
+            if (arguments[i].type.equals(Shade.Types.vec2)) {
+                arguments[i] = Shade.vec(arguments[i], 0, 1);
+            } else if (arguments[i].type.equals(Shade.Types.vec3)) {
+                arguments[i] = Shade.vec(arguments[i], 1);
+            }
+        }
         current_result = operator(current_result, Shade.make(arguments[i]),
                                   "*", mul_type_resolver, evaluator, element_evaluator);
     }
