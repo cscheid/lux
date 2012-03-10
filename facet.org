@@ -1,8 +1,6 @@
 The Big List of Facet TODOs
 
 * BUGS
-** OpenStreetMap globe is broken on MacBook Air 11" (is it a precision problem?)
-** Grand Tour demo is broken on MacBook Air 11" as well
 ** Documentation fixes
 ** Uniform -> Parameter
 Calling it "uniform" is just stupid. The name parameter is much better.
@@ -133,6 +131,8 @@ stricter type checking.
 This means multiple contexts, and lots of things are going to break.
 We already have set_context, but many calls use a possibly stale
 context on the closure scope. A code review and tests are in order.
+** TODO test suite for builtins, especially for element_evaluator
+This should go together with writing the semantics for Shade expressions.
 * Features
 ** More basic marks
 Now that I figured out a nice way to make aligned rects work, I should

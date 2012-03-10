@@ -3290,14 +3290,14 @@ Facet.bake = function(model, appearance)
     function create_pick_program() {
         var pick_id;
         if (appearance.pick_id)
-            pick_id = Shade.make(appearance.pick_id);
+            pick_id = Shade(appearance.pick_id);
         else {
-            pick_id = Shade.make(Shade.id(batch_id));
+            pick_id = Shade(Shade.id(batch_id));
         }
         return process_appearance(function(value, key) {
             if (key === 'gl_FragColor') {
                 var pick_if = (appearance.pick_if || 
-                               Shade.make(value).swizzle("a").gt(0));
+                               Shade(value).swizzle("a").gt(0));
                 return pick_id.discard_if(Shade.not(pick_if));
             } else
                 return value;
@@ -3884,10 +3884,10 @@ Facet.model = function(input)
         else if (k === 'elements') {
             if (v._shade_type === 'element_buffer')
                 // example: 'elements: Facet.element_buffer(...)'
-                result.elements = Shade.make(v);
+                result.elements = Shade(v);
             else if (facet_typeOf(v) === 'array')
                 // example: 'elements: [0, 1, 2, 3]'
-                result.elements = Shade.make(Facet.element_buffer(v));
+                result.elements = Shade(Facet.element_buffer(v));
             else
                 // example: 'elements: 4'
                 result.elements = v;
@@ -3895,7 +3895,7 @@ Facet.model = function(input)
         // Then we handle the model attributes. They can be ...
         else if (v._shade_type === 'attribute_buffer') { // ... attribute buffers,
             // example: 'vertex: Facet.attribute_buffer(...)'
-            result[k] = Shade.make(v);
+            result[k] = Shade(v);
             n_elements = v.numItems;
         } else if (facet_typeOf(v) === "array") { // ... or a list of per-vertex things
             var buffer;
@@ -3907,7 +3907,7 @@ Facet.model = function(input)
                 var new_v = [];
                 _.each(v, push_into(new_v, dimension));
                 buffer = Facet.attribute_buffer(new_v, dimension);
-                result[k] = Shade.make(buffer);
+                result[k] = Shade(buffer);
                 n_elements = buffer.numItems;
             } else {
                 // Or they can be a single list of plain numbers, in which case we're passed 
@@ -3915,7 +3915,7 @@ Facet.model = function(input)
                 // being the per-element size
                 // example: 'color: [[1,0,0, 0,1,0, 0,0,1], 3]'
                 buffer = Facet.attribute_buffer(v[0], v[1]);
-                result[k] = Shade.make(buffer);
+                result[k] = Shade(buffer);
                 n_elements = buffer.numItems;
             }
         } else {
@@ -4248,7 +4248,7 @@ Facet.Unprojector = {
         // the right depth value. We do it via the batch below.
 
         if (!clear_batch) {
-            var xy = Shade.make(Facet.attribute_buffer(
+            var xy = Shade(Facet.attribute_buffer(
                 [-1, -1,   1, -1,   -1,  1,   1,  1], 2));
             var model = Facet.model({
                 type: "triangle_strip",
@@ -4344,10 +4344,13 @@ Facet.Scale.Geo.mercator_to_spherical = function(x, y)
     var lon = x;
     return Facet.Scale.Geo.latlong_to_spherical(lat, lon);
 };
+// FIXME can't be Shade(function()...) because Shade() hasn't been defined yet.
+//
+// FIXME this means that Facet.Scale should, unsurprisingly, be Shade.Scale.
 Facet.Scale.Geo.latlong_to_spherical = function(lat, lon)
 {
-    lat = Shade.make(lat);
-    lon = Shade.make(lon);
+    lat = Shade(lat);
+    lon = Shade(lon);
     var stretch = lat.cos();
     return Shade.vec(lon.sin().mul(stretch),
                      lat.sin(),
@@ -4550,7 +4553,7 @@ Facet.Data.texture_table = function(table)
         mag_filter: ctx.NEAREST
     });
 
-    var index = Shade.make(function(row, col) {
+    var index = Shade(function(row, col) {
         var linear_index    = row.mul(table_ncols).add(col);
         var in_texel_offset = linear_index.mod(4);
         var texel_index     = linear_index.div(4).floor();
@@ -4559,7 +4562,7 @@ Facet.Data.texture_table = function(table)
         var result          = Shade.vec(x, y, in_texel_offset);
         return result;
     });
-    var at = Shade.make(function(row, col) {
+    var at = Shade(function(row, col) {
         // returns Shade expression with value at row, col
         var ix = index(row, col);
         var uv = ix.swizzle("xy")
@@ -4586,11 +4589,60 @@ Facet.Data.texture_table = function(table)
 
 // FIXME: Move this object inside Facet's main object.
 
-var Shade = {};
+var Shade = function(exp)
+{
+    return Shade.make(exp);
+};
 
 (function() {
 
 Shade.debug = false;
+//////////////////////////////////////////////////////////////////////////////
+// make converts objects which can be meaningfully interpreted as
+// Exp values to the appropriate Exp values, giving us some poor-man
+// static polymorphism
+Shade.make = function(exp)
+{
+    if (_.isUndefined(exp)) {
+        throw "expected a value, got undefined instead";
+    }
+    var t = facet_typeOf(exp);
+    if (t === 'boolean' || t === 'number') {
+        return Shade.constant(exp);
+    } else if (t === 'array') {
+        return Shade.seq(exp);
+    } else if (t === 'function') {
+        /* lifts the passed function to a "shade function".
+        
+        In other words, this creates a function that replaces every
+        passed parameter p by Shade.make(p) This way, we save a lot of
+        typing and errors. If a javascript function is expected to
+        take shade values and produce shade expressions as a result,
+        simply wrap that function around a call to Shade.make()
+
+         */
+
+        return function() {
+            var wrapped_arguments = [];
+            for (var i=0; i<arguments.length; ++i) {
+                wrapped_arguments.push(Shade.make(arguments[i]));
+            }
+            return exp.apply(this, wrapped_arguments);
+        };
+    }
+    t = facet_constant_type(exp);
+    if (t === 'vector' || t === 'matrix') {
+        return Shade.constant(exp);
+    } else if (exp._shade_type === 'attribute_buffer') {
+        return Shade.attribute_from_buffer(exp);
+    } else if (exp._shade_type === 'render_buffer') {
+        return Shade.sampler2D_from_texture(exp.texture);
+    } else if (exp._shade_type === 'texture') {
+        return Shade.sampler2D_from_texture(exp);
+    }
+    return exp;
+};
+
 // Specifying colors in shade in an easier way
 
 (function() {
@@ -5263,52 +5315,6 @@ Shade.Types.function_t = function(return_type, param_types) {
     Shade.Types.mat3.zero    = "mat3(0,0,0,0,0,0,0,0,0)";
     Shade.Types.mat4.zero    = "mat4(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)";
 })();
-//////////////////////////////////////////////////////////////////////////////
-// make converts objects which can be meaningfully interpreted as
-// Exp values to the appropriate Exp values, giving us some poor-man
-// static polymorphism
-Shade.make = function(exp)
-{
-    if (_.isUndefined(exp)) {
-        throw "expected a value, got undefined instead";
-    }
-    var t = facet_typeOf(exp);
-    if (t === 'boolean' || t === 'number') {
-        return Shade.constant(exp);
-    } else if (t === 'array') {
-        return Shade.seq(exp);
-    } else if (t === 'function') {
-        /* lifts the passed function to a "shade function".
-        
-        In other words, this creates a function that replaces every
-        passed parameter p by Shade.make(p) This way, we save a lot of
-        typing and errors. If a javascript function is expected to
-        take shade values and produce shade expressions as a result,
-        simply wrap that function around a call to Shade.make()
-
-         */
-
-        return function() {
-            var wrapped_arguments = [];
-            for (var i=0; i<arguments.length; ++i) {
-                wrapped_arguments.push(Shade.make(arguments[i]));
-            }
-            return exp.apply(this, wrapped_arguments);
-        };
-    }
-    t = facet_constant_type(exp);
-    if (t === 'vector' || t === 'matrix') {
-        return Shade.constant(exp);
-    } else if (exp._shade_type === 'attribute_buffer') {
-        return Shade.attribute_from_buffer(exp);
-    } else if (exp._shade_type === 'render_buffer') {
-        return Shade.sampler2D_from_texture(exp.texture);
-    } else if (exp._shade_type === 'texture') {
-        return Shade.sampler2D_from_texture(exp);
-    }
-    return exp;
-};
-
 Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
@@ -5533,8 +5539,8 @@ Shade.Exp = {
     sub: function(op) {
         return Shade.sub(this, op);
     },
-    length: function() {
-        return Shade.length(this);
+    norm: function() {
+        return Shade.norm(this);
     },
     distance: function(other) {
         return Shade.distance(this, other);
@@ -5957,7 +5963,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
 Shade._create_concrete_value_exp = Shade._create_concrete(Shade.ValueExp, ["parents", "type", "value"]);
 Shade.swizzle = function(exp, pattern)
 {
-    return Shade.make(exp).swizzle(pattern);
+    return Shade(exp).swizzle(pattern);
 };
 // Shade.constant creates a constant value in the Shade language.
 // 
@@ -6160,9 +6166,13 @@ Shade.array = function(v)
         throw "type error: need array";
     }
 };
+/* Shade.set is essentially an internal method for Shade. Don't use it
+   unless you know exactly what you're doing.
+ */
+
 Shade.set = function(exp, name)
 {
-    exp = Shade.make(exp);
+    exp = Shade(exp);
     var type = exp.type;
     return Shade._create_concrete_exp({
         expression_type: "set",
@@ -6394,7 +6404,7 @@ Shade.pointCoord = function() {
     });
 };
 Shade.round_dot = function(color) {
-    var outside_dot = Shade.pointCoord().sub(Shade.vec(0.5, 0.5)).length().gt(0.25);
+    var outside_dot = Shade.pointCoord().sub(Shade.vec(0.5, 0.5)).norm().gt(0.25);
     return Shade.make(color).discard_if(outside_dot);
 };
 (function() {
@@ -6905,16 +6915,11 @@ Shade.mul = function() {
     return current_result;
 };
 })();
-// FIXME This should be Shade.neg = Shade.make(function() ...
-// but before I do that I have to make sure that at this point
-// in the source Shade.make actually exists.
-
 Shade.neg = function(x)
 {
     return Shade.sub(0, x);
 };
 Shade.Exp.neg = function() { return Shade.neg(this); };
-
 Shade.vec = function()
 {
     var parents = [];
@@ -7119,6 +7124,7 @@ function builtin_glsl_function(opts)
     var type_resolving_list = opts.type_resolving_list;
     var constant_evaluator = opts.constant_evaluator;
     var element_evaluator = opts.element_evaluator;
+    var element_constant_evaluator = opts.element_constant_evaluator;
 
     for (var i=0; i<type_resolving_list.length; ++i)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
@@ -7194,12 +7200,17 @@ function builtin_glsl_function(opts)
                 return this.element(i).is_constant();
             };
         }
+        if (element_constant_evaluator) {
+            obj.element_is_constant = function(i) {
+                return element_constant_evaluator(this, i);
+            };
+        }
         return Shade._create_concrete_value_exp(obj);
     };
 }
 
 function common_fun_1op(fun_name, constant_evaluator) {
-    return builtin_glsl_function({
+    var result = builtin_glsl_function({
         name: fun_name, 
         type_resolving_list: [
             [Shade.Types.float_t, Shade.Types.float_t],
@@ -7207,12 +7218,16 @@ function common_fun_1op(fun_name, constant_evaluator) {
             [Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.vec4, Shade.Types.vec4]
         ], 
-        constant_evaluator: constant_evaluator
+        constant_evaluator: constant_evaluator,
+        element_evaluator: function(exp, i) {
+            return result(exp.parents[0].element(i));
+        }
     });
+    return result;
 }
 
 function common_fun_2op(fun_name, constant_evaluator) {
-    return builtin_glsl_function({
+    var result = builtin_glsl_function({
         name: fun_name, 
         type_resolving_list: [
             [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
@@ -7220,8 +7235,12 @@ function common_fun_2op(fun_name, constant_evaluator) {
             [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
         ], 
-        constant_evaluator: constant_evaluator
+        constant_evaluator: constant_evaluator, 
+        element_evaluator: function(exp, i) {
+            return result(exp.parents[0].element(i), exp.parents[1].element(i));
+        }
     });
+    return result;
 }
 
 // angle and trig, some common, some exponential,
@@ -7470,7 +7489,11 @@ var step = builtin_glsl_function({
                 return step(v1, v);
             });
         }
-    }});
+    },
+    element_evaluator: function(exp, i) {
+        return Shade.step.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.step = step;
 
 var smoothstep = builtin_glsl_function({
@@ -7495,7 +7518,7 @@ var smoothstep = builtin_glsl_function({
 });
 Shade.smoothstep = smoothstep;
 
-var length = builtin_glsl_function({
+var norm = builtin_glsl_function({
     name: "length", 
     type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t],
@@ -7509,7 +7532,7 @@ var length = builtin_glsl_function({
         else
             return vec.length(v);
     }});
-Shade.length = length;
+Shade.norm = norm;
 
 var distance = builtin_glsl_function({
     name: "distance", 
@@ -7519,7 +7542,7 @@ var distance = builtin_glsl_function({
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t],
         [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]], 
     constant_evaluator: function(exp) {
-        return exp.parents[0].sub(exp.parents[1]).length().constant_value();
+        return exp.parents[0].sub(exp.parents[1]).norm().constant_value();
     }});
 Shade.distance = distance;
 
@@ -7567,9 +7590,9 @@ var normalize = builtin_glsl_function({
         [Shade.Types.vec3, Shade.Types.vec3],
         [Shade.Types.vec4, Shade.Types.vec4]], 
     constant_evaluator: function(exp) {
-        return exp.parents[0].div(exp.parents[0].length()).constant_value();
+        return exp.parents[0].div(exp.parents[0].norm()).constant_value();
     }, element_evaluator: function(exp, i) {
-        return exp.parents[0].div(exp.parents[0].length()).element(i);
+        return exp.parents[0].div(exp.parents[0].norm()).element(i);
     }
 });
 Shade.normalize = normalize;
@@ -7656,7 +7679,9 @@ Shade.refract = refract;
 
 var texture2D = builtin_glsl_function({
     name: "texture2D", 
-    type_resolving_list: [[Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]]
+    type_resolving_list: [[Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]],
+    element_evaluator: function(exp, i) { return exp.at(i); },
+    element_constant_evaluator: function(exp, i) { return false; }
 });
 Shade.texture2D = texture2D;
 
@@ -8436,15 +8461,15 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
         if (arguments.length === 0) 
             throw ("operator " + operator_name 
                    + " requires at least 1 parameter");
-        if (arguments.length === 1) return Shade.make(arguments[0]).as_bool();
-        var first = Shade.make(arguments[0]);
+        if (arguments.length === 1) return Shade(arguments[0]).as_bool();
+        var first = Shade(arguments[0]);
         if (!first.type.equals(Shade.Types.bool_t))
             throw ("operator " + operator_name + 
                    " requires booleans, got argument 1 as " +
                    arguments[0].type.repr() + " instead.");
         var current_result = first;
         for (var i=1; i<arguments.length; ++i) {
-            var next = Shade.make(arguments[i]);
+            var next = Shade(arguments[i]);
             if (!next.type.equals(Shade.Types.bool_t))
                 throw ("operator " + operator_name + 
                        " requires booleans, got argument " + (i+1) +
@@ -8485,9 +8510,8 @@ Shade.Exp.xor = function(other)
     return Shade.xor(this, other);
 };
 
-Shade.not = function(exp)
+Shade.not = Shade(function(exp)
 {
-    exp = Shade.make(exp);
     if (!exp.type.equals(Shade.Types.bool_t)) {
         throw "logical_not requires bool expression";
     }
@@ -8502,20 +8526,18 @@ Shade.not = function(exp)
             return !this.parents[0].constant_value();
         })
     });
-};
+});
 
 Shade.Exp.not = function() { return Shade.not(this); };
 
 var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator)
 {
-    return function(left, right) {
-        var first = Shade.make(left);
-        var second = Shade.make(right);
+    return Shade(function(first, second) {
         type_checker(first.type, second.type);
 
         return logical_operator_binexp(
             first, second, operator_name, binary_evaluator);
-    };
+    });
 };
 
 var inequality_type_checker = function(name) {
@@ -8706,10 +8728,9 @@ Shade.Exp.selection = function(if_true, if_false)
 // but before I do that I have to make sure that at this point
 // in the source Shade.make actually exists.
 
-Shade.rotation = function(angle, axis)
+Shade.rotation = Shade(function(angle, axis)
 {
-    angle = Shade.make(angle);
-    axis = Shade.make(axis).normalize();
+    axis = axis.normalize();
 
     var s = angle.sin(), c = angle.cos(), t = Shade.sub(1, c);
     var x = axis.at(0), y = axis.at(1), z = axis.at(2);
@@ -8727,7 +8748,7 @@ Shade.rotation = function(angle, axis)
                                z.mul(z).mul(t).add(c),
                                0),
                      Shade.vec(0,0,0,1));
-};
+});
 Shade.translation = function(t)
 {
     return Shade.mat(Shade.vec(1,0,0,0),
@@ -9518,7 +9539,7 @@ table.xyz.srgb = function(xyz)
 
 table.luv.hcl = function(luv)
 {
-    var c = Shade.length(luv.vec.swizzle("gb"));
+    var c = Shade.norm(luv.vec.swizzle("gb"));
     var h = Shade.atan(luv.v, luv.u);
     h = _if(h.gt(Math.PI*2), h.sub(Math.PI*2),
         _if(h.lt(0), h.add(Math.PI*2), h));
@@ -9830,11 +9851,11 @@ Facet.Marks.dots = function(opts)
 
     var S = Shade;
 
-    var fill_color     = Shade.make(opts.fill_color);
-    var stroke_color   = Shade.make(opts.stroke_color);
-    var point_diameter = Shade.make(opts.point_diameter);
-    var stroke_width   = Shade.make(opts.stroke_width).add(1);
-    var use_alpha      = Shade.make(opts.alpha);
+    var fill_color     = Shade(opts.fill_color);
+    var stroke_color   = Shade(opts.stroke_color);
+    var point_diameter = Shade(opts.point_diameter);
+    var stroke_width   = Shade(opts.stroke_width).add(1);
+    var use_alpha      = Shade(opts.alpha);
     
     var model_opts = {
         type: "points",
@@ -9845,7 +9866,7 @@ Facet.Marks.dots = function(opts)
     var model = Facet.model(model_opts);
 
     var distance_to_center_in_pixels = S.pointCoord().sub(S.vec(0.5, 0.5))
-        .length().mul(point_diameter);
+        .norm().mul(point_diameter);
     var point_radius = point_diameter.div(2);
     var distance_to_border = point_radius.sub(distance_to_center_in_pixels);
     var gl_Position = model.vertex;
@@ -10161,7 +10182,7 @@ Facet.Models.mesh = function(u_secs, v_secs) {
         }
     }
 
-    var uv_attr = Shade.make(Facet.attribute_buffer(verts, 2));
+    var uv_attr = Shade(Facet.attribute_buffer(verts, 2));
     return Facet.model({
         type: "triangle_strip",
         tex_coord: uv_attr,
@@ -10210,7 +10231,7 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
     });
 };
 Facet.Models.square = function() {
-    var uv = Shade.make(Facet.attribute_buffer([0, 0, 1, 0, 0, 1, 1, 1], 2));
+    var uv = Shade(Facet.attribute_buffer([0, 0, 1, 0, 0, 1, 1, 1], 2));
     return Facet.model({
         type: "triangles",
         elements: Facet.element_buffer([0, 1, 2, 1, 3, 2]),
