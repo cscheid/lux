@@ -1,19 +1,13 @@
 var gl;
 var cube_drawable, pyramid_drawable;
-var model_mat;
 var angle = 0;
+var angle_uniform;
 
 //////////////////////////////////////////////////////////////////////////////
 
 function draw_it()
 {
-    var model_cube = mat4.product(Facet.translation( 1.5, 0, 0), Facet.rotation(angle, [1,1,1]));
-    var model_pyr  = mat4.product(Facet.translation(-1.5, 0, 0), Facet.rotation(angle, [0,1,0]));
-    
-    model_mat.set(model_cube);
     cube_drawable.draw();
-
-    model_mat.set(model_pyr);
     pyramid_drawable.draw();
 }
 
@@ -26,7 +20,7 @@ $().ready(function () {
         near_distance: 0.1,
         far_distance: 100
     });
-    model_mat = Shade.uniform("mat4");
+    angle_uniform = Shade.uniform("float");
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
@@ -85,13 +79,21 @@ $().ready(function () {
         color: [r, g, b, g, b]
     });
 
+    var cube_xformed_vertex = Shade.translation(Shade.vec(1.5, 0, 0))
+        .mul(Shade.rotation(angle_uniform, Shade.vec(1,1,1)))
+        .mul(Shade.vec(cube.vertex, 1));
+
+    var pyramid_xformed_vertex = Shade.translation(Shade.vec(-1.5, 0, 0))
+        .mul(Shade.rotation(angle_uniform, Shade.vec(0,1,0)))
+        .mul(Shade.vec(pyramid.vertex, 1));
+
     cube_drawable = Facet.bake(cube, {
-        position: camera.project(model_mat.mul(Shade.vec(cube.vertex, 1))),
+        position: camera.project(cube_xformed_vertex),
         color: cube.color
     });
 
     pyramid_drawable = Facet.bake(pyramid, {
-        position: camera.project(model_mat.mul(Shade.vec(pyramid.vertex, 1))),
+        position: camera.project(pyramid_xformed_vertex),
         color: pyramid.color
     });
 
@@ -100,6 +102,7 @@ $().ready(function () {
         window.requestAnimFrame(f, canvas);
         var elapsed = new Date().getTime() - start;
         angle = (elapsed / 20) * (Math.PI / 180);
+        angle_uniform.set(angle);
         gl.display();
     };
     f();
