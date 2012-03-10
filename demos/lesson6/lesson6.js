@@ -1,14 +1,13 @@
 var gl;
 var cube_drawable, pyramid_drawable;
 var model_mat;
-var angle = 0;
+var angle;
 var Models = Facet.Models;
 
 //////////////////////////////////////////////////////////////////////////////
 
 function draw_it()
 {
-    model_mat.set(Facet.rotation(angle, [1,1,1]));
     cube_drawable.draw();
 }
 
@@ -21,7 +20,7 @@ $().ready(function () {
         near_distance: 0.1,
         far_distance: 100
     });
-    model_mat = Shade.parameter("mat4");
+    angle = Shade.parameter("float");
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
@@ -35,7 +34,8 @@ $().ready(function () {
     var cube = Models.flat_cube();
 
     cube_drawable = Facet.bake(cube, {
-        position: camera.project(model_mat.mul(Shade.vec(cube.vertex, 1))),
+        position: camera(Shade.rotation(angle, Shade.vec(1,1,1))
+                         .mul(cube.vertex)),
         color: Shade.texture2D(Facet.texture({ src: "../img/nehe.jpg" }),
                                cube.tex_coord)
     });
@@ -44,7 +44,7 @@ $().ready(function () {
     var f = function() {
         window.requestAnimFrame(f, canvas);
         var elapsed = new Date().getTime() - start;
-        angle = (elapsed / 20) * (Math.PI/180);
+        angle.set((elapsed / 20) * (Math.PI/180));
         gl.display();
     };
     f();
