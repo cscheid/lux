@@ -63,6 +63,7 @@ facet.js:					\
 	src/facet/data/table.js			\
 	src/facet/data/texture_table.js		\
 	src/shade/_begin.js			\
+	src/shade/make.js			\
 	src/shade/color.js			\
 	src/shade/looping.js			\
 	src/shade/unique_name.js		\
@@ -74,7 +75,6 @@ facet.js:					\
 	src/shade/types/array.js		\
 	src/shade/types/function_t.js		\
 	src/shade/types/simple_types.js		\
-	src/shade/make.js			\
 	src/shade/compilation_context.js	\
 	src/shade/exp.js			\
 	src/shade/value_exp.js			\
