@@ -165,7 +165,7 @@ $().ready(function() {
                     });
                     var pt = Shade.vec(points_model.x, points_model.y);
                     points_batch = Facet.bake(points_model, {
-                        position: camera.project(pt),
+                        position: camera(pt),
                         mode: Facet.DrawingMode.additive,
 
                         //color: Shade.round_dot(Shade.vec(0.1,0,0,1)),

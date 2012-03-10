@@ -45,7 +45,7 @@ $().ready(function () {
 
     square_batch = Facet.bake(square, {
         position: camera(
-            Shade.translation(Shade.vec(1.5, 0, 0)).mul(square.vertex)),
+            Shade.translation(Shade.vec( 1.5, 0, 0)).mul(square.vertex)),
         color: Shade.color('#88f')
     });
 

@@ -35,7 +35,7 @@ function make_graph_batch(model, center, zoom)
 
     var dots_batch = Facet.Marks.dots({
         elements: model.node_elements,
-        position: camera.project(model.position),
+        position: camera(model.position),
         stroke_color: Shade.color("black"),
         fill_color: Shade.color("slategray", 0.8),
         point_diameter: zoom.mul(2000),
