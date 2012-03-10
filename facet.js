@@ -3456,55 +3456,56 @@ Facet.Camera.perspective = function(opts)
 
     update_projection();
 
-    return {
-        look_at: function(eye, to, up) {
-            current_view = mat4.lookAt(eye, to, up);
-            view_uniform.set(current_view);
-        },
-        set_aspect_ratio: function(a) {
-            aspect_ratio = a;
-            update_projection();
-            vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
-        },
-        set_near_distance: function(v) {
-            near_distance = v;
-            update_projection();
-            vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
-        },
-        set_far_distance: function(v) {
-            far_distance = v;
-            update_projection();
-            vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
-        },
-        set_field_of_view_y: function(v) {
-            field_of_view_y = v;
-            update_projection();
-            vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
-        },
-
-        project: function(model_vertex) {
-            var t = model_vertex.type;
-            if (t.equals(Shade.Types.vec2))
-                return vp_uniform.mul(Shade.vec(model_vertex, 0, 1));
-            else if (t.equals(Shade.Types.vec3))
-                return vp_uniform.mul(Shade.vec(model_vertex, 1));
-            else if (t.equals(Shade.Types.vec4))
-                return vp_uniform.mul(model_vertex);
-            else
-                throw "expected vec, got " + t.repr();
-        },
-        eye_vertex: function(model_vertex) {
-            var t = model_vertex.type;
-            if (t.equals(Shade.Types.vec2))
-                return view_uniform.mul(Shade.vec(model_vertex, 0, 1));
-            else if (t.equals(Shade.Types.vec3))
-                return view_uniform.mul(Shade.vec(model_vertex, 1));
-            else if (t.equals(Shade.Types.vec4))
-                return view_uniform.mul(model_vertex);
-            else
-                throw "expected vec, got " + t.repr();
-        }
+    var result = function(obj) {
+        return result.project(obj);
     };
+    result.look_at = function(eye, to, up) {
+        current_view = mat4.lookAt(eye, to, up);
+        view_uniform.set(current_view);
+    };
+    result.set_aspect_ratio = function(a) {
+        aspect_ratio = a;
+        update_projection();
+        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+    };
+    result.set_near_distance = function(v) {
+        near_distance = v;
+        update_projection();
+        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+    };
+    result.set_far_distance = function(v) {
+        far_distance = v;
+        update_projection();
+        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+    };
+    result.set_field_of_view_y = function(v) {
+        field_of_view_y = v;
+        update_projection();
+        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+    };
+    result.project = function(model_vertex) {
+        var t = model_vertex.type;
+        if (t.equals(Shade.Types.vec2))
+            return vp_uniform.mul(Shade.vec(model_vertex, 0, 1));
+        else if (t.equals(Shade.Types.vec3))
+            return vp_uniform.mul(Shade.vec(model_vertex, 1));
+        else if (t.equals(Shade.Types.vec4))
+            return vp_uniform.mul(model_vertex);
+        else
+            throw "expected vec, got " + t.repr();
+    };
+    result.eye_vertex = function(model_vertex) {
+        var t = model_vertex.type;
+        if (t.equals(Shade.Types.vec2))
+            return view_uniform.mul(Shade.vec(model_vertex, 0, 1));
+        else if (t.equals(Shade.Types.vec3))
+            return view_uniform.mul(Shade.vec(model_vertex, 1));
+        else if (t.equals(Shade.Types.vec4))
+            return view_uniform.mul(model_vertex);
+        else
+            throw "expected vec, got " + t.repr();
+    };
+    return result;
 };
 Facet.Camera.ortho = function(opts)
 {
@@ -3564,19 +3565,13 @@ Facet.Camera.ortho = function(opts)
         .selection(letterbox_projection(),
                    pillarbox_projection());
 
-    return {
-        project: function (model_vertex) {
-            var t = model_vertex.type;
-            if (t.equals(Shade.Types.vec2))
-                return m.mul(Shade.vec(model_vertex, 0, 1));
-            else if (t.equals(Shade.Types.vec3))
-                return m.mul(Shade.vec(model_vertex, 1));
-            else if (t.equals(Shade.Types.vec4))
-                return m.mul(model_vertex);
-            else
-                throw "expected vec, got " + t.repr();
-        }
+    function result(obj) {
+        return result.project(obj);
+    }
+    result.project = function(model_vertex) {
+        return m.mul(model_vertex);
     };
+    return result;
 };
 (function() {
 
@@ -6798,8 +6793,8 @@ Shade.mul = function() {
                       matrix: function (x, y) { return mt.scaling(y, x); }
                     },
             vector: { number: function (x, y) { return vt.scaling(x, y); },
-                      vector: function (x, y) { 
-                          return vt.schur_product(x, y); 
+                      vector: function (x, y) {
+                          return vt.schur_product(x, y);
                       },
                       matrix: function (x, y) {
                           return mt.product_vec(mt.transpose(y), x);
@@ -6897,6 +6892,13 @@ Shade.mul = function() {
     };
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
+        if (current_result.type.equals(Shade.Types.mat4)) {
+            if (arguments[i].type.equals(Shade.Types.vec2)) {
+                arguments[i] = Shade.vec(arguments[i], 0, 1);
+            } else if (arguments[i].type.equals(Shade.Types.vec3)) {
+                arguments[i] = Shade.vec(arguments[i], 1);
+            }
+        }
         current_result = operator(current_result, Shade.make(arguments[i]),
                                   "*", mul_type_resolver, evaluator, element_evaluator);
     }
