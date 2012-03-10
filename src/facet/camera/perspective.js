@@ -18,14 +18,14 @@ Facet.Camera.perspective = function(opts)
     var current_view = mat4.lookAt(opts.look_at[0],
                                    opts.look_at[1],
                                    opts.look_at[2]);
-    var vp_uniform = Shade.uniform("mat4");
-    var view_uniform = Shade.uniform("mat4", current_view);
+    var vp_parameter = Shade.parameter("mat4");
+    var view_parameter = Shade.parameter("mat4", current_view);
 
     function update_projection()
     {
         current_projection = mat4.perspective(field_of_view_y, aspect_ratio,
                                               near_distance, far_distance);
-        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
     }
 
     update_projection();
@@ -35,47 +35,47 @@ Facet.Camera.perspective = function(opts)
     };
     result.look_at = function(eye, to, up) {
         current_view = mat4.lookAt(eye, to, up);
-        view_uniform.set(current_view);
+        view_parameter.set(current_view);
     };
     result.set_aspect_ratio = function(a) {
         aspect_ratio = a;
         update_projection();
-        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
     };
     result.set_near_distance = function(v) {
         near_distance = v;
         update_projection();
-        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
     };
     result.set_far_distance = function(v) {
         far_distance = v;
         update_projection();
-        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
     };
     result.set_field_of_view_y = function(v) {
         field_of_view_y = v;
         update_projection();
-        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
     };
     result.project = function(model_vertex) {
         var t = model_vertex.type;
         if (t.equals(Shade.Types.vec2))
-            return vp_uniform.mul(Shade.vec(model_vertex, 0, 1));
+            return vp_parameter.mul(Shade.vec(model_vertex, 0, 1));
         else if (t.equals(Shade.Types.vec3))
-            return vp_uniform.mul(Shade.vec(model_vertex, 1));
+            return vp_parameter.mul(Shade.vec(model_vertex, 1));
         else if (t.equals(Shade.Types.vec4))
-            return vp_uniform.mul(model_vertex);
+            return vp_parameter.mul(model_vertex);
         else
             throw "expected vec, got " + t.repr();
     };
     result.eye_vertex = function(model_vertex) {
         var t = model_vertex.type;
         if (t.equals(Shade.Types.vec2))
-            return view_uniform.mul(Shade.vec(model_vertex, 0, 1));
+            return view_parameter.mul(Shade.vec(model_vertex, 0, 1));
         else if (t.equals(Shade.Types.vec3))
-            return view_uniform.mul(Shade.vec(model_vertex, 1));
+            return view_parameter.mul(Shade.vec(model_vertex, 1));
         else if (t.equals(Shade.Types.vec4))
-            return view_uniform.mul(model_vertex);
+            return view_parameter.mul(model_vertex);
         else
             throw "expected vec, got " + t.repr();
     };

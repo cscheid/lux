@@ -27,7 +27,7 @@ $().ready(function () {
         near_distance: 4,
         far_distance: 10
     });
-    model_mat = Shade.uniform("mat4");
+    model_mat = Shade.parameter("mat4");
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],

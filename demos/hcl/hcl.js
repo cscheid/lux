@@ -1,6 +1,6 @@
 var gl;
 var hcl_batch;
-var luminance_uniform, show_out_of_gamut;
+var luminance_parameter, show_out_of_gamut;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -18,12 +18,12 @@ $().ready(function () {
         near_distance: 0.1,
         far_distance: 100
     });
-    show_out_of_gamut = Shade.uniform("bool", true);
+    show_out_of_gamut = Shade.parameter("bool", true);
     var starting_luminance = 80;
-    luminance_uniform = Shade.uniform("float", starting_luminance);
+    luminance_parameter = Shade.parameter("float", starting_luminance);
     function change_luminance() {
         var new_value = $("#luminance").slider("value") / 10.0;
-        luminance_uniform.set(new_value);
+        luminance_parameter.set(new_value);
         gl.display();
     };
     $("#luminance").slider({
@@ -72,7 +72,7 @@ $().ready(function () {
     var color = Shade.Colors.shadetable.hcl.create(
         hcl_mesh.tex_coord.r().mul(Math.PI*2),
         hcl_mesh.tex_coord.g().mul(100),
-        luminance_uniform).as_shade(1);
+        luminance_parameter).as_shade(1);
     hcl_batch = Facet.bake(hcl_mesh, {
         mode: Facet.DrawingMode.over,
         position: hcl_mesh.vertex,

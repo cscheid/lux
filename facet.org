@@ -2,8 +2,6 @@ The Big List of Facet TODOs
 
 * BUGS
 ** Documentation fixes
-** Uniform -> Parameter
-Calling it "uniform" is just stupid. The name parameter is much better.
 * Optimizer
 ** TODO Common subexpression elimination
     

@@ -73,8 +73,8 @@ $().ready(function () {
     var canvas = document.getElementById("webgl");
     var model;
     var graph;
-    var center = Shade.uniform("vec2", vec.make([450, 450]));
-    var zoom = Shade.uniform("float", 1/450);
+    var center = Shade.parameter("vec2", vec.make([450, 450]));
+    var zoom = Shade.parameter("float", 1/450);
     var prev_mouse_pos;
     jQuery.getJSON("graph_extras/1138_bus.graph",
                    function (data) {

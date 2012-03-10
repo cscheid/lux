@@ -28,7 +28,7 @@ Facet.Unprojector = {
                 elements: 4,
                 vertex: xy
             });
-            depth_value = Shade.uniform("float");
+            depth_value = Shade.parameter("float");
             clear_batch = Facet.bake(model, {
                 position: Shade.vec(xy, depth_value),
                 color: Shade.vec(1,1,1,1)

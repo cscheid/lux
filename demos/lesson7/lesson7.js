@@ -92,8 +92,8 @@ $().ready(function () {
 
     cube_model = Models.flat_cube();
 
-    mv = Shade.uniform("mat4");
-    proj = Shade.uniform("mat4");
+    mv = Shade.parameter("mat4");
+    proj = Shade.parameter("mat4");
 
     texture[0] = Facet.texture({ 
         src: "../img/crate.jpg",
@@ -111,7 +111,7 @@ $().ready(function () {
         min_filter: gl.LINEAR_MIPMAP_NEAREST,
         mipmaps: true
     });
-    sampler = Shade.uniform("sampler2D");
+    sampler = Shade.parameter("sampler2D");
     sampler.set(texture[0]);
 
     cube_drawable = create_cube_drawable({ lighting: true,

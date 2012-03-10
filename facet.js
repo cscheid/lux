@@ -3213,7 +3213,7 @@ function draw_it(batch)
             var call = uniform.uniform_call,
                 value = uniform.get();
             if (_.isUndefined(value)) {
-                throw "uniform " + key + " has not been set.";
+                throw "parameter " + key + " has not been set.";
             }
             var t = facet_constant_type(value);
             if (t === "other") {
@@ -3238,7 +3238,7 @@ function draw_it(batch)
                     };
                 })(call, program[key]);
             } else {
-                throw "could not figure out uniform type! " + t;
+                throw "could not figure out parameter type! " + t;
             }
             uniform._facet_active_uniform(value);
         });
@@ -3444,14 +3444,14 @@ Facet.Camera.perspective = function(opts)
     var current_view = mat4.lookAt(opts.look_at[0],
                                    opts.look_at[1],
                                    opts.look_at[2]);
-    var vp_uniform = Shade.uniform("mat4");
-    var view_uniform = Shade.uniform("mat4", current_view);
+    var vp_parameter = Shade.parameter("mat4");
+    var view_parameter = Shade.parameter("mat4", current_view);
 
     function update_projection()
     {
         current_projection = mat4.perspective(field_of_view_y, aspect_ratio,
                                               near_distance, far_distance);
-        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
     }
 
     update_projection();
@@ -3461,47 +3461,47 @@ Facet.Camera.perspective = function(opts)
     };
     result.look_at = function(eye, to, up) {
         current_view = mat4.lookAt(eye, to, up);
-        view_uniform.set(current_view);
+        view_parameter.set(current_view);
     };
     result.set_aspect_ratio = function(a) {
         aspect_ratio = a;
         update_projection();
-        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
     };
     result.set_near_distance = function(v) {
         near_distance = v;
         update_projection();
-        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
     };
     result.set_far_distance = function(v) {
         far_distance = v;
         update_projection();
-        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
     };
     result.set_field_of_view_y = function(v) {
         field_of_view_y = v;
         update_projection();
-        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
+        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
     };
     result.project = function(model_vertex) {
         var t = model_vertex.type;
         if (t.equals(Shade.Types.vec2))
-            return vp_uniform.mul(Shade.vec(model_vertex, 0, 1));
+            return vp_parameter.mul(Shade.vec(model_vertex, 0, 1));
         else if (t.equals(Shade.Types.vec3))
-            return vp_uniform.mul(Shade.vec(model_vertex, 1));
+            return vp_parameter.mul(Shade.vec(model_vertex, 1));
         else if (t.equals(Shade.Types.vec4))
-            return vp_uniform.mul(model_vertex);
+            return vp_parameter.mul(model_vertex);
         else
             throw "expected vec, got " + t.repr();
     };
     result.eye_vertex = function(model_vertex) {
         var t = model_vertex.type;
         if (t.equals(Shade.Types.vec2))
-            return view_uniform.mul(Shade.vec(model_vertex, 0, 1));
+            return view_parameter.mul(Shade.vec(model_vertex, 0, 1));
         else if (t.equals(Shade.Types.vec3))
-            return view_uniform.mul(Shade.vec(model_vertex, 1));
+            return view_parameter.mul(Shade.vec(model_vertex, 1));
         else if (t.equals(Shade.Types.vec4))
-            return view_uniform.mul(model_vertex);
+            return view_parameter.mul(model_vertex);
         else
             throw "expected vec, got " + t.repr();
     };
@@ -4022,10 +4022,10 @@ Facet.program = function(vs_src, fs_src)
         return null;
     }
 
-    var active_uniforms = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
+    var active_parameters = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
     var array_name_regexp = /.*\[0\]/;
     var info;
-    for (var i=0; i<active_uniforms; ++i) {
+    for (var i=0; i<active_parameters; ++i) {
         info = ctx.getActiveUniform(shaderProgram, i);
         if (array_name_regexp.test(info.name)) {
             var array_name = info.name.substr(0, info.name.length-3);
@@ -4255,7 +4255,7 @@ Facet.Unprojector = {
                 elements: 4,
                 vertex: xy
             });
-            depth_value = Shade.uniform("float");
+            depth_value = Shade.parameter("float");
             clear_batch = Facet.bake(model, {
                 position: Shade.vec(xy, depth_value),
                 color: Shade.vec(1,1,1,1)
@@ -6228,7 +6228,7 @@ Shade.set = function(exp, name)
         parents: [exp]
     });
 };
-Shade.uniform = function(type, v)
+Shade.parameter = function(type, v)
 {
     var call_lookup = [
         [Shade.Types.float_t, "uniform1f"],
@@ -6244,14 +6244,14 @@ Shade.uniform = function(type, v)
     ];
 
     var uniform_name = Shade.unique_name();
-    if (_.isUndefined(type)) throw "uniform requires type";
+    if (_.isUndefined(type)) throw "parameter requires type";
     if (typeof type === 'string') type = Shade.basic(type);
     var value;
     var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
     if (!_.isUndefined(call)) {
         call = call[1];
     } else {
-        throw "Unsupported type " + type.repr() + " for uniform.";
+        throw "Unsupported type " + type.repr() + " for parameter.";
     }
     var result = Shade._create_concrete_exp({
         parents: [],
@@ -6307,7 +6307,7 @@ Shade.uniform = function(type, v)
 Shade.sampler2D_from_texture = function(texture)
 {
     return texture._shade_expression || function() {
-        var result = Shade.uniform("sampler2D");
+        var result = Shade.parameter("sampler2D");
         result.set(texture);
         texture._shade_expression = result;
         // FIXME: What if the same texture is bound to many samplers?!
@@ -8304,6 +8304,7 @@ Shade.program = function(program_obj)
     result.uniforms = _.union(vp_exp.uniforms(), fp_exp.uniforms());
     return result;
 };
+// FIXME rename this, it'll be really confusing.
 Shade.is_program_parameter = function(key)
 {
     return ["color", "position", "point_size",
@@ -10008,7 +10009,7 @@ Facet.Marks.globe = function(opts)
     var inertia_delta = [0,0];
     var min_x, max_x, min_y, max_y;
     var sphere = spherical_mercator_patch(40);
-    var model_matrix = Shade.uniform("mat4");
+    var model_matrix = Shade.parameter("mat4");
 
     var texture = Facet.texture({
         width: 2048,
@@ -10017,12 +10018,12 @@ Facet.Marks.globe = function(opts)
         min_filter: gl.LINEAR
     });
 
-    min_x = Shade.uniform("float");
-    max_x = Shade.uniform("float");
-    min_y = Shade.uniform("float");
-    max_y = Shade.uniform("float");
+    min_x = Shade.parameter("float");
+    max_x = Shade.parameter("float");
+    min_y = Shade.parameter("float");
+    max_y = Shade.parameter("float");
     var min = Shade.vec(min_x, min_y), max = Shade.vec(max_x, max_y);
-    var sampler = Shade.uniform("sampler2D", texture);
+    var sampler = Shade.parameter("sampler2D", texture);
 
     var sphere_drawable = Facet.bake(sphere, {
         gl_Position: opts.view_proj

@@ -109,9 +109,9 @@ $().ready(function () {
             depth: true
         }
     });
-    mv = Shade.uniform("mat4");
-    proj = Shade.uniform("mat4");
-    color = Shade.uniform("vec3");
+    mv = Shade.parameter("mat4");
+    proj = Shade.parameter("mat4");
+    color = Shade.parameter("vec3");
     drawable = star_drawable();
     star_list = init_star_list();
 

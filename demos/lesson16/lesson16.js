@@ -117,8 +117,8 @@ $().ready(function () {
                       });
     cube_model = Models.flat_cube();
 
-    mv = Shade.uniform("mat4");
-    proj = Shade.uniform("mat4");
+    mv = Shade.parameter("mat4");
+    proj = Shade.parameter("mat4");
 
     cube_drawable = create_cube_drawable({ lighting: true,
                                            fogger: make_fogger("linear")

@@ -26,9 +26,9 @@ function draw_it()
                      [wedge_color, Shade.color('green') ] ] ];
     _.each(states, function(lst) {
         _.each(lst, function(pair) {
-            var uniform = pair[0],
+            var parameter = pair[0],
                 value = pair[1];
-            uniform.set(value);
+            parameter.set(value);
         });
         square_drawable.draw();
     });
@@ -43,7 +43,7 @@ $().ready(function () {
         near_distance: 0.1,
         far_distance: 100
     });
-    model_mat = Shade.uniform("mat4", Facet.identity());
+    model_mat = Shade.parameter("mat4", Facet.identity());
 
     var strings = {};
     strings[0] = "Miss";
@@ -75,10 +75,10 @@ $().ready(function () {
                                 0, Shade.atan(square.vertex.at(1), 
                                               square.vertex.at(0)));
     pick_id_val = Facet.fresh_pick_id(3);
-    angle_min = Shade.uniform("float");
-    angle_max = Shade.uniform("float");
-    pick_id = Shade.uniform("vec4");
-    wedge_color = Shade.uniform("vec4");
+    angle_min = Shade.parameter("float");
+    angle_max = Shade.parameter("float");
+    pick_id = Shade.parameter("vec4");
+    wedge_color = Shade.parameter("vec4");
 
     var angle_p1 = angle.add(Math.PI * 2);
     var angle_m1 = angle.sub(Math.PI * 2);

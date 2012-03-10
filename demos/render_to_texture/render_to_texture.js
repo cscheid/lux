@@ -14,9 +14,9 @@ function make_scene()
     var z_translate = -10;
     var tilt = 90, spin = 0, twinkle = false;
 
-    mv = Shade.uniform("mat4");
-    proj = Shade.uniform("mat4");
-    color = Shade.uniform("vec3");
+    mv = Shade.parameter("mat4");
+    proj = Shade.parameter("mat4");
+    color = Shade.parameter("vec3");
 
     function star_drawable()
     {
@@ -162,8 +162,8 @@ $().ready(function () {
     });
     gl.depthFunc(gl.LESS);
 
-    var mv = Shade.uniform("mat4");
-    var proj = Shade.uniform("mat4");
+    var mv = Shade.parameter("mat4");
+    var proj = Shade.parameter("mat4");
     proj.set(Facet.perspective(45, 720/480, 0.1, 100.0));
     scene = make_scene();
     var rb = Facet.render_buffer();

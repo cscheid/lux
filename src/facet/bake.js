@@ -52,7 +52,7 @@ function draw_it(batch)
             var call = uniform.uniform_call,
                 value = uniform.get();
             if (_.isUndefined(value)) {
-                throw "uniform " + key + " has not been set.";
+                throw "parameter " + key + " has not been set.";
             }
             var t = facet_constant_type(value);
             if (t === "other") {
@@ -77,7 +77,7 @@ function draw_it(batch)
                     };
                 })(call, program[key]);
             } else {
-                throw "could not figure out uniform type! " + t;
+                throw "could not figure out parameter type! " + t;
             }
             uniform._facet_active_uniform(value);
         });
