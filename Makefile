@@ -64,11 +64,12 @@ facet.js:					\
 	src/facet/data/texture_table.js		\
 	src/shade/_begin.js			\
 	src/shade/make.js			\
+	src/shade/memoize_on_field.js		\
+	src/shade/unknown.js			\
 	src/shade/color.js			\
 	src/shade/looping.js			\
 	src/shade/unique_name.js		\
 	src/shade/create.js			\
-	src/shade/memoize_on_field.js		\
 	src/shade/types/_begin.js		\
 	src/shade/types/base_t.js		\
 	src/shade/types/basic.js		\
