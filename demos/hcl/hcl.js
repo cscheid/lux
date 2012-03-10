@@ -53,7 +53,7 @@ $().ready(function () {
         return Shade.min(v.r(), Shade.min(v.g(), v.b()));
     }
     function even_p(p) { 
-        var v = Shade.make(p).floor().div(2);
+        var v = Shade(p).floor().div(2);
         return v.eq(v.floor());
     };
     function xor(a, b) { return a.and(b.not()).or(b.and(a.not())); }

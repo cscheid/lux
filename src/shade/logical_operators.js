@@ -34,15 +34,15 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
         if (arguments.length === 0) 
             throw ("operator " + operator_name 
                    + " requires at least 1 parameter");
-        if (arguments.length === 1) return Shade.make(arguments[0]).as_bool();
-        var first = Shade.make(arguments[0]);
+        if (arguments.length === 1) return Shade(arguments[0]).as_bool();
+        var first = Shade(arguments[0]);
         if (!first.type.equals(Shade.Types.bool_t))
             throw ("operator " + operator_name + 
                    " requires booleans, got argument 1 as " +
                    arguments[0].type.repr() + " instead.");
         var current_result = first;
         for (var i=1; i<arguments.length; ++i) {
-            var next = Shade.make(arguments[i]);
+            var next = Shade(arguments[i]);
             if (!next.type.equals(Shade.Types.bool_t))
                 throw ("operator " + operator_name + 
                        " requires booleans, got argument " + (i+1) +
@@ -83,9 +83,8 @@ Shade.Exp.xor = function(other)
     return Shade.xor(this, other);
 };
 
-Shade.not = function(exp)
+Shade.not = Shade(function(exp)
 {
-    exp = Shade.make(exp);
     if (!exp.type.equals(Shade.Types.bool_t)) {
         throw "logical_not requires bool expression";
     }
@@ -100,20 +99,18 @@ Shade.not = function(exp)
             return !this.parents[0].constant_value();
         })
     });
-};
+});
 
 Shade.Exp.not = function() { return Shade.not(this); };
 
 var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator)
 {
-    return function(left, right) {
-        var first = Shade.make(left);
-        var second = Shade.make(right);
+    return Shade(function(first, second) {
         type_checker(first.type, second.type);
 
         return logical_operator_binexp(
             first, second, operator_name, binary_evaluator);
-    };
+    });
 };
 
 var inequality_type_checker = function(name) {

@@ -251,7 +251,7 @@ table.xyz.srgb = function(xyz)
 
 table.luv.hcl = function(luv)
 {
-    var c = Shade.length(luv.vec.swizzle("gb"));
+    var c = Shade.norm(luv.vec.swizzle("gb"));
     var h = Shade.atan(luv.v, luv.u);
     h = _if(h.gt(Math.PI*2), h.sub(Math.PI*2),
         _if(h.lt(0), h.add(Math.PI*2), h));

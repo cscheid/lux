@@ -21,7 +21,7 @@ Facet.Unprojector = {
         // the right depth value. We do it via the batch below.
 
         if (!clear_batch) {
-            var xy = Shade.make(Facet.attribute_buffer(
+            var xy = Shade(Facet.attribute_buffer(
                 [-1, -1,   1, -1,   -1,  1,   1,  1], 2));
             var model = Facet.model({
                 type: "triangle_strip",

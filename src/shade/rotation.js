@@ -2,10 +2,9 @@
 // but before I do that I have to make sure that at this point
 // in the source Shade.make actually exists.
 
-Shade.rotation = function(angle, axis)
+Shade.rotation = Shade(function(angle, axis)
 {
-    angle = Shade.make(angle);
-    axis = Shade.make(axis).normalize();
+    axis = axis.normalize();
 
     var s = angle.sin(), c = angle.cos(), t = Shade.sub(1, c);
     var x = axis.at(0), y = axis.at(1), z = axis.at(2);
@@ -23,4 +22,4 @@ Shade.rotation = function(angle, axis)
                                z.mul(z).mul(t).add(c),
                                0),
                      Shade.vec(0,0,0,1));
-};
+});

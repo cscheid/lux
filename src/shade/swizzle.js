@@ -1,4 +1,4 @@
 Shade.swizzle = function(exp, pattern)
 {
-    return Shade.make(exp).swizzle(pattern);
+    return Shade(exp).swizzle(pattern);
 };

@@ -21,6 +21,7 @@ function builtin_glsl_function(opts)
     var type_resolving_list = opts.type_resolving_list;
     var constant_evaluator = opts.constant_evaluator;
     var element_evaluator = opts.element_evaluator;
+    var element_constant_evaluator = opts.element_constant_evaluator;
 
     for (var i=0; i<type_resolving_list.length; ++i)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
@@ -96,12 +97,17 @@ function builtin_glsl_function(opts)
                 return this.element(i).is_constant();
             };
         }
+        if (element_constant_evaluator) {
+            obj.element_is_constant = function(i) {
+                return element_constant_evaluator(this, i);
+            };
+        }
         return Shade._create_concrete_value_exp(obj);
     };
 }
 
 function common_fun_1op(fun_name, constant_evaluator) {
-    return builtin_glsl_function({
+    var result = builtin_glsl_function({
         name: fun_name, 
         type_resolving_list: [
             [Shade.Types.float_t, Shade.Types.float_t],
@@ -109,12 +115,16 @@ function common_fun_1op(fun_name, constant_evaluator) {
             [Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.vec4, Shade.Types.vec4]
         ], 
-        constant_evaluator: constant_evaluator
+        constant_evaluator: constant_evaluator,
+        element_evaluator: function(exp, i) {
+            return result(exp.parents[0].element(i));
+        }
     });
+    return result;
 }
 
 function common_fun_2op(fun_name, constant_evaluator) {
-    return builtin_glsl_function({
+    var result = builtin_glsl_function({
         name: fun_name, 
         type_resolving_list: [
             [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
@@ -122,8 +132,12 @@ function common_fun_2op(fun_name, constant_evaluator) {
             [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
         ], 
-        constant_evaluator: constant_evaluator
+        constant_evaluator: constant_evaluator, 
+        element_evaluator: function(exp, i) {
+            return result(exp.parents[0].element(i), exp.parents[1].element(i));
+        }
     });
+    return result;
 }
 
 // angle and trig, some common, some exponential,
@@ -372,7 +386,11 @@ var step = builtin_glsl_function({
                 return step(v1, v);
             });
         }
-    }});
+    },
+    element_evaluator: function(exp, i) {
+        return Shade.step.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.step = step;
 
 var smoothstep = builtin_glsl_function({
@@ -397,7 +415,7 @@ var smoothstep = builtin_glsl_function({
 });
 Shade.smoothstep = smoothstep;
 
-var length = builtin_glsl_function({
+var norm = builtin_glsl_function({
     name: "length", 
     type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t],
@@ -411,7 +429,7 @@ var length = builtin_glsl_function({
         else
             return vec.length(v);
     }});
-Shade.length = length;
+Shade.norm = norm;
 
 var distance = builtin_glsl_function({
     name: "distance", 
@@ -421,7 +439,7 @@ var distance = builtin_glsl_function({
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t],
         [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]], 
     constant_evaluator: function(exp) {
-        return exp.parents[0].sub(exp.parents[1]).length().constant_value();
+        return exp.parents[0].sub(exp.parents[1]).norm().constant_value();
     }});
 Shade.distance = distance;
 
@@ -469,9 +487,9 @@ var normalize = builtin_glsl_function({
         [Shade.Types.vec3, Shade.Types.vec3],
         [Shade.Types.vec4, Shade.Types.vec4]], 
     constant_evaluator: function(exp) {
-        return exp.parents[0].div(exp.parents[0].length()).constant_value();
+        return exp.parents[0].div(exp.parents[0].norm()).constant_value();
     }, element_evaluator: function(exp, i) {
-        return exp.parents[0].div(exp.parents[0].length()).element(i);
+        return exp.parents[0].div(exp.parents[0].norm()).element(i);
     }
 });
 Shade.normalize = normalize;
@@ -558,7 +576,9 @@ Shade.refract = refract;
 
 var texture2D = builtin_glsl_function({
     name: "texture2D", 
-    type_resolving_list: [[Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]]
+    type_resolving_list: [[Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]],
+    element_evaluator: function(exp, i) { return exp.at(i); },
+    element_constant_evaluator: function(exp, i) { return false; }
 });
 Shade.texture2D = texture2D;
 
