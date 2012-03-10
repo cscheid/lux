@@ -1,15 +1,13 @@
 var gl;
-var square_drawable, triangle_drawable;
+var square_batch, triangle_batch;
 var model;
 
 //////////////////////////////////////////////////////////////////////////////
 
 function draw_it()
 {
-    model.set(Facet.translation( 1.5, 0, 0));
-    square_drawable.draw();
-    model.set(Facet.translation(-1.5, 0, 0));
-    triangle_drawable.draw();
+    square_batch.draw();
+    triangle_batch.draw();
 }
 
 $().ready(function () {
@@ -44,13 +42,17 @@ $().ready(function () {
         vertex: [[0,1, -1,-1, 1,-1], 2]
     });
 
-    square_drawable = Facet.bake(square, {
-        position: camera.project(model.mul(Shade.vec(square.vertex, 0, 1))),
+    square_batch = Facet.bake(square, {
+        position: camera.project(
+            Shade.translation(Shade.vec(1.5, 0, 0))
+                 .mul(Shade.vec(square.vertex, 0, 1))),
         color: Shade.color('white')
     });
 
-    triangle_drawable = Facet.bake(triangle, {
-        position: camera.project(model.mul(Shade.vec(triangle.vertex, 0, 1))),
+    triangle_batch = Facet.bake(triangle, {
+        position: camera.project(
+            Shade.translation(Shade.vec(-1.5, 0, 0))
+                .mul(Shade.vec(triangle.vertex, 0, 1))),
         color: Shade.color('white')
     });
 
