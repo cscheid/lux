@@ -470,7 +470,10 @@ var normalize = builtin_glsl_function({
         [Shade.Types.vec4, Shade.Types.vec4]], 
     constant_evaluator: function(exp) {
         return exp.parents[0].div(exp.parents[0].length()).constant_value();
-    }});
+    }, element_evaluator: function(exp, i) {
+        return exp.parents[0].div(exp.parents[0].length()).element(i);
+    }
+});
 Shade.normalize = normalize;
 
 var faceforward = builtin_glsl_function({
@@ -509,7 +512,12 @@ var reflect = builtin_glsl_function({
         var I = exp.parents[0];
         var N = exp.parents[1];
         return I.sub(Shade.mul(2, N.dot(I), N)).constant_value();
-    }});
+    }, element_evaluator: function(exp, i) {
+        var I = exp.parents[0];
+        var N = exp.parents[1];
+        return I.sub(Shade.mul(2, N.dot(I), N)).element_constant_value(i);
+    }
+});
 Shade.reflect = reflect;
 
 var refract = builtin_glsl_function({
