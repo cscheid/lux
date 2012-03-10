@@ -56,9 +56,11 @@ Facet.Camera.ortho = function(opts)
         .selection(letterbox_projection(),
                    pillarbox_projection());
 
-    return {
-        project: function (model_vertex) {
-            return m.mul(model_vertex);
-        }
+    function result(obj) {
+        return result.project(obj);
+    }
+    result.project = function(model_vertex) {
+        return m.mul(model_vertex);
     };
+    return result;
 };
