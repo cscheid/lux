@@ -122,6 +122,8 @@ Update: the issue here is that many expressions lack a true definition
 of element(), and so when element(i) returns element.at(i),
 at(i).element() runs the risk of diverging.
 
+This should go together with writing the semantics for Shade expressions.
+
 ** TODO Typechecking code review 
 functions like cosh which just build other expressions should have
 stricter type checking.
@@ -131,8 +133,6 @@ stricter type checking.
 This means multiple contexts, and lots of things are going to break.
 We already have set_context, but many calls use a possibly stale
 context on the closure scope. A code review and tests are in order.
-** TODO test suite for builtins, especially for element_evaluator
-This should go together with writing the semantics for Shade expressions.
 * Features
 ** More basic marks
 Now that I figured out a nice way to make aligned rects work, I should
