@@ -117,6 +117,8 @@ facet.js:					\
 	src/shade/look_at.js			\
 	src/shade/discard.js			\
 	src/shade/id.js				\
+	src/shade/frustum.js			\
+	src/shade/perspective_matrix.js		\
 	src/shade/_end.js			\
 	src/shade/colors/_begin.js		\
 	src/shade/colors/alpha.js		\
