@@ -1,99 +1,86 @@
 var gl;
-var cube_drawable, pyramid_drawable;
-var mv;
-var proj;
-var angle = 0;
+var cube_batch, pyramid_batch;
+var angle;
 var texture = [];
 var sampler;
 var current_texture;
 var cube_model;
-var light_ambient = Shade.color('gray');
+var light_ambient = Shade.vec(0.3, 0.3, 0.3, 1.0);
 var light_diffuse = Shade.color('white');
-var light_position = Shade.vec(0, 0, 2);
-var Models = Facet.Models;
-
-var mat_ambient = Shade.vec(0.2, 0.2, 0.2, 1);
+var light_position = Shade.vec(0, 0, 6);
 
 //////////////////////////////////////////////////////////////////////////////
 
-function create_cube_drawable(opts)
+function create_cube_batch(opts)
 {
-    var material_color = Shade.texture2D(sampler, cube_model.tex_coord);
-    var final_color;
     opts = opts || {};
-
+    var material_color = Shade.texture2D(sampler, opts.model.tex_coord);
+    var final_color;
+    var model_mat = Shade.rotation(angle, Shade.vec(1, 1, 1));
+    var camera = Facet.Camera.perspective({
+        look_at: [[0, 0, 6], [0, 0, -1], [0, 1, 0]],
+        field_of_view_y: 45,
+        aspect_ratio: 720/480,
+        near_distance: 0.1,
+        far_distance: 100
+    });
+ 
     if (opts.lighting) {
         // replicate OpenGL lighting on a shader
         // 
         // http://glprogramming.com/red/chapter05.html, section
         //  "The Mathematics of Lighting"
         //
-        var mat3 = Shade.mat3(mv);
-
         final_color = Shade.gl_light({
             light_position: light_position,
-            vertex: mat3.mul(cube_model.vertex),
             material_color: material_color,
             light_ambient: light_ambient,
             light_diffuse: light_diffuse,
             per_vertex: opts.per_vertex,
-            normal: mat3.mul(cube_model.normal.normalize())
+            vertex: model_mat.mul(opts.model.vertex),
+            normal: model_mat.mul(opts.model.normal)
         });
     } else {
         final_color = material_color;
     }
-    var mvp = proj.mul(mv);
-    return Facet.bake(cube_model, {
-        position: mvp.mul(Shade.vec(cube_model.vertex, 1)),
+
+    return Facet.bake(opts.model, {
+        position: camera(model_mat.mul(opts.model.vertex)),
         color: final_color
     });
 }
 
 function draw_it()
 {
-    var model_cube = Facet.rotation(angle, [1,1,1]);
-    var view       = Facet.translation(0.0, 0.0, -6.0);
-    gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LESS);
-    mv.set(mat4.product(view, model_cube));
-    proj.set(Facet.perspective(45, 720/480, 0.1, 100.0));
-    cube_drawable.draw();
+    cube_batch.draw();
 }
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
+    gl = Facet.init(canvas, {
+        clearDepth: 1.0,
+        clearColor: [0,0,0,0.2],
+        display: draw_it,
+        attributes:
+        {
+            alpha: true,
+            depth: true
+        }
+    });
+
+    var cube_model = Facet.Models.flat_cube();
+
     $("#linear").click(function() { sampler.set(texture[0]); });
     $("#nearest").click(function() { sampler.set(texture[1]); });
     $("#mipmap").click(function() { sampler.set(texture[2]); });
     $("#per_vertex").click(function(obj) {
         var thisCheck = $(this);
-        cube_drawable = create_cube_drawable({ lighting: true,
-                                               per_vertex: thisCheck.is(":checked") });
+        cube_batch = create_cube_batch({ lighting: true,
+                                         model: cube_model,
+                                         per_vertex: thisCheck.is(":checked") });
     });
 
-    gl = Facet.init(canvas,
-                      {
-                          clearDepth: 1.0,
-                          clearColor: [0,0,0,0.2],
-                          display: draw_it,
-                          attributes:
-                          {
-                              alpha: true,
-                              depth: true
-                          },
-                          debugging: true
-                      });
-    // because we're making faces with different textures on each
-    // corner, we need separate
-    // vertices for each "side" of the corner. So, even though there's
-    // only 8 vertices in a cube, we end up with 24 of them, since we
-    // need three different texture coordinates per corner.
-
-    cube_model = Models.flat_cube();
-
-    mv = Shade.parameter("mat4");
-    proj = Shade.parameter("mat4");
+    angle = Shade.parameter("float");
 
     texture[0] = Facet.texture({ 
         src: "../img/crate.jpg",
@@ -114,14 +101,15 @@ $().ready(function () {
     sampler = Shade.parameter("sampler2D");
     sampler.set(texture[0]);
 
-    cube_drawable = create_cube_drawable({ lighting: true,
-                                           per_vertex: true });
+    cube_batch = create_cube_batch({ lighting: true,
+                                     model: cube_model,
+                                     per_vertex: true });
 
     var start = new Date().getTime();
     var f = function() {
         window.requestAnimFrame(f, canvas);
         var elapsed = new Date().getTime() - start;
-        angle = (elapsed / 20) * (Math.PI/180);
+        angle.set((elapsed / 20) * (Math.PI/180));
         gl.display();
     };
     f();
