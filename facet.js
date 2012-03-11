@@ -3428,7 +3428,9 @@ Facet.Camera.perspective = function(opts)
 {
     opts = opts || {};
     opts = _.defaults(opts, {
-        look_at: [[0, 0, 0], [0, 0, -1], [0, 1, 0]],
+        look_at: [Shade.vec(0, 0, 0), 
+                  Shade.vec(0, 0, -1), 
+                  Shade.vec(0, 1, 0)],
         field_of_view_y: 45,
         aspect_ratio: 1,
         near_distance: 0.1,
@@ -3440,70 +3442,18 @@ Facet.Camera.perspective = function(opts)
     var near_distance = opts.near_distance;
     var far_distance = opts.far_distance;
 
-    var current_projection;
-    var current_view = mat4.lookAt(opts.look_at[0],
-                                   opts.look_at[1],
-                                   opts.look_at[2]);
-    var vp_parameter = Shade.parameter("mat4");
-    var view_parameter = Shade.parameter("mat4", current_view);
-
-    function update_projection()
-    {
-        current_projection = mat4.perspective(field_of_view_y, aspect_ratio,
-                                              near_distance, far_distance);
-        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
-    }
-
-    update_projection();
-
+    var view = Shade.look_at(opts.look_at[0], opts.look_at[1], opts.look_at[2]);
+    var projection = Shade.perspective_matrix(field_of_view_y, aspect_ratio, near_distance, far_distance);
+    var vp_parameter = Shade.mul(projection, view);
     var result = function(obj) {
         return result.project(obj);
     };
-    result.look_at = function(eye, to, up) {
-        current_view = mat4.lookAt(eye, to, up);
-        view_parameter.set(current_view);
-    };
-    result.set_aspect_ratio = function(a) {
-        aspect_ratio = a;
-        update_projection();
-        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
-    };
-    result.set_near_distance = function(v) {
-        near_distance = v;
-        update_projection();
-        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
-    };
-    result.set_far_distance = function(v) {
-        far_distance = v;
-        update_projection();
-        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
-    };
-    result.set_field_of_view_y = function(v) {
-        field_of_view_y = v;
-        update_projection();
-        vp_parameter.set(Shade.mul(mat4.product(current_projection, current_view)));
-    };
     result.project = function(model_vertex) {
-        var t = model_vertex.type;
-        if (t.equals(Shade.Types.vec2))
-            return vp_parameter.mul(Shade.vec(model_vertex, 0, 1));
-        else if (t.equals(Shade.Types.vec3))
-            return vp_parameter.mul(Shade.vec(model_vertex, 1));
-        else if (t.equals(Shade.Types.vec4))
-            return vp_parameter.mul(model_vertex);
-        else
-            throw "expected vec, got " + t.repr();
+        return vp_parameter.mul(model_vertex);
     };
     result.eye_vertex = function(model_vertex) {
         var t = model_vertex.type;
-        if (t.equals(Shade.Types.vec2))
-            return view_parameter.mul(Shade.vec(model_vertex, 0, 1));
-        else if (t.equals(Shade.Types.vec3))
-            return view_parameter.mul(Shade.vec(model_vertex, 1));
-        else if (t.equals(Shade.Types.vec4))
-            return view_parameter.mul(model_vertex);
-        else
-            throw "expected vec, got " + t.repr();
+        return view.mul(model_vertex);
     };
     return result;
 };
@@ -4607,7 +4557,16 @@ Shade.make = function(exp)
         throw "expected a value, got undefined instead";
     }
     var t = facet_typeOf(exp);
-    if (t === 'boolean' || t === 'number') {
+    if (t === 'string') {
+        // Did you accidentally say exp1 + exp2 when you meant
+        // exp1.add(exp2)?
+        throw "strings are not valid shade expressions";
+    } else if (t === 'boolean' || t === 'number') {
+        if (isNaN(exp)) {
+            // Did you accidentally say exp1 / exp2 or exp1 - exp2 when you meant
+            // exp1.div(exp2) or exp1.sub(exp2)?
+            throw "nans are not valid in shade expressions";
+        }
         return Shade.constant(exp);
     } else if (t === 'array') {
         return Shade.seq(exp);
@@ -7890,6 +7849,7 @@ Shade.seq = function(parents)
     });
 };
 Shade.Optimizer = {};
+
 Shade.Optimizer.debug = false;
 
 Shade.Optimizer._debug_passes = false;
@@ -8038,6 +7998,10 @@ Shade.Optimizer.replace_with_notone = function(exp)
     } else if (!t1.equals(ft) && t2.equals(ft)) {
         return exp.parents[0];
     } else if (t1.equals(ft) && !t2.equals(ft)) {
+        return exp.parents[1];
+    } else if (t1.is_vec() && t2.is_mat()) {
+        return exp.parents[0];
+    } else if (t1.is_mat() && t2.is_vec()) {
         return exp.parents[1];
     }
     throw "internal error: no is_mul_identity value on input to replace_with_notone";
@@ -8377,13 +8341,26 @@ Shade.Utils.fit = function(data) {
 // Fairly bare-bones for now (only diffuse, no attenuation)
 Shade.gl_light = function(opts)
 {
-    var light_pos = opts.light_position;
-    var vertex_pos = opts.vertex;
+    opts = _.defaults(opts || {}, {
+        light_ambient: Shade.vec(0,0,0,1),
+        light_diffuse: Shade.vec(1,1,1,1),
+        per_vertex: false
+    });
+    function vec3(v) {
+        return v.type.equals(Shade.Types.vec4) ? v.swizzle("xyz").div(v.at(3)) : v;
+    }
+    var light_pos = vec3(opts.light_position);
+    var vertex_pos = vec3(opts.vertex);
     var material_color = opts.material_color;
-    var light_ambient = opts.light_ambient || Shade.vec(0,0,0,1);
-    var light_diffuse = opts.light_diffuse || Shade.vec(1,1,1,1);
-    var per_vertex = opts.per_vertex || false;
-    var N = opts.normal; // this must be appropriately transformed
+    var light_ambient = opts.light_ambient;
+    var light_diffuse = opts.light_diffuse;
+    var per_vertex = opts.per_vertex;
+    var vertex_normal = (opts.normal.type.equals(Shade.Types.vec4) ? 
+                         opts.normal.swizzle("xyz") : 
+                         opts.normal).normalize();
+
+    // this must be appropriately transformed
+    var N = vertex_normal;
     var L = light_pos.sub(vertex_pos).normalize();
     var v = Shade.max(L.dot(N), 0);
     if (per_vertex)
@@ -8928,6 +8905,25 @@ Shade.id = function(id_value)
     
     return vec4.make([r / 255, g / 255, b / 255, a / 255]);
 };
+Shade.frustum = Shade.make(function(left, right, bottom, top, near, far)
+{
+    var rl = right.sub(left);
+    var tb = top.sub(bottom);
+    var fn = far.sub(near);
+    return Shade.mat(Shade.vec(near.mul(2).div(rl), 0, 0, 0),
+                     Shade.vec(0, near.mul(2).div(tb), 0, 0),
+                     Shade.vec(right.add(left).div(rl), 
+                               top.add(bottom).div(tb), 
+                               far.add(near).neg().div(fn),
+                               -1),
+                     Shade.vec(0, 0, far.mul(near).mul(2).neg().div(fn), 0));
+});
+Shade.perspective_matrix = Shade.make(function(fovy, aspect, near, far)
+{
+    var top = near.mul(Shade.tan(fovy.mul(Math.PI / 360)));
+    var right = top.mul(aspect);
+    return Shade.frustum(right.neg(), right, top.neg(), top, near, far);
+});
 
 return Shade;
 }());
