@@ -27,7 +27,7 @@ function make_graph_model(graph)
 
 function make_graph_batch(model, center, zoom)
 {
-    var camera = Facet.Camera.ortho({
+    var camera = Shade.Camera.ortho({
         center: center,
         zoom: zoom,
         aspect_ratio: 720/480

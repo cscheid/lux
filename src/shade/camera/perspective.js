@@ -1,4 +1,4 @@
-Facet.Camera.perspective = function(opts)
+Shade.Camera.perspective = function(opts)
 {
     opts = opts || {};
     opts = _.defaults(opts, {

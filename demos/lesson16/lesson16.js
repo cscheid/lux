@@ -112,8 +112,7 @@ $().ready(function () {
                           {
                               alpha: true,
                               depth: true
-                          },
-                          debugging: true
+                          }
                       });
     cube_model = Models.flat_cube();
 

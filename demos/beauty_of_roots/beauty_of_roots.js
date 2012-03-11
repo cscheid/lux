@@ -139,7 +139,7 @@ $().ready(function() {
     });
 
     aspect_ratio = Shade.parameter("float", width/height);
-    camera = Facet.Camera.ortho({
+    camera = Shade.Camera.ortho({
         center: center,
         zoom: zoom,
         aspect_ratio: aspect_ratio

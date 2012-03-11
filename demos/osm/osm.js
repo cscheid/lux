@@ -128,7 +128,6 @@ $().ready(function () {
             alpha: true,
             depth: true
         },
-        debugging: true,
         mousedown: function(event) {
             prev = [event.offsetX, event.offsetY];
             inertia_delta = [0, 0];
