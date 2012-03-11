@@ -1,4 +1,5 @@
 Shade.Optimizer = {};
+
 Shade.Optimizer.debug = false;
 
 Shade.Optimizer._debug_passes = false;
@@ -147,6 +148,10 @@ Shade.Optimizer.replace_with_notone = function(exp)
     } else if (!t1.equals(ft) && t2.equals(ft)) {
         return exp.parents[0];
     } else if (t1.equals(ft) && !t2.equals(ft)) {
+        return exp.parents[1];
+    } else if (t1.is_vec() && t2.is_mat()) {
+        return exp.parents[0];
+    } else if (t1.is_mat() && t2.is_vec()) {
         return exp.parents[1];
     }
     throw "internal error: no is_mul_identity value on input to replace_with_notone";
