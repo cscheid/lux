@@ -37,13 +37,12 @@ function draw_it()
 $().ready(function () {
     var canvas = document.getElementById("webgl");
     var camera = Facet.Camera.perspective({
-        look_at: [[0, 0, 6], [0, 0, -1], [0, 1, 0]],
+        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
         field_of_view_y: 45,
         aspect_ratio: 720/480,
         near_distance: 0.1,
         far_distance: 100
     });
-    model_mat = Shade.parameter("mat4", Facet.identity());
 
     var strings = {};
     strings[0] = "Miss";
@@ -89,7 +88,7 @@ $().ready(function () {
  
     var hit = inside(angle).or(inside(angle_p1)).or(inside(angle_m1));
     square_drawable = Facet.bake(square, {
-        position: camera.project(model_mat.mul(Shade.vec(square.vertex, 0, 1))),
+        position: camera(square.vertex),
         color: wedge_color
             .discard_if(distance_from_origin.gt(1).or(hit.not())),
         pick_id: pick_id
