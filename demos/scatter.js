@@ -30,17 +30,19 @@ function data_buffers()
 
 function init_webgl()
 {
+    var aColors = getColors();
     Facet.set_context(gl);
     data = data_buffers();
-
-    point_diameter = S.uniform("float", 10);
-    stroke_width   = S.uniform("float", 2.5);
-    point_alpha    = S.uniform("float", 1.0);
-
+    if (typeof point_diameter === "undefined") 
+    	point_diameter = S.uniform("float", 10);
+    if (typeof stroke_width === "undefined") 
+    	stroke_width   = S.uniform("float", 2.5);
+    if (typeof point_alpha === "undefined") 
+   	point_alpha    = S.uniform("float", 1.0);
     var species_color = S.Utils.choose(
-        [S.vec(1,0,0,point_alpha),
-         S.vec(0,1,0,point_alpha),
-         S.vec(0,0,1,point_alpha)])(data.species);
+        [S.vec(aColors[0][0],aColors[0][1],aColors[0][2],point_alpha),
+         S.vec(aColors[1][0],aColors[1][1],aColors[1][2],point_alpha),
+         S.vec(aColors[2][0],aColors[2][1],aColors[2][2],point_alpha)])(data.species);
 
     scatterplot_drawable = Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
@@ -55,6 +57,18 @@ function init_webgl()
         mode: Facet.DrawingMode.over
     });
 }
+
+  f = function () {
+    if (alive) {
+	window.requestAnimFrame(f, canvas);
+    }
+    gl.display();
+  };
+
+  function refresh_webgl(){
+    init_webgl();
+    f();
+  }
 
 $().ready(function() {
     function change_pointsize() {
@@ -72,6 +86,8 @@ $().ready(function() {
         stroke_width.set(new_value);
         gl.display();
     };
+   
+
     $("#pointsize").slider({
         min: 0, 
         max: 1000, 
@@ -96,6 +112,17 @@ $().ready(function() {
         slide: change_stroke_width,
         change: change_stroke_width
     });
+    
+    $("#scheme").change(function(){
+    	return changeSchemeType();
+   	});
+
+    $("#scheme").click(function(){
+    	return changeSchemeType();
+   	});
+
+    setClassNum(3);
+
     var canvas = document.getElementById("scatterplot");
     gl = Facet.init(canvas, { attributes: { alpha: true,
                                             depth: true
@@ -104,13 +131,8 @@ $().ready(function() {
                               display: display,
                               clearColor: [0, 0, 0, 0.2]
                             });
+
     init_webgl();
     var start = new Date().getTime();
-    var f = function () {
-        if (alive) {
-            window.requestAnimFrame(f, canvas);
-        }
-        gl.display();
-    };
-    f();
+    f();                    
 });
