@@ -17,11 +17,11 @@ Facet.Marks.dots = function(opts)
 
     var S = Shade;
 
-    var fill_color     = Shade.make(opts.fill_color);
-    var stroke_color   = Shade.make(opts.stroke_color);
-    var point_diameter = Shade.make(opts.point_diameter);
-    var stroke_width   = Shade.make(opts.stroke_width).add(1);
-    var use_alpha      = Shade.make(opts.alpha);
+    var fill_color     = Shade(opts.fill_color);
+    var stroke_color   = Shade(opts.stroke_color);
+    var point_diameter = Shade(opts.point_diameter);
+    var stroke_width   = Shade(opts.stroke_width).add(1);
+    var use_alpha      = Shade(opts.alpha);
     
     var model_opts = {
         type: "points",
@@ -32,7 +32,7 @@ Facet.Marks.dots = function(opts)
     var model = Facet.model(model_opts);
 
     var distance_to_center_in_pixels = S.pointCoord().sub(S.vec(0.5, 0.5))
-        .length().mul(point_diameter);
+        .norm().mul(point_diameter);
     var point_radius = point_diameter.div(2);
     var distance_to_border = point_radius.sub(distance_to_center_in_pixels);
     var gl_Position = model.vertex;

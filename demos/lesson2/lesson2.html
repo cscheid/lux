@@ -38,94 +38,95 @@ var square = Facet.model({
 });
 </pre>
 
-<p>To draw each model, we need to tell WebGL how to give
-  a <em>position</em> to each vertex, and a <em>color</em> to each
-  pixel that gets drawn on the screen. These are created in Facet
-  with <span class="keyword">Shade</span>, and the expressions
-  are <span class="keyword">bake</span>d into <em>batches</em>.</p>
+<p>Forgive the mess as we remodel the place a bit.</p>
 
-<p>In WebGL and OpenGL, vertices in three-dimensional space are given
-in 4 dimensions, in
-  <a href="http://en.wikipedia.org/wiki/Homogeneous_coordinates">homogeneous
-  coordinates</a>. We put
-  the square and triangle in 3D homogeneous space by picking x and y from their
-  <span class="keyword">vertex</span> attribute, setting z to be zero
-  and the fourth coordinate to be 1. Variables with values that do not
-  change as the batch is being drawn are called <span class="keyword">uniform</span>s, and here we specify
-  a uniform <span class="keyword">mvp</span> which will store a 4x4 matrix.
+<!-- <p>To draw each model, we need to tell WebGL how to give -->
+<!--   a <em>position</em> to each vertex, and a <em>color</em> to each -->
+<!--   pixel that gets drawn on the screen. These are created in Facet -->
+<!--   with <span class="keyword">Shade</span>, and the expressions -->
+<!--   are <span class="keyword">bake</span>d into <em>batches</em>.</p> -->
 
-  This variable stores
-  the <em>model-view-projection</em> matrix, the transformation
-  of a vertex from its position "in the world" to the position "inside
-  the camera". 
+<!-- <p>In WebGL and OpenGL, vertices in three-dimensional space are given -->
+<!-- in 4 dimensions, in -->
+<!--   <a href="http://en.wikipedia.org/wiki/Homogeneous_coordinates">homogeneous -->
+<!--   coordinates</a>. We put -->
+<!--   the square and triangle in 3D homogeneous space by picking x and y from their -->
+<!--   <span class="keyword">vertex</span> attribute, setting z to be zero -->
+<!--   and the fourth coordinate to be 1. Variables with values that do not -->
+<!--   change as the batch is drawn are -->
+<!--   called <span class="keyword">uniform</span>s, and here we specify -->
+<!--   a uniform <span class="keyword">mvp</span> which will store a 4x4 matrix. -->
 
-  The final vertex
-  <span class="keyword">position</span> is given by
-  multiplying the vertex coordinates by that matrix:</p>
+<!--   This variable stores -->
+<!--   the <em>model-view-projection</em> matrix, the transformation -->
+<!--   of a vertex from its position "in the world" to the position "inside -->
+<!--   the camera".  -->
 
-<pre class="highlight">
-mvp = Shade.uniform("mat4");
+<!--   The final vertex -->
+<!--   <span class="keyword">position</span> is given by -->
+<!--   multiplying the vertex coordinates by that matrix:</p> -->
 
-square_batch = Facet.bake(square, {
-    position: mvp.mul(Shade.vec(square.vertex, 0, 1)),
-    color: Shade.color('white')
-});
+<!-- <pre class="highlight"> -->
+<!-- square_batch = Facet.bake(square, { -->
+<!--     position: mvp.mul(Shade.vec(square.vertex, 0, 1)), -->
+<!--     color: Shade.color('white') -->
+<!-- }); -->
 
-triangle_batch = Facet.bake(triangle, {
-    position: mvp.mul(Shade.vec(triangle.vertex, 0, 1)),
-    color: Shade.color('white')
-});
-</pre>
+<!-- triangle_batch = Facet.bake(triangle, { -->
+<!--     position: mvp.mul(Shade.vec(triangle.vertex, 0, 1)), -->
+<!--     color: Shade.color('white') -->
+<!-- }); -->
+<!-- </pre> -->
 
-<p>We are almost done. We now create
-  a <span class="keyword">display</span> function. Batches have a method
-  named <span class="keyword">draw</span>, which
-  draws the models using the given positions and colors. The camera
-  transformation is computed
-  by <span class="keyword">Facet.perspective</span>,
-  and the models are positioned
-  using <span class="keyword">Facet.translation</span>:
-</p>
+<!-- <p>We are almost done. We now create -->
+<!--   a <span class="keyword">display</span> function. Batches have a method -->
+<!--   named <span class="keyword">draw</span>, which -->
+<!--   draws the models using the given positions and colors. The camera -->
+<!--   transformation is computed -->
+<!--   by <span class="keyword">Facet.perspective</span>, -->
+<!--   and the models are positioned -->
+<!--   using <span class="keyword">Facet.translation</span>: -->
+<!-- </p> -->
 
-<pre class="highlight">
-function draw_it()
-{
-    var proj = Facet.perspective(45, 720/480, 0.1, 100.0);
+<!-- <pre class="highlight"> -->
+<!-- function draw_it() -->
+<!-- { -->
+<!--     var proj = Facet.perspective(45, 720/480, 0.1, 100.0); -->
 
-    mvp.set(mat4.product(proj, Facet.translation( 1.5, 0.0, -6.0)));
-    square_drawable.draw();
+<!--     mvp.set(mat4.product(proj, Facet.translation( 1.5, 0.0, -6.0))); -->
+<!--     square_drawable.draw(); -->
 
-    mvp.set(mat4.product(proj, Facet.translation(-1.5, 0.0, -6.0)));
-    triangle_drawable.draw();
-}
-</pre>
+<!--     mvp.set(mat4.product(proj, Facet.translation(-1.5, 0.0, -6.0))); -->
+<!--     triangle_drawable.draw(); -->
+<!-- } -->
+<!-- </pre> -->
 
-<p>In this last snippet of code we create the required WebGL
-  scaffolding, using <span class="keyword">Facet.init</span>. 
-  Notice that Facet
-  populates the WebGL context with an extra
-  function, <span class="keyword">display</span>. This function
-  does a few convenient things such as clearing the
-  color and depth buffers, and then calls the display function you give it, in
-  this case <span class="keyword">draw_it</span>.
-</p>
+<!-- <p>In this last snippet of code we create the required WebGL -->
+<!--   scaffolding, using <span class="keyword">Facet.init</span>.  -->
+<!--   Notice that Facet -->
+<!--   populates the WebGL context with an extra -->
+<!--   function, <span class="keyword">display</span>. This function -->
+<!--   does a few convenient things such as clearing the -->
+<!--   color and depth buffers, and then calls the display function you give it, in -->
+<!--   this case <span class="keyword">draw_it</span>. -->
+<!-- </p> -->
 
-<pre class="highlight">
-var canvas = document.getElementById("webgl");
-gl = Facet.init(canvas, {
-                    clearDepth: 1.0,
-                    clearColor: [0,0,0,1],
-                    display: draw_it,
-                    attributes: {
-                        alpha: true,
-                        depth: true
-                    },
-                    debugging: true
-                });
-gl.display();
-</pre>
+<!-- <pre class="highlight"> -->
+<!-- var canvas = document.getElementById("webgl"); -->
+<!-- gl = Facet.init(canvas, { -->
+<!--                     clearDepth: 1.0, -->
+<!--                     clearColor: [0,0,0,1], -->
+<!--                     display: draw_it, -->
+<!--                     attributes: { -->
+<!--                         alpha: true, -->
+<!--                         depth: true -->
+<!--                     }, -->
+<!--                     debugging: true -->
+<!--                 }); -->
+<!-- gl.display(); -->
+<!-- </pre> -->
 
-<p>That's it! Your full-fledged WebGL app is up and running.</p>
+<!-- <p>That's it! Your full-fledged WebGL app is up and running.</p> -->
 
 <p>Back to the <a href="index.html">index</a>.</p>
 <script>

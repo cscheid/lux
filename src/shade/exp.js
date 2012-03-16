@@ -115,8 +115,8 @@ Shade.Exp = {
     sub: function(op) {
         return Shade.sub(this, op);
     },
-    length: function() {
-        return Shade.length(this);
+    norm: function() {
+        return Shade.norm(this);
     },
     distance: function(other) {
         return Shade.distance(this, other);

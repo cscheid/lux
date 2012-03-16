@@ -104,6 +104,7 @@ camelCase functions. This way, people familiar with GLSL can use them,
 while people coming directly to Facet will use underscore
 ** TODO "Selection" is a terrible name. Fix it.
 ** TODO Shade.Utils is terrible. Move that stuff to Shade.Scale or something like that.
+** Shade.model vs Shade.bake is getting annoying. Find a way out.
 * Testing/Engineering
 ** TODO fix the _shade_type ugliness
 One possibility is to create a WebGLObject prototype that knows how to
@@ -120,6 +121,8 @@ constant_value. What do I do about it?
 Update: the issue here is that many expressions lack a true definition
 of element(), and so when element(i) returns element.at(i),
 at(i).element() runs the risk of diverging.
+
+This should go together with writing the semantics for Shade expressions.
 
 ** TODO Typechecking code review 
 functions like cosh which just build other expressions should have

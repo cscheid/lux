@@ -112,11 +112,11 @@ test("Shade compilation", function() {
     // incremented, but I don't know any easy way around it.
 
     (function () {
-        var u = Shade.uniform("vec4");
+        var u = Shade.parameter("vec4");
         var v = u.exp();
         var c = v.cos();
         var s = v.sin();
-        var cond = Shade.uniform("float").gt(0);
+        var cond = Shade.parameter("float").gt(0);
         var root = Shade.selection(cond, c, s);
         var cc = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE);
         cc.compile(root);
@@ -156,7 +156,10 @@ test("Shade compilation", function() {
 });
 
 test("Shade constant folding", function() {
-    var x = Shade.uniform("float");
+    equal(Shade.unknown("float").guid, Shade.unknown("float").guid);
+    notEqual(Shade.unknown("float").guid, Shade.unknown("mat2").guid);
+
+    var x = Shade.parameter("float");
     equal(Shade.mul(2, Shade.vec(2, 2)).element(1).constant_value(), 4, 
           "different dimensions on float-vec operations and element()");
     equal(Shade.add(Shade.vec(2,2), 4).element(1).constant_value(), 6, 
@@ -326,10 +329,10 @@ test("Shade constant folding", function() {
        "selection folding");
 
     equal(Shade.or(true).constant_value(), true, "single logical value");
-    equal(Shade.make(true).discard_if(false).is_constant(), true, "discard constant folding");
-    equal(Shade.make(false).discard_if(false).constant_value(), false, "discard constant folding");
+    equal(Shade(true).discard_if(false).is_constant(), true, "discard constant folding");
+    equal(Shade(false).discard_if(false).constant_value(), false, "discard constant folding");
 
-    var tex = Shade.uniform("sampler2D");
+    var tex = Shade.parameter("sampler2D");
     var texcoord = Shade.varying("fooobarasdf", "vec2");
 
     equal(Shade.selection(true,
@@ -347,33 +350,33 @@ test("Shade constant folding", function() {
 
     //////////////////////////////////////////////////////////////////////////
     // constant folding on selections:
-    var uniform_logical = Shade.uniform("bool"), 
-        uniform_float = Shade.uniform("float");
+    var parameter_logical = Shade.parameter("bool"), 
+        parameter_float = Shade.parameter("float");
 
-    ok(Shade.selection(uniform_logical, 3, 3).is_constant() === true,
+    ok(Shade.selection(parameter_logical, 3, 3).is_constant() === true,
        "selection is_constant() when both sides are the same");
 
-    equal(Shade.selection(uniform_logical, 3, 3).constant_value(), 3,
+    equal(Shade.selection(parameter_logical, 3, 3).constant_value(), 3,
        "selection constant_value() when both sides are the same");
 
-    ok(Shade.selection(uniform_logical, uniform_float, 3).is_constant() === false,
+    ok(Shade.selection(parameter_logical, parameter_float, 3).is_constant() === false,
        "selection is_constant() when both sides are the same");
 
-    equal(Shade.selection(uniform_logical, 
-                       Shade.vec(uniform_float, 5, uniform_float, uniform_float),
-                       Shade.vec(uniform_float, 5, uniform_float, uniform_float))
+    equal(Shade.selection(parameter_logical, 
+                       Shade.vec(parameter_float, 5, parameter_float, parameter_float),
+                       Shade.vec(parameter_float, 5, parameter_float, parameter_float))
           .element_is_constant(1), true,
           "selection element_is_constant when both sides are the same");
 
-    equal(Shade.selection(uniform_logical, 
-                       Shade.vec(uniform_float, 5, uniform_float, uniform_float),
-                       Shade.vec(uniform_float, 6, uniform_float, uniform_float))
+    equal(Shade.selection(parameter_logical, 
+                       Shade.vec(parameter_float, 5, parameter_float, parameter_float),
+                       Shade.vec(parameter_float, 6, parameter_float, parameter_float))
           .element_is_constant(1), false,
           "selection element_is_constant when both sides aren't the same");
 
-    equal(Shade.selection(uniform_logical, 
-                       Shade.vec(uniform_float, 5, uniform_float, uniform_float),
-                       Shade.vec(uniform_float, 5, uniform_float, uniform_float))
+    equal(Shade.selection(parameter_logical, 
+                       Shade.vec(parameter_float, 5, parameter_float, parameter_float),
+                       Shade.vec(parameter_float, 5, parameter_float, parameter_float))
           .element_constant_value(1), 5,
           "selection element_constant_value when both sides are the same");
 
@@ -412,8 +415,8 @@ test("Shade constant folding", function() {
            "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 6");
     })();
 
-    equal(Shade.make(2).length().constant_value(), 2,  "length constant evaluator");
-    equal(Shade.make(-2).length().constant_value(), 2, "length constant evaluator");
+    equal(Shade(2).norm().constant_value(), 2,  "norm constant evaluator");
+    equal(Shade(-2).norm().constant_value(), 2, "norm constant evaluator");
 
     //////////////////////////////////////////////////////////////////////////
     // constant folding on elements
@@ -432,17 +435,17 @@ test("Shade constant folding", function() {
     // 
 
     (function() {
-        var nonconst = Shade.uniform("float");
+        var nonconst = Shade.parameter("float");
         var exp = Shade.array([Shade.vec(1,1), Shade.vec(1,1)]).at(nonconst).sub(Shade.vec(2,3));
         ok(exp.element(0));
     })();
 });
 
 test("Shade optimizer", function() {
-    var uniform = Shade.uniform("vec4");
-    var uniform_logical = Shade.uniform("bool");
-    var uniform_logical_2 = Shade.uniform("bool");
-    var exp = Shade.mul(uniform, Shade.constant(0));
+    var parameter = Shade.parameter("vec4");
+    var parameter_logical = Shade.parameter("bool");
+    var parameter_logical_2 = Shade.parameter("bool");
+    var exp = Shade.mul(parameter, Shade.constant(0));
     equal(Shade.Optimizer.is_times_zero(exp), true, "detect times zero");
 
     var result = Shade.Optimizer.replace_with_zero(exp);
@@ -450,27 +453,27 @@ test("Shade optimizer", function() {
     ok(vec.equal(result.constant_value(),
                  vec.make([0,0,0,0])), "replace times zero");
 
-    exp = Shade.mul(uniform, Shade.constant(1));
+    exp = Shade.mul(parameter, Shade.constant(1));
     equal(Shade.Optimizer.is_times_one(exp), true, "detect times one");
     result = Shade.Optimizer.replace_with_notone(exp);
-    equal(result.guid, uniform.guid, "times one simplifies to original expression");
+    equal(result.guid, parameter.guid, "times one simplifies to original expression");
 
-    exp = Shade.mul(Shade.constant(1), uniform);
+    exp = Shade.mul(Shade.constant(1), parameter);
     equal(Shade.Optimizer.is_times_one(exp), true, "detect times one");
     result = Shade.Optimizer.replace_with_notone(exp);
-    equal(result.guid, uniform.guid, "times one simplifies to original expression");
+    equal(result.guid, parameter.guid, "times one simplifies to original expression");
 
-    exp = Shade.add(Shade.constant(0), uniform);
+    exp = Shade.add(Shade.constant(0), parameter);
     equal(Shade.Optimizer.is_plus_zero(exp), true, "detect plus zero");
     result = Shade.Optimizer.replace_with_nonzero(exp);
-    equal(result.guid, uniform.guid, "plus zero simplifies to original expression");
+    equal(result.guid, parameter.guid, "plus zero simplifies to original expression");
 
-    exp = Shade.add(uniform, Shade.constant(0));
+    exp = Shade.add(parameter, Shade.constant(0));
     equal(Shade.Optimizer.is_plus_zero(exp), true, "detect plus zero");
     result = Shade.Optimizer.replace_with_nonzero(exp);
-    equal(result.guid, uniform.guid, "plus zero simplifies to original expression");
+    equal(result.guid, parameter.guid, "plus zero simplifies to original expression");
 
-    exp = Shade.mul(uniform, Shade.vec(0.5, 0.5, 0.5, 1));
+    exp = Shade.mul(parameter, Shade.vec(0.5, 0.5, 0.5, 1));
     equal(Shade.Optimizer.is_times_one(exp), false, "detect false times one");
 
     // There's a slight subtlety here in that vec(1,1,1,1) is identity in
@@ -489,27 +492,36 @@ test("Shade optimizer", function() {
     equal(Shade.Optimizer.is_times_one(exp), true, "detect heterogenous times one");
 
     equal(Shade.Optimizer.is_logical_or_with_constant(
-        Shade.or(true, uniform_logical)), true, "detect true || x");
+        Shade.or(true, parameter_logical)), true, "detect true || x");
 
-    ok(uniform_logical.guid !== undefined, "uniform_logical has guid");
+    ok(parameter_logical.guid !== undefined, "parameter_logical has guid");
     equal(Shade.Optimizer.replace_logical_or_with_constant(
-        Shade.or(false, uniform_logical)).guid, uniform_logical.guid, "optimize false || x");
+        Shade.or(false, parameter_logical)).guid, parameter_logical.guid, "optimize false || x");
     equal(Shade.Optimizer.replace_logical_or_with_constant(
-        Shade.or(true, uniform_logical)).constant_value(), true, "optimize true || x");
+        Shade.or(true, parameter_logical)).constant_value(), true, "optimize true || x");
 
     equal(Shade.Optimizer.replace_logical_and_with_constant(
-        Shade.and(true, uniform_logical)).guid, uniform_logical.guid, "optimize true && x");
+        Shade.and(true, parameter_logical)).guid, parameter_logical.guid, "optimize true && x");
     equal(Shade.Optimizer.replace_logical_and_with_constant(
-        Shade.and(false, uniform_logical)).constant_value(), false, "optimize false && x");
+        Shade.and(false, parameter_logical)).constant_value(), false, "optimize false && x");
 
     equal(Shade.Optimizer.is_known_branch(
-        Shade.selection(true, uniform_logical, uniform_logical_2)), true, "detect known branch");
+        Shade.selection(true, parameter_logical, parameter_logical_2)), true, "detect known branch");
     equal(Shade.Optimizer.prune_selection_branch(
-        Shade.selection(true, uniform_logical, uniform_logical_2)).guid, 
-          uniform_logical.guid, "optimize known branch");
+        Shade.selection(true, parameter_logical, parameter_logical_2)).guid, 
+          parameter_logical.guid, "optimize known branch");
     equal(Shade.Optimizer.prune_selection_branch(
-        Shade.selection(false, uniform_logical, uniform_logical_2)).guid, 
-          uniform_logical_2.guid, "optimize known branch");
+        Shade.selection(false, parameter_logical, parameter_logical_2)).guid, 
+          parameter_logical_2.guid, "optimize known branch");
+
+    ok(vec4.equal(Shade.mul(Shade.translation(Shade.vec(0,0,0)),
+                            Shade.vec(1, 0)).constant_value(),
+                  vec4.make([1,0,0,1])),
+       "Shade mat4 * vec2 shortcuts");
+    ok(vec4.equal(Shade.mul(Shade.translation(Shade.vec(0,0,0)),
+                            Shade.vec(1, 0, 2)).constant_value(),
+                  vec4.make([1,0,2,1])),
+       "Shade mat4 * vec3 shortcuts");
 });
 
 test("Shade programs", function() {
@@ -539,7 +551,7 @@ test("Texture tables", function() {
                 { 0: 3, 1: 4, 2: 5 },
                 { 0: 6, 1: 7, 2: 8 } ]
     };
-    var table = Facet.Data.texture_table(simple_data);
+    var table = Facet.Data.texture_table(Facet.Data.table(simple_data));
 
     for (var row_ix=0; row_ix<3; ++row_ix) {
         for (var col_ix=0; col_ix<3; ++col_ix) {

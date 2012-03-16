@@ -104,10 +104,10 @@ $().ready(function() {
     canvas.width = width;
     canvas.height = height;
 
-    center = Shade.uniform("vec2", vec.make([0, 0]));
-    zoom = Shade.uniform("float", 2/3);
-    pointsize = Shade.uniform("float", 2.5);
-    pointweight = Shade.uniform("float", 0.5);
+    center = Shade.parameter("vec2", vec.make([0, 0]));
+    zoom = Shade.parameter("float", 2/3);
+    pointsize = Shade.parameter("float", 2.5);
+    pointweight = Shade.parameter("float", 0.5);
 
     // FIXME That hardcoded 240 should be computed based on screen size or something
     gl = Facet.init(canvas, {
@@ -138,7 +138,7 @@ $().ready(function() {
         update_camera();
     });
 
-    aspect_ratio = Shade.uniform("float", width/height);
+    aspect_ratio = Shade.parameter("float", width/height);
     camera = Facet.Camera.ortho({
         center: center,
         zoom: zoom,
@@ -165,12 +165,12 @@ $().ready(function() {
                     });
                     var pt = Shade.vec(points_model.x, points_model.y);
                     points_batch = Facet.bake(points_model, {
-                        position: camera.project(pt),
+                        position: camera(pt),
                         mode: Facet.DrawingMode.additive,
 
                         //color: Shade.round_dot(Shade.vec(0.1,0,0,1)),
                         color: Shade.pointCoord().sub(Shade.vec(0.5, 0.5))
-                                    .length().pow(2).neg()
+                                    .norm().pow(2).neg()
                                     .mul(20)
                                     .exp()
                                     .mul(pointweight)

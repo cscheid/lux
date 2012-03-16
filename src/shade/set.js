@@ -1,6 +1,10 @@
+/* Shade.set is essentially an internal method for Shade. Don't use it
+   unless you know exactly what you're doing.
+ */
+
 Shade.set = function(exp, name)
 {
-    exp = Shade.make(exp);
+    exp = Shade(exp);
     var type = exp.type;
     return Shade._create_concrete_exp({
         expression_type: "set",

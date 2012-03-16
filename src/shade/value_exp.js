@@ -27,10 +27,10 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                 return this;
             else
                 throw this.type.repr() + " is an atomic type, got this: " + i;
+        } else {
+            this.debug_print();
+            throw "Internal error; this should have been overriden.";
         }
-        // FIXME TERRIBLE IDEA, should throw and
-        // force objects to define elements.
-        return this.at(i);
     },
     compile: function(ctx) {
         if (this._must_be_function_call) {

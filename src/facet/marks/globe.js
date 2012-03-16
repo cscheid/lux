@@ -49,7 +49,7 @@ Facet.Marks.globe = function(opts)
     var inertia_delta = [0,0];
     var min_x, max_x, min_y, max_y;
     var sphere = spherical_mercator_patch(40);
-    var model_matrix = Shade.uniform("mat4");
+    var model_matrix = Shade.parameter("mat4");
 
     var texture = Facet.texture({
         width: 2048,
@@ -58,12 +58,12 @@ Facet.Marks.globe = function(opts)
         min_filter: gl.LINEAR
     });
 
-    min_x = Shade.uniform("float");
-    max_x = Shade.uniform("float");
-    min_y = Shade.uniform("float");
-    max_y = Shade.uniform("float");
+    min_x = Shade.parameter("float");
+    max_x = Shade.parameter("float");
+    min_y = Shade.parameter("float");
+    max_y = Shade.parameter("float");
     var min = Shade.vec(min_x, min_y), max = Shade.vec(max_x, max_y);
-    var sampler = Shade.uniform("sampler2D", texture);
+    var sampler = Shade.parameter("sampler2D", texture);
 
     var sphere_drawable = Facet.bake(sphere, {
         gl_Position: opts.view_proj

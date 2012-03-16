@@ -21,14 +21,14 @@ Facet.Unprojector = {
         // the right depth value. We do it via the batch below.
 
         if (!clear_batch) {
-            var xy = Shade.make(Facet.attribute_buffer(
+            var xy = Shade(Facet.attribute_buffer(
                 [-1, -1,   1, -1,   -1,  1,   1,  1], 2));
             var model = Facet.model({
                 type: "triangle_strip",
                 elements: 4,
                 vertex: xy
             });
-            depth_value = Shade.uniform("float");
+            depth_value = Shade.parameter("float");
             clear_batch = Facet.bake(model, {
                 position: Shade.vec(xy, depth_value),
                 color: Shade.vec(1,1,1,1)

@@ -63,18 +63,19 @@ facet.js:					\
 	src/facet/data/table.js			\
 	src/facet/data/texture_table.js		\
 	src/shade/_begin.js			\
+	src/shade/make.js			\
+	src/shade/memoize_on_field.js		\
+	src/shade/unknown.js			\
 	src/shade/color.js			\
 	src/shade/looping.js			\
 	src/shade/unique_name.js		\
 	src/shade/create.js			\
-	src/shade/memoize_on_field.js		\
 	src/shade/types/_begin.js		\
 	src/shade/types/base_t.js		\
 	src/shade/types/basic.js		\
 	src/shade/types/array.js		\
 	src/shade/types/function_t.js		\
 	src/shade/types/simple_types.js		\
-	src/shade/make.js			\
 	src/shade/compilation_context.js	\
 	src/shade/exp.js			\
 	src/shade/value_exp.js			\
@@ -116,6 +117,8 @@ facet.js:					\
 	src/shade/look_at.js			\
 	src/shade/discard.js			\
 	src/shade/id.js				\
+	src/shade/frustum.js			\
+	src/shade/perspective_matrix.js		\
 	src/shade/_end.js			\
 	src/shade/colors/_begin.js		\
 	src/shade/colors/alpha.js		\

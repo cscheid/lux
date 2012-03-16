@@ -1,0 +1,1035 @@
+\documentclass{article}
+\usepackage{microtype}
+\usepackage{graphicx}
+\title{Developer documentation for the Shade expression language}
+\begin{document}
+\maketitle
+\newcommand{\C}[1]{\texttt{#1}}
+\newcommand{\true}{\textrm{true}}
+\newcommand{\false}{\textrm{false}}
+\newcommand{\implies}{\Rightarrow}
+\newcommand{\const}[1]{\textrm{Const}[#1]}
+\newcommand{\val}[1]{\textrm{Value}[#1]}
+\newcommand{\unk}{\textrm{unknown}}
+\newcommand{\elt}[2]{\textrm{Element}[#1, #2]}
+\newcommand{\glf}[1]{\textrm{float}(#1)}
+\newcommand{\glvII}[2]{\textrm{vec3}(#1, #2)}
+\newcommand{\glvIII}[3]{\textrm{vec4}(#1, #2, #3)}
+\newcommand{\glvIV}[4]{\textrm{vec4}(#1, #2, #3, #4)}
+\newcommand{\case}[1]{\textrm{case} #1 \textrm{of:}}
+
+\section{Overview}
+
+Shade is an expression language embedded in Javascript. It encodes a
+subset of the OpenGL ES Shading Language, GLSL ES (From now on, I will
+say ``GLSL'' when I mean ``GLSL ES''). The fundamental difference between
+full GLSL and Shade is that Shade expressions denote \emph{values}, and are
+(for the vast majority) side-effect free.
+
+Because of this, Shade has very simple semantics which allow for
+programmatic manipulation of Shade expressions. This enables, for
+example, powerful constant folding and expression manipulation, which
+are necessary components of a practical high-level language that aims
+to be efficiently compiled.
+
+Shade does not compile GLSL itself. Instead, every Shade expression
+denotes some value in GLSL. The Shade compiler works by transforming
+Shade expressions into GLSL programs, but it is free to choose
+different GLSL statements, as long as they all denote the same value.
+
+For example, consider the following snippet:
+\begin{verbatim}
+    var a = Shade.uniform("float");
+    var b = Shade.vec(a, a.sqrt(), 1.0);
+    var c = Shade.sin(b).z();
+\end{verbatim}
+
+The value denoted by \C{a} is a scalar whose value cannot be
+determined at compile time (it's a GLSL
+uniform~\cite{glslspec}). \C{b} denotes a 3-dimensional vector, of
+which some components depend on the values of \C{a}.  Finally, \C{c}
+denotes the z-component of the sine of \C{b}. The value of \C{c}
+\emph{can} be computed at compile-time, but only if we know the
+semantics of vector constructors, sine functions, etc. The Shade
+compiler knows about these, and so can determine that \C{c} does not
+depend on \C{a} at all. If no other parts of the program depend on
+\C{a}, Shade will completely remove the uniform declaration from the
+final GLSL shader.  This allows users to write high-level libraries in
+Shade, without paying many of the costs of abstraction.
+
+\section{Shade Objects}
+
+Every expression in Shade is a javascript object of type \C{Exp},
+defined in \C{src/shade/exp.js}. The vast majority of these denote
+values, and are of type \C{ValueExp}, defined in
+\C{src/shade/value\_exp.js}.  Every \C{ValueExp} has a \emph{type},
+corresponding to one of the GLSL types, and can be compiled to a GLSL
+expression that when evaluated, denotes the appropriate value (the
+semantics will be given below).
+
+
+\section{Shade Types}
+
+
+\section{Shade Program}
+
+A Shade program encodes a GLSL vertex shader and a GLSL fragment
+shader. 
+
+The Shade compiler will compute the necessary interfaces
+automatically. This reduces much of the hassle of writing
+maintainable, reusable shader libraries. For example, names of GLSL
+\C{varying}, \C{uniform} and \C{attribute} variables must all be consistent,
+and determined ahead of time. In addition, there exist restrictions of
+which variables can be accessed on which shaders. The Shade compiler
+will automatically create shader pairs which respect these
+restrictions.
+
+A Shade program is created by a call to \C{Shade.program}, in
+\C{src/shade/program.js}. \C{Shade.program} takes as a parameter a
+Javascript object with at least two keys: \C{color} and \C{position}. The
+values associated to the keys denote, respectively, Shade expressions
+for the color of the final fragment, and the position of the vertex in
+homogeneous coordinates. Other key-value pairs are allowed, and are
+ignored by \C{Shade.program}.
+
+\section{GLSL Values}
+
+We use the following GLSL types and expressions:
+
+\begin{itemize}
+\item \C{float}: atomic floating-point value
+\item \C{int}: atomic integer value
+\item \C{bool}: atomic boolean value
+\item \C{vec2}, \C{vec3}, \C{vec4}: fixed-size floating point vectors
+\item \C{ivec2}, \C{ivec3}, \C{ivec4}: fixed-size integer vectors
+\item \C{bvec2}, \C{bvec3}, \C{bvec4}: fixed-size integer vectors
+\item \C{mat2}, \C{mat3}, \C{mat4}: fixed-size floating point square matrices
+\item \C{sampler2D}, opaque texture reference type
+\end{itemize}
+
+Values of type \C{vec[234]} and \C{mat[234]} are denoted as \C{vec3(a, b,
+c)}, \C{mat2(vec2(a, b), vec2(c, d))}, and so on. If \C{v} is of type
+\C{vec[234]}, then \C{v[i]} is of type float, and denotes the i-th
+component of the vector. If \C{m} is of type \C{mat[234]}, then \C{m[i]} is
+of type \C{vec[234]}, and denotes the i-th column of the matrix
+
+\section{Shade Grammar}
+
+Because Shade is an embedded language in Javascript, its grammar has
+an almost one-to-one correspondence with functions in the \C{Shade}
+object. Most of these have a direct interpretation in terms of GLSL
+functions, methods or expressions.
+
+You will note that there is some inconsistency in the case conventions
+of the functions below. Generally speaking, GLSL conforms to camelCase
+conventions. Shade functions and methods use underscore\_conventions,
+while Shade object prototypes and classes use CamelCase.
+
+In the list of value constructors below, we use \C{f(t1, t2, t3)} to
+mean that there exists a Shade constructor of the object \C{f} which
+takes three parameters of types \C{t1}, \C{t2} and \C{t3} respectively. To
+give a particular semantics for Shade, all we have to do is provide
+functions for each of these types.
+
+\subsection{Shade value constructors}
+
+\begin{itemize} \item abs 
+\begin{itemize}
+\item \C{abs(float)}
+\item \C{abs(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item acos \begin{itemize}
+\item \C{acos(float)}
+\item \C{acos(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item add \begin{itemize}
+\item \C{add(float, float)}
+\item \C{add(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{add(matX, matX)}, \C{X} $\in [2, 3, 4]$
+\item \C{add(vecX, float)}, \C{X} $\in [2, 3, 4]$
+\item \C{add(matX, float)}, \C{X} $\in [2, 3, 4]$
+\item \C{add(float, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{add(float, matX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item all \begin{itemize}
+\item \C{all(bool)}
+\item \C{all(bvecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item and \begin{itemize}
+\item \C{and(bool, bool)}
+
+\end{itemize}\item any \begin{itemize}
+\item \C{any(bool)}
+\item \C{any(bvecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item array \begin{itemize}
+\item \C{array([list of float])}
+\item \C{array([list of bool])}
+\item \C{array([list of vecX])}, \C{X} $\in [2, 3, 4]$
+\item \C{array([list of bvecX])}, \C{X} $\in [2, 3, 4]$
+\item \C{array([list of ivecX])}, \C{X} $\in [2, 3, 4]$
+\item \C{array([list of matX])}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item asin \begin{itemize}
+\item \C{asin(float)}
+\item \C{asin(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item at \begin{itemize}
+\item \C{at(vecX, int)}, \C{X} $\in [2, 3, 4]$
+\item \C{at(matX, int)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item atan \begin{itemize}
+\item \C{atan(float, float)}
+\item \C{atan(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item attribute \begin{itemize}
+\item FIXME
+\end{itemize}\item ceil \begin{itemize}
+\item \C{ceil(float)}
+\item \C{ceil(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item clamp \begin{itemize}
+\item \C{clamp(float, float, float)}
+\item \C{clamp(vecX, vecX, float)}, \C{X} $\in [2, 3, 4]$
+\item \C{clamp(matX, matX, float)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item cos \begin{itemize}
+\item \C{cos(float)}
+\item \C{cos(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item cross \begin{itemize}
+\item \C{cross(vec3, vec3)}
+
+\end{itemize}\item degrees \begin{itemize}
+\item \C{degrees(float)}
+
+\end{itemize}\item discard\_if \begin{itemize}
+\item \C{discard\_if(ANY, bool)}
+
+\end{itemize}\item distance \begin{itemize}
+\item \C{distance(float, float)}
+\item \C{distance(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item div \begin{itemize}
+\item \C{div(float, float)}
+\item \C{div(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{div(matX, matX)}, \C{X} $\in [2, 3, 4]$
+\item \C{div(vecX, float)}, \C{X} $\in [2, 3, 4]$
+\item \C{div(matX, float)}, \C{X} $\in [2, 3, 4]$
+\item \C{div(float, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{div(float, matX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item dot \begin{itemize}
+\item \C{dot(float, float)}
+\item \C{dot(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item eq \begin{itemize}
+\item \C{eq(float, float)}
+\item \C{eq(int, int)}
+\item \C{eq(bool, bool)}
+\item \C{eq(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{eq(bvecX, bvecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{eq(ivecX, ivecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{eq(matX, matX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item equal \begin{itemize}
+\item \C{equal(vecX, vecX)}
+\item \C{equal(bvecX, bvecX)}
+\item \C{equal(ivecX, ivecX)}
+
+\end{itemize}\item exp \begin{itemize}
+\item \C{exp(float, float)}
+\item \C{exp(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item exp2 \begin{itemize}
+\item \C{exp2(float, float)}
+\item \C{exp2(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item faceforward \begin{itemize}
+\item \C{faceforward(float, float, float)}
+\item \C{faceforward(vecX, vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item floor \begin{itemize}
+\item \C{floor(float, float)}
+\item \C{floor(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item fract \begin{itemize}
+\item \C{fract(float, float)}
+\item \C{fract(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item fragCoord \begin{itemize}
+\item \C{fragCoord}
+
+\end{itemize}\item ge \begin{itemize}
+\item \C{ge(float, float)}
+\item \C{ge(int, int)}
+\item \C{ge(bool, bool)}
+\item \C{ge(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{ge(bvecX, bvecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{ge(ivecX, ivecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{ge(matX, matX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item greaterThan \begin{itemize}
+\item \C{greaterThan(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{greaterThan(ivecX, ivecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item greaterThanEqual \begin{itemize}
+\item \C{greaterThanEqual(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{greaterThanEqual(ivecX, ivecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item gt \begin{itemize}
+\item \C{gt(float, float)}
+\item \C{gt(int, int)}
+\item \C{gt(bool, bool)}
+\item \C{gt(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{gt(bvecX, bvecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{gt(ivecX, ivecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{gt(matX, matX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item inversesqrt \begin{itemize}
+\item \C{inversesqrt(float, float)}
+\item \C{inversesqrt(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item le \begin{itemize}
+\item \C{le(float, float)}
+\item \C{le(int, int)}
+\item \C{le(bool, bool)}
+\item \C{le(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{le(bvecX, bvecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{le(ivecX, ivecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{le(matX, matX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item length \begin{itemize}
+\item \C{length(float)}
+\item \C{length(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item lessThan \begin{itemize}
+\item \C{lessThan(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{lessThan(ivecX, ivecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item lessThanEqual \begin{itemize}
+\item \C{lessThanEqual(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{lessThanEqual(ivecX, ivecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item log \begin{itemize}
+\item \C{log(float)}
+\item \C{log(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item log2 \begin{itemize}
+\item \C{log2(float)}
+\item \C{log2(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item look\_at \begin{itemize}
+\item \C{look\_at(vec3, vec3, vec3)}
+
+\end{itemize}\item lt \begin{itemize}
+\item \C{lt(float, float)}
+\item \C{lt(int, int)}
+\item \C{lt(bool, bool)}
+\item \C{lt(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{lt(bvecX, bvecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{lt(ivecX, ivecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{lt(matX, matX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item mat \begin{itemize}
+\item \C{mat(float, float, float, float)}
+\item \C{mat(float, ..., float)} (9 parameters for a mat3)
+\item \C{mat(float, ..., float)} (16 parameters for a mat4)
+\item \C{mat(vec2, vec2)}
+\item \C{mat(vec3, vec3, vec3)}
+\item \C{mat(vec4, vec4, vec4, vec4)}
+
+\end{itemize}\item mat3 \begin{itemize}
+\item \C{mat3(vec3, vec3, vec3)} FIXME WHY DO WE HAVE THIS?
+
+\end{itemize}\item matrixCompMult \begin{itemize}
+\item \C{matrixCompMult(matX, matX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item max \begin{itemize}
+\item \C{max(int, int)}
+\item \C{max(float, float)}
+\item \C{max(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{max(vecX, float)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item min \begin{itemize}
+\item \C{min(int, int)}
+\item \C{min(float, float)}
+\item \C{min(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{min(vecX, float)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item mix \begin{itemize}
+\item \C{mix(float, float, float)}
+\item \C{mix(vecX, vecX, float)}, \C{X} $\in [2, 3, 4]$
+\item \C{mix(vecX, vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item mod \begin{itemize}
+\item \C{mod(int, int)}
+\item \C{mod(float, float)}
+\item \C{mod(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{mod(vecX, float)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item mul \begin{itemize}
+\item \C{mul(float, float)}
+\item \C{mul(int, int)}
+\item \C{mul(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{mul(matX, matX)}, \C{X} $\in [2, 3, 4]$
+\item \C{mul(matX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{mul(vecX, matX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item ne \begin{itemize}
+\item \C{ne(float, float)}
+\item \C{ne(int, int)}
+\item \C{ne(bool, bool)}
+\item \C{ne(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{ne(bvecX, bvecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{ne(ivecX, ivecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{ne(matX, matX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item neg \begin{itemize}
+\item \C{neg(float)}
+\item \C{neg(vec2)}
+\item \C{neg(vec3)}
+\item \C{neg(vec4)}
+\item \C{neg(int)}
+\item \C{neg(ivec2)}
+\item \C{neg(ivec3)}
+\item \C{neg(ivec4)}
+
+\end{itemize}\item normalize \begin{itemize}
+\item \C{normalize(float)}
+\item \C{normalize(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item not \begin{itemize}
+\item \C{not(bool)}
+
+\end{itemize}\item notEqual \begin{itemize}
+\item \C{notEqual(vecX, vecX)}
+\item \C{notEqual(ivecX, ivecX)}
+\item \C{notEqual(bvecX, bvecX)}
+
+\end{itemize}\item or \begin{itemize}
+\item \C{or(bool, bool)}
+
+\end{itemize}\item per\_vertex \begin{itemize}
+\item \C{per\_vertex(ANY)}
+
+\end{itemize}\item pointCoord \begin{itemize}
+\item \C{pointCoord}
+
+\end{itemize}\item pow \begin{itemize}
+\item \C{pow(float, float)}
+\item \C{pow(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item radians \begin{itemize}
+\item \C{radians(float)}
+
+\end{itemize}\item reflect \begin{itemize}
+\item \C{reflect(float, float, float)}
+\item \C{reflect(vecX, vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item refract \begin{itemize}
+\item \C{refract(float, float, float)}
+\item \C{refract(vecX, vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item selection \begin{itemize}
+\item \C{selection(bool, ANY, ANY)}
+
+\end{itemize}\item sign \begin{itemize}
+\item \C{sign(float)}
+\item \C{sign(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item sin \begin{itemize}
+\item \C{sin(float)}
+\item \C{sin(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item smoothstep \begin{itemize}
+\item \C{smoothstep(float, float, float)}
+\item \C{smoothstep(vecX, vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{smoothstep(float, float, vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item sqrt \begin{itemize}
+\item \C{sqrt(float)}
+\item \C{sqrt(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item step \begin{itemize}
+\item \C{step(float,float)}
+\item \C{step(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{step(float,vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item sub \begin{itemize}
+\item \C{sub(float, float)}
+\item \C{sub(vecX, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{sub(matX, matX)}, \C{X} $\in [2, 3, 4]$
+\item \C{sub(vecX, float)}, \C{X} $\in [2, 3, 4]$
+\item \C{sub(matX, float)}, \C{X} $\in [2, 3, 4]$
+\item \C{sub(float, vecX)}, \C{X} $\in [2, 3, 4]$
+\item \C{sub(float, matX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item swizzle \begin{itemize}
+\item \C{swizzle(string, vec2)}
+\item \C{swizzle(string, vec3)}
+\item \C{swizzle(string, vec4)}
+
+\end{itemize}\item tan \begin{itemize}
+\item \C{tan(float)}
+\item \C{tan(vecX)}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item texture2D \begin{itemize}
+\item \C{texture2D(sampler2D, vec4)}
+
+\end{itemize}\item uniform
+
+  This one is ugly: in the code, it takes as a parameter the string
+  corresponding to the appropriate type. Here we will use different uniform
+  constructors to denote uniforms of different types.
+  
+ \begin{itemize}
+\item \C{uniform\_float()}
+\item \C{uniform\_vecX()}, \C{X} $\in [2, 3, 4]$
+\item \C{uniform\_matX()}, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item vec \begin{itemize}
+\item \C{vec(float)}
+\item \C{vec(vec2)}
+\item \C{vec(vec3)}
+\item \C{vec(vec4)}
+\item \C{vec(float, float)}
+\item \C{vec(float, float, float)}
+\item \C{vec(float, float, float, float)}
+\item \C{vec(vec2, float, float)}
+\item \C{vec(float, vec2, float)}
+\item \C{vec(float, float, vec2)}
+\item \C{vec(vec2, vec2)}
+\item \C{vec(vec3, float)}
+\item \C{vec(float, vec3)}
+
+\end{itemize}\item xor \begin{itemize}
+\item \C{xor(bool, bool)}
+
+\end{itemize}
+\end{itemize}
+
+\subsection{Internal use only}
+
+%% \end{itemize}\item seq \begin{itemize}
+%% \end{itemize}\item set \begin{itemize}
+%% \end{itemize}\item varying \begin{itemize}
+
+%% \end{itemize}
+
+\section{Shade Semantics}
+
+Most of Shade has very simple denotational semantics. Simply put, we
+will model the semantics of Shade as functions from the set of
+(well-formed) Shade expressions, S, to sets of values which we care
+about. (In case the phrase "denotational semantics" scares you: GLSL
+does not allow recursive functions, so all the scary math of
+lambda-calculus denotational semantics is not needed).  More
+concretely, we will define two different semantic functions:
+\emph{constant semantics} and \emph{value semantics}. 
+The set corresponding to the range of
+the semantics function will be known as the \emph{target} of that
+semantics. Our target for the constant semantics will be values in
+boolean algebra. For the value semantics, it will be
+values in an algebra of scalars, vectors and matrices.
+The semantic functions will make extensive use of an auxiliary function 
+$\elt{x, i}$, which extracts the $i$th element from the compound value $x$.
+%% A semantics and
+%% its corresponding element semantics are closely related, which models the fact
+%% that we can construct vectors out of scalars, and that we can examine
+%% particular components out of scalars (similarly for vectors and matrices).
+
+Semantic function application will be denoted with square brackets to
+avoid confusion with the constructor notation of Shade values, which
+uses regular parentheses.
+
+We give here denotational semantics for the value-expression
+portion of the Shade language. This is a \emph{purely-functional} subset,
+and expressions of this subset are referentially transparent: they
+denote the same value regardless of where they appear in the full
+program. This lets us write simple optimizers and analyzers for
+this portion of the Shade language. When embedded in a high-level
+language such as Javascript, this purely functional subsect is already
+sufficient enough to create a rich EDSL.
+
+Even within this restricted subset of GLSL, the actual value denoted
+by some Shade expressions cannot be determined entirely statically:
+they will depend on the WebGL state machine (for example, the values
+of uniform parameters and the results of texture fetches). In that
+case, we will use a special value \C{Unknown} to denote the result. We
+assume that the target algebras have been enriched such that, \emph{unless
+otherwise specified}, any operation involving \C{Unknown} returns
+\C{Unknown}. In that way, \C{Unknown} values are propagated through the
+semantics. For cases whose values are only left undefined in the GLSL
+spec, we will also use the \C{Unknown} value.
+
+Values in the Shade language are typeset \C{in monospace}. Values in the
+target set are typeset normally. Some functions on the target set are
+left implicitly defined (such as sines, cosines, etc).  When there's
+overlap in the structural matching rules described below, the rule
+described first in the list takes precedence.
+
+\subsection{Constant semantics}
+
+$\const{\C{expression}}: S \to \{\true, \false\}$
+
+The constant semantics function is conservative: it is possible to
+write more specific rules which would let us determine with a finer
+granularity values that are computable at compile-time. As a very
+simple example, the following rule would be valid:
+
+$\const{\C{sub(floor(x), sub(x, fract(x)))}} = \true$
+
+However, with the specification below, the constant semantics would
+evaluate \C{sub(floor(x), sub(x, fract(x)))} to Const[\C{x}], which could
+be false. This is unavoidable: there is no computable function
+PerfectConst that perfectly determines whether every well-formed
+expression is constant. (big hammer: Rice's theorem; small hammer,
+consider trying to compute PerfectConst[\C{$(\textrm{quintic\_polynomial over a uniform})^2 = 0$}])
+
+\begin{itemize} \item Basic values \begin{itemize}
+
+\item Const[\C{float(x)}] = \true
+\item Const[\C{bool(x)}] = \true
+
+\end{itemize}\item abs \begin{itemize}
+\item Const[\C{abs(x)}] = Const[\C{x}]
+
+\end{itemize}\item acos \begin{itemize}
+\item Const[\C{acos(x)}] = Const[\C{x}]
+
+\end{itemize}\item add \begin{itemize}
+\item $\const{\C{add(x, y)}} = \const{\C{x}} \land \const{\C{y}}$
+
+\end{itemize}\item all \begin{itemize}
+\item Const[\C{all(bool(x))}] = Const[\C{bool(x)}]
+\item Const[\C{all(bvec2(x, y))}] = Const[\C{and(x, y)}]
+\item Const[\C{all(bvec3(x, y, z))}] = Const[\C{and(x, and(y, z))}]
+\item Const[\C{all(bvec4(x, y, z, w))}] = Const[\C{and(x, and(y, and(z, w)))}]
+
+\end{itemize}\item and \begin{itemize}
+\item $\const{\C{and(x, y)}} = (\const{\C{x}} \land \lnot \val{\C{x}}) \lor (\const{\C{y}} \land \lnot \val{\C{y}})$
+
+\end{itemize}\item any \begin{itemize}
+\item Const[\C{any(bool(x))}] = Const[\C{bool(x)}]
+\item Const[\C{any(bvec2(x, y))}] = Const[\C{or(x, y)}]
+\item Const[\C{any(bvec3(x, y, z))}] = Const[\C{or(x, or(y, z))}]
+\item Const[\C{any(bvec4(x, y, z, w))}] = Const[\C{or(x, or(y, or(z, w)))}]
+
+\end{itemize}\item array \begin{itemize}
+\item Const[\C{array(x)}] = \false
+
+\end{itemize}\item asin \begin{itemize}
+\item Const[\C{asin(x)}] = Const[\C{x}]
+
+\end{itemize}\item at \begin{itemize}
+\item FIXME
+
+\end{itemize}\item atan \begin{itemize}
+\item $\const{\C{atan(x)}} = \const{\C{x}}$
+\item $\const{\C{atan(x, y)}} = \const{\C{x}} \land \const{\C{y}}$
+
+\end{itemize}\item attribute \begin{itemize}
+\item Const[\C{attribute\_float}] = \false
+\item Const[\C{attribute\_vecX}] = \false, \C{X} $\in [2, 3, 4]$
+\item Const[\C{attribute\_matX}] = \false, \C{X} $\in [2, 3, 4]$
+
+\end{itemize}\item ceil \begin{itemize}
+\item Const[\C{ceil(x)}] = Const(\C{x})
+\end{itemize}
+\end{itemize}
+
+\subsection{FIXME FINISH}
+%% \end{itemize}\item clamp \begin{itemize}
+%% \end{itemize}\item cos \begin{itemize}
+%% \end{itemize}\item cross \begin{itemize}
+%% \end{itemize}\item degrees \begin{itemize}
+%% \end{itemize}\item discard\_if \begin{itemize}
+%% \end{itemize}\item distance \begin{itemize}
+%% \end{itemize}\item div \begin{itemize}
+%% \end{itemize}\item dot \begin{itemize}
+%% \end{itemize}\item eq \begin{itemize}
+%% \end{itemize}\item equal \begin{itemize}
+%% \end{itemize}\item exp \begin{itemize}
+%% \end{itemize}\item exp2 \begin{itemize}
+%% \end{itemize}\item faceforward \begin{itemize}
+%% \end{itemize}\item floor \begin{itemize}
+%% \end{itemize}\item fract \begin{itemize}
+%% \end{itemize}\item fragCoord \begin{itemize}
+%% \end{itemize}\item ge \begin{itemize}
+%% \end{itemize}\item gl\_fog \begin{itemize}
+%% \end{itemize}\item gl\_light \begin{itemize}
+%% \end{itemize}\item greaterThan \begin{itemize}
+%% \end{itemize}\item greaterThanEqual \begin{itemize}
+%% \end{itemize}\item gt \begin{itemize}
+%% \end{itemize}\item id \begin{itemize}
+%% \end{itemize}\item inversesqrt \begin{itemize}
+%% \end{itemize}\item le \begin{itemize}
+%% \end{itemize}\item length \begin{itemize}
+%% \end{itemize}\item lessThan \begin{itemize}
+%% \end{itemize}\item lessThanEqual \begin{itemize}
+%% \end{itemize}\item log \begin{itemize}
+%% \end{itemize}\item log2 \begin{itemize}
+%% \end{itemize}\item look\_at \begin{itemize}
+%% \end{itemize}\item lt \begin{itemize}
+%% \end{itemize}\item mat \begin{itemize}
+%% \end{itemize}\item mat3 \begin{itemize}
+%% \end{itemize}\item matrixCompMult \begin{itemize}
+%% \end{itemize}\item max \begin{itemize}
+%% \end{itemize}\item min \begin{itemize}
+%% \end{itemize}\item mix \begin{itemize}
+%% \end{itemize}\item mod \begin{itemize}
+%% \end{itemize}\item mul \begin{itemize}
+%% \end{itemize}\item ne \begin{itemize}
+%% \end{itemize}\item neg \begin{itemize}
+%% \end{itemize}\item normalize \begin{itemize}
+%% \end{itemize}\item not \begin{itemize}
+%% \end{itemize}\item notEqual \begin{itemize}
+%% \end{itemize}\item or \begin{itemize}
+%% \end{itemize}\item per\_vertex \begin{itemize}
+%% \end{itemize}\item pointCoord \begin{itemize}
+%% \end{itemize}\item pow \begin{itemize}
+%% \end{itemize}\item radians \begin{itemize}
+%% \end{itemize}\item reflect \begin{itemize}
+%% \end{itemize}\item refract \begin{itemize}
+%% \end{itemize}\item rotation \begin{itemize}
+%% \end{itemize}\item round\_dot \begin{itemize}
+%% \end{itemize}\item selection \begin{itemize}
+%% \end{itemize}\item sign \begin{itemize}
+%% \end{itemize}\item sin \begin{itemize}
+%% \end{itemize}\item sinh \begin{itemize}
+%% \end{itemize}\item smoothstep \begin{itemize}
+%% \end{itemize}\item sqrt \begin{itemize}
+%% \end{itemize}\item step \begin{itemize}
+%% \end{itemize}\item sub \begin{itemize}
+%% \end{itemize}\item swizzle \begin{itemize}
+%% \end{itemize}\item tan \begin{itemize}
+%% \end{itemize}\item texture2D \begin{itemize}
+%% \end{itemize}\item translation \begin{itemize}
+%% \end{itemize}\item uniform \begin{itemize}
+%% \end{itemize}\item vec \begin{itemize}
+%% \end{itemize}\item xor \begin{itemize}
+
+\subsection{Value semantics}
+
+\[\val{\C{expression}}: S \to \textrm{GLSL\_value}\]
+
+To show that \C{Val} uniquely defines a value for every finite
+expression, all we have to show is that there every equation for a
+term is is defined in terms of "simpler" terms. In other words, we can
+prove that the structural recursion that \C{Val} gives terminates by
+structural induction. This is tedious, but easy enough to do (although
+it's not in here yet).
+
+\C{Val[]} behaves like you expect with respect to constants.
+
+Some operators are extended to behave well with respect to unknown
+values, to allow short-circuit optimizations:
+
+\begin{itemize}
+\item $\unk \lor \true = \true$
+\item $\unk \land \false = \false$
+\item $\unk * 0 = 0$
+\end{itemize}
+
+The full list follows below.
+
+\begin{itemize} \item basic types \begin{itemize}
+\item $\val{\C{float(3)}} = 3$
+%% \item $\val{\C{vec2(4, 5)]} = \glvII{4, 5}$
+%% \item $\val{\C{vec2(x, y)]} = \glvIII{\val{\C{x}}, \val{\C{y}}}$
+%% \item $\val{\C{vec3(x, y, z)]} = \glvIV{\val{\C{x}}, \val{\C{y}}, \Val{\C{z}}}$
+\item ...
+
+\end{itemize}\item abs \begin{itemize}
+\item
+  \begin{eqnarray*}
+    \val{\C{abs(x)}} &=& \case{\val{\C{x}}} \\
+    &=& \begin{array}{lcl}
+      \glf{a} \to |a|
+      \glvII{a, b} \to 
+      \end{array}
+    - float(a) -> |a|
+    - vec2(a, b) -> vec2(|a|, |b|)
+    - vec3(a, b, c) -> vec3(|a|, |b|, |c|)
+    - vec4(a, b, c, d) -> vec4(|a|, |b|, |c|, |d|)
+
+\end{itemize}\item acos \begin{itemize}
+\item Val[\C{acos(x)}] = case Val[\C{x}] of:
+    - float(a) -> acos(a)
+    - vec2(a, b) -> vec2(acos(a), acos(b))
+    - vec3(a, b, c) -> vec3(acos(a), acos(b), acos(c))
+    - vec4(a, b, c, d) -> vec4(acos(a), acos(b), acos(c), acos(d))
+
+\end{itemize}\item add \begin{itemize}
+\item Val[\C{add(x, y)}] = case Val[\C{x}], Val[\C{y}] of:
+    - float(a), float(b) -> a + b
+    - vec2(a, b), float(c) -> vec2(a+c, b+c)
+    - vec3(a, b, c), float(d) -> vec2(a+d, b+d, c+d)
+    - vec4(a, b, c, d), float(e) -> vec4(a+e, b+e, c+e, d+e)
+    - float(c), vec2(a, b) -> vec2(a+c, b+c)
+    - float(d), vec3(a, b, c) -> vec2(a+d, b+d, c+d)
+    - float(e), vec4(a, b, c, d) -> vec4(a+e, b+e, c+e, d+e)
+    - vec2(a, b), vec2(c, d) -> vec2(a+c, b+d)
+    - ... FIXME FINISH
+
+\end{itemize}\item all \begin{itemize}
+\item Val[\C{all(x)}] = case Val[\C{x}] of:
+    - bool(a) -> x
+    - bvec2(a, b) -> $a \land b$
+    - bvec2(a, b, c) -> $a \land b \land c$
+    - bvec2(a, b, c, d) -> $a \land b \land c \land d$
+
+\end{itemize}\item and \begin{itemize}
+\item $\val{\C{and(x, y)}} = \val{\C{x}} \land \val{\C{y}}$
+
+\end{itemize}\item any \begin{itemize}
+\item Val[\C{any(x)}] = case Val[\C{x}] of:
+    - bool(a) -> x
+    - bvec2(a, b) -> $a \lor b$
+    - bvec2(a, b, c) -> $a \lor b \lor c$
+    - bvec2(a, b, c, d) -> $a \lor b \lor c \lor d$
+
+\end{itemize}\item array \begin{itemize}
+\item Val[\C{array(ANY)}] = \C{Unknown}
+  More precisely, \C{array} does not have a GLSL value associated with
+  it. However, it can be combined with \C{at()} to
+  produce a GLSL value.
+
+\end{itemize}\item asin \begin{itemize}
+\item Val[\C{asin(x)}] = case Val[\C{x}] of:
+    - float(a) -> asin(a)
+    - vec2(a, b) -> vec2(asin(a), asin(b))
+    - vec3(a, b, c) -> vec3(asin(a), asin(b), asin(c))
+    - vec4(a, b, c, d) -> vec4(asin(a), asin(b), asin(c), asin(d))
+
+\end{itemize}\item at \begin{itemize}
+\item Val[\C{at(array([$a_0, a_1, \ldots..., a_n$), index)}] = (Val[$a_i$], where i = Val[\C{index}])
+
+\end{itemize}\item atan \begin{itemize}
+\item atan(x) = arc tangent of x, in radians
+\item atan2(y, x) = arc tangent of y/x, in radians, using signs of y and x to determine quadrant.
+\item Val[\C{atan(x)}] = case Val[\C{x}] of:
+    - float(a) -> atan(a)
+    - vec2(a, b) -> vec2(atan(a), atan(b))
+    - vec3(a, b, c) -> vec3(atan(a), atan(b), atan(c))
+    - vec4(a, b, c, d) -> vec4(atan(a), atan(b), atan(c), atan(d))
+\item Val[\C{atan(x, y)}] = case Val[\C{x}], Val[\C{y}] of:
+    - float(a), float(b) -> atan2(a, b)
+    - vec2(a, b), vec2(c, d) -> vec2(atan2(a,c), atan2(b,d))
+    - vec3(a, b, c), vec3(d, e, f) -> vec3(atan2(a, d), atan2(b, e), atan2(c, f))
+    - vec4(a, b, c, d), vec4(e, f, g, h) -> vec4(atan2(a, e), atan2(b, f), atan2(c, g), atan2(d, h))
+
+\end{itemize}\item attribute \begin{itemize}
+\item FIXME
+
+\end{itemize}\item ceil \begin{itemize}
+\item ceil(x) = value of x rounded towards +infinity
+\item Val[\C{ceil(x)}] = case Val[\C{x}] of:
+    - float(a) -> ceil(a)
+    - vec2(a, b) -> vec2(ceil(a), ceil(b))
+    - vec3(a, b, c) -> vec3(ceil(a), ceil(b), ceil(c))
+    - vec4(a, b, c, d) -> vec4(ceil(a), ceil(b), ceil(c), ceil(d))
+
+\end{itemize}\item clamp \begin{itemize}
+\item max(a, b) = if a > b then a else b
+\item min(a, b) = if a < b then a else b
+\item Val[\C{clamp(v, mn, mx)} = case Val[\C{v}], Val[\C{mn}], Val[\C{mx}] of:
+    - float(v), float(mn), float(mx) -> max(mn, min(mx, v))
+    - vec2(v1, v2), vec2(mn1, mn2), vec2(mx1, mx2) -> vec2(max(mn1, min(mx1, v1)), max(mn2, min(mx2, v2)))
+    - vec3(v1, v2, v3), vec2(mn1, mn2, mn3), vec2(mx1, mx2, mx3) -> vec2(max(mn1, min(mx1, v1)), max(mn2, min(mx2, v2)), max(mn3, min(mx3, v3)))
+    - FIXME FINISH
+    
+\end{itemize}\item cos \begin{itemize}
+\item cos(x) = cosine of x given in radians
+\item Val[\C{cos(x)}] = case Val[\C{x}] of:
+    - float(a) -> cos(a)
+    - vec2(a, b) -> vec2(cos(a), cos(b))
+    - vec3(a, b, c) -> vec3(cos(a), cos(b), cos(c))
+    - vec4(a, b, c, d) -> vec4(cos(a), cos(b), cos(c), cos(d))
+
+\end{itemize}\item cross \begin{itemize}
+\item Val[\C{cross(v1, v2)}] = Val[\C{vec3(sub(mul(at(v1, 1), at(v2, 2)), mul(at(v1, 2), at(v2, 1))), sub(mul(at(v1, 2), at(v2, 0)), mul(at(v1, 0), at(v2, 2))), sub(mul(at(v1, 0), at(v2, 1)), mul(at(v1, 1), at(v2, 0))))}]
+\end{itemize}\item degrees \begin{itemize}
+\item Val[\C{degrees(x)}] = Val[\C{x}] \item (180/pi)
+
+\end{itemize}\item discard\_if \begin{itemize}
+\item Val[\C{discard\_if(x, bool(\true))}] = \C{Unknown}
+\item Val[\C{discard\_if(x, bool(\false))}] = x
+
+  The semantics of \C{discard\_if} involve a limited side-effect in the
+  pipeline. If the condition is \true, the evaluation of the fragment
+  program is terminated and that fragment is not processed any
+  further. That is the full extent of the side-effect created by
+  \C{discard\_if}: most importantly, it does not create or change any
+  mutable state. When used judiciously, \C{discard\_if} is a powerful way to
+  avoid unnecessary generation of large numbers of polygons.
+
+\end{itemize}
+\end{itemize}
+
+\subsection{FIXME FINISH}
+  
+%% \end{itemize}\item distance \begin{itemize}
+%% \end{itemize}\item div \begin{itemize}
+%% \end{itemize}\item dot \begin{itemize}
+%% \end{itemize}\item eq \begin{itemize}
+%% \end{itemize}\item equal \begin{itemize}
+%% \end{itemize}\item exp \begin{itemize}
+%% \end{itemize}\item exp2 \begin{itemize}
+%% \end{itemize}\item faceforward \begin{itemize}
+%% \end{itemize}\item floor \begin{itemize}
+%% \end{itemize}\item fract \begin{itemize}
+%% \end{itemize}\item fragCoord \begin{itemize}
+%% \end{itemize}\item ge \begin{itemize}
+%% \end{itemize}\item gl\_fog \begin{itemize}
+%% \end{itemize}\item gl\_light \begin{itemize}
+%% \end{itemize}\item greaterThan \begin{itemize}
+%% \end{itemize}\item greaterThanEqual \begin{itemize}
+%% \end{itemize}\item gt \begin{itemize}
+%% \end{itemize}\item id \begin{itemize}
+%% \end{itemize}\item inversesqrt \begin{itemize}
+%% \end{itemize}\item le \begin{itemize}
+%% \end{itemize}\item length \begin{itemize}
+%% \end{itemize}\item lessThan \begin{itemize}
+%% \end{itemize}\item lessThanEqual \begin{itemize}
+%% \end{itemize}\item log \begin{itemize}
+%% \end{itemize}\item log2 \begin{itemize}
+%% \end{itemize}\item look\_at \begin{itemize}
+%% \end{itemize}\item lt \begin{itemize}
+%% \end{itemize}\item mat \begin{itemize}
+%% \end{itemize}\item mat3 \begin{itemize}
+%% \end{itemize}\item matrixCompMult \begin{itemize}
+%% \end{itemize}\item max \begin{itemize}
+%% \end{itemize}\item min \begin{itemize}
+%% \end{itemize}\item mix \begin{itemize}
+%% \end{itemize}\item mod \begin{itemize}
+%% \end{itemize}\item mul \begin{itemize}
+%% \end{itemize}\item ne \begin{itemize}
+%% \end{itemize}\item neg \begin{itemize}
+%% \end{itemize}\item normalize \begin{itemize}
+%% \end{itemize}\item not \begin{itemize}
+%% \end{itemize}\item notEqual \begin{itemize}
+%% \end{itemize}\item or \begin{itemize}
+%% \end{itemize}\item per\_vertex \begin{itemize}
+%% \end{itemize}\item pointCoord \begin{itemize}
+%% \end{itemize}\item pow \begin{itemize}
+%% \end{itemize}\item radians \begin{itemize}
+%% \end{itemize}\item reflect \begin{itemize}
+%% \end{itemize}\item refract \begin{itemize}
+%% \end{itemize}\item rotation \begin{itemize}
+%% \end{itemize}\item round\_dot \begin{itemize}
+%% \end{itemize}\item selection \begin{itemize}
+%% Val[\C{selection(x, when\_true, when\_false)}] = case Val[\C{x}] of
+%%     - bool(\true) -> Val[\C{when\_true}]
+%%     - bool(\false) -> Val[\C{when\_false}]
+%% \end{itemize}\item sign \begin{itemize}
+%% \end{itemize}\item sin \begin{itemize}
+%% \end{itemize}\item sinh \begin{itemize}
+%% \end{itemize}\item smoothstep \begin{itemize}
+%% \end{itemize}\item sqrt \begin{itemize}
+%% \end{itemize}\item step \begin{itemize}
+%% \end{itemize}\item sub \begin{itemize}
+%% \end{itemize}\item swizzle \begin{itemize}
+%% \end{itemize}\item tan \begin{itemize}
+%% \end{itemize}\item texture2D \begin{itemize}
+%% \end{itemize}\item translation \begin{itemize}
+%% \end{itemize}\item uniform \begin{itemize}
+%% \end{itemize}\item vec \begin{itemize}
+%% \end{itemize}\item xor \begin{itemize}
+
+%% \subsection{Element semantics}
+
+%% Elt[\C{expression}, index] : (S, Z) -> S
+
+%% \end{itemize}\item abs \begin{itemize}
+%% \end{itemize}\item acos \begin{itemize}
+%% \end{itemize}\item add \begin{itemize}
+%% \end{itemize}\item all \begin{itemize}
+%% \end{itemize}\item and \begin{itemize}
+%% \end{itemize}\item any \begin{itemize}
+%% \end{itemize}\item array \begin{itemize}
+%% \end{itemize}\item asin \begin{itemize}
+%% \end{itemize}\item atan \begin{itemize}
+%% \end{itemize}\item attribute \begin{itemize}
+%% \end{itemize}\item ceil \begin{itemize}
+%% \end{itemize}\item clamp \begin{itemize}
+%% \end{itemize}\item cos \begin{itemize}
+%% \end{itemize}\item cross \begin{itemize}
+%% \end{itemize}\item degrees \begin{itemize}
+%% \end{itemize}\item discard\_if \begin{itemize}
+%% \end{itemize}\item distance \begin{itemize}
+%% \end{itemize}\item div \begin{itemize}
+%% \end{itemize}\item dot \begin{itemize}
+%% \end{itemize}\item eq \begin{itemize}
+%% \end{itemize}\item equal \begin{itemize}
+%% \end{itemize}\item exp \begin{itemize}
+%% \end{itemize}\item exp2 \begin{itemize}
+%% \end{itemize}\item faceforward \begin{itemize}
+%% \end{itemize}\item floor \begin{itemize}
+%% \end{itemize}\item fract \begin{itemize}
+%% \end{itemize}\item fragCoord \begin{itemize}
+%% \end{itemize}\item ge \begin{itemize}
+%% \end{itemize}\item gl\_fog \begin{itemize}
+%% \end{itemize}\item gl\_light \begin{itemize}
+%% \end{itemize}\item greaterThan \begin{itemize}
+%% \end{itemize}\item greaterThanEqual \begin{itemize}
+%% \end{itemize}\item gt \begin{itemize}
+%% \end{itemize}\item id \begin{itemize}
+%% \end{itemize}\item inversesqrt \begin{itemize}
+%% \end{itemize}\item le \begin{itemize}
+%% \end{itemize}\item length \begin{itemize}
+%% \end{itemize}\item lessThan \begin{itemize}
+%% \end{itemize}\item lessThanEqual \begin{itemize}
+%% \end{itemize}\item log \begin{itemize}
+%% \end{itemize}\item log2 \begin{itemize}
+%% \end{itemize}\item look\_at \begin{itemize}
+%% \end{itemize}\item lt \begin{itemize}
+%% \end{itemize}\item mat \begin{itemize}
+%% \end{itemize}\item mat3 \begin{itemize}
+%% \end{itemize}\item matrixCompMult \begin{itemize}
+%% \end{itemize}\item max \begin{itemize}
+%% \end{itemize}\item min \begin{itemize}
+%% \end{itemize}\item mix \begin{itemize}
+%% \end{itemize}\item mod \begin{itemize}
+%% \end{itemize}\item mul \begin{itemize}
+%% \end{itemize}\item ne \begin{itemize}
+%% \end{itemize}\item neg \begin{itemize}
+%% \end{itemize}\item normalize \begin{itemize}
+%% \end{itemize}\item not \begin{itemize}
+%% \end{itemize}\item notEqual \begin{itemize}
+%% \end{itemize}\item or \begin{itemize}
+%% \end{itemize}\item per\_vertex \begin{itemize}
+%% \end{itemize}\item pointCoord \begin{itemize}
+%% \end{itemize}\item pow \begin{itemize}
+%% \end{itemize}\item radians \begin{itemize}
+%% \end{itemize}\item reflect \begin{itemize}
+%% \end{itemize}\item refract \begin{itemize}
+%% \end{itemize}\item rotation \begin{itemize}
+%% \end{itemize}\item round\_dot \begin{itemize}
+%% \end{itemize}\item selection \begin{itemize}
+%% Element[\C{selection(x, when\_true, when\_false)}, index] = \C{selection(x, y, z)}, where x == Element[\C{when\_true}, index], y = Element[\C{when\_false} , index]
+%% \end{itemize}\item sign \begin{itemize}
+%% \end{itemize}\item sin \begin{itemize}
+%% \end{itemize}\item smoothstep \begin{itemize}
+%% \end{itemize}\item sqrt \begin{itemize}
+%% \end{itemize}\item step \begin{itemize}
+%% \end{itemize}\item sub \begin{itemize}
+%% \end{itemize}\item swizzle \begin{itemize}
+%% \end{itemize}\item tan \begin{itemize}
+%% \end{itemize}\item texture2D \begin{itemize}
+%% \end{itemize}\item translation \begin{itemize}
+%% \end{itemize}\item uniform \begin{itemize}
+%% \end{itemize}\item vec \begin{itemize}
+%% \end{itemize}\item  xor \begin{itemize}
+%% \end{itemize}
+
+\subsection{Relationship between semantic functions}
+
+The relationship between the value semantics and the constant
+semantics is the following:
+
+\[(\val{s} = \unk) \implies \const{s} = \false\]
+
+\end{document}

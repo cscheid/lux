@@ -30,10 +30,10 @@ Facet.program = function(vs_src, fs_src)
         return null;
     }
 
-    var active_uniforms = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
+    var active_parameters = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
     var array_name_regexp = /.*\[0\]/;
     var info;
-    for (var i=0; i<active_uniforms; ++i) {
+    for (var i=0; i<active_parameters; ++i) {
         info = ctx.getActiveUniform(shaderProgram, i);
         if (array_name_regexp.test(info.name)) {
             var array_name = info.name.substr(0, info.name.length-3);

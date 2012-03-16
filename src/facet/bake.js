@@ -52,7 +52,7 @@ function draw_it(batch)
             var call = uniform.uniform_call,
                 value = uniform.get();
             if (_.isUndefined(value)) {
-                throw "uniform " + key + " has not been set.";
+                throw "parameter " + key + " has not been set.";
             }
             var t = facet_constant_type(value);
             if (t === "other") {
@@ -77,7 +77,7 @@ function draw_it(batch)
                     };
                 })(call, program[key]);
             } else {
-                throw "could not figure out uniform type! " + t;
+                throw "could not figure out parameter type! " + t;
             }
             uniform._facet_active_uniform(value);
         });
@@ -129,14 +129,14 @@ Facet.bake = function(model, appearance)
     function create_pick_program() {
         var pick_id;
         if (appearance.pick_id)
-            pick_id = Shade.make(appearance.pick_id);
+            pick_id = Shade(appearance.pick_id);
         else {
-            pick_id = Shade.make(Shade.id(batch_id));
+            pick_id = Shade(Shade.id(batch_id));
         }
         return process_appearance(function(value, key) {
             if (key === 'gl_FragColor') {
                 var pick_if = (appearance.pick_if || 
-                               Shade.make(value).swizzle("a").gt(0));
+                               Shade(value).swizzle("a").gt(0));
                 return pick_id.discard_if(Shade.not(pick_if));
             } else
                 return value;

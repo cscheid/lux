@@ -45,7 +45,7 @@ Facet.Data.texture_table = function(table)
         mag_filter: ctx.NEAREST
     });
 
-    var index = Shade.make(function(row, col) {
+    var index = Shade(function(row, col) {
         var linear_index    = row.mul(table_ncols).add(col);
         var in_texel_offset = linear_index.mod(4);
         var texel_index     = linear_index.div(4).floor();
@@ -54,7 +54,7 @@ Facet.Data.texture_table = function(table)
         var result          = Shade.vec(x, y, in_texel_offset);
         return result;
     });
-    var at = Shade.make(function(row, col) {
+    var at = Shade(function(row, col) {
         // returns Shade expression with value at row, col
         var ix = index(row, col);
         var uv = ix.swizzle("xy")
