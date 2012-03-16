@@ -1768,7 +1768,7 @@ function color_buffers()
 		schemeTypeName += $(this).attr("title");
 	});
 
-	if( schemeType == ""){  //remove scheme palette if no scheme selected
+	if( schemeType === ""){  //remove scheme palette if no scheme selected
 		$("#cTitle").html("");
 		$("#colorTable").html("");
 		return;
@@ -1779,7 +1779,7 @@ function color_buffers()
 
 	var txt=$('input:text[name=classNum]').val();
 
-	if( txt == null || txt == ""){
+	if( txt === null || txt === ""){
 		classNum = dfltClassNum;
 		$('input:text[name=classNum]').val(dfltClassNum);
 	}
@@ -1799,11 +1799,11 @@ function color_buffers()
 
 	//create array of the colors matching the sheme type, and number of classes
 	scheme = jQuery.map(color.type,function(v,i) { 
-		if( v == schemeType && color.color_num[i] == 1 && color.colors[i] == classNum)
+		if( v === schemeType && color.color_num[i] === 1 && color.colors[i] === classNum)
 			return color.name[i];
 		});
 
-	if( scheme.length == 0) {
+	if( scheme.length === 0) {
 		$("#cTitle").html("");
 		showError("colorTable","No " + schemeTypeName + 
 			" palette avaialable with " + classNum + " colors");
@@ -1818,7 +1818,7 @@ function color_buffers()
 
 		//load the colorSet array with the rgb values for each class
 		jQuery.map(color.name,function(v,i) { 
-		if( v == name && color.color_num[i] == 1 &&  color.colors[i] == classNum){
+		if( v === name && color.color_num[i] === 1 &&  color.colors[i] === classNum){
 			count = 0;
 			for( var j=i;j<(i + classNum);j++){
 				r = color.R[j];
@@ -1932,7 +1932,7 @@ function color_buffers()
 
 	//load classColors array with the rgb values of a color scheme
 	jQuery.map(color.name,function(v,i) { 
-		if( v == schemeName && color.color_num[i] == 1 &&  color.colors[i] == classNum){
+		if( v === schemeName && color.color_num[i] === 1 &&  color.colors[i] === classNum){
 			count = 0;
 			for( var j=i;j<(i + classNum);j++){
 				r = color.R[j]/255;
