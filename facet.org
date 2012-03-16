@@ -1,9 +1,8 @@
 The Big List of Facet TODOs
 
 * BUGS
-** OpenStreetMap globe is broken on MacBook Air 11" (is it a precision problem?)
-** Grand Tour demo is broken on MacBook Air 11" as well
 ** Documentation fixes
+** FIXME inconsistency translation facet shade
 * Optimizer
 ** TODO Common subexpression elimination
     
