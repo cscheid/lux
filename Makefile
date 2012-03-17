@@ -47,6 +47,8 @@ facet.js:					\
 	src/facet/texture.js			\
 	src/facet/unprojector.js		\
 	src/facet/net/_begin.js			\
+	src/facet/net/ajax.js			\
+	src/facet/net/json.js			\
 	src/facet/net/buffer_ajax.js		\
 	src/facet/scale/_begin.js		\
 	src/facet/scale/geo/_begin.js		\
