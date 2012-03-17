@@ -3213,7 +3213,7 @@ function draw_it(batch)
             var call = uniform.uniform_call,
                 value = uniform.get();
             if (_.isUndefined(value)) {
-                throw "uniform " + key + " has not been set.";
+                throw "parameter " + key + " has not been set.";
             }
             var t = facet_constant_type(value);
             if (t === "other") {
@@ -3238,7 +3238,7 @@ function draw_it(batch)
                     };
                 })(call, program[key]);
             } else {
-                throw "could not figure out uniform type! " + t;
+                throw "could not figure out parameter type! " + t;
             }
             uniform._facet_active_uniform(value);
         });
@@ -3290,14 +3290,14 @@ Facet.bake = function(model, appearance)
     function create_pick_program() {
         var pick_id;
         if (appearance.pick_id)
-            pick_id = Shade.make(appearance.pick_id);
+            pick_id = Shade(appearance.pick_id);
         else {
-            pick_id = Shade.make(Shade.id(batch_id));
+            pick_id = Shade(Shade.id(batch_id));
         }
         return process_appearance(function(value, key) {
             if (key === 'gl_FragColor') {
                 var pick_if = (appearance.pick_if || 
-                               Shade.make(value).swizzle("a").gt(0));
+                               Shade(value).swizzle("a").gt(0));
                 return pick_id.discard_if(Shade.not(pick_if));
             } else
                 return value;
@@ -3423,161 +3423,6 @@ Facet.bake = function(model, appearance)
     return result;
 };
 })();
-Facet.Camera = {};
-Facet.Camera.perspective = function(opts)
-{
-    opts = opts || {};
-    opts = _.defaults(opts, {
-        look_at: [[0, 0, 0], [0, 0, -1], [0, 1, 0]],
-        field_of_view_y: 45,
-        aspect_ratio: 1,
-        near_distance: 0.1,
-        far_distance: 100
-    });
-    
-    var field_of_view_y = opts.field_of_view_y;
-    var aspect_ratio = opts.aspect_ratio;
-    var near_distance = opts.near_distance;
-    var far_distance = opts.far_distance;
-
-    var current_projection;
-    var current_view = mat4.lookAt(opts.look_at[0],
-                                   opts.look_at[1],
-                                   opts.look_at[2]);
-    var vp_uniform = Shade.uniform("mat4");
-    var view_uniform = Shade.uniform("mat4", current_view);
-
-    function update_projection()
-    {
-        current_projection = mat4.perspective(field_of_view_y, aspect_ratio,
-                                              near_distance, far_distance);
-        vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
-    }
-
-    update_projection();
-
-    return {
-        look_at: function(eye, to, up) {
-            current_view = mat4.lookAt(eye, to, up);
-            view_uniform.set(current_view);
-        },
-        set_aspect_ratio: function(a) {
-            aspect_ratio = a;
-            update_projection();
-            vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
-        },
-        set_near_distance: function(v) {
-            near_distance = v;
-            update_projection();
-            vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
-        },
-        set_far_distance: function(v) {
-            far_distance = v;
-            update_projection();
-            vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
-        },
-        set_field_of_view_y: function(v) {
-            field_of_view_y = v;
-            update_projection();
-            vp_uniform.set(Shade.mul(mat4.product(current_projection, current_view)));
-        },
-
-        project: function(model_vertex) {
-            var t = model_vertex.type;
-            if (t.equals(Shade.Types.vec2))
-                return vp_uniform.mul(Shade.vec(model_vertex, 0, 1));
-            else if (t.equals(Shade.Types.vec3))
-                return vp_uniform.mul(Shade.vec(model_vertex, 1));
-            else if (t.equals(Shade.Types.vec4))
-                return vp_uniform.mul(model_vertex);
-            else
-                throw "expected vec, got " + t.repr();
-        },
-        eye_vertex: function(model_vertex) {
-            var t = model_vertex.type;
-            if (t.equals(Shade.Types.vec2))
-                return view_uniform.mul(Shade.vec(model_vertex, 0, 1));
-            else if (t.equals(Shade.Types.vec3))
-                return view_uniform.mul(Shade.vec(model_vertex, 1));
-            else if (t.equals(Shade.Types.vec4))
-                return view_uniform.mul(model_vertex);
-            else
-                throw "expected vec, got " + t.repr();
-        }
-    };
-};
-Facet.Camera.ortho = function(opts)
-{
-    opts = _.defaults(opts || {}, {
-        aspect_ratio: 1,
-        left: -1,
-        right: 1,
-        bottom: -1,
-        top: 1,
-        near: -1,
-        far: 1
-    });
-
-    var viewport_ratio = opts.aspect_ratio;
-    var left, right, bottom, top;
-    var near = opts.near;
-    var far = opts.far;
-
-    if (!_.isUndefined(opts.center) && !_.isUndefined(opts.zoom)) {
-        var viewport_width = Shade.div(1, opts.zoom);
-        left   = opts.center.at(0).sub(viewport_width);
-        right  = opts.center.at(0).add(viewport_width);
-        bottom = opts.center.at(1).sub(viewport_width);
-        top    = opts.center.at(1).add(viewport_width);
-    } else {
-        left = opts.left;
-        right = opts.right;
-        bottom = opts.bottom;
-        top = opts.top;
-    }
-
-    function letterbox_projection() {
-        var cy = Shade.add(top, bottom).div(2);
-        var half_width = Shade.sub(right, left).div(2);
-        var half_height = half_width.div(viewport_ratio);
-        var l = left;
-        var r = right;
-        var t = cy.add(half_height);
-        var b = cy.sub(half_height);
-        return Shade.ortho(l, r, b, t, near, far);
-    }
-
-    function pillarbox_projection() {
-        var cx = Shade.add(right, left).div(2);
-        var half_height = Shade.sub(top, bottom).div(2);
-        var half_width = half_height.mul(viewport_ratio);
-        var l = cx.sub(half_width);
-        var r = cx.add(half_width);
-        var t = top;
-        var b = bottom;
-        return Shade.ortho(l, r, b, t, near, far);
-    }
-
-    var view_ratio = Shade.sub(right, left).div(Shade.sub(top, bottom));
-    
-    var m = view_ratio.gt(viewport_ratio)
-        .selection(letterbox_projection(),
-                   pillarbox_projection());
-
-    return {
-        project: function (model_vertex) {
-            var t = model_vertex.type;
-            if (t.equals(Shade.Types.vec2))
-                return m.mul(Shade.vec(model_vertex, 0, 1));
-            else if (t.equals(Shade.Types.vec3))
-                return m.mul(Shade.vec(model_vertex, 1));
-            else if (t.equals(Shade.Types.vec4))
-                return m.mul(model_vertex);
-            else
-                throw "expected vec, got " + t.repr();
-        }
-    };
-};
 (function() {
 
 })();
@@ -3889,10 +3734,10 @@ Facet.model = function(input)
         else if (k === 'elements') {
             if (v._shade_type === 'element_buffer')
                 // example: 'elements: Facet.element_buffer(...)'
-                result.elements = Shade.make(v);
+                result.elements = Shade(v);
             else if (facet_typeOf(v) === 'array')
                 // example: 'elements: [0, 1, 2, 3]'
-                result.elements = Shade.make(Facet.element_buffer(v));
+                result.elements = Shade(Facet.element_buffer(v));
             else
                 // example: 'elements: 4'
                 result.elements = v;
@@ -3900,7 +3745,7 @@ Facet.model = function(input)
         // Then we handle the model attributes. They can be ...
         else if (v._shade_type === 'attribute_buffer') { // ... attribute buffers,
             // example: 'vertex: Facet.attribute_buffer(...)'
-            result[k] = Shade.make(v);
+            result[k] = Shade(v);
             n_elements = v.numItems;
         } else if (facet_typeOf(v) === "array") { // ... or a list of per-vertex things
             var buffer;
@@ -3912,7 +3757,7 @@ Facet.model = function(input)
                 var new_v = [];
                 _.each(v, push_into(new_v, dimension));
                 buffer = Facet.attribute_buffer(new_v, dimension);
-                result[k] = Shade.make(buffer);
+                result[k] = Shade(buffer);
                 n_elements = buffer.numItems;
             } else {
                 // Or they can be a single list of plain numbers, in which case we're passed 
@@ -3920,7 +3765,7 @@ Facet.model = function(input)
                 // being the per-element size
                 // example: 'color: [[1,0,0, 0,1,0, 0,0,1], 3]'
                 buffer = Facet.attribute_buffer(v[0], v[1]);
-                result[k] = Shade.make(buffer);
+                result[k] = Shade(buffer);
                 n_elements = buffer.numItems;
             }
         } else {
@@ -4027,10 +3872,10 @@ Facet.program = function(vs_src, fs_src)
         return null;
     }
 
-    var active_uniforms = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
+    var active_parameters = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
     var array_name_regexp = /.*\[0\]/;
     var info;
-    for (var i=0; i<active_uniforms; ++i) {
+    for (var i=0; i<active_parameters; ++i) {
         info = ctx.getActiveUniform(shaderProgram, i);
         if (array_name_regexp.test(info.name)) {
             var array_name = info.name.substr(0, info.name.length-3);
@@ -4253,14 +4098,14 @@ Facet.Unprojector = {
         // the right depth value. We do it via the batch below.
 
         if (!clear_batch) {
-            var xy = Shade.make(Facet.attribute_buffer(
+            var xy = Shade(Facet.attribute_buffer(
                 [-1, -1,   1, -1,   -1,  1,   1,  1], 2));
             var model = Facet.model({
                 type: "triangle_strip",
                 elements: 4,
                 vertex: xy
             });
-            depth_value = Shade.uniform("float");
+            depth_value = Shade.parameter("float");
             clear_batch = Facet.bake(model, {
                 position: Shade.vec(xy, depth_value),
                 color: Shade.vec(1,1,1,1)
@@ -4309,9 +4154,114 @@ Facet.Unprojector = {
 
 })();
 Facet.Net = {};
-// based on http://calumnymmo.wordpress.com/2010/12/22/so-i-decided-to-wait/
-Facet.Net.buffer_ajax = function(url, handler)
+
+(function() {
+
+var handle_many = function(url, handler, self_call) {
+    var obj = {};
+    var done = _.after(url.length, handler);
+    function piecemeal_handler(result, internal_url) {
+        obj[internal_url] = result;
+        done(obj);
+    }
+    _.each(url, function(internal_url) {
+        self_call(internal_url, piecemeal_handler);
+    });
+};
+
+
+/*
+ * Facet.Net.ajax issues AJAX requests.
+ * 
+ * It takes as parameters
+ * 
+ *  url (string or list of strings): urls to fetch
+ * 
+ *  handler (function(buffer or dictionary of (url: buffer))): a callback
+ *  which gets invoked when all requests finish. If a single URL was passed,
+ *  the callback is called with the single response eturned. If a list of URLs
+ *  were passed, then an object is returned, mapping the URLs as passed to
+ *  the responses.
+ *  
+ * FIXME Facet.Net.ajax has no error handling.
+ */
+
+Facet.Net.ajax = function(url, handler)
 {
+    if (facet_typeOf(url) === "array")
+        return handle_many(url, handler, Facet.Net.ajax);
+
+    var xhr = new XMLHttpRequest;
+
+    xhr.open("GET", url, true);
+
+    var ready = false;
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200 && !ready) {
+            handler(xhr.response, url);
+            ready = true;
+        }
+    };
+    xhr.send(null);
+};
+/*
+ * Facet.Net.json issues JSON AJAX requests.
+ * 
+ * It takes as parameters
+ * 
+ *  url (string or list of strings): urls to fetch
+ * 
+ *  handler (function(buffer or dictionary of (url: buffer))): a callback
+ *  which gets invoked when all requests finish. If a single URL was passed,
+ *  the callback is called with the single JSON object returned. If a list of URLs
+ *  were passed, then an object is returned, mapping the URLs as passed to
+ *  the responses.
+ *  
+ * FIXME Facet.Net.json has no error handling.
+ */
+
+Facet.Net.json = function(url, handler)
+{
+    if (facet_typeOf(url) === "array")
+        return handle_many(url, handler, Facet.Net.json);
+
+    var xhr = new XMLHttpRequest;
+
+    xhr.open("GET", url, true);
+
+    var ready = false;
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200 && !ready) {
+            handler(JSON.parse(xhr.response), url);
+            ready = true;
+        }
+    };
+    xhr.send(null);
+};
+/*
+ * Facet.Net.binary issues binary AJAX requests, which can be
+ * used to load data into Facet more efficiently than through the
+ * regular text or JSON AJAX interfaces. It returns ArrayBuffer objects.
+ * 
+ * It takes as parameters
+ * 
+ *  url (string or list of strings): urls to fetch
+ * 
+ *  handler (function(ArrayBuffer or dictionary of (url: ArrayBuffer))): a callback
+ *  which gets invoked when all requests finish. If a single URL was passed,
+ *  the callback is called with the single buffer returned. If a list of URLs
+ *  were passed, then an object is returned, mapping the URLs as passed to
+ *  the buffers.
+ *  
+ * FIXME Facet.Net.binary has no error handling.
+ */
+
+// based on http://calumnymmo.wordpress.com/2010/12/22/so-i-decided-to-wait/
+Facet.Net.binary = function(url, handler)
+{
+    if (facet_typeOf(url) === "array")
+        return handle_many(url, handler, Facet.Net.binary);
+
     var xhr = new window.XMLHttpRequest();
     var ready = false;
     xhr.onreadystatechange = function() {
@@ -4341,6 +4291,7 @@ Facet.Net.buffer_ajax = function(url, handler)
     }
     xhr.send();
 };
+})();
 Facet.Scale = {};
 Facet.Scale.Geo = {};
 Facet.Scale.Geo.mercator_to_spherical = function(x, y)
@@ -4349,10 +4300,13 @@ Facet.Scale.Geo.mercator_to_spherical = function(x, y)
     var lon = x;
     return Facet.Scale.Geo.latlong_to_spherical(lat, lon);
 };
+// FIXME can't be Shade(function()...) because Shade() hasn't been defined yet.
+//
+// FIXME this means that Facet.Scale should, unsurprisingly, be Shade.Scale.
 Facet.Scale.Geo.latlong_to_spherical = function(lat, lon)
 {
-    lat = Shade.make(lat);
-    lon = Shade.make(lon);
+    lat = Shade(lat);
+    lon = Shade(lon);
     var stretch = lat.cos();
     return Shade.vec(lon.sin().mul(stretch),
                      lat.sin(),
@@ -4508,9 +4462,6 @@ Facet.Data.table = function(obj) {
     }
     return result;
 };
-// NB: Luminance float textures appear to clamp to [0,1] on Chrome 15
-// on Linux...
-
 Facet.Data.texture_table = function(table)
 {
     var ctx = Facet._globals.ctx;
@@ -4534,29 +4485,82 @@ Facet.Data.texture_table = function(table)
     var table_nrows = elements.length / table.number_columns.length;
     var texture_width = 1;
 
+    return Facet.Data.texture_array({
+        n_rows: table_nrows,
+        n_cols: table_ncols,
+        elements: elements
+    });
+};
+/*
+   texture array takes an object with fields:
+
+     n_cols (integer): number of columns in the 2D array of data
+     n_rows (integer): number of rows in the 2D array of data
+     elements (array, Float32Array): list of elements in the array
+
+s parameters a list of floating point elements
+   (or a Float32Array), the number of columns and rows in the implied 2D array of data
+
+   and returns an object with four fields:
+
+   n_cols (integer): number of columns in the data
+
+   n_rows (integer): number of rows in the data
+
+   at (function(Shade(int), Shade(int)) -> Shade(float)): returns the
+   value stored at given row and column
+
+   index (function(Shade(int), Shade(int)) -> Shade(vec3)): returns
+   the index of the value stored at given row and column. This is a
+   three dimensional vector.  The first two coordinates store the
+   texture coordinate, and the fourth coordinate stores the
+   channel. This is necessary to take advantage of RGBA float
+   textures, which have the widest support on WebGL-capable hardware.
+
+   For example, luminance float textures appear to clamp to [0,1], at
+   least on Chrome 15 on Linux.
+
+ */
+
+Facet.Data.texture_array = function(opts)
+{
+    var ctx = Facet._globals.ctx;
+    var elements = opts.elements;
+    var n_cols = opts.n_cols;
+    var n_rows = opts.n_rows;
+
+    var texture_width = 1;
     while (4 * texture_width * texture_width < elements.length) {
         texture_width = texture_width * 2;
     }
     var texture_height = Math.ceil(elements.length / (4 * texture_width));
 
-    // Tested on Chrome: the Float32Array constructor interprets "undefined" as 0
-    // so no push to pad array is necessary; we simply set the last
-    // padded value of the array to 0.
-    if (elements.length < 4 * texture_height * texture_width)
-        elements[4 * texture_height * texture_width - 1] = 0;
+    var new_elements;
+    if (texture_width * texture_height === elements.length) {
+        // no chance this will ever happen in practice, but hey, 
+        // a man can dream
+        if (facet_typeOf(elements) === "array") {
+            new_elements = new Float32Array(elements);
+        } else
+            new_elements = elements;
+    } else {
+        new_elements = new Float32Array(texture_width * texture_height * 4);
+        for (var i=0; i<elements.length; ++i)
+            new_elements[i] = elements[i];
+    }
 
     var texture = Facet.texture({
         width: texture_width,
         height: texture_height,
-        buffer: new Float32Array(elements),
+        buffer: new_elements,
         type: ctx.FLOAT,
         format: ctx.RGBA,
         min_filter: ctx.NEAREST,
         mag_filter: ctx.NEAREST
     });
 
-    var index = Shade.make(function(row, col) {
-        var linear_index    = row.mul(table_ncols).add(col);
+    var index = Shade(function(row, col) {
+        var linear_index    = row.mul(n_cols).add(col);
         var in_texel_offset = linear_index.mod(4);
         var texel_index     = linear_index.div(4).floor();
         var x               = texel_index.mod(texture_width);
@@ -4564,7 +4568,7 @@ Facet.Data.texture_table = function(table)
         var result          = Shade.vec(x, y, in_texel_offset);
         return result;
     });
-    var at = Shade.make(function(row, col) {
+    var at = Shade(function(row, col) {
         // returns Shade expression with value at row, col
         var ix = index(row, col);
         var uv = ix.swizzle("xy")
@@ -4575,8 +4579,8 @@ Facet.Data.texture_table = function(table)
     });
 
     return {
-        n_rows: table_nrows,
-        n_cols: table_ncols,
+        n_rows: n_rows,
+        n_cols: n_cols,
         at: at,
         index: index
     };
@@ -4591,11 +4595,205 @@ Facet.Data.texture_table = function(table)
 
 // FIXME: Move this object inside Facet's main object.
 
-var Shade = {};
+var Shade = function(exp)
+{
+    return Shade.make(exp);
+};
 
 (function() {
 
 Shade.debug = false;
+//////////////////////////////////////////////////////////////////////////////
+// make converts objects which can be meaningfully interpreted as
+// Exp values to the appropriate Exp values, giving us some poor-man
+// static polymorphism
+Shade.make = function(exp)
+{
+    if (_.isUndefined(exp)) {
+        throw "expected a value, got undefined instead";
+    }
+    var t = facet_typeOf(exp);
+    if (t === 'string') {
+        // Did you accidentally say exp1 + exp2 when you meant
+        // exp1.add(exp2)?
+        throw "strings are not valid shade expressions";
+    } else if (t === 'boolean' || t === 'number') {
+        if (isNaN(exp)) {
+            // Did you accidentally say exp1 / exp2 or exp1 - exp2 when you meant
+            // exp1.div(exp2) or exp1.sub(exp2)?
+            throw "nans are not valid in shade expressions";
+        }
+        return Shade.constant(exp);
+    } else if (t === 'array') {
+        return Shade.seq(exp);
+    } else if (t === 'function') {
+        /* lifts the passed function to a "shade function".
+        
+        In other words, this creates a function that replaces every
+        passed parameter p by Shade.make(p) This way, we save a lot of
+        typing and errors. If a javascript function is expected to
+        take shade values and produce shade expressions as a result,
+        simply wrap that function around a call to Shade.make()
+
+         */
+
+        return function() {
+            var wrapped_arguments = [];
+            for (var i=0; i<arguments.length; ++i) {
+                wrapped_arguments.push(Shade.make(arguments[i]));
+            }
+            return exp.apply(this, wrapped_arguments);
+        };
+    }
+    t = facet_constant_type(exp);
+    if (t === 'vector' || t === 'matrix') {
+        return Shade.constant(exp);
+    } else if (exp._shade_type === 'attribute_buffer') {
+        return Shade.attribute_from_buffer(exp);
+    } else if (exp._shade_type === 'render_buffer') {
+        return Shade.sampler2D_from_texture(exp.texture);
+    } else if (exp._shade_type === 'texture') {
+        return Shade.sampler2D_from_texture(exp);
+    }
+    return exp;
+};
+
+
+// only memoizes on value of first argument, so will fail if function
+// takes more than one argument!!
+Shade.memoize_on_field = function(field_name, fun, key_fun)
+{
+    key_fun = key_fun || function(i) { return i; };
+    return function() {
+        if (_.isUndefined(this._caches[field_name])) {
+            this._caches[field_name] = {};
+        }
+        if (_.isUndefined(this._caches[field_name][arguments[0]])) {
+            this._caches[field_name][arguments[0]] = fun.apply(this, arguments);
+        }
+        return this._caches[field_name][arguments[0]];
+    };
+};
+// Shade.unknown encodes a Shade expression whose value
+// is not determinable at compile time.
+//
+// This is used only internally by the compiler
+
+(function() {
+    var obj = { _caches: {} };
+    obj.fun = Shade.memoize_on_field("_cache", function(type) {
+        return Shade._create_concrete_value_exp({
+            parents: [],
+            type: type,
+            value: function() { throw "<unknown> should never get to compilation"; }
+        });
+    }, function(type) { 
+        return type.repr();
+    });
+    Shade.unknown = function(type) {
+        return obj.fun(type);
+    };
+})();
+Shade.Camera = {};
+Shade.Camera.perspective = function(opts)
+{
+    opts = opts || {};
+    opts = _.defaults(opts, {
+        look_at: [Shade.vec(0, 0, 0), 
+                  Shade.vec(0, 0, -1), 
+                  Shade.vec(0, 1, 0)],
+        field_of_view_y: 45,
+        aspect_ratio: 1,
+        near_distance: 0.1,
+        far_distance: 100
+    });
+    
+    var field_of_view_y = opts.field_of_view_y;
+    var aspect_ratio = opts.aspect_ratio;
+    var near_distance = opts.near_distance;
+    var far_distance = opts.far_distance;
+
+    var view = Shade.look_at(opts.look_at[0], opts.look_at[1], opts.look_at[2]);
+    var projection = Shade.perspective_matrix(field_of_view_y, aspect_ratio, near_distance, far_distance);
+    var vp_parameter = Shade.mul(projection, view);
+    var result = function(obj) {
+        return result.project(obj);
+    };
+    result.project = function(model_vertex) {
+        return vp_parameter.mul(model_vertex);
+    };
+    result.eye_vertex = function(model_vertex) {
+        var t = model_vertex.type;
+        return view.mul(model_vertex);
+    };
+    return result;
+};
+Shade.Camera.ortho = function(opts)
+{
+    opts = _.defaults(opts || {}, {
+        aspect_ratio: 1,
+        left: -1,
+        right: 1,
+        bottom: -1,
+        top: 1,
+        near: -1,
+        far: 1
+    });
+
+    var viewport_ratio = opts.aspect_ratio;
+    var left, right, bottom, top;
+    var near = opts.near;
+    var far = opts.far;
+
+    if (!_.isUndefined(opts.center) && !_.isUndefined(opts.zoom)) {
+        var viewport_width = Shade.div(1, opts.zoom);
+        left   = opts.center.at(0).sub(viewport_width);
+        right  = opts.center.at(0).add(viewport_width);
+        bottom = opts.center.at(1).sub(viewport_width);
+        top    = opts.center.at(1).add(viewport_width);
+    } else {
+        left = opts.left;
+        right = opts.right;
+        bottom = opts.bottom;
+        top = opts.top;
+    }
+
+    function letterbox_projection() {
+        var cy = Shade.add(top, bottom).div(2);
+        var half_width = Shade.sub(right, left).div(2);
+        var half_height = half_width.div(viewport_ratio);
+        var l = left;
+        var r = right;
+        var t = cy.add(half_height);
+        var b = cy.sub(half_height);
+        return Shade.ortho(l, r, b, t, near, far);
+    }
+
+    function pillarbox_projection() {
+        var cx = Shade.add(right, left).div(2);
+        var half_height = Shade.sub(top, bottom).div(2);
+        var half_width = half_height.mul(viewport_ratio);
+        var l = cx.sub(half_width);
+        var r = cx.add(half_width);
+        var t = top;
+        var b = bottom;
+        return Shade.ortho(l, r, b, t, near, far);
+    }
+
+    var view_ratio = Shade.sub(right, left).div(Shade.sub(top, bottom));
+    
+    var m = view_ratio.gt(viewport_ratio)
+        .selection(letterbox_projection(),
+                   pillarbox_projection());
+
+    function result(obj) {
+        return result.project(obj);
+    }
+    result.project = function(model_vertex) {
+        return m.mul(model_vertex);
+    };
+    return result;
+};
 // Specifying colors in shade in an easier way
 
 (function() {
@@ -4933,21 +5131,6 @@ Shade._create_concrete = function(base, requirements)
     }
     return create_it;
 };
-
-// only memoizes on value of first argument, so will fail if function
-// takes more than one argument!!
-Shade.memoize_on_field = function(field_name, fun)
-{
-    return function() {
-        if (_.isUndefined(this._caches[field_name])) {
-            this._caches[field_name] = {};
-        }
-        if (_.isUndefined(this._caches[field_name][arguments[0]])) {
-            this._caches[field_name][arguments[0]] = fun.apply(this, arguments);
-        }
-        return this._caches[field_name][arguments[0]];
-    };
-};
 Shade.Types = {};
 Shade.Types.base_t = {
     is_floating: function() { return false; },
@@ -5268,52 +5451,6 @@ Shade.Types.function_t = function(return_type, param_types) {
     Shade.Types.mat3.zero    = "mat3(0,0,0,0,0,0,0,0,0)";
     Shade.Types.mat4.zero    = "mat4(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)";
 })();
-//////////////////////////////////////////////////////////////////////////////
-// make converts objects which can be meaningfully interpreted as
-// Exp values to the appropriate Exp values, giving us some poor-man
-// static polymorphism
-Shade.make = function(exp)
-{
-    if (_.isUndefined(exp)) {
-        throw "expected a value, got undefined instead";
-    }
-    var t = facet_typeOf(exp);
-    if (t === 'boolean' || t === 'number') {
-        return Shade.constant(exp);
-    } else if (t === 'array') {
-        return Shade.seq(exp);
-    } else if (t === 'function') {
-        /* lifts the passed function to a "shade function".
-        
-        In other words, this creates a function that replaces every
-        passed parameter p by Shade.make(p) This way, we save a lot of
-        typing and errors. If a javascript function is expected to
-        take shade values and produce shade expressions as a result,
-        simply wrap that function around a call to Shade.make()
-
-         */
-
-        return function() {
-            var wrapped_arguments = [];
-            for (var i=0; i<arguments.length; ++i) {
-                wrapped_arguments.push(Shade.make(arguments[i]));
-            }
-            return exp.apply(this, wrapped_arguments);
-        };
-    }
-    t = facet_constant_type(exp);
-    if (t === 'vector' || t === 'matrix') {
-        return Shade.constant(exp);
-    } else if (exp._shade_type === 'attribute_buffer') {
-        return Shade.attribute_from_buffer(exp);
-    } else if (exp._shade_type === 'render_buffer') {
-        return Shade.sampler2D_from_texture(exp.texture);
-    } else if (exp._shade_type === 'texture') {
-        return Shade.sampler2D_from_texture(exp);
-    }
-    return exp;
-};
-
 Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
@@ -5538,8 +5675,8 @@ Shade.Exp = {
     sub: function(op) {
         return Shade.sub(this, op);
     },
-    length: function() {
-        return Shade.length(this);
+    norm: function() {
+        return Shade.norm(this);
     },
     distance: function(other) {
         return Shade.distance(this, other);
@@ -5900,10 +6037,10 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                 return this;
             else
                 throw this.type.repr() + " is an atomic type, got this: " + i;
+        } else {
+            this.debug_print();
+            throw "Internal error; this should have been overriden.";
         }
-        // FIXME TERRIBLE IDEA, should throw and
-        // force objects to define elements.
-        return this.at(i);
     },
     compile: function(ctx) {
         if (this._must_be_function_call) {
@@ -5962,7 +6099,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
 Shade._create_concrete_value_exp = Shade._create_concrete(Shade.ValueExp, ["parents", "type", "value"]);
 Shade.swizzle = function(exp, pattern)
 {
-    return Shade.make(exp).swizzle(pattern);
+    return Shade(exp).swizzle(pattern);
 };
 // Shade.constant creates a constant value in the Shade language.
 // 
@@ -6165,9 +6302,13 @@ Shade.array = function(v)
         throw "type error: need array";
     }
 };
+/* Shade.set is essentially an internal method for Shade. Don't use it
+   unless you know exactly what you're doing.
+ */
+
 Shade.set = function(exp, name)
 {
-    exp = Shade.make(exp);
+    exp = Shade(exp);
     var type = exp.type;
     return Shade._create_concrete_exp({
         expression_type: "set",
@@ -6202,7 +6343,7 @@ Shade.set = function(exp, name)
         parents: [exp]
     });
 };
-Shade.uniform = function(type, v)
+Shade.parameter = function(type, v)
 {
     var call_lookup = [
         [Shade.Types.float_t, "uniform1f"],
@@ -6218,14 +6359,14 @@ Shade.uniform = function(type, v)
     ];
 
     var uniform_name = Shade.unique_name();
-    if (_.isUndefined(type)) throw "uniform requires type";
+    if (_.isUndefined(type)) throw "parameter requires type";
     if (typeof type === 'string') type = Shade.basic(type);
     var value;
     var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
     if (!_.isUndefined(call)) {
         call = call[1];
     } else {
-        throw "Unsupported type " + type.repr() + " for uniform.";
+        throw "Unsupported type " + type.repr() + " for parameter.";
     }
     var result = Shade._create_concrete_exp({
         parents: [],
@@ -6281,7 +6422,7 @@ Shade.uniform = function(type, v)
 Shade.sampler2D_from_texture = function(texture)
 {
     return texture._shade_expression || function() {
-        var result = Shade.uniform("sampler2D");
+        var result = Shade.parameter("sampler2D");
         result.set(texture);
         texture._shade_expression = result;
         // FIXME: What if the same texture is bound to many samplers?!
@@ -6399,7 +6540,7 @@ Shade.pointCoord = function() {
     });
 };
 Shade.round_dot = function(color) {
-    var outside_dot = Shade.pointCoord().sub(Shade.vec(0.5, 0.5)).length().gt(0.25);
+    var outside_dot = Shade.pointCoord().sub(Shade.vec(0.5, 0.5)).norm().gt(0.25);
     return Shade.make(color).discard_if(outside_dot);
 };
 (function() {
@@ -6798,8 +6939,8 @@ Shade.mul = function() {
                       matrix: function (x, y) { return mt.scaling(y, x); }
                     },
             vector: { number: function (x, y) { return vt.scaling(x, y); },
-                      vector: function (x, y) { 
-                          return vt.schur_product(x, y); 
+                      vector: function (x, y) {
+                          return vt.schur_product(x, y);
                       },
                       matrix: function (x, y) {
                           return mt.product_vec(mt.transpose(y), x);
@@ -6897,22 +7038,24 @@ Shade.mul = function() {
     };
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
+        if (current_result.type.equals(Shade.Types.mat4)) {
+            if (arguments[i].type.equals(Shade.Types.vec2)) {
+                arguments[i] = Shade.vec(arguments[i], 0, 1);
+            } else if (arguments[i].type.equals(Shade.Types.vec3)) {
+                arguments[i] = Shade.vec(arguments[i], 1);
+            }
+        }
         current_result = operator(current_result, Shade.make(arguments[i]),
                                   "*", mul_type_resolver, evaluator, element_evaluator);
     }
     return current_result;
 };
 })();
-// FIXME This should be Shade.neg = Shade.make(function() ...
-// but before I do that I have to make sure that at this point
-// in the source Shade.make actually exists.
-
 Shade.neg = function(x)
 {
     return Shade.sub(0, x);
 };
 Shade.Exp.neg = function() { return Shade.neg(this); };
-
 Shade.vec = function()
 {
     var parents = [];
@@ -7117,6 +7260,7 @@ function builtin_glsl_function(opts)
     var type_resolving_list = opts.type_resolving_list;
     var constant_evaluator = opts.constant_evaluator;
     var element_evaluator = opts.element_evaluator;
+    var element_constant_evaluator = opts.element_constant_evaluator;
 
     for (var i=0; i<type_resolving_list.length; ++i)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
@@ -7192,12 +7336,17 @@ function builtin_glsl_function(opts)
                 return this.element(i).is_constant();
             };
         }
+        if (element_constant_evaluator) {
+            obj.element_is_constant = function(i) {
+                return element_constant_evaluator(this, i);
+            };
+        }
         return Shade._create_concrete_value_exp(obj);
     };
 }
 
 function common_fun_1op(fun_name, constant_evaluator) {
-    return builtin_glsl_function({
+    var result = builtin_glsl_function({
         name: fun_name, 
         type_resolving_list: [
             [Shade.Types.float_t, Shade.Types.float_t],
@@ -7205,12 +7354,16 @@ function common_fun_1op(fun_name, constant_evaluator) {
             [Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.vec4, Shade.Types.vec4]
         ], 
-        constant_evaluator: constant_evaluator
+        constant_evaluator: constant_evaluator,
+        element_evaluator: function(exp, i) {
+            return result(exp.parents[0].element(i));
+        }
     });
+    return result;
 }
 
 function common_fun_2op(fun_name, constant_evaluator) {
-    return builtin_glsl_function({
+    var result = builtin_glsl_function({
         name: fun_name, 
         type_resolving_list: [
             [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
@@ -7218,8 +7371,12 @@ function common_fun_2op(fun_name, constant_evaluator) {
             [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
         ], 
-        constant_evaluator: constant_evaluator
+        constant_evaluator: constant_evaluator, 
+        element_evaluator: function(exp, i) {
+            return result(exp.parents[0].element(i), exp.parents[1].element(i));
+        }
     });
+    return result;
 }
 
 // angle and trig, some common, some exponential,
@@ -7468,7 +7625,11 @@ var step = builtin_glsl_function({
                 return step(v1, v);
             });
         }
-    }});
+    },
+    element_evaluator: function(exp, i) {
+        return Shade.step.apply(this, broadcast_elements(exp, i));
+    }
+});
 Shade.step = step;
 
 var smoothstep = builtin_glsl_function({
@@ -7493,7 +7654,7 @@ var smoothstep = builtin_glsl_function({
 });
 Shade.smoothstep = smoothstep;
 
-var length = builtin_glsl_function({
+var norm = builtin_glsl_function({
     name: "length", 
     type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t],
@@ -7507,7 +7668,7 @@ var length = builtin_glsl_function({
         else
             return vec.length(v);
     }});
-Shade.length = length;
+Shade.norm = norm;
 
 var distance = builtin_glsl_function({
     name: "distance", 
@@ -7517,7 +7678,7 @@ var distance = builtin_glsl_function({
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t],
         [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]], 
     constant_evaluator: function(exp) {
-        return exp.parents[0].sub(exp.parents[1]).length().constant_value();
+        return exp.parents[0].sub(exp.parents[1]).norm().constant_value();
     }});
 Shade.distance = distance;
 
@@ -7565,8 +7726,11 @@ var normalize = builtin_glsl_function({
         [Shade.Types.vec3, Shade.Types.vec3],
         [Shade.Types.vec4, Shade.Types.vec4]], 
     constant_evaluator: function(exp) {
-        return exp.parents[0].div(exp.parents[0].length()).constant_value();
-    }});
+        return exp.parents[0].div(exp.parents[0].norm()).constant_value();
+    }, element_evaluator: function(exp, i) {
+        return exp.parents[0].div(exp.parents[0].norm()).element(i);
+    }
+});
 Shade.normalize = normalize;
 
 var faceforward = builtin_glsl_function({
@@ -7605,7 +7769,12 @@ var reflect = builtin_glsl_function({
         var I = exp.parents[0];
         var N = exp.parents[1];
         return I.sub(Shade.mul(2, N.dot(I), N)).constant_value();
-    }});
+    }, element_evaluator: function(exp, i) {
+        var I = exp.parents[0];
+        var N = exp.parents[1];
+        return I.sub(Shade.mul(2, N.dot(I), N)).element_constant_value(i);
+    }
+});
 Shade.reflect = reflect;
 
 var refract = builtin_glsl_function({
@@ -7646,7 +7815,9 @@ Shade.refract = refract;
 
 var texture2D = builtin_glsl_function({
     name: "texture2D", 
-    type_resolving_list: [[Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]]
+    type_resolving_list: [[Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]],
+    element_evaluator: function(exp, i) { return exp.at(i); },
+    element_constant_evaluator: function(exp, i) { return false; }
 });
 Shade.texture2D = texture2D;
 
@@ -7834,6 +8005,7 @@ Shade.seq = function(parents)
     });
 };
 Shade.Optimizer = {};
+
 Shade.Optimizer.debug = false;
 
 Shade.Optimizer._debug_passes = false;
@@ -7982,6 +8154,10 @@ Shade.Optimizer.replace_with_notone = function(exp)
     } else if (!t1.equals(ft) && t2.equals(ft)) {
         return exp.parents[0];
     } else if (t1.equals(ft) && !t2.equals(ft)) {
+        return exp.parents[1];
+    } else if (t1.is_vec() && t2.is_mat()) {
+        return exp.parents[0];
+    } else if (t1.is_mat() && t2.is_vec()) {
         return exp.parents[1];
     }
     throw "internal error: no is_mul_identity value on input to replace_with_notone";
@@ -8248,6 +8424,7 @@ Shade.program = function(program_obj)
     result.uniforms = _.union(vp_exp.uniforms(), fp_exp.uniforms());
     return result;
 };
+// FIXME rename this, it'll be really confusing.
 Shade.is_program_parameter = function(key)
 {
     return ["color", "position", "point_size",
@@ -8320,13 +8497,26 @@ Shade.Utils.fit = function(data) {
 // Fairly bare-bones for now (only diffuse, no attenuation)
 Shade.gl_light = function(opts)
 {
-    var light_pos = opts.light_position;
-    var vertex_pos = opts.vertex;
+    opts = _.defaults(opts || {}, {
+        light_ambient: Shade.vec(0,0,0,1),
+        light_diffuse: Shade.vec(1,1,1,1),
+        per_vertex: false
+    });
+    function vec3(v) {
+        return v.type.equals(Shade.Types.vec4) ? v.swizzle("xyz").div(v.at(3)) : v;
+    }
+    var light_pos = vec3(opts.light_position);
+    var vertex_pos = vec3(opts.vertex);
     var material_color = opts.material_color;
-    var light_ambient = opts.light_ambient || Shade.vec(0,0,0,1);
-    var light_diffuse = opts.light_diffuse || Shade.vec(1,1,1,1);
-    var per_vertex = opts.per_vertex || false;
-    var N = opts.normal; // this must be appropriately transformed
+    var light_ambient = opts.light_ambient;
+    var light_diffuse = opts.light_diffuse;
+    var per_vertex = opts.per_vertex;
+    var vertex_normal = (opts.normal.type.equals(Shade.Types.vec4) ? 
+                         opts.normal.swizzle("xyz") : 
+                         opts.normal).normalize();
+
+    // this must be appropriately transformed
+    var N = vertex_normal;
     var L = light_pos.sub(vertex_pos).normalize();
     var v = Shade.max(L.dot(N), 0);
     if (per_vertex)
@@ -8426,15 +8616,15 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
         if (arguments.length === 0) 
             throw ("operator " + operator_name 
                    + " requires at least 1 parameter");
-        if (arguments.length === 1) return Shade.make(arguments[0]).as_bool();
-        var first = Shade.make(arguments[0]);
+        if (arguments.length === 1) return Shade(arguments[0]).as_bool();
+        var first = Shade(arguments[0]);
         if (!first.type.equals(Shade.Types.bool_t))
             throw ("operator " + operator_name + 
                    " requires booleans, got argument 1 as " +
                    arguments[0].type.repr() + " instead.");
         var current_result = first;
         for (var i=1; i<arguments.length; ++i) {
-            var next = Shade.make(arguments[i]);
+            var next = Shade(arguments[i]);
             if (!next.type.equals(Shade.Types.bool_t))
                 throw ("operator " + operator_name + 
                        " requires booleans, got argument " + (i+1) +
@@ -8475,9 +8665,8 @@ Shade.Exp.xor = function(other)
     return Shade.xor(this, other);
 };
 
-Shade.not = function(exp)
+Shade.not = Shade(function(exp)
 {
-    exp = Shade.make(exp);
     if (!exp.type.equals(Shade.Types.bool_t)) {
         throw "logical_not requires bool expression";
     }
@@ -8492,20 +8681,18 @@ Shade.not = function(exp)
             return !this.parents[0].constant_value();
         })
     });
-};
+});
 
 Shade.Exp.not = function() { return Shade.not(this); };
 
 var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator)
 {
-    return function(left, right) {
-        var first = Shade.make(left);
-        var second = Shade.make(right);
+    return Shade(function(first, second) {
         type_checker(first.type, second.type);
 
         return logical_operator_binexp(
             first, second, operator_name, binary_evaluator);
-    };
+    });
 };
 
 var inequality_type_checker = function(name) {
@@ -8692,23 +8879,16 @@ Shade.Exp.selection = function(if_true, if_false)
 {
     return Shade.selection(this, if_true, if_false);
 };
-// FIXME This should be Shade.look_at = Shade.make(function() ...
+// FIXME This should be Shade.rotation = Shade.make(function() ...
 // but before I do that I have to make sure that at this point
 // in the source Shade.make actually exists.
 
-Shade.rotation = function(angle, axis)
+Shade.rotation = Shade(function(angle, axis)
 {
-    angle = Shade.make(angle);
-    axis = Shade.make(axis).normalize();
+    axis = axis.normalize();
 
     var s = angle.sin(), c = angle.cos(), t = Shade.sub(1, c);
     var x = axis.at(0), y = axis.at(1), z = axis.at(2);
-    
-    // return Shade.mat(Shade.vec(1,0,0,0),
-    //                  Shade.vec(0,1,0,0),
-    //                  Shade.vec(0,0,1,0),
-    //                  Shade.vec(0,0,0,1));
-                    
 
     return Shade.mat(Shade.vec(x.mul(x).mul(t).add(c),
                                y.mul(x).mul(t).add(z.mul(s)),
@@ -8723,7 +8903,7 @@ Shade.rotation = function(angle, axis)
                                z.mul(z).mul(t).add(c),
                                0),
                      Shade.vec(0,0,0,1));
-};
+});
 Shade.translation = function(t)
 {
     return Shade.mat(Shade.vec(1,0,0,0),
@@ -8755,7 +8935,8 @@ Shade.look_at = function(eye, center, up)
 
     var z = eye.sub(center).normalize();
     var x = up.cross(z).normalize();
-    var y = z.cross(x).normalize();
+    var y = up.normalize();
+    // var y = z.cross(x).normalize();
 
     return Shade.mat(Shade.vec(x, 0),
                      Shade.vec(y, 0),
@@ -8881,6 +9062,25 @@ Shade.id = function(id_value)
     
     return vec4.make([r / 255, g / 255, b / 255, a / 255]);
 };
+Shade.frustum = Shade.make(function(left, right, bottom, top, near, far)
+{
+    var rl = right.sub(left);
+    var tb = top.sub(bottom);
+    var fn = far.sub(near);
+    return Shade.mat(Shade.vec(near.mul(2).div(rl), 0, 0, 0),
+                     Shade.vec(0, near.mul(2).div(tb), 0, 0),
+                     Shade.vec(right.add(left).div(rl), 
+                               top.add(bottom).div(tb), 
+                               far.add(near).neg().div(fn),
+                               -1),
+                     Shade.vec(0, 0, far.mul(near).mul(2).neg().div(fn), 0));
+});
+Shade.perspective_matrix = Shade.make(function(fovy, aspect, near, far)
+{
+    var top = near.mul(Shade.tan(fovy.mul(Math.PI / 360)));
+    var right = top.mul(aspect);
+    return Shade.frustum(right.neg(), right, top.neg(), top, near, far);
+});
 
 return Shade;
 }());
@@ -9514,7 +9714,7 @@ table.xyz.srgb = function(xyz)
 
 table.luv.hcl = function(luv)
 {
-    var c = Shade.length(luv.vec.swizzle("gb"));
+    var c = Shade.norm(luv.vec.swizzle("gb"));
     var h = Shade.atan(luv.v, luv.u);
     h = _if(h.gt(Math.PI*2), h.sub(Math.PI*2),
         _if(h.lt(0), h.add(Math.PI*2), h));
@@ -9826,11 +10026,11 @@ Facet.Marks.dots = function(opts)
 
     var S = Shade;
 
-    var fill_color     = Shade.make(opts.fill_color);
-    var stroke_color   = Shade.make(opts.stroke_color);
-    var point_diameter = Shade.make(opts.point_diameter);
-    var stroke_width   = Shade.make(opts.stroke_width).add(1);
-    var use_alpha      = Shade.make(opts.alpha);
+    var fill_color     = Shade(opts.fill_color);
+    var stroke_color   = Shade(opts.stroke_color);
+    var point_diameter = Shade(opts.point_diameter);
+    var stroke_width   = Shade(opts.stroke_width).add(1);
+    var use_alpha      = Shade(opts.alpha);
     
     var model_opts = {
         type: "points",
@@ -9841,7 +10041,7 @@ Facet.Marks.dots = function(opts)
     var model = Facet.model(model_opts);
 
     var distance_to_center_in_pixels = S.pointCoord().sub(S.vec(0.5, 0.5))
-        .length().mul(point_diameter);
+        .norm().mul(point_diameter);
     var point_radius = point_diameter.div(2);
     var distance_to_border = point_radius.sub(distance_to_center_in_pixels);
     var gl_Position = model.vertex;
@@ -9962,7 +10162,7 @@ Facet.Marks.globe = function(opts)
     var inertia_delta = [0,0];
     var min_x, max_x, min_y, max_y;
     var sphere = spherical_mercator_patch(40);
-    var model_matrix = Shade.uniform("mat4");
+    var model_matrix = Shade.parameter("mat4");
 
     var texture = Facet.texture({
         width: 2048,
@@ -9971,12 +10171,12 @@ Facet.Marks.globe = function(opts)
         min_filter: gl.LINEAR
     });
 
-    min_x = Shade.uniform("float");
-    max_x = Shade.uniform("float");
-    min_y = Shade.uniform("float");
-    max_y = Shade.uniform("float");
+    min_x = Shade.parameter("float");
+    max_x = Shade.parameter("float");
+    min_y = Shade.parameter("float");
+    max_y = Shade.parameter("float");
     var min = Shade.vec(min_x, min_y), max = Shade.vec(max_x, max_y);
-    var sampler = Shade.uniform("sampler2D", texture);
+    var sampler = Shade.parameter("sampler2D", texture);
 
     var sphere_drawable = Facet.bake(sphere, {
         gl_Position: opts.view_proj
@@ -10157,7 +10357,7 @@ Facet.Models.mesh = function(u_secs, v_secs) {
         }
     }
 
-    var uv_attr = Shade.make(Facet.attribute_buffer(verts, 2));
+    var uv_attr = Shade(Facet.attribute_buffer(verts, 2));
     return Facet.model({
         type: "triangle_strip",
         tex_coord: uv_attr,
@@ -10206,7 +10406,7 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
     });
 };
 Facet.Models.square = function() {
-    var uv = Shade.make(Facet.attribute_buffer([0, 0, 1, 0, 0, 1, 1, 1], 2));
+    var uv = Shade(Facet.attribute_buffer([0, 0, 1, 0, 0, 1, 1, 1], 2));
     return Facet.model({
         type: "triangles",
         elements: Facet.element_buffer([0, 1, 2, 1, 3, 2]),

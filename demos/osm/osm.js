@@ -128,7 +128,6 @@ $().ready(function () {
             alpha: true,
             depth: true
         },
-        debugging: true,
         mousedown: function(event) {
             prev = [event.offsetX, event.offsetY];
             inertia_delta = [0, 0];
@@ -170,8 +169,8 @@ $().ready(function () {
     });
     var sphere = spherical_mercator_patch(40);
 
-    mv = Shade.uniform("mat4");
-    proj = Shade.uniform("mat4");
+    mv = Shade.parameter("mat4");
+    proj = Shade.parameter("mat4");
 
     texture = Facet.texture({
         width: 2048,
@@ -192,13 +191,13 @@ $().ready(function () {
                 onload: function() { gl.display(); }
             });
 
-    sampler = Shade.uniform("sampler2D");
+    sampler = Shade.parameter("sampler2D");
     sampler.set(texture);
 
-    min_x = Shade.uniform("float");
-    max_x = Shade.uniform("float");
-    min_y = Shade.uniform("float");
-    max_y = Shade.uniform("float");
+    min_x = Shade.parameter("float");
+    max_x = Shade.parameter("float");
+    min_y = Shade.parameter("float");
+    max_y = Shade.parameter("float");
     var min = Shade.vec(min_x, min_y), max = Shade.vec(max_x, max_y);
 
     sphere_drawable = Facet.bake(sphere, {

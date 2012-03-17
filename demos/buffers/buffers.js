@@ -50,7 +50,7 @@ $().ready(function() {
         }
     });
 
-    view_proj = Shade.uniform("mat4");
+    view_proj = Shade.parameter("mat4");
 
     globe = Facet.Marks.globe({
         view_proj: view_proj

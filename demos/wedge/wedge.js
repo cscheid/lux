@@ -26,9 +26,9 @@ function draw_it()
                      [wedge_color, Shade.color('green') ] ] ];
     _.each(states, function(lst) {
         _.each(lst, function(pair) {
-            var uniform = pair[0],
+            var parameter = pair[0],
                 value = pair[1];
-            uniform.set(value);
+            parameter.set(value);
         });
         square_drawable.draw();
     });
@@ -36,14 +36,13 @@ function draw_it()
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    var camera = Facet.Camera.perspective({
-        look_at: [[0, 0, 6], [0, 0, -1], [0, 1, 0]],
+    var camera = Shade.Camera.perspective({
+        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
         field_of_view_y: 45,
         aspect_ratio: 720/480,
         near_distance: 0.1,
         far_distance: 100
     });
-    model_mat = Shade.uniform("mat4", Facet.identity());
 
     var strings = {};
     strings[0] = "Miss";
@@ -70,15 +69,15 @@ $().ready(function () {
         vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2]
     });
 
-    var distance_from_origin = Shade.length(square.vertex);
+    var distance_from_origin = Shade.norm(square.vertex);
     var angle = Shade.selection(distance_from_origin.eq(0), 
                                 0, Shade.atan(square.vertex.at(1), 
                                               square.vertex.at(0)));
     pick_id_val = Facet.fresh_pick_id(3);
-    angle_min = Shade.uniform("float");
-    angle_max = Shade.uniform("float");
-    pick_id = Shade.uniform("vec4");
-    wedge_color = Shade.uniform("vec4");
+    angle_min = Shade.parameter("float");
+    angle_max = Shade.parameter("float");
+    pick_id = Shade.parameter("vec4");
+    wedge_color = Shade.parameter("vec4");
 
     var angle_p1 = angle.add(Math.PI * 2);
     var angle_m1 = angle.sub(Math.PI * 2);
@@ -89,7 +88,7 @@ $().ready(function () {
  
     var hit = inside(angle).or(inside(angle_p1)).or(inside(angle_m1));
     square_drawable = Facet.bake(square, {
-        position: camera.project(model_mat.mul(Shade.vec(square.vertex, 0, 1))),
+        position: camera(square.vertex),
         color: wedge_color
             .discard_if(distance_from_origin.gt(1).or(hit.not())),
         pick_id: pick_id

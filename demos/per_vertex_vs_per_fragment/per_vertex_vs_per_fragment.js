@@ -41,7 +41,7 @@ function display()
 function init_webgl()
 {
     Facet.set_context(gl);
-    mvp = S.uniform("mat4");
+    mvp = S.parameter("mat4");
 
     sphere = Models.sphere(10, 10);
 
@@ -80,7 +80,6 @@ $().ready(function() {
                         alpha: true,
                         depth: true
                     }
-                    , debugging: true
                 });
 
     init_webgl();

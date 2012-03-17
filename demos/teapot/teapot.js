@@ -1,27 +1,26 @@
 var gl;
-var cube_drawable, pyramid_drawable;
+var teapot;
 var model_mat;
-var angle = 0;
 var Models = Facet.Models;
+var angle;
 
 //////////////////////////////////////////////////////////////////////////////
 
 function draw_it()
 {
-    model_mat.set(Facet.rotation(angle, [1,1,1]));
-    cube_drawable.draw();
+    teapot.draw();
 }
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    var camera = Facet.Camera.perspective({
-        look_at: [[0, 0, 6], [0, 0, -1], [0, 1, 0]],
+    var camera = Shade.Camera.perspective({
+        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
         field_of_view_y: 45,
         aspect_ratio: 720/480,
         near_distance: 0.1,
         far_distance: 100
     });
-    model_mat = Shade.uniform("mat4");
+    angle = Shade.parameter("float");
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
@@ -29,21 +28,20 @@ $().ready(function () {
         attributes: {
             alpha: true,
             depth: true
-        },
-        debugging: true
+        }
     });
-    var teapot = Models.teapot();
+    var teapot_model = Models.teapot();
 
-    cube_drawable = Facet.bake(teapot, {
-        position: camera.project(model_mat.mul(Shade.vec(teapot.vertex, 1))),
-        color: Shade.vec(Shade.abs(teapot.vertex), 1)
+    teapot = Facet.bake(teapot_model, {
+        position: camera(Shade.rotation(angle, Shade.vec(1,1,1)).mul(teapot_model.vertex)),
+        color: Shade.vec(Shade.abs(teapot_model.vertex), 1)
     });
 
     var start = new Date().getTime();
     var f = function() {
         window.requestAnimFrame(f, canvas);
         var elapsed = new Date().getTime() - start;
-        angle = (elapsed / 20) * (Math.PI/180);
+        angle.set((elapsed / 20) * (Math.PI/180));
         gl.display();
     };
     f();

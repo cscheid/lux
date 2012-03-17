@@ -41,8 +41,8 @@ $().ready(function () {
 
     var flag = Models.mesh(50, 2);
 
-    mvp = Shade.uniform("mat4");
-    phase = Shade.uniform("float");
+    mvp = Shade.parameter("mat4");
+    phase = Shade.parameter("float");
 
     cube_drawable = Facet.bake(flag, {
         position: mvp.mul(Shade.vec(flag.vertex, Shade.sin(flag.tex_coord.at(0).mul(20).add(phase)).mul(0.08), 1)),

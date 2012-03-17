@@ -1,30 +1,25 @@
 var gl;
-var square_drawable, triangle_drawable;
-var model_mat;
-var angle = 0;
+var square_batch, triangle_batch;
+var angle;
 
 //////////////////////////////////////////////////////////////////////////////
 
 function draw_it()
 {
-    model_mat.set(mat4.product(Facet.translation( 1.5, 0, 0), 
-                               Facet.rotation(angle, [1,0,0])));
-    square_drawable.draw();
-    model_mat.set(mat4.product(Facet.translation(-1.5, 0, 0), 
-                               Facet.rotation(angle, [0,1,0])));
-    triangle_drawable.draw();
+    square_batch.draw();
+    triangle_batch.draw();
 }
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    var camera = Facet.Camera.perspective({
-        look_at: [[0, 0, 6], [0, 0, -1], [0, 1, 0]],
+    var camera = Shade.Camera.perspective({
+        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
         field_of_view_y: 45,
         aspect_ratio: 720/480,
         near_distance: 0.1,
         far_distance: 100
     });
-    model_mat = Shade.uniform("mat4");
+    angle = Shade.parameter("float");
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
@@ -32,8 +27,7 @@ $().ready(function () {
         attributes: {
             alpha: true,
             depth: true
-        },
-        debugging: true
+        }
     });
 
     var square = Facet.model({
@@ -50,13 +44,17 @@ $().ready(function () {
                 Shade.color('blue')]
     });
 
-    square_drawable = Facet.bake(square, {
-        position: camera.project(model_mat.mul(Shade.vec(square.vertex, 0, 1))),
+    square_batch = Facet.bake(square, {
+        position: camera(Shade.mul(Shade.translation(Shade.vec( 1.5, 0, 0)), 
+                                   Shade.rotation(angle, Shade.vec(1,0,0)))
+                         .mul(square.vertex)),
         color: Shade.color('#88f')
     });
 
-    triangle_drawable = Facet.bake(triangle, {
-        position: camera.project(model_mat.mul(Shade.vec(triangle.vertex, 0, 1))),
+    triangle_batch = Facet.bake(triangle, {
+        position: camera(Shade.mul(Shade.translation(Shade.vec(-1.5, 0, 0)), 
+                                   Shade.rotation(angle, Shade.vec(0,1,0)))
+                         .mul(triangle.vertex)),
         color: triangle.color
     });
 
@@ -64,7 +62,7 @@ $().ready(function () {
     var f = function() {
         window.requestAnimFrame(f, canvas);
         var elapsed = new Date().getTime() - start;
-        angle = (elapsed / 20) * (Math.PI/180);
+        angle.set((elapsed / 20) * (Math.PI/180));
         gl.display();
     };
     f();

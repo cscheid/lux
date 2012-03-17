@@ -35,8 +35,8 @@ $().ready(function () {
     var latitude_center = 38;
     var zoom = 3;
     var prev_mouse_pos;
-    var mv = Shade.uniform("mat4");
-    var proj = Shade.uniform("mat4");
+    var mv = Shade.parameter("mat4");
+    var proj = Shade.parameter("mat4");
     var gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,1],

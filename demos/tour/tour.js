@@ -7,7 +7,7 @@ var point_alpha;
 var data;
 var tour_batch;
 var alive = true;
-var axis_1_uniforms, axis_2_uniforms;
+var axis_1_parameters, axis_2_parameters;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -74,12 +74,12 @@ function init_webgl()
     Facet.set_context(gl);
     data = data_buffers();
 
-    point_diameter = S.uniform("float", 10);
-    stroke_width   = S.uniform("float", 2.5);
-    point_alpha    = S.uniform("float", 1.0);
+    point_diameter = S.parameter("float", 10);
+    stroke_width   = S.parameter("float", 2.5);
+    point_alpha    = S.parameter("float", 1.0);
 
-    axis_1_uniforms = [];
-    axis_2_uniforms = [];
+    axis_1_parameters = [];
+    axis_2_parameters = [];
     var column_min, column_max, column_center = [];
     var xy_expression = Shade.vec(0, 0),
         xy_center = Shade.vec(0, 0),
@@ -87,9 +87,9 @@ function init_webgl()
 
     for (var i=0; i<4; ++i) {
         var this_column = data[data.columns[i]];
-        axis_1_uniforms.push(Shade.uniform("float"));
-        axis_2_uniforms.push(Shade.uniform("float"));
-        var axes = Shade.vec(axis_1_uniforms[i], axis_2_uniforms[i]);
+        axis_1_parameters.push(Shade.parameter("float"));
+        axis_2_parameters.push(Shade.parameter("float"));
+        var axes = Shade.vec(axis_1_parameters[i], axis_2_parameters[i]);
         column_min = _.min(this_column.array);
         column_max = _.max(this_column.array);
         column_center = (column_max + column_min) / 2;
@@ -177,8 +177,8 @@ $().ready(function() {
         }
         prev_u = u;
         for (var i=0; i<4; ++i) {
-            axis_1_uniforms[i].set(u*frame_2[0][i] + (1-u) * frame_1[0][i]);
-            axis_2_uniforms[i].set(u*frame_2[1][i] + (1-u) * frame_1[1][i]);
+            axis_1_parameters[i].set(u*frame_2[0][i] + (1-u) * frame_1[0][i]);
+            axis_2_parameters[i].set(u*frame_2[1][i] + (1-u) * frame_1[1][i]);
         }
         if (alive) {
             window.requestAnimFrame(f, canvas);

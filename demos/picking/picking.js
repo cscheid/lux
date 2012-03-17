@@ -1,32 +1,25 @@
 var gl;
-var cube_drawable, pyramid_drawable;
-var model_mat;
-var angle = 0;
+var cube, pyramid;
+var angle;
 
 //////////////////////////////////////////////////////////////////////////////
 
 function draw_it()
 {
-    var model_cube = mat4.product(Facet.translation( 1.5, 0, 0), Facet.rotation(angle, [1,1,1]));
-    var model_pyr  = mat4.product(Facet.translation(-1.5, 0, 0), Facet.rotation(angle, [0,1,0]));
-    
-    model_mat.set(model_cube);
-    cube_drawable.draw();
-
-    model_mat.set(model_pyr);
-    pyramid_drawable.draw();
+    cube.draw();
+    pyramid.draw();
 }
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    var camera = Facet.Camera.perspective({
-        look_at: [[0, 0, 6], [0, 0, -1], [0, 1, 0]],
+    var camera = Shade.Camera.perspective({
+        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
         field_of_view_y: 45,
         aspect_ratio: 720/480,
         near_distance: 0.1,
         far_distance: 100
     });
-    model_mat = Shade.uniform("mat4");
+    angle = Shade.parameter("float");
     var strings = ["Nothing",
                    "Green Face", "Orange Face",
                    "Red Face", "Yellow Face",
@@ -45,7 +38,6 @@ $().ready(function () {
             Facet.Picker.draw_pick_scene();
             var r = Facet.Picker.pick(event.offsetX, gl.viewportHeight - event.offsetY);
             $("#pickresult").html(strings[r]);
-            // console.log(strings[r]);
         }
     });
 
@@ -61,7 +53,7 @@ $().ready(function () {
     // only 8 vertices in a cube, we end up with 24 of them, since we
     // need three colors per corner.
 
-    var cube = Facet.model({
+    var cube_model = Facet.model({
         type: "triangles",
         elements: [0,  1,  2,  0,  2,  3,
                    4,  5,  6,  4,  6,  7,
@@ -82,7 +74,7 @@ $().ready(function () {
     // For the pyramid, however, each vertex has only one color 
     // associated with it, so we can reuse the information.
 
-    var pyramid = Facet.model({
+    var pyramid_model = Facet.model({
         type: "triangles",
         elements: [0, 1, 2,
                    0, 2, 3,
@@ -99,15 +91,24 @@ $().ready(function () {
     // one id per face of the cube
     var ids = Facet.id_buffer([1,1,1,1,2,2,2,2,3,3,3,3,
                                4,4,4,4,5,5,5,5,6,6,6,6]);
-    cube_drawable = Facet.bake(cube, {
-        position: camera.project(model_mat.mul(Shade.vec(cube.vertex, 1))),
-        color: cube.color,
+
+    var cube_xformed_vertex = Shade.translation(Shade.vec(1.5, 0, 0))
+        .mul(Shade.rotation(angle, Shade.vec(1,1,1)))
+        .mul(cube_model.vertex);
+
+    var pyramid_xformed_vertex = Shade.translation(Shade.vec(-1.5, 0, 0))
+        .mul(Shade.rotation(angle, Shade.vec(0,1,0)))
+        .mul(pyramid_model.vertex);
+
+    cube = Facet.bake(cube_model, {
+        position: camera(cube_xformed_vertex),
+        color: cube_model.color,
         pick_id: ids
     });
 
-    pyramid_drawable = Facet.bake(pyramid, {
-        position: camera.project(model_mat.mul(Shade.vec(pyramid.vertex, 1))),
-        color: pyramid.color,
+    pyramid = Facet.bake(pyramid_model, {
+        position: camera(pyramid_xformed_vertex),
+        color: pyramid_model.color,
         pick_id: Shade.id(7)
     });
 
@@ -115,7 +116,7 @@ $().ready(function () {
     var f = function() {
         window.requestAnimFrame(f, canvas);
         var elapsed = new Date().getTime() - start;
-        angle = (elapsed / 20) * (Math.PI / 180);
+        angle.set((elapsed / 20) * (Math.PI / 180));
         gl.display();
     };
     f();

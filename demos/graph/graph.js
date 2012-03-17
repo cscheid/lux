@@ -18,7 +18,7 @@ function make_graph_model(graph)
     });
     var position = Facet.attribute_buffer(pos, 2);
     return {
-        position: Shade.make(position),
+        position: Shade(position),
         name: names,
         node_elements: position.numItems,
         edge_elements: Facet.element_buffer(line_elements)
@@ -27,7 +27,7 @@ function make_graph_model(graph)
 
 function make_graph_batch(model, center, zoom)
 {
-    var camera = Facet.Camera.ortho({
+    var camera = Shade.Camera.ortho({
         center: center,
         zoom: zoom,
         aspect_ratio: 720/480
@@ -35,7 +35,7 @@ function make_graph_batch(model, center, zoom)
 
     var dots_batch = Facet.Marks.dots({
         elements: model.node_elements,
-        position: camera.project(model.position),
+        position: camera(model.position),
         stroke_color: Shade.color("black"),
         fill_color: Shade.color("slategray", 0.8),
         point_diameter: zoom.mul(2000),
@@ -73,8 +73,8 @@ $().ready(function () {
     var canvas = document.getElementById("webgl");
     var model;
     var graph;
-    var center = Shade.uniform("vec2", vec.make([450, 450]));
-    var zoom = Shade.uniform("float", 1/450);
+    var center = Shade.parameter("vec2", vec.make([450, 450]));
+    var zoom = Shade.parameter("float", 1/450);
     var prev_mouse_pos;
     jQuery.getJSON("graph_extras/1138_bus.graph",
                    function (data) {

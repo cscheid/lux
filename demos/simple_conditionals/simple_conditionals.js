@@ -38,25 +38,23 @@ $().ready(function () {
     var canvas = document.getElementById("webgl");
 
     gl = Facet.init(canvas,
-                     {
-                         clearDepth: 1.0,
-                         clearColor: [0,0,0,1],
-                         display: draw_it,
-                         attributes:
-                         {
-                             alpha: true,
-                             depth: true
-                         },
-                         debugging: true
-                     });
+                    {
+                        clearDepth: 1.0,
+                        clearColor: [0,0,0,1],
+                        display: draw_it,
+                        attributes: {
+                            alpha: true,
+                            depth: true
+                        }
+                    });
 
     cube_model = Models.flat_cube();
-    mv = Shade.uniform("mat4");
-    proj = Shade.uniform("mat4");
+    mv = Shade.parameter("mat4");
+    proj = Shade.parameter("mat4");
 
-    sampler[0] = Shade.uniform(
+    sampler[0] = Shade.parameter(
         "sampler2D", Facet.texture({ src: "../img/glass.jpg", onload: function() { gl.display(); } }));
-    sampler[1] = Shade.uniform(
+    sampler[1] = Shade.parameter(
         "sampler2D", Facet.texture({ src: "../img/crate.jpg", onload: function() { gl.display(); } }));
 
     cube_drawable = create_cube_drawable();

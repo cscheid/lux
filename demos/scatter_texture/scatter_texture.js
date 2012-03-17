@@ -38,9 +38,9 @@ function init_webgl()
     Facet.set_context(gl);
     data = data_buffers();
 
-    point_diameter = S.uniform("float", 10);
-    stroke_width   = S.uniform("float", 2.5);
-    point_alpha    = S.uniform("float", 1.0);
+    point_diameter = S.parameter("float", 10);
+    stroke_width   = S.parameter("float", 2.5);
+    point_alpha    = S.parameter("float", 1.0);
 
     var species_color = S.Utils.choose(
         [S.vec(1, 0, 0, point_alpha),
@@ -106,7 +106,6 @@ $().ready(function() {
     gl = Facet.init(canvas, { attributes: { alpha: true,
                                             depth: true
                                           },
-                              debugging: true,
                               display: display,
                               clearColor: [0, 0, 0, 0.2]
                             });
