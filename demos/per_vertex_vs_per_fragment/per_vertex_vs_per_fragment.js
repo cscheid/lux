@@ -80,7 +80,6 @@ $().ready(function() {
                         alpha: true,
                         depth: true
                     }
-                    , debugging: true
                 });
 
     init_webgl();

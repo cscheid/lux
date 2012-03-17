@@ -41,8 +41,7 @@ $().ready(function() {
                     attributes: {
                         alpha: true,
                         depth: true
-                    },
-                    debugging: true
+                    }
                 });
     init_webgl();
     var start = new Date().getTime();

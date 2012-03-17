@@ -31,9 +31,6 @@ facet.js:					\
 	src/typeinfo.js				\
 	src/facet/attribute_buffer.js		\
 	src/facet/bake.js			\
-	src/facet/camera/_begin.js		\
-	src/facet/camera/perspective.js		\
-	src/facet/camera/ortho.js		\
 	src/facet/draw.js			\
 	src/facet/element_buffer.js		\
 	src/facet/fresh_pick_id.js		\
@@ -62,10 +59,14 @@ facet.js:					\
 	src/facet/data/_begin.js		\
 	src/facet/data/table.js			\
 	src/facet/data/texture_table.js		\
+	src/facet/data/texture_array.js		\
 	src/shade/_begin.js			\
 	src/shade/make.js			\
 	src/shade/memoize_on_field.js		\
 	src/shade/unknown.js			\
+	src/shade/camera/_begin.js		\
+	src/shade/camera/perspective.js		\
+	src/shade/camera/ortho.js		\
 	src/shade/color.js			\
 	src/shade/looping.js			\
 	src/shade/unique_name.js		\

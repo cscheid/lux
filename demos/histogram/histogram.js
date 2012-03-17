@@ -129,10 +129,8 @@ function init_webgl()
 {
     var canvas = document.getElementById("scatterplot");
     gl = Facet.init(canvas, { attributes: { alpha: true,
-                                            depth: true,
-                                            antialias: false
+                                            depth: true
                                           },
-                              debugging: true,
                               display: function() {
                                   bars_batch.draw();
                               },

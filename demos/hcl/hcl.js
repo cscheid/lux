@@ -11,7 +11,7 @@ function draw_it()
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    var camera = Facet.Camera.perspective({
+    var camera = Shade.Camera.perspective({
         look_at: [[0, 0, 6], [0, 0, -1], [0, 1, 0]],
         field_of_view_y: 45,
         aspect_ratio: 720/480,
@@ -41,8 +41,7 @@ $().ready(function () {
         attributes: {
             alpha: true,
             depth: true
-        },
-        debugging: true
+        }
     });
 
     var steps = 1;

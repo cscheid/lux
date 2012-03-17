@@ -100,7 +100,6 @@ $().ready(function() {
     gl = Facet.init(canvas, { attributes: { alpha: true,
                                             depth: true
                                           },
-                              debugging: true,
                               display: display,
                               clearColor: [0, 0, 0, 0.2]
                             });

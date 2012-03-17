@@ -83,13 +83,6 @@ now)
 ** TODO Support for boolean vectors
 Part of it exists throughout Facet, but it's scattered and untested.
 ** TODO I really should have a matrix stack.
-** TODO I should have a camera class
-
-This class would expose Shade functions to perform transformations. A
-cool demo would be a real non-linear fisheye distortion
-projection. Obviously tesselation would be necessary, but it'd get the
-point across.
-
 ** TODO There should be an API for strided attribute buffers.
 The advantage here is that I could get different attributes from a
 single bound array buffer. This would reduce the overhead of binding

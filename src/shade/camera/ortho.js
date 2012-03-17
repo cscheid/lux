@@ -1,4 +1,4 @@
-Facet.Camera.ortho = function(opts)
+Shade.Camera.ortho = function(opts)
 {
     opts = _.defaults(opts || {}, {
         aspect_ratio: 1,

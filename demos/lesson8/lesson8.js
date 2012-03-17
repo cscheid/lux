@@ -43,7 +43,7 @@ function create_cube_batch(opts)
     }
     final_color = Shade.vec(final_color.swizzle("rgb"), 0.5);
 
-    var camera = Facet.Camera.perspective({
+    var camera = Shade.Camera.perspective({
         look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
         field_of_view_y: 45,
         aspect_ratio: 720/480,
@@ -85,8 +85,7 @@ $().ready(function () {
                         {
                             alpha: true,
                             depth: true
-                        },
-                        debugging: true
+                        }
                     });
     // because we're making faces with different textures on each
     // corner, we need separate
