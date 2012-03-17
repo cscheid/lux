@@ -140,7 +140,7 @@ $().ready(function() {
                                    Shade.color("black")])(texel_at_uv.at(0).add(1).log()));
     });
 
-    Facet.Net.buffer_ajax(["data/roots_real.raw", "data/roots_imag.raw"], function (obj) {
+    Facet.Net.binary(["data/roots_real.raw", "data/roots_imag.raw"], function (obj) {
         var x = Facet.attribute_buffer(new Float32Array(obj["data/roots_real.raw"]), 1);
         var y = Facet.attribute_buffer(new Float32Array(obj["data/roots_imag.raw"]), 1);
         var points_model = Facet.model({

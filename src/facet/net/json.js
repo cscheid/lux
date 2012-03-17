@@ -16,18 +16,9 @@
 
 Facet.Net.json = function(url, handler)
 {
-    if (facet_typeOf(url) === "array") {
-        var obj = {};
-        var done = _.after(url.length, handler);
-        function piecemeal_handler(buffer, internal_url) {
-            obj[internal_url] = buffer;
-            done(obj);
-        }
-        _.each(url, function(internal_url) {
-            Facet.Net.json(internal_url, piecemeal_handler);
-        });
-        return;
-    }
+    if (facet_typeOf(url) === "array")
+        return handle_many(url, handler, Facet.Net.json);
+
     var xhr = new XMLHttpRequest;
 
     xhr.open("GET", url, true);

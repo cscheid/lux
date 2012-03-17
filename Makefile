@@ -50,6 +50,7 @@ facet.js:					\
 	src/facet/net/ajax.js			\
 	src/facet/net/json.js			\
 	src/facet/net/buffer_ajax.js		\
+	src/facet/net/_end.js			\
 	src/facet/scale/_begin.js		\
 	src/facet/scale/geo/_begin.js		\
 	src/facet/scale/geo/mercator_to_spherical.js	\
