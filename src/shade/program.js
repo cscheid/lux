@@ -251,12 +251,12 @@ Shade.Optimizer.remove_discard = function(exp)
 
 Shade.Optimizer.is_known_branch = function(exp)
 {
-    var result = (exp.expression_type === "selection" &&
+    var result = (exp.expression_type === "ifelse" &&
                   exp.parents[0].is_constant());
     return result;
 };
 
-Shade.Optimizer.prune_selection_branch = function(exp)
+Shade.Optimizer.prune_ifelse_branch = function(exp)
 {
     if (exp.parents[0].constant_value()) {
         return exp.parents[1];
@@ -355,7 +355,7 @@ Shade.program = function(program_obj)
         [Shade.Optimizer.is_never_discarding,
          Shade.Optimizer.remove_discard, "discard_if(false)"],
         [Shade.Optimizer.is_known_branch,
-         Shade.Optimizer.prune_selection_branch, "constant?a:b", true],
+         Shade.Optimizer.prune_ifelse_branch, "constant?a:b", true],
         [Shade.Optimizer.vec_at_constant_index, 
          Shade.Optimizer.replace_vec_at_constant_with_swizzle, "vec[constant_ix]"],
         [Shade.Optimizer.is_constant,

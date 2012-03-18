@@ -53,8 +53,8 @@ Shade.Camera.ortho = function(opts)
     var view_ratio = Shade.sub(right, left).div(Shade.sub(top, bottom));
     
     var m = view_ratio.gt(viewport_ratio)
-        .selection(letterbox_projection(),
-                   pillarbox_projection());
+        .ifelse(letterbox_projection(),
+                pillarbox_projection());
 
     function result(obj) {
         return result.project(obj);

@@ -14,7 +14,7 @@ function compose(g, f)
     };
 }
 
-var _if = Shade.selection; // This is probably a good name for it...
+var _if = Shade.ifelse;
 
 var table = {};
 var colorspaces = ["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz"];
@@ -92,7 +92,6 @@ function gtrans(u, gamma)
     return _if(u.gt(0.00304),
                Shade.mul(1.055, Shade.pow(u, Shade.div(1, gamma))).sub(0.055),
                u.mul(12.92));
-    // return Shade.selection(u.lt(0), u, Shade.pow(u, Shade.div(1, gamma)));
 }
 
 function ftrans(u, gamma)
@@ -100,7 +99,6 @@ function ftrans(u, gamma)
     return _if(u.gt(0.03928),
                Shade.pow(u.add(0.055).div(1.055), gamma),
                u.div(12.92));
-    // return Shade.selection(u.lt(0), u, Shade.pow(u, gamma));
 }
 
 //////////////////////////////////////////////////////////////////////////////

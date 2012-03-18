@@ -114,7 +114,7 @@ facet.js:					\
 	src/shade/cosh.js			\
 	src/shade/sinh.js			\
 	src/shade/logical_operators.js		\
-	src/shade/selection.js			\
+	src/shade/ifelse.js			\
 	src/shade/rotation.js			\
 	src/shade/translation.js		\
 	src/shade/ortho.js			\
