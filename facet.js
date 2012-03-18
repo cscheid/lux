@@ -4790,8 +4790,8 @@ Shade.Camera.ortho = function(opts)
     var view_ratio = Shade.sub(right, left).div(Shade.sub(top, bottom));
     
     var m = view_ratio.gt(viewport_ratio)
-        .selection(letterbox_projection(),
-                   pillarbox_projection());
+        .ifelse(letterbox_projection(),
+                pillarbox_projection());
 
     function result(obj) {
         return result.project(obj);
@@ -6015,6 +6015,18 @@ _.each(["r", "g", "b", "a",
         });
 
 Shade._create_concrete_exp = Shade._create_concrete(Shade.Exp, ["parents", "compile", "type"]);
+/*
+ * FIXME the webgl compiler seems to be having trouble with the
+ * conditional expressions in longer shaders.  Temporarily, then, I
+ * will replace all "unconditional" checks with "true". The end effect
+ * is that the shader always evaluates potentially unused sides of a
+ * conditional expression if they're is used in two or more places in
+ * the shader.
+ 
+   Currently this will not be a big issue, but when I have loops, I
+   won't want a loop to be evaluated unconditionally.
+ */
+
 Shade.ValueExp = Shade._create(Shade.Exp, {
     is_constant: Shade.memoize_on_field("_is_constant", function() {
         return _.all(this.parents, function(v) {
@@ -6029,11 +6041,12 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
     }),
     _must_be_function_call: false,
     evaluate: function() {
+        var unconditional = true; // see comment on top
         if (this._must_be_function_call)
             return this.glsl_name + "()";
         if (this.children_count <= 1)
             return this.value();
-        if (this.is_unconditional)
+        if (unconditional)
             return this.precomputed_value_glsl_name;
         else
             return this.glsl_name + "()";
@@ -6050,8 +6063,9 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         }
     },
     compile: function(ctx) {
+        var unconditional = true; // see comment on top
         if (this._must_be_function_call) {
-            if (this.is_unconditional) {
+            if (unconditional) {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
                     ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
@@ -6076,7 +6090,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                     ctx.value_function(this, this.value());
             }
         } else {
-            if (this.is_unconditional) {
+            if (unconditional) {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
                     ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
@@ -7759,8 +7773,8 @@ var faceforward = builtin_glsl_function({
         var N = exp.parents[0];
         var I = exp.parents[1];
         var Nref = exp.parents[2];
-        return Shade.selection(Nref.dot(I).lt(0),
-                               N, Shade.neg(N)).element(i);
+        return Shade.ifelse(Nref.dot(I).lt(0),
+                            N, Shade.neg(N)).element(i);
     }
 });
 Shade.faceforward = faceforward;
@@ -7815,7 +7829,7 @@ var refract = builtin_glsl_function({
         case 4: zero = Shade.vec(0,0,0,0); break;
         default: throw "internal error";
         };
-        return Shade.selection(k.lt(0), zero, refraction).element(i);
+        return Shade.ifelse(k.lt(0), zero, refraction).element(i);
     }
 });
 Shade.refract = refract;
@@ -8264,12 +8278,12 @@ Shade.Optimizer.remove_discard = function(exp)
 
 Shade.Optimizer.is_known_branch = function(exp)
 {
-    var result = (exp.expression_type === "selection" &&
+    var result = (exp.expression_type === "ifelse" &&
                   exp.parents[0].is_constant());
     return result;
 };
 
-Shade.Optimizer.prune_selection_branch = function(exp)
+Shade.Optimizer.prune_ifelse_branch = function(exp)
 {
     if (exp.parents[0].constant_value()) {
         return exp.parents[1];
@@ -8368,7 +8382,7 @@ Shade.program = function(program_obj)
         [Shade.Optimizer.is_never_discarding,
          Shade.Optimizer.remove_discard, "discard_if(false)"],
         [Shade.Optimizer.is_known_branch,
-         Shade.Optimizer.prune_selection_branch, "constant?a:b", true],
+         Shade.Optimizer.prune_ifelse_branch, "constant?a:b", true],
         [Shade.Optimizer.vec_at_constant_index, 
          Shade.Optimizer.replace_vec_at_constant_with_swizzle, "vec[constant_ix]"],
         [Shade.Optimizer.is_constant,
@@ -8781,21 +8795,21 @@ Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 // component-wise comparisons are defined on builtins.js
 
 })();
-Shade.selection = function(condition, if_true, if_false)
+Shade.ifelse = function(condition, if_true, if_false)
 {
     condition = Shade.make(condition);
     if_true = Shade.make(if_true);
     if_false = Shade.make(if_false);
 
     if (!if_true.type.equals(if_false.type))
-        throw "selection return expressions must have same types";
+        throw "ifelse return expressions must have same types";
     if (!condition.type.equals(condition.type))
-        throw "selection condition must be of type bool";
+        throw "ifelse condition must be of type bool";
 
     return Shade._create_concrete_value_exp( {
         parents: [condition, if_true, if_false],
         type: if_true.type,
-        expression_type: "selection",
+        expression_type: "ifelse",
         // FIXME: works around Chrome Bug ID 103053
         _must_be_function_call: true,
         value: function() {
@@ -8838,7 +8852,7 @@ Shade.selection = function(condition, if_true, if_false)
             }
         },
         element: function(i) {
-            return Shade.selection(this.parents[0],
+            return Shade.ifelse(this.parents[0],
                                    this.parents[1].element(i),
                                    this.parents[2].element(i));
         },
@@ -8882,9 +8896,9 @@ Shade.selection = function(condition, if_true, if_false)
     });
 };
 
-Shade.Exp.selection = function(if_true, if_false)
+Shade.Exp.ifelse = function(if_true, if_false)
 {
-    return Shade.selection(this, if_true, if_false);
+    return Shade.ifelse(this, if_true, if_false);
 };
 // FIXME This should be Shade.rotation = Shade.make(function() ...
 // but before I do that I have to make sure that at this point
@@ -9484,7 +9498,7 @@ function compose(g, f)
     };
 }
 
-var _if = Shade.selection; // This is probably a good name for it...
+var _if = Shade.ifelse;
 
 var table = {};
 var colorspaces = ["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz"];
@@ -9562,7 +9576,6 @@ function gtrans(u, gamma)
     return _if(u.gt(0.00304),
                Shade.mul(1.055, Shade.pow(u, Shade.div(1, gamma))).sub(0.055),
                u.mul(12.92));
-    // return Shade.selection(u.lt(0), u, Shade.pow(u, Shade.div(1, gamma)));
 }
 
 function ftrans(u, gamma)
@@ -9570,7 +9583,6 @@ function ftrans(u, gamma)
     return _if(u.gt(0.03928),
                Shade.pow(u.add(0.055).div(1.055), gamma),
                u.div(12.92));
-    // return Shade.selection(u.lt(0), u, Shade.pow(u, gamma));
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -9860,7 +9872,7 @@ Shade.Bits.encode_float = Shade.make(function(val) {
 
     var is_zero = val.eq(0);
 
-    var sign = val.gt(0).selection(0, 1);
+    var sign = val.gt(0).ifelse(0, 1);
     val = val.abs();
 
     var exponent = val.log2().floor();
@@ -9877,8 +9889,8 @@ Shade.Bits.encode_float = Shade.make(function(val) {
         .add(Shade.Bits.extract_bits(fraction, 16, 23)).div(255);
     byte1 = sign.mul(128).add(remaining_bits_of_biased_exponent).div(255);
 
-    return is_zero.selection(Shade.vec(0, 0, 0, 0),
-                             Shade.vec(byte4, byte3, byte2, byte1));
+    return is_zero.ifelse(Shade.vec(0, 0, 0, 0),
+                          Shade.vec(byte4, byte3, byte2, byte1));
 });
 /* Shade.Bits.extract_bits returns a certain bit substring of the
    original number using no bitwise operations, which are not available in WebGL.
@@ -10038,6 +10050,7 @@ Facet.Marks.dots = function(opts)
     var point_diameter = Shade(opts.point_diameter);
     var stroke_width   = Shade(opts.stroke_width).add(1);
     var use_alpha      = Shade(opts.alpha);
+    opts.plain = Shade(opts.plain);
     
     var model_opts = {
         type: "points",
@@ -10058,7 +10071,7 @@ Facet.Marks.dots = function(opts)
     
     var plain_fill_color = fill_color;
     var alpha_fill_color = 
-        S.selection(use_alpha,
+        S.ifelse(use_alpha,
                     no_alpha.mul(S.vec(1,1,1,S.clamp(distance_to_border, 0, 1))),
                     no_alpha)
         .discard_if(distance_to_center_in_pixels.gt(point_radius));
@@ -10066,8 +10079,9 @@ Facet.Marks.dots = function(opts)
     var result = Facet.bake(model, {
         position: gl_Position,
         point_size: point_diameter,
-        color: Shade.selection(opts.plain, plain_fill_color, alpha_fill_color),
-        mode: opts.mode
+        color: opts.plain.ifelse(plain_fill_color, alpha_fill_color),
+        mode: opts.mode,
+        pick_id: opts.pick_id
     });
 
     /* We pass the gl_Position attribute explicitly because some other
@@ -10115,7 +10129,8 @@ Facet.Marks.scatterplot = function(opts)
         stroke_width: opts.stroke_width,
         mode: opts.mode,
         alpha: opts.alpha,
-        plain: opts.plain
+        plain: opts.plain,
+        pick_id: opts.pick_id
     });
 };
 function spherical_mercator_patch(tess)
