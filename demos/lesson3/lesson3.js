@@ -17,7 +17,7 @@ $().ready(function () {
                 Shade.color('blue')]
     });
 
-    var camera = Shade.Camera.perspective({ aspect_ratio: 720/480 });
+    var camera = Shade.Camera.perspective();
 
     Facet.Scene.add(Facet.bake(square, {
         position: camera(

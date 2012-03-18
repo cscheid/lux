@@ -50,7 +50,7 @@ $().ready(function () {
         color: [r, g, b, g, b]
     });
 
-    var camera = Shade.Camera.perspective({ aspect_ratio: 720/480 });
+    var camera = Shade.Camera.perspective();
     var angle = Shade.parameter("float");
 
     var cube_xformed_vertex = Shade.translation(Shade.vec(1.5, 0, -6))

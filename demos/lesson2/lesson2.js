@@ -13,16 +13,14 @@ $().ready(function () {
         vertex: [[0,1, -1,-1, 1,-1], 2]
     });
 
-    var camera = Shade.Camera.perspective({ aspect_ratio: 720/480 });
+    var camera = Shade.Camera.perspective();
 
     var square = Facet.bake(square_model, {
         position: camera(Shade.translation(Shade.vec(1.5, 0, -6))
-                         .mul(square_model.vertex)),
-        color: Shade.color('white')
+                         .mul(square_model.vertex))
     }), triangle = Facet.bake(triangle_model, {
         position: camera(Shade.translation(Shade.vec(-1.5, 0, -6))
-                         .mul(triangle_model.vertex)),
-        color: Shade.color('white')
+                         .mul(triangle_model.vertex))
     });
 
     Facet.Scene.add(square);

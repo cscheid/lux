@@ -25,8 +25,7 @@ function create_cube_batch(opts)
     final_color = Shade.vec(final_color.swizzle("rgb"), 0.5);
 
     var camera = Shade.Camera.perspective({
-        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
-        aspect_ratio: 720/480
+        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
     });
     
     return Facet.bake(model, {
