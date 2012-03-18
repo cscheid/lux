@@ -1,3 +1,24 @@
+(function() {
+
+function initialize_context_globals(gl)
+{
+    gl._facet_globals = {};
+
+    // when Facet.init is called with a display callback, that gets stored in
+    // gl._globals.display_callback
+    gl._facet_globals.display_callback = Facet.Scene.render;
+
+    // Objects stored in the scene are automatically drawn
+    gl._facet_globals.scene = [];
+
+    // batches can currently be rendered in "draw" or "pick" mode.
+    // draw: 0
+    // pick: 1
+    // these are indices into an array defined inside Facet.bake
+    // For legibility, they should be strings, but for speed, they'll be integers.
+    gl._facet_globals.batch_render_mode = 0;
+}
+
 Facet.init = function(canvas, opts)
 {
     canvas.unselectable = true;
@@ -30,8 +51,6 @@ Facet.init = function(canvas, opts)
         clearDepth = opts.clearDepth.constant_value();
     } else
         clearDepth = opts.clearDepth;
-
-    Facet._globals.display_callback = (opts.display || function() {});
 
     try {
         if ("attributes" in opts) {
@@ -86,20 +105,29 @@ Facet.init = function(canvas, opts)
         throw "failed initalization";
     }
 
+    initialize_context_globals(gl);
+    Facet.set_context(gl);
+
+    if (opts.display) {
+        Facet._globals.ctx._facet_globals.display_callback = opts.display;
+    }
+
     gl.display = function() {
         this.viewport(0, 0, this.viewportWidth, this.viewportHeight);
         this.clearDepth(clearDepth);
         this.clearColor.apply(gl, clearColor);
         this.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        Facet._globals.display_callback();
+        Facet._globals.ctx._facet_globals.display_callback();
     };
-    Facet.set_context(gl);
     gl.resize = function(width, height) {
         this.viewportWidth = width;
         this.viewportHeight = height;
         this.canvas.width = width;
         this.canvas.height = height;
+        this.display();
     };
 
     return gl;
 };
+
+})();

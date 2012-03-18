@@ -248,7 +248,7 @@ Facet.bake = function(model, appearance)
     var result = {
         batch_id: batch_id,
         draw: function() {
-            draw_it(which_opts[Facet._globals.batch_render_mode]);
+            draw_it(which_opts[Facet._globals.ctx._facet_globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.
