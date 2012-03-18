@@ -17,26 +17,26 @@
 <canvas id="webgl" width="720" height="480"></canvas>
 <div style="text-align: right">View the <a href="lesson2.js">full source</a>.</div>
 
-<p>In WebGL, pictures are created by drawing points, lines, triangles,
-  etc. on the screen. With Facet, these are packaged
-  in <em>models</em>, which are created
-  with <span class="keyword">Facet.model</span>. Each model is created by specifying the type of
-  primitive being drawn (<span class="keyword">type</span>), a
-  list of vertex coordinates and their dimension (<span class="keyword">vertex</span>), and
-  the sequence in which these vertices are drawn
-  (<span class="keyword">elements</span>):</p>
+<!-- <p>In WebGL, pictures are created by drawing points, lines, triangles, -->
+<!--   etc. on the screen. With Facet, these are packaged -->
+<!--   in <em>models</em>, which are created -->
+<!--   with <span class="keyword">Facet.model</span>. Each model is created by specifying the type of -->
+<!--   primitive being drawn (<span class="keyword">type</span>), a -->
+<!--   list of vertex coordinates and their dimension (<span class="keyword">vertex</span>), and -->
+<!--   the sequence in which these vertices are drawn -->
+<!--   (<span class="keyword">elements</span>):</p> -->
 
-<pre class="highlight">
-var square = Facet.model({
-    type: "triangles",
-    elements: [0, 1, 2, 0, 2, 3],
-    vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2]
-}), triangle = Facet.model({
-    type: "triangles",
-    elements: 3, // this is equivalent to [0, 1, 2]
-    vertex: [[0,1, -1,-1, 1,-1], 2]
-});
-</pre>
+<!-- <pre class="highlight"> -->
+<!-- var square = Facet.model({ -->
+<!--     type: "triangles", -->
+<!--     elements: [0, 1, 2, 0, 2, 3], -->
+<!--     vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2] -->
+<!-- }), triangle = Facet.model({ -->
+<!--     type: "triangles", -->
+<!--     elements: 3, // this is equivalent to [0, 1, 2] -->
+<!--     vertex: [[0,1, -1,-1, 1,-1], 2] -->
+<!-- }); -->
+<!-- </pre> -->
 
 <p>Forgive the mess as we remodel the place a bit.</p>
 
