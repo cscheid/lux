@@ -92,6 +92,10 @@ Facet.bake = function(model, appearance)
 {
     appearance = Shade.canonicalize_program_object(appearance);
 
+    if (_.isUndefined(appearance.gl_FragColor)) {
+        appearance.gl_FragColor = Shade.vec(1,1,1,1);
+    }
+
     if (appearance.gl_Position.type.equals(Shade.Types.vec2)) {
         appearance.gl_Position = Shade.vec(appearance.gl_Position, 0, 1);
     } else if (appearance.gl_Position.type.equals(Shade.Types.vec3)) {
