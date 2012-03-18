@@ -145,7 +145,12 @@ facet.js:					\
 	src/facet/models/mesh.js		\
 	src/facet/models/sphere.js		\
 	src/facet/models/square.js		\
-	src/facet/models/teapot.js
+	src/facet/models/teapot.js		\
+	src/facet/scene/_begin.js		\
+	src/facet/scene/add.js			\
+	src/facet/scene/remove.js		\
+	src/facet/scene/render.js		\
+	src/facet/scene/invalidate.js
 
 # If the chmods below don't make sense to you right now, wait until
 # you fix a bug on the compilation output instead of the source :)
