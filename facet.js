@@ -4704,21 +4704,28 @@ Shade.memoize_on_field = function(field_name, fun, key_fun)
 Shade.Camera = {};
 Shade.Camera.perspective = function(opts)
 {
-    opts = opts || {};
-    opts = _.defaults(opts, {
+    opts = _.defaults(opts || {}, {
         look_at: [Shade.vec(0, 0, 0), 
                   Shade.vec(0, 0, -1), 
                   Shade.vec(0, 1, 0)],
         field_of_view_y: 45,
-        aspect_ratio: 1,
         near_distance: 0.1,
         far_distance: 100
     });
     
     var field_of_view_y = opts.field_of_view_y;
-    var aspect_ratio = opts.aspect_ratio;
     var near_distance = opts.near_distance;
     var far_distance = opts.far_distance;
+    var aspect_ratio;
+    if (opts.aspect_ratio)
+        aspect_ratio = opts.aspect_ratio;
+    else {
+        var ctx = Facet._globals.ctx;
+        if (_.isUndefined(ctx)) {
+            throw "aspect_ratio is only optional with an active Facet context";
+        }
+        aspect_ratio = ctx.viewportWidth / ctx.viewportHeight;
+    }
 
     var view = Shade.look_at(opts.look_at[0], opts.look_at[1], opts.look_at[2]);
     var projection = Shade.perspective_matrix(field_of_view_y, aspect_ratio, near_distance, far_distance);
@@ -10450,10 +10457,6 @@ Facet.Scene.add = function(obj)
 {
     var scene = Facet._globals.ctx._facet_globals.scene;
 
-    if (_.isUndefined(obj.batch_id)) {
-        throw "Expected a batch, got an object without a batch_id";
-    }
-    var batch_id = obj.batch_id;
     scene.push(obj);
     Facet.Scene.invalidate();
 };
