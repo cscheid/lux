@@ -4,8 +4,7 @@ var rb;
 
 Facet.Picker = {
     draw_pick_scene: function(callback) {
-        var _globals = Facet._globals;
-        var ctx = _globals.ctx;
+        var ctx = Facet._globals.ctx;
         if (!rb) {
             rb = Facet.render_buffer({
                 width: ctx.viewportWidth,
@@ -15,9 +14,9 @@ Facet.Picker = {
             });
         }
 
-        callback = callback || _globals.display_callback;
-        var old_scene_render_mode = _globals.batch_render_mode;
-        _globals.batch_render_mode = 1;
+        callback = callback || ctx._facet_globals.display_callback;
+        var old_scene_render_mode = ctx._facet_globals.batch_render_mode;
+        ctx._facet_globals.batch_render_mode = 1;
         try {
             rb.with_bound_buffer(function() {
                 ctx.clearColor(0,0,0,0);
@@ -25,7 +24,7 @@ Facet.Picker = {
                 callback();
             });
         } finally {
-            _globals.batch_render_mode = old_scene_render_mode;
+            ctx._facet_globals.batch_render_mode = old_scene_render_mode;
         }
     },
     pick: function(x, y) {
