@@ -1,3 +1,15 @@
+/*
+ * FIXME the webgl compiler seems to be having trouble with the
+ * conditional expressions in longer shaders.  Temporarily, then, I
+ * will replace all "unconditional" checks with "true". The end effect
+ * is that the shader always evaluates potentially unused sides of a
+ * conditional expression if they're is used in two or more places in
+ * the shader.
+ 
+   Currently this will not be a big issue, but when I have loops, I
+   won't want a loop to be evaluated unconditionally.
+ */
+
 Shade.ValueExp = Shade._create(Shade.Exp, {
     is_constant: Shade.memoize_on_field("_is_constant", function() {
         return _.all(this.parents, function(v) {
@@ -12,11 +24,12 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
     }),
     _must_be_function_call: false,
     evaluate: function() {
+        var unconditional = true; // see comment on top
         if (this._must_be_function_call)
             return this.glsl_name + "()";
         if (this.children_count <= 1)
             return this.value();
-        if (this.is_unconditional)
+        if (unconditional)
             return this.precomputed_value_glsl_name;
         else
             return this.glsl_name + "()";
@@ -33,8 +46,9 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         }
     },
     compile: function(ctx) {
+        var unconditional = true; // see comment on top
         if (this._must_be_function_call) {
-            if (this.is_unconditional) {
+            if (unconditional) {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
                     ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
@@ -59,7 +73,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                     ctx.value_function(this, this.value());
             }
         } else {
-            if (this.is_unconditional) {
+            if (unconditional) {
                 if (this.children_count > 1) {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
                     ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
