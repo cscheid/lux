@@ -8936,13 +8936,43 @@ Shade.rotation = Shade(function(angle, axis)
                                0),
                      Shade.vec(0,0,0,1));
 });
-Shade.translation = function(t)
-{
-    return Shade.mat(Shade.vec(1,0,0,0),
-                     Shade.vec(0,1,0,0),
-                     Shade.vec(0,0,1,0),
-                     Shade.vec(t, 1));
-};
+Shade.translation = Shade(function() {
+    function from_vec3(v) {
+        return Shade.mat(Shade.vec(1,0,0,0),
+                         Shade.vec(0,1,0,0),
+                         Shade.vec(0,0,1,0),
+                         Shade.vec(v, 1));
+    }
+    if (arguments.length === 1) {
+        var t = arguments[0];
+        if (!t.type.equals(Shade.Types.vec3)) {
+            throw "expected vec3, got " + t.type.repr() + "instead";
+        }
+        return from_vec3(t);
+    } else if (arguments.length === 2) {
+        var x = arguments[0], y = arguments[1];
+        if (!x.type.equals(Shade.Types.float_t)) {
+            throw "expected float, got " + x.type.repr() + "instead";
+        }
+        if (!y.type.equals(Shade.Types.float_t)) {
+            throw "expected float, got " + y.type.repr() + "instead";
+        }
+        return from_vec3(Shade.vec(x, y, 0));
+    } else if (arguments.length === 3) {
+        var x = arguments[0], y = arguments[1], z = arguments[2];
+        if (!x.type.equals(Shade.Types.float_t)) {
+            throw "expected float, got " + x.type.repr() + "instead";
+        }
+        if (!y.type.equals(Shade.Types.float_t)) {
+            throw "expected float, got " + y.type.repr() + "instead";
+        }
+        if (!z.type.equals(Shade.Types.float_t)) {
+            throw "expected float, got " + z.type.repr() + "instead";
+        }
+        return from_vec3(Shade.vec(x, y, z));
+    } else
+        throw "expected either 1, 2 or 3 parameters";
+});
 Shade.ortho = Shade.make(function(left, right, bottom, top, near, far) {
     var rl = right.sub(left);
     var tb = top.sub(bottom);
