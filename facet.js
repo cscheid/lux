@@ -3084,9 +3084,20 @@ function facet_constant_type(obj)
 //////////////////////////////////////////////////////////////////////////////
 // http://javascript.crockford.com/remedial.html
 
+// Notice that facet_typeOf is NOT EXACTLY equal to
+// 
+//   http://javascript.crockford.com/remedial.html
+//
+// In particular, facet_typeOf will return "object" if given Shade expressions.
+// This is something of a hack, but it is the simplest way I know to get
+// operator() overloading, which turns out to be notationally quite powerful.
+//
+
 function facet_typeOf(value) 
 {
     var s = typeof value;
+    if (s === 'function' && value._facet_expression)
+        return 'object';
     if (s === 'object') {
         if (value) {
             if (typeof value.length === 'number' &&
@@ -5115,21 +5126,39 @@ Shade._create = (function() {
     var guid = 0;
     return function(base_type, new_obj)
     {
-        function F() {
-            for (var key in new_obj) {
-                this[key] = new_obj[key];
-            }
-            this.guid = "GUID_" + guid;
+        // function F() {
+        //     for (var key in new_obj) {
+        //         this[key] = new_obj[key];
+        //     }
+        //     this.guid = "GUID_" + guid;
 
-            // this is where memoize_on_field stashes results. putting
-            // them all in a single member variable makes it easy to
-            // create a clean prototype
-            this._caches = {};
+        //     // this is where memoize_on_field stashes results. putting
+        //     // them all in a single member variable makes it easy to
+        //     // create a clean prototype
+        //     this._caches = {};
 
-            guid += 1;
+        //     guid += 1;
+        // }
+        // F.prototype = base_type;
+        // return new F();
+
+        var result = function() {
+            return result.call_operator.apply(result, _.toArray(arguments));
+        };
+
+        for (var key in new_obj) {
+            result[key] = new_obj[key];
         }
-        F.prototype = base_type;
-        return new F();
+        result.guid = "GUID_" + guid;
+
+        // this is where memoize_on_field stashes results. putting
+        // them all in a single member variable makes it easy to
+        // create a clean prototype
+        result._caches = {};
+
+        guid += 1;
+        result.__proto__ = base_type;
+        return result;
     };
 })();
 
@@ -5733,6 +5762,12 @@ Shade.Exp = {
     discard_if: function(condition) {
         return Shade.discard_if(this, condition);
     },
+
+    // overload this to overload exp(foo)
+    call_operator: function() {
+        return this.mul.apply(this, arguments);
+    },
+
     // all sugar for funcs_1op is defined later on in the source
 
     //////////////////////////////////////////////////////////////////////////
@@ -5956,6 +5991,7 @@ Shade.Exp = {
             compile: function() {}
         });
     },
+    _facet_expression: true, // used by facet_typeOf
     expression_type: "other",
     _type: "shade_expression",
     _attribute_buffers: [],
@@ -6126,6 +6162,8 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                 }
             }
         }
+    }, call_operator: function(other) {
+        return this.mul(other);
     }
 });
 Shade._create_concrete_value_exp = Shade._create_concrete(Shade.ValueExp, ["parents", "type", "value"]);
