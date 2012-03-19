@@ -11,7 +11,7 @@ $().ready(function () {
     var cube = Facet.Models.flat_cube();
     Facet.Scene.add(Facet.bake(cube, {
         position: camera(Shade.rotation(angle, Shade.vec(1,1,1))
-                         .mul(cube.vertex)),
+                         (cube.vertex)),
         color: Shade.texture2D(Facet.texture({ src: "../img/nehe.jpg" }),
                                cube.tex_coord)
     }));

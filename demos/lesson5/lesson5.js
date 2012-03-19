@@ -54,12 +54,12 @@ $().ready(function () {
     var angle = Shade.parameter("float");
 
     var cube_xformed_vertex = Shade.translation(1.5, 0, -6)
-        .mul(Shade.rotation(angle, Shade.vec(1,1,1)))
-        .mul(cube_model.vertex);
+        (Shade.rotation(angle, Shade.vec(1,1,1)))
+        (cube_model.vertex);
 
     var pyramid_xformed_vertex = Shade.translation(-1.5, 0, -6)
-        .mul(Shade.rotation(angle, Shade.vec(0,1,0)))
-        .mul(pyramid_model.vertex);
+        (Shade.rotation(angle, Shade.vec(0,1,0)))
+        (pyramid_model.vertex);
 
     Facet.Scene.add(Facet.bake(cube_model, {
         position: camera(cube_xformed_vertex),

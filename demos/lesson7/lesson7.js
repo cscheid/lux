@@ -25,15 +25,15 @@ function create_cube_batch(opts)
             light_ambient: Shade.vec(0.1, 0.1, 0.1, 1.0),
             light_diffuse: Shade.color('white'),
             per_vertex: opts.per_vertex,
-            vertex: model_mat.mul(model.vertex),
-            normal: model_mat.mul(model.normal)
+            vertex: model_mat(model.vertex),
+            normal: model_mat(model.normal)
         });
     } else {
         final_color = material_color;
     }
 
     return Facet.bake(model, {
-        position: camera(model_mat.mul(model.vertex)),
+        position: camera(model_mat(model.vertex)),
         color: final_color
     });
 }

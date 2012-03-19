@@ -20,13 +20,11 @@ $().ready(function () {
     var camera = Shade.Camera.perspective();
 
     Facet.Scene.add(Facet.bake(square, {
-        position: camera(
-            Shade.translation( 1.5, 0, -6).mul(square.vertex)),
+        position: camera(Shade.translation( 1.5, 0, -6)(square.vertex)),
         color: Shade.color('#88f')
     }));
     Facet.Scene.add(Facet.bake(triangle, {
-        position: camera(
-            Shade.translation(-1.5, 0, -6).mul(triangle.vertex)),
+        position: camera(Shade.translation(-1.5, 0, -6)(triangle.vertex)),
         color: triangle.color
     }));
 });

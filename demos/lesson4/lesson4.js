@@ -21,15 +21,15 @@ $().ready(function () {
     var angle = Shade.parameter("float");
 
     Facet.Scene.add(Facet.bake(square, {
-        position: camera(Shade.translation( 1.5, 0, -6)
-                         .mul(Shade.rotation(angle, Shade.vec(1, 0, 0)))
-                         .mul(square.vertex)),
+        position: camera(Shade.translation( 1.5, 0, -6))
+                        (Shade.rotation(angle, Shade.vec(1, 0, 0)))
+                        (square.vertex),
         color: Shade.color('#88f')
     }));
     Facet.Scene.add(Facet.bake(triangle, {
-        position: camera(Shade.translation(-1.5, 0, -6)
-                         .mul(Shade.rotation(angle, Shade.vec(0, 1, 0)))
-                         .mul(triangle.vertex)),
+        position: camera(Shade.translation(-1.5, 0, -6))
+                        (Shade.rotation(angle, Shade.vec(0, 1, 0)))
+                        (triangle.vertex),
         color: triangle.color
     }));
 
