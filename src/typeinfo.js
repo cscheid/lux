@@ -18,9 +18,20 @@ function facet_constant_type(obj)
 //////////////////////////////////////////////////////////////////////////////
 // http://javascript.crockford.com/remedial.html
 
+// Notice that facet_typeOf is NOT EXACTLY equal to
+// 
+//   http://javascript.crockford.com/remedial.html
+//
+// In particular, facet_typeOf will return "object" if given Shade expressions.
+// This is something of a hack, but it is the simplest way I know to get
+// operator() overloading, which turns out to be notationally quite powerful.
+//
+
 function facet_typeOf(value) 
 {
     var s = typeof value;
+    if (s === 'function' && value._facet_expression)
+        return 'object';
     if (s === 'object') {
         if (value) {
             if (typeof value.length === 'number' &&

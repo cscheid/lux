@@ -98,6 +98,8 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                 }
             }
         }
+    }, call_operator: function(other) {
+        return this.mul(other);
     }
 });
 Shade._create_concrete_value_exp = Shade._create_concrete(Shade.ValueExp, ["parents", "type", "value"]);
