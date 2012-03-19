@@ -95,9 +95,10 @@ throughout the API.
 The way to do this is to *add* underscore_equivalents of the GLSL ugly
 camelCase functions. This way, people familiar with GLSL can use them,
 while people coming directly to Facet will use underscore
-** TODO "Selection" is a terrible name. Fix it.
 ** TODO Shade.Utils is terrible. Move that stuff to Shade.Scale or something like that.
 ** Shade.model vs Shade.bake is getting annoying. Find a way out.
+** TODO Shade.Colors is the mother of all messes. Do I even need the JS api?
+** TODO Contact TypedArray spec authors about new entry point.
 * Testing/Engineering
 ** TODO fix the _shade_type ugliness
 One possibility is to create a WebGLObject prototype that knows how to

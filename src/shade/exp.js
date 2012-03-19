@@ -155,6 +155,12 @@ Shade.Exp = {
     discard_if: function(condition) {
         return Shade.discard_if(this, condition);
     },
+
+    // overload this to overload exp(foo)
+    call_operator: function() {
+        return this.mul.apply(this, arguments);
+    },
+
     // all sugar for funcs_1op is defined later on in the source
 
     //////////////////////////////////////////////////////////////////////////
@@ -378,6 +384,7 @@ Shade.Exp = {
             compile: function() {}
         });
     },
+    _facet_expression: true, // used by facet_typeOf
     expression_type: "other",
     _type: "shade_expression",
     _attribute_buffers: [],

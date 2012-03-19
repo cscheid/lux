@@ -117,7 +117,7 @@ test("Shade compilation", function() {
         var c = v.cos();
         var s = v.sin();
         var cond = Shade.parameter("float").gt(0);
-        var root = Shade.selection(cond, c, s);
+        var root = Shade.ifelse(cond, c, s);
         var cc = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE);
         cc.compile(root);
         equal(cc.source(), "precision highp float;\n" +
@@ -321,12 +321,12 @@ test("Shade constant folding", function() {
                  mat.make([2, 6, 12, 20])),
        "matrixCompMult folding");
 
-    equal(Shade.selection(true, 3, 5).constant_value(), 3, "selection folding");
-    ok(vec.equal(Shade.selection(Shade.lt(4, 6), 
-                                 Shade.vec(1,1,1,1),
-                                 Shade.vec(0,0,0,0)).constant_value(),
+    equal(Shade.ifelse(true, 3, 5).constant_value(), 3, "ifelse folding");
+    ok(vec.equal(Shade.ifelse(Shade.lt(4, 6), 
+                              Shade.vec(1,1,1,1),
+                              Shade.vec(0,0,0,0)).constant_value(),
                  vec.make([1,1,1,1])),
-       "selection folding");
+       "ifelse folding");
 
     equal(Shade.or(true).constant_value(), true, "single logical value");
     equal(Shade(true).discard_if(false).is_constant(), true, "discard constant folding");
@@ -335,11 +335,11 @@ test("Shade constant folding", function() {
     var tex = Shade.parameter("sampler2D");
     var texcoord = Shade.varying("fooobarasdf", "vec2");
 
-    equal(Shade.selection(true,
-                          Shade.selection(false,
-                                          Shade.color('red'),
-                                          Shade.texture2D(tex, texcoord)),
-                          Shade.color('black')).is_constant(), false, "11052011 Marks.dots issue");
+    equal(Shade.ifelse(true,
+                       Shade.ifelse(false,
+                                    Shade.color('red'),
+                                    Shade.texture2D(tex, texcoord)),
+                       Shade.color('black')).is_constant(), false, "11052011 Marks.dots issue");
 
     ok(Shade.vec(1,0,0).eq(Shade.vec(0,1,0)).constant_value() === false, 
        "equality comparison on vectors");
@@ -349,36 +349,36 @@ test("Shade constant folding", function() {
        "equality comparison on matrices");
 
     //////////////////////////////////////////////////////////////////////////
-    // constant folding on selections:
+    // constant folding on ifelses:
     var parameter_logical = Shade.parameter("bool"), 
         parameter_float = Shade.parameter("float");
 
-    ok(Shade.selection(parameter_logical, 3, 3).is_constant() === true,
-       "selection is_constant() when both sides are the same");
+    ok(Shade.ifelse(parameter_logical, 3, 3).is_constant() === true,
+       "ifelse is_constant() when both sides are the same");
 
-    equal(Shade.selection(parameter_logical, 3, 3).constant_value(), 3,
-       "selection constant_value() when both sides are the same");
+    equal(Shade.ifelse(parameter_logical, 3, 3).constant_value(), 3,
+       "ifelse constant_value() when both sides are the same");
 
-    ok(Shade.selection(parameter_logical, parameter_float, 3).is_constant() === false,
-       "selection is_constant() when both sides are the same");
+    ok(Shade.ifelse(parameter_logical, parameter_float, 3).is_constant() === false,
+       "ifelse is_constant() when both sides are the same");
 
-    equal(Shade.selection(parameter_logical, 
+    equal(Shade.ifelse(parameter_logical, 
                        Shade.vec(parameter_float, 5, parameter_float, parameter_float),
                        Shade.vec(parameter_float, 5, parameter_float, parameter_float))
           .element_is_constant(1), true,
-          "selection element_is_constant when both sides are the same");
+          "ifelse element_is_constant when both sides are the same");
 
-    equal(Shade.selection(parameter_logical, 
+    equal(Shade.ifelse(parameter_logical, 
                        Shade.vec(parameter_float, 5, parameter_float, parameter_float),
                        Shade.vec(parameter_float, 6, parameter_float, parameter_float))
           .element_is_constant(1), false,
-          "selection element_is_constant when both sides aren't the same");
+          "ifelse element_is_constant when both sides aren't the same");
 
-    equal(Shade.selection(parameter_logical, 
+    equal(Shade.ifelse(parameter_logical, 
                        Shade.vec(parameter_float, 5, parameter_float, parameter_float),
                        Shade.vec(parameter_float, 5, parameter_float, parameter_float))
           .element_constant_value(1), 5,
-          "selection element_constant_value when both sides are the same");
+          "ifelse element_constant_value when both sides are the same");
 
     ok(Shade.vec(Shade.max(0, 1), 1, 1).element(0).constant_value() === 1,
        "element() on built-in expressions");
@@ -506,12 +506,12 @@ test("Shade optimizer", function() {
         Shade.and(false, parameter_logical)).constant_value(), false, "optimize false && x");
 
     equal(Shade.Optimizer.is_known_branch(
-        Shade.selection(true, parameter_logical, parameter_logical_2)), true, "detect known branch");
-    equal(Shade.Optimizer.prune_selection_branch(
-        Shade.selection(true, parameter_logical, parameter_logical_2)).guid, 
+        Shade.ifelse(true, parameter_logical, parameter_logical_2)), true, "detect known branch");
+    equal(Shade.Optimizer.prune_ifelse_branch(
+        Shade.ifelse(true, parameter_logical, parameter_logical_2)).guid, 
           parameter_logical.guid, "optimize known branch");
-    equal(Shade.Optimizer.prune_selection_branch(
-        Shade.selection(false, parameter_logical, parameter_logical_2)).guid, 
+    equal(Shade.Optimizer.prune_ifelse_branch(
+        Shade.ifelse(false, parameter_logical, parameter_logical_2)).guid, 
           parameter_logical_2.guid, "optimize known branch");
 
     ok(vec4.equal(Shade.mul(Shade.translation(Shade.vec(0,0,0)),

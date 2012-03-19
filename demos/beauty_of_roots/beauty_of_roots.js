@@ -7,20 +7,6 @@ var aspect_ratio;
 
 //////////////////////////////////////////////////////////////////////////////
 
-function get_buffers(urls, alldone)
-{
-    var obj = {};
-    var done = _.after(urls.length, alldone);
-
-    function handler(buffer, url) {
-        obj[url] = Facet.attribute_buffer(new Float32Array(buffer), 1);
-        done(obj);
-    };
-    _.each(urls, function(url) {
-        Facet.Net.buffer_ajax(url, handler);
-    });
-};
-
 function draw_it()
 {
     rb.with_bound_buffer(function() {
@@ -154,32 +140,31 @@ $().ready(function() {
                                    Shade.color("black")])(texel_at_uv.at(0).add(1).log()));
     });
 
-    get_buffers(["data/roots_real.raw", "data/roots_imag.raw"],
-                function (obj) {
-                    var x = obj["data/roots_real.raw"];
-                    var y = obj["data/roots_imag.raw"];
-                    var points_model = Facet.model({
-                        x: x,
-                        y: y,
-                        type: "points"
-                    });
-                    var pt = Shade.vec(points_model.x, points_model.y);
-                    points_batch = Facet.bake(points_model, {
-                        position: camera(pt),
-                        mode: Facet.DrawingMode.additive,
-
-                        //color: Shade.round_dot(Shade.vec(0.1,0,0,1)),
-                        color: Shade.pointCoord().sub(Shade.vec(0.5, 0.5))
-                                    .norm().pow(2).neg()
-                                    .mul(20)
-                                    .exp()
-                                    .mul(pointweight)
-                                    .mul(zoom.pow(0.33))
-                                    .mul(Shade.color("white")),
-                        gl_PointSize: zoom.pow(0.5).mul(pointsize)
-                    });
-                    $("#loading").fadeOut(500);
-                    gl.display();
-                });
+    Facet.Net.binary(["data/roots_real.raw", "data/roots_imag.raw"], function (obj) {
+        var x = Facet.attribute_buffer(new Float32Array(obj["data/roots_real.raw"]), 1);
+        var y = Facet.attribute_buffer(new Float32Array(obj["data/roots_imag.raw"]), 1);
+        var points_model = Facet.model({
+            x: x,
+            y: y,
+            type: "points"
+        });
+        var pt = Shade.vec(points_model.x, points_model.y);
+        points_batch = Facet.bake(points_model, {
+            position: camera(pt),
+            mode: Facet.DrawingMode.additive,
+            
+            //color: Shade.round_dot(Shade.vec(0.1,0,0,1)),
+            color: Shade.pointCoord().sub(Shade.vec(0.5, 0.5))
+                .norm().pow(2).neg()
+                .mul(20)
+                .exp()
+                .mul(pointweight)
+                .mul(zoom.pow(0.33))
+                .mul(Shade.color("white")),
+            gl_PointSize: zoom.pow(0.5).mul(pointsize)
+        });
+        $("#loading").fadeOut(500);
+        gl.display();
+    });
     gl.display();
 });

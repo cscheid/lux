@@ -1,102 +1,80 @@
-var gl;
-var square_drawable, triangle_drawable;
-var model_mat;
+$().ready(function() {
 
-var pick_id_val;
-var angle_min;
-var angle_max;
-var pick_id;
-var wedge_color;
+    function handle_mouse(event) {
+        var r = Facet.Picker.pick(event.offsetX, gl.viewportHeight - event.offsetY);
+        $("#pickresult").html(strings[r]);
+        var r_id = Shade.id(r);
+        if (!vec.equal(r_id, current_pick_id.get())) {
+            current_pick_id.set(r_id);
+            gl.display();
+        }
+    }
 
-//////////////////////////////////////////////////////////////////////////////
-
-function draw_it()
-{
-    var states = [ [ [angle_min, -Math.PI/3],
-                     [angle_max,  Math.PI/3],
-                     [pick_id, Shade.id(pick_id_val)],
-                     [wedge_color, Shade.color('red')] ],
-                   [ [angle_min, Math.PI/3],
-                     [angle_max, Math.PI/2],
-                     [pick_id, Shade.id(pick_id_val+1)],
-                     [wedge_color, Shade.color('blue')] ],
-                   [ [angle_min,   Math.PI/2],
-                     [angle_max, 5*Math.PI/3],
-                     [pick_id, Shade.id(pick_id_val+2)],
-                     [wedge_color, Shade.color('green') ] ] ];
-    _.each(states, function(lst) {
-        _.each(lst, function(pair) {
-            var parameter = pair[0],
-                value = pair[1];
-            parameter.set(value);
-        });
-        square_drawable.draw();
-    });
-}
-
-$().ready(function () {
-    var canvas = document.getElementById("webgl");
-    var camera = Shade.Camera.perspective({
-        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
-        field_of_view_y: 45,
-        aspect_ratio: 720/480,
-        near_distance: 0.1,
-        far_distance: 100
-    });
-
+    var pick_id_val = Facet.fresh_pick_id(3);
     var strings = {};
     strings[0] = "Miss";
-
-    gl = Facet.init(canvas, {
-        clearDepth: 1.0,
-        clearColor: [0,0,0,0.2],
-        display: draw_it,
-        attributes: {
-            alpha: true,
-            depth: true
-        },
-        mousedown: function(event) {
-            Facet.Picker.draw_pick_scene();
-            var r = Facet.Picker.pick(event.offsetX, gl.viewportHeight - event.offsetY);
-            $("#pickresult").html(strings[r]);
-            // console.log(strings[r]);
-        }
-    });
-
-    var square = Facet.model({
-        type: "triangles",
-        elements: [0, 1, 2, 0, 2, 3],
-        vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2]
-    });
-
-    var distance_from_origin = Shade.norm(square.vertex);
-    var angle = Shade.selection(distance_from_origin.eq(0), 
-                                0, Shade.atan(square.vertex.at(1), 
-                                              square.vertex.at(0)));
-    pick_id_val = Facet.fresh_pick_id(3);
-    angle_min = Shade.parameter("float");
-    angle_max = Shade.parameter("float");
-    pick_id = Shade.parameter("vec4");
-    wedge_color = Shade.parameter("vec4");
-
-    var angle_p1 = angle.add(Math.PI * 2);
-    var angle_m1 = angle.sub(Math.PI * 2);
-
-    function inside(ang) {
-        return Shade.and(ang.ge(angle_min), ang.lt(angle_max));
-    };
- 
-    var hit = inside(angle).or(inside(angle_p1)).or(inside(angle_m1));
-    square_drawable = Facet.bake(square, {
-        position: camera(square.vertex),
-        color: wedge_color
-            .discard_if(distance_from_origin.gt(1).or(hit.not())),
-        pick_id: pick_id
-    });
-
     strings[pick_id_val]   = "Wedge 0";
     strings[pick_id_val+1] = "Wedge 1";
     strings[pick_id_val+2] = "Wedge 2";
 
-    gl.display();
+    var gl = Facet.init(document.getElementById("webgl"), {
+        clearColor: [0,0,0,0.2],
+        mousedown: handle_mouse,
+        mousemove: handle_mouse
+    });
+
+    var square = Facet.Models.square();
+    var vertex = square.vertex.mul(2).sub(1);
+
+    var distance_from_origin = Shade.norm(vertex);
+    var angle = Shade.atan(vertex.at(1), vertex.at(0));
+
+    var current_pick_id = Shade.parameter("vec4", Shade.id(0));
+    var angle_min = Shade.parameter("float");
+    var angle_max = Shade.parameter("float");
+    var wedge_id  = Shade.parameter("vec4");
+    var wedge_hue = Shade.parameter("float");
+
+    function inside(ang) {
+        return ang.ge(angle_min).and(ang.lt(angle_max));
+    };
+ 
+    var hit = inside(angle)
+        .or(inside(angle.add(Math.PI * 2)))
+        .or(inside(angle.sub(Math.PI * 2)));
+
+    function hcl(h, c, l) {
+        return Shade.Colors.shadetable.hcl.create(h, c, l).as_shade();
+    }
+
+    var camera = Shade.Camera.perspective({
+        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
+    });
+    var intensity = current_pick_id.eq(wedge_id).ifelse(75, 50);
+
+    var uniforms = [angle_min, angle_max, wedge_id, wedge_hue];
+    var states = [
+        [ -1, 1, Shade.id(pick_id_val),   0],
+        [  1, 2, Shade.id(pick_id_val+1), 2],
+        [  2, 5, Shade.id(pick_id_val+2), 4]
+    ];
+
+    var wedge_batch = Facet.bake(square, {
+        position: camera(vertex),
+        color: hcl(wedge_hue, intensity, intensity)
+            .discard_if(distance_from_origin.gt(1).or(hit.not())),
+        pick_id: wedge_id
+    });
+
+    var wedge_set_batch = {
+        draw: function() {
+            _.each(states, function(lst) {
+                _.each(lst, function(v, i) { uniforms[i].set(v); });
+                wedge_batch.draw();
+            });
+        }
+    };
+
+    Facet.Scene.add(wedge_set_batch);
+    Facet.Picker.draw_pick_scene();
 });

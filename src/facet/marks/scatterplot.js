@@ -35,6 +35,7 @@ Facet.Marks.scatterplot = function(opts)
         stroke_width: opts.stroke_width,
         mode: opts.mode,
         alpha: opts.alpha,
-        plain: opts.plain
+        plain: opts.plain,
+        pick_id: opts.pick_id
     });
 };

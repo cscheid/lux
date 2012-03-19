@@ -92,6 +92,10 @@ Facet.bake = function(model, appearance)
 {
     appearance = Shade.canonicalize_program_object(appearance);
 
+    if (_.isUndefined(appearance.gl_FragColor)) {
+        appearance.gl_FragColor = Shade.vec(1,1,1,1);
+    }
+
     if (appearance.gl_Position.type.equals(Shade.Types.vec2)) {
         appearance.gl_Position = Shade.vec(appearance.gl_Position, 0, 1);
     } else if (appearance.gl_Position.type.equals(Shade.Types.vec3)) {
@@ -248,7 +252,7 @@ Facet.bake = function(model, appearance)
     var result = {
         batch_id: batch_id,
         draw: function() {
-            draw_it(which_opts[Facet._globals.batch_render_mode]);
+            draw_it(which_opts[Facet._globals.ctx._facet_globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.

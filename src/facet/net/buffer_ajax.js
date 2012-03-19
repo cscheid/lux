@@ -1,6 +1,27 @@
+/*
+ * Facet.Net.binary issues binary AJAX requests, which can be
+ * used to load data into Facet more efficiently than through the
+ * regular text or JSON AJAX interfaces. It returns ArrayBuffer objects.
+ * 
+ * It takes as parameters
+ * 
+ *  url (string or list of strings): urls to fetch
+ * 
+ *  handler (function(ArrayBuffer or dictionary of (url: ArrayBuffer))): a callback
+ *  which gets invoked when all requests finish. If a single URL was passed,
+ *  the callback is called with the single buffer returned. If a list of URLs
+ *  were passed, then an object is returned, mapping the URLs as passed to
+ *  the buffers.
+ *  
+ * FIXME Facet.Net.binary has no error handling.
+ */
+
 // based on http://calumnymmo.wordpress.com/2010/12/22/so-i-decided-to-wait/
-Facet.Net.buffer_ajax = function(url, handler)
+Facet.Net.binary = function(url, handler)
 {
+    if (facet_typeOf(url) === "array")
+        return handle_many(url, handler, Facet.Net.binary);
+
     var xhr = new window.XMLHttpRequest();
     var ready = false;
     xhr.onreadystatechange = function() {

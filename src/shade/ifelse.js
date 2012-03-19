@@ -1,18 +1,18 @@
-Shade.selection = function(condition, if_true, if_false)
+Shade.ifelse = function(condition, if_true, if_false)
 {
     condition = Shade.make(condition);
     if_true = Shade.make(if_true);
     if_false = Shade.make(if_false);
 
     if (!if_true.type.equals(if_false.type))
-        throw "selection return expressions must have same types";
+        throw "ifelse return expressions must have same types";
     if (!condition.type.equals(condition.type))
-        throw "selection condition must be of type bool";
+        throw "ifelse condition must be of type bool";
 
     return Shade._create_concrete_value_exp( {
         parents: [condition, if_true, if_false],
         type: if_true.type,
-        expression_type: "selection",
+        expression_type: "ifelse",
         // FIXME: works around Chrome Bug ID 103053
         _must_be_function_call: true,
         value: function() {
@@ -55,7 +55,7 @@ Shade.selection = function(condition, if_true, if_false)
             }
         },
         element: function(i) {
-            return Shade.selection(this.parents[0],
+            return Shade.ifelse(this.parents[0],
                                    this.parents[1].element(i),
                                    this.parents[2].element(i));
         },
@@ -99,7 +99,7 @@ Shade.selection = function(condition, if_true, if_false)
     });
 };
 
-Shade.Exp.selection = function(if_true, if_false)
+Shade.Exp.ifelse = function(if_true, if_false)
 {
-    return Shade.selection(this, if_true, if_false);
+    return Shade.ifelse(this, if_true, if_false);
 };

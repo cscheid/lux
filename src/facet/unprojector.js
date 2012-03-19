@@ -6,8 +6,7 @@ var clear_batch;
     
 Facet.Unprojector = {
     draw_unproject_scene: function(callback) {
-        var _globals = Facet._globals;
-        var ctx = _globals.ctx;
+        var ctx = Facet._globals.ctx;
         if (!rb) {
             rb = Facet.render_buffer({
                 width: ctx.viewportWidth,
@@ -35,9 +34,9 @@ Facet.Unprojector = {
             });
         }
 
-        callback = callback || _globals.display_callback;
-        var old_scene_render_mode = _globals.batch_render_mode;
-        _globals.batch_render_mode = 2;
+        callback = callback || ctx._facet_globals.display_callback;
+        var old_scene_render_mode = ctx._facet_globals.batch_render_mode;
+        ctx._facet_globals.batch_render_mode = 2;
         rb.with_bound_buffer(function() {
             var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
             var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
@@ -53,7 +52,7 @@ Facet.Unprojector = {
                                old_clear_color[1],
                                old_clear_color[2],
                                old_clear_color[3]);
-                _globals.batch_render_mode = old_scene_render_mode;
+                ctx._facet_globals.batch_render_mode = old_scene_render_mode;
             }
         });
     },

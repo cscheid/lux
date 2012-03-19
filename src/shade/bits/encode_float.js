@@ -25,7 +25,7 @@ Shade.Bits.encode_float = Shade.make(function(val) {
 
     var is_zero = val.eq(0);
 
-    var sign = val.gt(0).selection(0, 1);
+    var sign = val.gt(0).ifelse(0, 1);
     val = val.abs();
 
     var exponent = val.log2().floor();
@@ -42,6 +42,6 @@ Shade.Bits.encode_float = Shade.make(function(val) {
         .add(Shade.Bits.extract_bits(fraction, 16, 23)).div(255);
     byte1 = sign.mul(128).add(remaining_bits_of_biased_exponent).div(255);
 
-    return is_zero.selection(Shade.vec(0, 0, 0, 0),
-                             Shade.vec(byte4, byte3, byte2, byte1));
+    return is_zero.ifelse(Shade.vec(0, 0, 0, 0),
+                          Shade.vec(byte4, byte3, byte2, byte1));
 });

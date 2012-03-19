@@ -513,8 +513,8 @@ var faceforward = builtin_glsl_function({
         var N = exp.parents[0];
         var I = exp.parents[1];
         var Nref = exp.parents[2];
-        return Shade.selection(Nref.dot(I).lt(0),
-                               N, Shade.neg(N)).element(i);
+        return Shade.ifelse(Nref.dot(I).lt(0),
+                            N, Shade.neg(N)).element(i);
     }
 });
 Shade.faceforward = faceforward;
@@ -569,7 +569,7 @@ var refract = builtin_glsl_function({
         case 4: zero = Shade.vec(0,0,0,0); break;
         default: throw "internal error";
         };
-        return Shade.selection(k.lt(0), zero, refraction).element(i);
+        return Shade.ifelse(k.lt(0), zero, refraction).element(i);
     }
 });
 Shade.refract = refract;

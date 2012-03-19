@@ -1,19 +1,12 @@
 var S = Shade;
 
-var gl;
 var stroke_width;
 var point_diameter;
 var point_alpha;
-var data;
-var scatterplot_drawable;
 var alive = false;
+var gl;
 
 //////////////////////////////////////////////////////////////////////////////
-
-function display()
-{
-    scatterplot_drawable.draw();
-}
 
 function data_buffers()
 {
@@ -28,48 +21,49 @@ function data_buffers()
     };
 }
 
-function init_webgl()
-{
-    Facet.set_context(gl);
-    data = data_buffers();
+$().ready(function() {
+    setup_ui();
+    gl = Facet.init(document.getElementById("scatterplot"), {
+        clearColor: [0, 0, 0, 0.2]
+    });
+
+    var data = data_buffers();
 
     point_diameter = S.parameter("float", 10);
     stroke_width   = S.parameter("float", 2.5);
     point_alpha    = S.parameter("float", 1.0);
 
-    var species_color = S.Utils.choose(
-        [S.vec(1, 0, 0, point_alpha),
-         S.vec(0, 1, 0, point_alpha),
-         S.vec(0, 0, 1, point_alpha)])(data.species);
+    var species_color = S.vec(S.Utils.choose(
+        [S.vec(1, 0, 0),
+         S.vec(0, 1, 0),
+         S.vec(0, 0, 1)])(data.species), point_alpha);
 
-    scatterplot_drawable = Facet.Marks.scatterplot({
+    Facet.Scene.add(Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
         x: data.sepalLength,
         y: data.petalLength,
         x_scale: S.Utils.fit(data.sepalLength),
         y_scale: S.Utils.fit(data.petalLength),
         fill_color: species_color,
-        stroke_color: S.mix(species_color, S.color("black"), 0.5),
+        stroke_color: species_color.mul(0.75),
         stroke_width: stroke_width,
         point_diameter: point_diameter,
         mode: Facet.DrawingMode.over
-    });
-}
+    }));
+});
 
-$().ready(function() {
+function setup_ui()
+{
     function change_pointsize() {
-        var new_value = $("#pointsize").slider("value") / 10.0;
-        point_diameter.set(new_value);
+        point_diameter.set($("#pointsize").slider("value") / 10.0);
         gl.display();
     };
     function change_alpha() {
-        var new_value = $("#pointalpha").slider("value") / 100.0;
-        point_alpha.set(new_value);
+        point_alpha.set($("#pointalpha").slider("value") / 100.0);
         gl.display();
     };
     function change_stroke_width() {
-        var new_value = $("#strokewidth").slider("value") / 10.0;
-        stroke_width.set(new_value);
+        stroke_width.set($("#strokewidth").slider("value") / 10.0);
         gl.display();
     };
     $("#pointsize").slider({
@@ -96,20 +90,4 @@ $().ready(function() {
         slide: change_stroke_width,
         change: change_stroke_width
     });
-    var canvas = document.getElementById("scatterplot");
-    gl = Facet.init(canvas, { attributes: { alpha: true,
-                                            depth: true
-                                          },
-                              display: display,
-                              clearColor: [0, 0, 0, 0.2]
-                            });
-    init_webgl();
-    var start = new Date().getTime();
-    var f = function () {
-        if (alive) {
-            window.requestAnimFrame(f, canvas);
-        }
-        gl.display();
-    };
-    f();
-});
+}

@@ -22,6 +22,7 @@ Facet.Marks.dots = function(opts)
     var point_diameter = Shade(opts.point_diameter);
     var stroke_width   = Shade(opts.stroke_width).add(1);
     var use_alpha      = Shade(opts.alpha);
+    opts.plain = Shade(opts.plain);
     
     var model_opts = {
         type: "points",
@@ -42,7 +43,7 @@ Facet.Marks.dots = function(opts)
     
     var plain_fill_color = fill_color;
     var alpha_fill_color = 
-        S.selection(use_alpha,
+        S.ifelse(use_alpha,
                     no_alpha.mul(S.vec(1,1,1,S.clamp(distance_to_border, 0, 1))),
                     no_alpha)
         .discard_if(distance_to_center_in_pixels.gt(point_radius));
@@ -50,8 +51,9 @@ Facet.Marks.dots = function(opts)
     var result = Facet.bake(model, {
         position: gl_Position,
         point_size: point_diameter,
-        color: Shade.selection(opts.plain, plain_fill_color, alpha_fill_color),
-        mode: opts.mode
+        color: opts.plain.ifelse(plain_fill_color, alpha_fill_color),
+        mode: opts.mode,
+        pick_id: opts.pick_id
     });
 
     /* We pass the gl_Position attribute explicitly because some other

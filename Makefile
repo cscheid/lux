@@ -47,7 +47,10 @@ facet.js:					\
 	src/facet/texture.js			\
 	src/facet/unprojector.js		\
 	src/facet/net/_begin.js			\
+	src/facet/net/ajax.js			\
+	src/facet/net/json.js			\
 	src/facet/net/buffer_ajax.js		\
+	src/facet/net/_end.js			\
 	src/facet/scale/_begin.js		\
 	src/facet/scale/geo/_begin.js		\
 	src/facet/scale/geo/mercator_to_spherical.js	\
@@ -111,7 +114,7 @@ facet.js:					\
 	src/shade/cosh.js			\
 	src/shade/sinh.js			\
 	src/shade/logical_operators.js		\
-	src/shade/selection.js			\
+	src/shade/ifelse.js			\
 	src/shade/rotation.js			\
 	src/shade/translation.js		\
 	src/shade/ortho.js			\
@@ -142,7 +145,12 @@ facet.js:					\
 	src/facet/models/mesh.js		\
 	src/facet/models/sphere.js		\
 	src/facet/models/square.js		\
-	src/facet/models/teapot.js
+	src/facet/models/teapot.js		\
+	src/facet/scene/_begin.js		\
+	src/facet/scene/add.js			\
+	src/facet/scene/remove.js		\
+	src/facet/scene/render.js		\
+	src/facet/scene/invalidate.js
 
 # If the chmods below don't make sense to you right now, wait until
 # you fix a bug on the compilation output instead of the source :)
