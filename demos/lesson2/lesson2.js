@@ -16,10 +16,10 @@ $().ready(function () {
     var camera = Shade.Camera.perspective();
 
     var square = Facet.bake(square_model, {
-        position: camera(Shade.translation(Shade.vec(1.5, 0, -6))
+        position: camera(Shade.translation( 1.5, 0, -6)
                          .mul(square_model.vertex))
     }), triangle = Facet.bake(triangle_model, {
-        position: camera(Shade.translation(Shade.vec(-1.5, 0, -6))
+        position: camera(Shade.translation(-1.5, 0, -6)
                          .mul(triangle_model.vertex))
     });
 

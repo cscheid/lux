@@ -21,12 +21,12 @@ $().ready(function () {
 
     Facet.Scene.add(Facet.bake(square, {
         position: camera(
-            Shade.translation(Shade.vec( 1.5, 0, -6)).mul(square.vertex)),
+            Shade.translation( 1.5, 0, -6).mul(square.vertex)),
         color: Shade.color('#88f')
     }));
     Facet.Scene.add(Facet.bake(triangle, {
         position: camera(
-            Shade.translation(Shade.vec(-1.5, 0, -6)).mul(triangle.vertex)),
+            Shade.translation(-1.5, 0, -6).mul(triangle.vertex)),
         color: triangle.color
     }));
 });
