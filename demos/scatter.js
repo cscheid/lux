@@ -30,7 +30,6 @@ function data_buffers()
 
 function init_webgl()
 {
-    var aColors = getColors();
     Facet.set_context(gl);
     data = data_buffers();
     if (typeof point_diameter === "undefined") 
@@ -39,10 +38,8 @@ function init_webgl()
     	stroke_width   = S.uniform("float", 2.5);
     if (typeof point_alpha === "undefined") 
    	point_alpha    = S.uniform("float", 1.0);
-    var species_color = S.Utils.choose(
-        [S.vec(aColors[0][0],aColors[0][1],aColors[0][2],point_alpha),
-         S.vec(aColors[1][0],aColors[1][1],aColors[1][2],point_alpha),
-         S.vec(aColors[2][0],aColors[2][1],aColors[2][2],point_alpha)])(data.species);
+    var species_color = Shade.Utils.choose(
+	getColors(point_alpha))(data.species);
 
     scatterplot_drawable = Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
@@ -132,6 +129,7 @@ $().ready(function() {
                               clearColor: [0, 0, 0, 0.2]
                             });
 
+    pick_color_scheme("Accent",3);
     init_webgl();
     var start = new Date().getTime();
     f();                    

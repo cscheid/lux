@@ -23,7 +23,6 @@ For written permission, please contact Cynthia Brewer at cbrewer@psu.edu.
 ColorData = {};
 ColorData.colors = function() {
     return {
-        traits: ["name", "colors", "type", "color_num", "R", "G", "B"],
         color: [
 {name: "Accent", colors: 3, type: "qual", color_num: 1, R: 127, G: 201, B: 127},
 {name: "Accent", colors: 3, type: "qual", color_num: 2, R: 190, G: 174, B: 212},
@@ -1718,19 +1717,97 @@ ColorData.colors = function() {
     };
 };
 var dfltClassNum = 3;
-var dfltClassColors = [
-	[222/255,235/255,247/255], //Sequential Blues Color Scheme
-	[158/255,202/255,225/255],
-	[49/255,130/255,189/255]
-	];
-
-var classNum;
-var classColors = dfltClassColors;
+var classColors = [];
 var color = color_buffers();
+var schemeType = "";
+var classNum;
 
+function getByType(type,cData){
+	var aRet = new Array;
+	var j=0;
+	if(cData === undefined)
+		    cData = ColorData.colors().color;
 
-function getColors (){
-	return classColors;
+	jQuery.map(cData,function(v,i) { 
+		if( v.type === type){
+			aRet[j++] = {
+				name: cData[i].name, 
+				colors: cData[i].colors,
+				type: cData[i].type,
+				color_num: cData[i].color_num,
+				R: cData[i].R,G: cData[i].G,B: cData[i].B
+			};
+		}
+		});
+	return aRet;
+
+}
+
+function getByName(name,cData){
+	var aRet = new Array;
+	var j=0;
+	if(cData === undefined)
+		    cData = ColorData.colors().color;
+	jQuery.map(cData,function(v,i) { 
+		if( v.name === name){
+			aRet[j++] = {
+				name: cData[i].name, 
+				colors: cData[i].colors,
+				type: cData[i].type,
+				color_num: cData[i].color_num,
+				R: cData[i].R,G: cData[i].G,B: cData[i].B
+			};
+		}
+		});
+	return aRet;
+}
+
+function getByClassNum(cNum,cData){
+	var aRet = new Array;
+	var j=0;
+	cNum = cNum - 0;
+	if(cData === undefined)
+		    cData = ColorData.colors().color;
+	jQuery.map(cData,function(v,i) { 
+		if( v.colors === cNum){
+			aRet[j++] = {
+				name: cData[i].name, 
+				colors: cData[i].colors,
+				type: cData[i].type,
+				color_num: cData[i].color_num,
+				R: cData[i].R,G: cData[i].G,B: cData[i].B
+			};
+		}
+		});
+	return aRet;
+
+}
+
+function getByColorNum(cNum,cData){
+	var aRet = new Array;
+	var j=0;
+	if( cData === undefined)
+		showError("colorTable","No color values found");
+	jQuery.map(cData,function(v,i) { 
+		if( v.color_num === cNum){
+			aRet[j++] = {
+				name: cData[i].name, 
+				colors: cData[i].colors,
+				type: cData[i].type,
+				color_num: cData[i].color_num,
+				R: cData[i].R,G: cData[i].G,B: cData[i].B
+			};
+		}
+		});
+	return aRet;
+
+}
+
+function getColors (pAlpha){
+	return [S.vec(S.vec(classColors[0]),pAlpha),
+         S.vec(S.vec(classColors[1]),pAlpha),
+         S.vec(S.vec(classColors[2]),pAlpha)];
+ 
 }
 
 function setClassNum(val){
@@ -1757,15 +1834,15 @@ function color_buffers()
 	* creates the color schemes palette table
 	*/
     function changeSchemeType() {
-	var schemeType = "";
+
 	var schemeTypeName = "";
 	var name;
 	var scheme = new Array();
 	var colorSet = new Array();
 
 	$("#scheme option:selected").each(function () {
-		schemeType += $(this).val();
-		schemeTypeName += $(this).attr("title");
+		schemeType = $(this).val();
+		schemeTypeName = $(this).attr("title");
 	});
 
 	if( schemeType === ""){  //remove scheme palette if no scheme selected
@@ -1799,14 +1876,14 @@ function color_buffers()
 
 	//create array of the colors matching the sheme type, and number of classes
 	scheme = jQuery.map(color.type,function(v,i) { 
-		if( v === schemeType && color.color_num[i] === 1 && color.colors[i] === classNum)
+		if( v === schemeType && color.color_num[i] === 1 && color.colors[i] === (classNum - 0))
 			return color.name[i];
 		});
 
 	if( scheme.length === 0) {
 		$("#cTitle").html("");
 		showError("colorTable","No " + schemeTypeName + 
-			" palette avaialable with " + classNum + " colors");
+			" palette available with " + classNum + " colors");
 		return;
 	}
 
@@ -1818,7 +1895,7 @@ function color_buffers()
 
 		//load the colorSet array with the rgb values for each class
 		jQuery.map(color.name,function(v,i) { 
-		if( v === name && color.color_num[i] === 1 &&  color.colors[i] === classNum){
+		if( v === name && color.color_num[i] === 1 &&  color.colors[i] === (classNum - 0)){
 			count = 0;
 			for( var j=i;j<(i + classNum);j++){
 				r = color.R[j];
@@ -1864,8 +1941,6 @@ function color_buffers()
 	var htmlString;
 	var rId = "#r" + ID;
 
-	//htmlString += "<td><table><tr><td style='background-color:red'>" + message +
-			" </td></tr></table></td>";
 	$(rId).append(message);
     }
 
@@ -1927,23 +2002,19 @@ function color_buffers()
 	* event handler for palette radio button selection
 	*
 	*/
-    function change_color(schemeName){
-     	var count,r,g,b;
+    function change_color(sName){
+ 
+	//load classColors array with the rgb values of a color scheme
+	pick_color_scheme(sName,classNum);	
+
+   }
+
+    function pick_color_scheme(name,number){
 
 	//load classColors array with the rgb values of a color scheme
-	jQuery.map(color.name,function(v,i) { 
-		if( v === schemeName && color.color_num[i] === 1 &&  color.colors[i] === classNum){
-			count = 0;
-			for( var j=i;j<(i + classNum);j++){
-				r = color.R[j]/255;
-				g = color.G[j]/255;
-				b = color.B[j]/255;
-				classColors[count++] = [r,g,b];
-
-			}
-		}		
-	});
-	
+	var c = getByClassNum(number,getByName(name));
+	for(var i=0;i<classNum;i++)
+		classColors[i] = Shade.vec(c[i].R/255, c[i].G/255, c[i].B/255);
 	refresh_webgl();	
 
    }
