@@ -3563,8 +3563,16 @@ Facet.init = function(canvas, opts)
         for (var i=0; i<names.length; ++i) {
             var ename = names[i];
             var listener = opts[ename];
-            if (!_.isUndefined(listener))
-                canvas.addEventListener(ename, listener, false);
+            if (!_.isUndefined(listener)) {
+                (function(listener) {
+                    function internal_listener(event) {
+                        event.facetX = event.offsetX;
+                        event.facetY = gl.viewportHeight - event.offsetY;
+                        return listener(event);
+                    }
+                    canvas.addEventListener(ename, internal_listener, false);
+                })(listener);
+            }
         }
         var ext;
         var exts = _.map(gl.getSupportedExtensions(), function (x) { 
@@ -9162,6 +9170,11 @@ Shade.id = function(id_value)
     
     return vec4.make([r / 255, g / 255, b / 255, a / 255]);
 };
+
+Shade.shade_id = Shade(function(id_value)
+{
+    return id_value.div(Shade.vec(1, 256, 65536, 16777216)).mod(256).floor().div(255);
+});
 Shade.frustum = Shade.make(function(left, right, bottom, top, near, far)
 {
     var rl = right.sub(left);
@@ -10049,10 +10062,20 @@ Facet.Marks.aligned_rects = function(opts)
     var primitive_index = Shade.div(vertex_index, 6).floor();
     var vertex_in_primitive = Shade.mod(vertex_index, 6).floor();
 
-    var left   = opts.left  (primitive_index),
-        right  = opts.right (primitive_index),
-        bottom = opts.bottom(primitive_index),
-        top    = opts.top   (primitive_index);
+    // aif == apply_if_function
+    var aif = function(f, params) {
+        if (facet_typeOf(f) === 'function')
+            return f.apply(this, params);
+        else
+            return f;
+    };
+
+    var left   = aif(opts.left,   [primitive_index]),
+        right  = aif(opts.right,  [primitive_index]),
+        bottom = aif(opts.bottom, [primitive_index]),
+        top    = aif(opts.top,    [primitive_index]),
+        color  = aif(opts.color,  [primitive_index, index_in_vertex_primitive]),
+        z      = aif(opts.z,      [primitive_index]);
 
     var lower_left  = Shade.vec(left,  bottom);
     var lower_right = Shade.vec(right, bottom);
@@ -10065,12 +10088,12 @@ Facet.Marks.aligned_rects = function(opts)
 
     return Facet.bake({
         type: "triangles",
-        elements: vertex_index,
-        mode: opts.mode
+        elements: vertex_index
     }, {
-        position: Shade.vec(vertex_map.at(vertex_in_primitive), 
-                            opts.z(vertex_in_primitive)),
-        color: opts.color(primitive_index, index_in_vertex_primitive)
+        position: Shade.vec(vertex_map.at(vertex_in_primitive), z),
+        color: color,
+        pick_id: opts.pick_id,
+        mode: opts.mode
     });
 };
 Facet.Marks.lines = function(opts)
