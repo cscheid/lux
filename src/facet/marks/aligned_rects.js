@@ -19,10 +19,20 @@ Facet.Marks.aligned_rects = function(opts)
     var primitive_index = Shade.div(vertex_index, 6).floor();
     var vertex_in_primitive = Shade.mod(vertex_index, 6).floor();
 
-    var left   = opts.left  (primitive_index),
-        right  = opts.right (primitive_index),
-        bottom = opts.bottom(primitive_index),
-        top    = opts.top   (primitive_index);
+    // aif == apply_if_function
+    var aif = function(f, params) {
+        if (facet_typeOf(f) === 'function')
+            return f.apply(this, params);
+        else
+            return f;
+    };
+
+    var left   = aif(opts.left,   [primitive_index]),
+        right  = aif(opts.right,  [primitive_index]),
+        bottom = aif(opts.bottom, [primitive_index]),
+        top    = aif(opts.top,    [primitive_index]),
+        color  = aif(opts.color,  [primitive_index, index_in_vertex_primitive]),
+        z      = aif(opts.z,      [primitive_index]);
 
     var lower_left  = Shade.vec(left,  bottom);
     var lower_right = Shade.vec(right, bottom);
@@ -35,11 +45,11 @@ Facet.Marks.aligned_rects = function(opts)
 
     return Facet.bake({
         type: "triangles",
-        elements: vertex_index,
-        mode: opts.mode
+        elements: vertex_index
     }, {
-        position: Shade.vec(vertex_map.at(vertex_in_primitive), 
-                            opts.z(vertex_in_primitive)),
-        color: opts.color(primitive_index, index_in_vertex_primitive)
+        position: Shade.vec(vertex_map.at(vertex_in_primitive), z),
+        color: color,
+        pick_id: opts.pick_id,
+        mode: opts.mode
     });
 };
