@@ -82,8 +82,16 @@ Facet.init = function(canvas, opts)
         for (var i=0; i<names.length; ++i) {
             var ename = names[i];
             var listener = opts[ename];
-            if (!_.isUndefined(listener))
-                canvas.addEventListener(ename, listener, false);
+            if (!_.isUndefined(listener)) {
+                (function(listener) {
+                    function internal_listener(event) {
+                        event.facetX = event.offsetX;
+                        event.facetY = gl.viewportHeight - event.offsetY;
+                        return listener(event);
+                    }
+                    canvas.addEventListener(ename, internal_listener, false);
+                })(listener);
+            }
         }
         var ext;
         var exts = _.map(gl.getSupportedExtensions(), function (x) { 
