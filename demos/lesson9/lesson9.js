@@ -1,3 +1,9 @@
+/*
+ * FIXME THIS LESSON USES REALLY ANCIENT FACET STYLE
+ * 
+ * It works, but it reflects in no way how you should write Facet code.
+ */
+
 var gl;
 var drawable;
 var mv;

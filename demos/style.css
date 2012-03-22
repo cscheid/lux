@@ -53,8 +53,8 @@ a:hover {
 
 .sidebar {
   position: absolute;
-  left:  730px;
-  width: 230px;
+  left:  760px;
+  width: 200px;
   font-weight: 300;
 }
 
@@ -68,9 +68,6 @@ b {
     font-weight: 700;
     color: rgb(255, 160, 100);
 }
-.sidebar {
-  color: #666;
-}
 
 ul {
   list-style-type: none;
@@ -79,7 +76,6 @@ ul {
 .keyword {
     font-size: 1.1em;
     font-weight: 300;
-/*     color: rgb(255, 160, 100); */
     font-family: monospace;
     padding-right: .1em;
     padding-left: .1em;

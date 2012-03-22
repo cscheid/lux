@@ -63,9 +63,9 @@ $().ready(function () {
     function out_of_gamut_pattern(rgb) {
         var x_even = even_p(Shade.fragCoord().x()),
             y_even = even_p(Shade.fragCoord().y());
-        return Shade.selection(xor(x_even, y_even),
-                               rgb,
-                               rgb.clamp(0, 1).alpha(0.1));
+        return Shade.ifelse(xor(x_even, y_even),
+                            rgb,
+                            rgb.clamp(0, 1).alpha(0.1));
     }
     var hcl_mesh = Facet.Models.mesh(steps, steps);
     var color = Shade.Colors.shadetable.hcl.create(
@@ -75,9 +75,9 @@ $().ready(function () {
     hcl_batch = Facet.bake(hcl_mesh, {
         mode: Facet.DrawingMode.over,
         position: hcl_mesh.vertex,
-        color: Shade.selection(out_of_gamut(color).and(show_out_of_gamut),
-                               out_of_gamut_pattern(color),
-                               color)
+        color: Shade.ifelse(out_of_gamut(color).and(show_out_of_gamut),
+                            out_of_gamut_pattern(color),
+                            color)
     });
 
     var start = new Date().getTime();

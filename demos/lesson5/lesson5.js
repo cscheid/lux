@@ -1,33 +1,6 @@
-var gl;
-var cube, pyramid;
-var angle;
-
-//////////////////////////////////////////////////////////////////////////////
-
-function draw_it()
-{
-    cube.draw();
-    pyramid.draw();
-}
-
 $().ready(function () {
-    var canvas = document.getElementById("webgl");
-    var camera = Shade.Camera.perspective({
-        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
-        field_of_view_y: 45,
-        aspect_ratio: 720/480,
-        near_distance: 0.1,
-        far_distance: 100
-    });
-    angle = Shade.parameter("float");
-    gl = Facet.init(canvas, {
-        clearDepth: 1.0,
-        clearColor: [0,0,0,0.2],
-        display: draw_it,
-        attributes: {
-            alpha: true,
-            depth: true
-        }
+    var gl = Facet.init(document.getElementById("webgl"), {
+        clearColor: [0,0,0,0.2]
     });
 
     var g = Shade.color('green'),
@@ -77,27 +50,29 @@ $().ready(function () {
         color: [r, g, b, g, b]
     });
 
-    var cube_xformed_vertex = Shade.translation(Shade.vec(1.5, 0, 0))
-        .mul(Shade.rotation(angle, Shade.vec(1,1,1)))
-        .mul(cube_model.vertex);
+    var camera = Shade.Camera.perspective();
+    var angle = Shade.parameter("float");
 
-    var pyramid_xformed_vertex = Shade.translation(Shade.vec(-1.5, 0, 0))
-        .mul(Shade.rotation(angle, Shade.vec(0,1,0)))
-        .mul(pyramid_model.vertex);
+    var cube_xformed_vertex = Shade.translation(1.5, 0, -6)
+        (Shade.rotation(angle, Shade.vec(1,1,1)))
+        (cube_model.vertex);
 
-    cube = Facet.bake(cube_model, {
+    var pyramid_xformed_vertex = Shade.translation(-1.5, 0, -6)
+        (Shade.rotation(angle, Shade.vec(0,1,0)))
+        (pyramid_model.vertex);
+
+    Facet.Scene.add(Facet.bake(cube_model, {
         position: camera(cube_xformed_vertex),
         color: cube_model.color
-    });
-
-    pyramid = Facet.bake(pyramid_model, {
+    }));
+    Facet.Scene.add(Facet.bake(pyramid_model, {
         position: camera(pyramid_xformed_vertex),
         color: pyramid_model.color
-    });
+    }));
 
     var start = new Date().getTime();
     var f = function() {
-        window.requestAnimFrame(f, canvas);
+        window.requestAnimFrame(f);
         var elapsed = new Date().getTime() - start;
         angle.set((elapsed / 20) * (Math.PI / 180));
         gl.display();
