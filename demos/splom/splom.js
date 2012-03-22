@@ -55,12 +55,13 @@ function init_webgl()
     selection_v2  = Shade.parameter("float", 0);
     selection_row = Shade.parameter("float", 0);
     selection_col = Shade.parameter("float", 0);
-    splom_col = Shade.parameter("float", 0);
-    splom_row = Shade.parameter("float", 0);
 
-    var min_x = splom_col.add(2*padding).div(4);
+    splom_col     = Shade.parameter("float", 0);
+    splom_row     = Shade.parameter("float", 0);
+
+    var min_x = splom_col.add(  2*padding).div(4);
     var max_x = splom_col.add(1-2*padding).div(4);
-    var min_y = splom_row.add(2*padding).div(4);
+    var min_y = splom_row.add(  2*padding).div(4);
     var max_y = splom_row.add(1-2*padding).div(4);
 
     var first_pick_id = Facet.fresh_pick_id(data.n_rows);
