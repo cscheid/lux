@@ -63,6 +63,7 @@ facet.js:					\
 	src/facet/data/table.js			\
 	src/facet/data/texture_table.js		\
 	src/facet/data/texture_array.js		\
+	src/facet/data/array_1d.js		\
 	src/shade/_begin.js			\
 	src/shade/make.js			\
 	src/shade/memoize_on_field.js		\
