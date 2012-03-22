@@ -118,6 +118,10 @@ $().ready(function() {
     	return changeSchemeType();
    	});
 
+    $("#schemeName").change(function(){
+	return changeColorName();
+	});
+
     setClassNum(3);
 
     var canvas = document.getElementById("scatterplot");
@@ -129,7 +133,7 @@ $().ready(function() {
                               clearColor: [0, 0, 0, 0.2]
                             });
 
-    pick_color_scheme("Accent",3);
+    pickColorScheme("Accent",3);
     init_webgl();
     var start = new Date().getTime();
     f();                    

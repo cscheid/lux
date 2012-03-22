@@ -8,7 +8,7 @@
 
   <script src="../facet.js"></script>
   <script src="../data.js"></script>
-  <script src="../color.js"></script>
+  <script src="../brewcolor.js"></script>
   <script src="scatter.js"></script>
   <title>Simple Scatterplot in Facet</title>
 <style>
@@ -28,7 +28,7 @@
 
  #schemeTitle{
    top: 4px;
-   width: 150px;
+   width: 130px;
    height: 30px;
    margin-top:20px;
    margin-right: 18px;
@@ -40,26 +40,37 @@
    width: 100px;
    height: 30px;
    float: left;
-   margin-top: 4px;
    margin-right: 18px;
-   clear: both;
+   margin-bottom: 4px;
+   clear: left;
+}
+
+#schemeNameTitle {
+   top: 4px;
+   width: 210px;
+   height: 30px;
+   margin-right: 18px;
+   margin-top:20px;
+   float: left;
 }
 
 #classTitle {
    top: 4px;
-   width: 250px;
+   width: 230px;
    height: 30px;
    margin-right: 18px;
    margin-top:20px;
-   margin-left: 200;
+   margin-left: 220px;
 }
 
 #cTitle{
    top: 6px;
-   width: 300px;
+   width: 150px;
    height: 20px;
-   margin-left: 120px;
+   margin-left: 30px;
    margin-top: 4px;
+   margin-bottom: 4px;
+   float: left;
  }
 
 #colorTable {
@@ -69,6 +80,7 @@
    margin-right: 18px;
    margin-top: 20px;
    margin-bottom: 300px;
+   clear: left;
  }
 
 td {
@@ -76,11 +88,16 @@ td {
    height:20px;
 }
 
+#schemeName{
+   top: 4px;
+   width: 70px;
+   height: 20px;
+}
+
 #classNum{
    top: 4px;
    width: 30px;
    height: 20px;
-
 }
 
 </style>
@@ -94,7 +111,8 @@ td {
 <div>  Point size   <div id="pointsize"></div>    </div>
 <div>  Point alpha  <div id="pointalpha"></div>   </div>
 <div>  Stroke width  <div id="strokewidth"></div>   </div>
-<div>
+<div id="schemeNameTitle">Scheme Name <input type="text" id="schemeName" name="schemeName"></div>
+<div id="classTitle">Number of Classes <input type="text" id="classNum" name="classNum"></div>
 	<div id="schemeTitle">Scheme Type</div>
 
 	<div><select id="scheme">
@@ -104,11 +122,7 @@ td {
 	<option title="Qualitative" value="qual">Qualitative</option>
 	</select>
 	</div>
-
-</div>
-<div id="classTitle">Number of Classes <input type="text" id="classNum" name="classNum"></div>
-
-<div><div id="cTitle"></div><div id="colorTable"></div></div>
+<div id="cTitle"></div><div id="colorTable"></div>
 
 </div>
 </div>
