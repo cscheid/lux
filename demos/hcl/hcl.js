@@ -1,41 +1,12 @@
-var gl;
-var hcl_batch;
 var luminance_parameter, show_out_of_gamut;
 
 //////////////////////////////////////////////////////////////////////////////
 
-function draw_it()
-{
-    hcl_batch.draw();
-}
-
 $().ready(function () {
-    var canvas = document.getElementById("webgl");
+    init_ui();
+
     show_out_of_gamut = Shade.parameter("bool", true);
-    var starting_luminance = 80;
-    luminance_parameter = Shade.parameter("float", starting_luminance);
-    function change_luminance() {
-        var new_value = $("#luminance").slider("value") / 10.0;
-        luminance_parameter.set(new_value);
-        gl.display();
-    };
-    $("#luminance").slider({
-        min: 0,
-        max: 1000,
-        orientation: "horizontal",
-        value: starting_luminance * 10,
-        slide: change_luminance,
-        change: change_luminance
-    });
-    gl = Facet.init(canvas, {
-        clearDepth: 1.0,
-        clearColor: [0,0,0,0.2],
-        display: draw_it,
-        attributes: {
-            alpha: true,
-            depth: true
-        }
-    });
+    var gl = Facet.init(document.getElementById("webgl"));
 
     var steps = 1;
     function max3(v) {
@@ -61,28 +32,40 @@ $().ready(function () {
                             rgb.clamp(0, 1).alpha(0.1));
     }
     var hcl_mesh = Facet.Models.mesh(steps, steps);
-    var color = Shade.Colors.shadetable.hcl.create(
+    var color = Shade.Colors.hcl(
         hcl_mesh.tex_coord.r().mul(Math.PI*2),
         hcl_mesh.tex_coord.g().mul(100),
-        luminance_parameter).as_shade(1);
-    hcl_batch = Facet.bake(hcl_mesh, {
+        luminance_parameter);
+    Facet.Scene.add(Facet.bake(hcl_mesh, {
         mode: Facet.DrawingMode.over,
         position: hcl_mesh.vertex,
         color: Shade.ifelse(out_of_gamut(color).and(show_out_of_gamut),
                             out_of_gamut_pattern(color),
                             color)
-    });
-
-    var start = new Date().getTime();
-    var f = function() {
-        // window.requestAnimFrame(f, canvas);
-        gl.display();
-    };
-    f();
+    }));
 });
 
 function switch_gamut()
 {
     show_out_of_gamut.set(!show_out_of_gamut.get());
-    gl.display();
+    Facet.Scene.invalidate();
+}
+
+function init_ui()
+{
+    var starting_luminance = 80;
+    luminance_parameter = Shade.parameter("float", starting_luminance);
+    function change_luminance() {
+        var new_value = $("#luminance").slider("value") / 10.0;
+        luminance_parameter.set(new_value);
+        Facet.Scene.invalidate();
+    };
+    $("#luminance").slider({
+        min: 0,
+        max: 1000,
+        orientation: "horizontal",
+        value: starting_luminance * 10,
+        slide: change_luminance,
+        change: change_luminance
+    });
 }
