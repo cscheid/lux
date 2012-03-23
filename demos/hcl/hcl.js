@@ -11,13 +11,6 @@ function draw_it()
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    var camera = Shade.Camera.perspective({
-        look_at: [[0, 0, 6], [0, 0, -1], [0, 1, 0]],
-        field_of_view_y: 45,
-        aspect_ratio: 720/480,
-        near_distance: 0.1,
-        far_distance: 100
-    });
     show_out_of_gamut = Shade.parameter("bool", true);
     var starting_luminance = 80;
     luminance_parameter = Shade.parameter("float", starting_luminance);
