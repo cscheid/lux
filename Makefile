@@ -114,6 +114,7 @@ facet.js:					\
 	src/shade/gl_fog.js			\
 	src/shade/cosh.js			\
 	src/shade/sinh.js			\
+	src/shade/tanh.js			\
 	src/shade/logical_operators.js		\
 	src/shade/ifelse.js			\
 	src/shade/rotation.js			\
