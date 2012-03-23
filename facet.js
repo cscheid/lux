@@ -4823,7 +4823,6 @@ Shade.Camera.perspective = function(opts)
 Shade.Camera.ortho = function(opts)
 {
     opts = _.defaults(opts || {}, {
-        aspect_ratio: 1,
         left: -1,
         right: 1,
         bottom: -1,
@@ -4832,7 +4831,18 @@ Shade.Camera.ortho = function(opts)
         far: 1
     });
 
-    var viewport_ratio = opts.aspect_ratio;
+    var viewport_ratio;
+
+    if (opts.aspect_ratio)
+        viewport_ratio = opts.aspect_ratio;
+    else {
+        var ctx = Facet._globals.ctx;
+        if (_.isUndefined(ctx)) {
+            throw "aspect_ratio is only optional with an active Facet context";
+        }
+        viewport_ratio = ctx.viewportWidth / ctx.viewportHeight;
+    };
+
     var left, right, bottom, top;
     var near = opts.near;
     var far = opts.far;
@@ -8633,6 +8643,7 @@ Shade.gl_light = function(opts)
     opts = _.defaults(opts || {}, {
         light_ambient: Shade.vec(0,0,0,1),
         light_diffuse: Shade.vec(1,1,1,1),
+        two_sided: false,
         per_vertex: false
     });
     function vec3(v) {
@@ -8651,7 +8662,9 @@ Shade.gl_light = function(opts)
     // this must be appropriately transformed
     var N = vertex_normal;
     var L = light_pos.sub(vertex_pos).normalize();
-    var v = Shade.max(L.dot(N), 0);
+    var v = Shade.max(Shade.ifelse(opts.two_sided,
+                                   L.dot(N).abs(),
+                                   L.dot(N)), 0);
     if (per_vertex)
         v = Shade.per_vertex(v);
 
@@ -8713,6 +8726,11 @@ Shade.sinh = function(v)
     return Shade.exp(v).sub(v.neg().exp()).div(2);
 };
 Shade.Exp.sinh = function() { return Shade.sinh(this); };
+Shade.tanh = Shade(function(v)
+{
+    return v.sinh().div(v.cosh());
+});
+Shade.Exp.tanh = function() { return Shade.tanh(this); };
 (function() {
 
 var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evaluator,
