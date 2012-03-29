@@ -127,6 +127,7 @@ stricter type checking.
 This means multiple contexts, and lots of things are going to break.
 We already have set_context, but many calls use a possibly stale
 context on the closure scope. A code review and tests are in order.
+** TODO Facet.Marks.* need to be on the same coordinate system, need to consistently all take functions or expressions.
 * Features
 ** More basic marks
 Now that I figured out a nice way to make aligned rects work, I should

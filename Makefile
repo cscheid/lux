@@ -63,6 +63,7 @@ facet.js:					\
 	src/facet/data/table.js			\
 	src/facet/data/texture_table.js		\
 	src/facet/data/texture_array.js		\
+	src/facet/data/array_1d.js		\
 	src/shade/_begin.js			\
 	src/shade/make.js			\
 	src/shade/memoize_on_field.js		\
@@ -113,6 +114,7 @@ facet.js:					\
 	src/shade/gl_fog.js			\
 	src/shade/cosh.js			\
 	src/shade/sinh.js			\
+	src/shade/tanh.js			\
 	src/shade/logical_operators.js		\
 	src/shade/ifelse.js			\
 	src/shade/rotation.js			\

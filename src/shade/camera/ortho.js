@@ -1,7 +1,6 @@
 Shade.Camera.ortho = function(opts)
 {
     opts = _.defaults(opts || {}, {
-        aspect_ratio: 1,
         left: -1,
         right: 1,
         bottom: -1,
@@ -10,7 +9,18 @@ Shade.Camera.ortho = function(opts)
         far: 1
     });
 
-    var viewport_ratio = opts.aspect_ratio;
+    var viewport_ratio;
+
+    if (opts.aspect_ratio)
+        viewport_ratio = opts.aspect_ratio;
+    else {
+        var ctx = Facet._globals.ctx;
+        if (_.isUndefined(ctx)) {
+            throw "aspect_ratio is only optional with an active Facet context";
+        }
+        viewport_ratio = ctx.viewportWidth / ctx.viewportHeight;
+    };
+
     var left, right, bottom, top;
     var near = opts.near;
     var far = opts.far;

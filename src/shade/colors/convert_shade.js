@@ -19,6 +19,11 @@ var _if = Shade.ifelse;
 var table = {};
 var colorspaces = ["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz"];
 _.each(colorspaces, function(space) {
+    Shade.Colors[space] = function(v1, v2, v3, alpha) {
+        if (_.isUndefined(alpha))
+            alpha = 1;
+        return Shade.Colors.shadetable[space].create(v1, v2, v3).as_shade(alpha);
+    };
     table[space] = {};
     table[space][space] = function(x) { return x; };
     table[space].create = function() {

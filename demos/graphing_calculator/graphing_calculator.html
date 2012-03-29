@@ -1,0 +1,46 @@
+<html>
+<head><title>3D Graphing Calculator</title>
+  <link rel="stylesheet" href="../style.css"/>
+  <script src="../../lib/jquery-1.6.2.min.js"></script>
+  <script src="../../facet.js"></script>
+  <script src="parser.js"></script>
+  <script src="graphing_calculator.js"></script>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>3D Graphing Calculator</h1>
+<canvas id="webgl" width="800" height="800"></canvas>
+<div style="text-align: right">View the <a href="graphing_calculator.js">full source</a>.</div>
+
+<table>
+<tr><td>x(u,v,t): </td><td><input type="text" id="x" size="80" value="0.5*(5 + 2 *(1+cos(12*u*pi)*0.3)* cos(v*2*pi)) * cos(u*2*pi)" onchange="update_mesh();"/></td></tr>
+<tr><td>y(u,v,t): </td><td><input type="text" id="y" size="80" value="0.5*(5 + 2 *(1+cos(12*u*pi)*0.3)* cos(v*2*pi)) * sin(u*2*pi)" onchange="update_mesh();"/></td></tr>
+<tr><td>z(u,v,t): </td><td><input type="text" id="z" size="80" value="0.5*2*(1+cos(12*u*pi)*0.3)*sin(v*2*pi)" onchange="update_mesh();"/></td></tr>
+<tr><td>color(u,v,t): </td><td><input type="text" id="color" size="80" value="hcl(u*2*pi+t,50,80)" onchange="update_mesh();"/></td></tr>
+</table>
+
+<p>A 3D graphing calculator that plots a parametric surface x(u,v,t),
+  y(u,v,t), z(u,v,t) with color(u,v,t). u and v are the surface
+  parameters, and t is a time variable in seconds. x, y and z are the
+  coordinates of the surface patch, and color is the color.
+</p>
+
+<p>
+  Expressions behave like you expect them to. Colors are specified by
+  constructors of the form "colorspace(v1, v2, v3)". the allowed
+  colorspaces are rgb and hcl. Examples: rgb(u, v,
+  0); hcl(2 * u * pi, 30, 50); rgb(sin(t), cos(t), 1).
+</p>
+
+<p> The notable feature of this graphing calculator is that the
+  expressions are dynamically translated into Shade expressions, which
+  are then compiled into WebGL: the entire evaluation of the
+  surface is done on the GPU.
+</p>
+
+<p>Back to the <a href="index.html">index</a>.</p>
+</div>
+</body>
+</html>
+

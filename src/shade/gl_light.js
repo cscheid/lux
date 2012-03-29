@@ -6,6 +6,7 @@ Shade.gl_light = function(opts)
     opts = _.defaults(opts || {}, {
         light_ambient: Shade.vec(0,0,0,1),
         light_diffuse: Shade.vec(1,1,1,1),
+        two_sided: false,
         per_vertex: false
     });
     function vec3(v) {
@@ -24,7 +25,9 @@ Shade.gl_light = function(opts)
     // this must be appropriately transformed
     var N = vertex_normal;
     var L = light_pos.sub(vertex_pos).normalize();
-    var v = Shade.max(L.dot(N), 0);
+    var v = Shade.max(Shade.ifelse(opts.two_sided,
+                                   L.dot(N).abs(),
+                                   L.dot(N)), 0);
     if (per_vertex)
         v = Shade.per_vertex(v);
 

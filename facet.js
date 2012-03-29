@@ -3563,8 +3563,16 @@ Facet.init = function(canvas, opts)
         for (var i=0; i<names.length; ++i) {
             var ename = names[i];
             var listener = opts[ename];
-            if (!_.isUndefined(listener))
-                canvas.addEventListener(ename, listener, false);
+            if (!_.isUndefined(listener)) {
+                (function(listener) {
+                    function internal_listener(event) {
+                        event.facetX = event.offsetX;
+                        event.facetY = gl.viewportHeight - event.offsetY;
+                        return listener(event);
+                    }
+                    canvas.addEventListener(ename, internal_listener, false);
+                })(listener);
+            }
         }
         var ext;
         var exts = _.map(gl.getSupportedExtensions(), function (x) { 
@@ -4607,6 +4615,61 @@ Facet.Data.texture_array = function(opts)
         index: index
     };
 };
+Facet.Data.array_1d = function(array)
+{
+    var ctx = Facet._globals.ctx;
+
+    var elements = array;
+    var texture_width = 1;
+    while (4 * texture_width * texture_width < elements.length) {
+        texture_width = texture_width * 2;
+    }
+    var texture_height = Math.ceil(elements.length / (4 * texture_width));
+    var new_elements;
+    if (texture_width * texture_height === elements.length) {
+        if (facet_typeOf(elements) === "array") {
+            new_elements = new Float32Array(elements);
+        } else
+            new_elements = elements;
+    } else {
+        new_elements = new Float32Array(texture_width * texture_height * 4);
+        for (var i=0; i<elements.length; ++i)
+            new_elements[i] = elements[i];
+    }
+
+    var texture = Facet.texture({
+        width: texture_width,
+        height: texture_height,
+        buffer: new_elements,
+        type: ctx.FLOAT,
+        format: ctx.RGBA,
+        min_filter: ctx.NEAREST,
+        min_filter: ctx.NEAREST
+    });
+
+    var index = Shade(function(linear_index) {
+        var in_texel_offset = linear_index.mod(4);
+        var texel_index = linear_index.div(4).floor();
+        var x = texel_index.mod(texture_width);
+        var y = texel_index.div(texture_width).floor();
+        var result = Shade.vec(x, y, in_texel_offset);
+        return result;
+    });
+
+    var at = Shade(function(linear_index) {
+        var ix = index(linear_index);
+        var uv = ix.swizzle("xy")
+            .add(Shade.vec(0.5, 0.5))
+            .div(Shade.vec(texture_width, texture_height))
+            ;
+        return Shade.texture2D(texture, uv).at(ix.z());
+    });
+    return {
+        length: new_elements.length,
+        at: at,
+        index: index
+    };
+};
 /*
  * Shade is the javascript DSL for writing GLSL shaders, part of Facet.
  * 
@@ -4760,7 +4823,6 @@ Shade.Camera.perspective = function(opts)
 Shade.Camera.ortho = function(opts)
 {
     opts = _.defaults(opts || {}, {
-        aspect_ratio: 1,
         left: -1,
         right: 1,
         bottom: -1,
@@ -4769,7 +4831,18 @@ Shade.Camera.ortho = function(opts)
         far: 1
     });
 
-    var viewport_ratio = opts.aspect_ratio;
+    var viewport_ratio;
+
+    if (opts.aspect_ratio)
+        viewport_ratio = opts.aspect_ratio;
+    else {
+        var ctx = Facet._globals.ctx;
+        if (_.isUndefined(ctx)) {
+            throw "aspect_ratio is only optional with an active Facet context";
+        }
+        viewport_ratio = ctx.viewportWidth / ctx.viewportHeight;
+    };
+
     var left, right, bottom, top;
     var near = opts.near;
     var far = opts.far;
@@ -8570,6 +8643,7 @@ Shade.gl_light = function(opts)
     opts = _.defaults(opts || {}, {
         light_ambient: Shade.vec(0,0,0,1),
         light_diffuse: Shade.vec(1,1,1,1),
+        two_sided: false,
         per_vertex: false
     });
     function vec3(v) {
@@ -8588,7 +8662,9 @@ Shade.gl_light = function(opts)
     // this must be appropriately transformed
     var N = vertex_normal;
     var L = light_pos.sub(vertex_pos).normalize();
-    var v = Shade.max(L.dot(N), 0);
+    var v = Shade.max(Shade.ifelse(opts.two_sided,
+                                   L.dot(N).abs(),
+                                   L.dot(N)), 0);
     if (per_vertex)
         v = Shade.per_vertex(v);
 
@@ -8650,6 +8726,11 @@ Shade.sinh = function(v)
     return Shade.exp(v).sub(v.neg().exp()).div(2);
 };
 Shade.Exp.sinh = function() { return Shade.sinh(this); };
+Shade.tanh = Shade(function(v)
+{
+    return v.sinh().div(v.cosh());
+});
+Shade.Exp.tanh = function() { return Shade.tanh(this); };
 (function() {
 
 var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evaluator,
@@ -9162,6 +9243,11 @@ Shade.id = function(id_value)
     
     return vec4.make([r / 255, g / 255, b / 255, a / 255]);
 };
+
+Shade.shade_id = Shade(function(id_value)
+{
+    return id_value.div(Shade.vec(1, 256, 65536, 16777216)).mod(256).floor().div(255);
+});
 Shade.frustum = Shade.make(function(left, right, bottom, top, near, far)
 {
     var rl = right.sub(left);
@@ -9582,6 +9668,11 @@ var _if = Shade.ifelse;
 var table = {};
 var colorspaces = ["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz"];
 _.each(colorspaces, function(space) {
+    Shade.Colors[space] = function(v1, v2, v3, alpha) {
+        if (_.isUndefined(alpha))
+            alpha = 1;
+        return Shade.Colors.shadetable[space].create(v1, v2, v3).as_shade(alpha);
+    };
     table[space] = {};
     table[space][space] = function(x) { return x; };
     table[space].create = function() {
@@ -10049,10 +10140,20 @@ Facet.Marks.aligned_rects = function(opts)
     var primitive_index = Shade.div(vertex_index, 6).floor();
     var vertex_in_primitive = Shade.mod(vertex_index, 6).floor();
 
-    var left   = opts.left  (primitive_index),
-        right  = opts.right (primitive_index),
-        bottom = opts.bottom(primitive_index),
-        top    = opts.top   (primitive_index);
+    // aif == apply_if_function
+    var aif = function(f, params) {
+        if (facet_typeOf(f) === 'function')
+            return f.apply(this, params);
+        else
+            return f;
+    };
+
+    var left   = aif(opts.left,   [primitive_index]),
+        right  = aif(opts.right,  [primitive_index]),
+        bottom = aif(opts.bottom, [primitive_index]),
+        top    = aif(opts.top,    [primitive_index]),
+        color  = aif(opts.color,  [primitive_index, index_in_vertex_primitive]),
+        z      = aif(opts.z,      [primitive_index]);
 
     var lower_left  = Shade.vec(left,  bottom);
     var lower_right = Shade.vec(right, bottom);
@@ -10065,12 +10166,12 @@ Facet.Marks.aligned_rects = function(opts)
 
     return Facet.bake({
         type: "triangles",
-        elements: vertex_index,
-        mode: opts.mode
+        elements: vertex_index
     }, {
-        position: Shade.vec(vertex_map.at(vertex_in_primitive), 
-                            opts.z(vertex_in_primitive)),
-        color: opts.color(primitive_index, index_in_vertex_primitive)
+        position: Shade.vec(vertex_map.at(vertex_in_primitive), z),
+        color: color,
+        pick_id: opts.pick_id,
+        mode: opts.mode
     });
 };
 Facet.Marks.lines = function(opts)
