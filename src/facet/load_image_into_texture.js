@@ -17,6 +17,7 @@ Facet.load_image_into_texture = function(opts)
         ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
         ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset,
                           ctx.RGBA, ctx.UNSIGNED_BYTE, image);
+        Facet.unload_batch();
         onload(image);
     }
 
@@ -27,6 +28,7 @@ Facet.load_image_into_texture = function(opts)
         ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset,
                           opts.width, opts.height,
                           ctx.RGBA, ctx.UNSIGNED_BYTE, opts.buffer);
+        Facet.unload_batch();
         onload();
     }
 
