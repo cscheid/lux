@@ -35,17 +35,24 @@ function latlong_to_mercator(lat, lon)
     return [lon, Math.log(1.0/Math.cos(lat) + Math.tan(lat))];
 }
 
-function osm_tile_array(mvp, model)
+Facet.Marks.globe = function(opts)
 {
-    var patch = spherical_mercator_patch(10);
-    var cache_size = 64;
+    opts = _.defaults(opts || {}, {
+        longitude_center: -98,
+        latitude_center: 38,
+        zoom: 3,
+        resolution_bias: 0,
+        cache_size: 64,
+        patch_size: 10
+    });
+    var model = Shade.parameter("mat4");
+    var patch = spherical_mercator_patch(opts.patch_size);
+    var cache_size = opts.cache_size;
 
     function new_tile() {
         var texture = Facet.texture({
             width: 256,
             height: 256,
-            mag_filter: gl.LINEAR,
-            min_filter: gl.LINEAR,
             name: "tile" + i
         });
         return {
@@ -66,6 +73,11 @@ function osm_tile_array(mvp, model)
         tiles.push(new_tile());
     };
 
+    var zooming = false, panning = false;
+    var prev;
+    var inertia_delta = [0,0];
+    var starting_inertia_delta = [0,0];
+
     var min_x = Shade.parameter("float");
     var max_x = Shade.parameter("float");
     var min_y = Shade.parameter("float");
@@ -74,6 +86,7 @@ function osm_tile_array(mvp, model)
 
     var v = patch.vertex(Shade.vec(min_x, min_y), 
                          Shade.vec(max_x, max_y));
+    var mvp = opts.view_proj.mul(model);
     var sphere_batch = Facet.bake(patch, {
         gl_Position: mvp.mul(v),
         gl_FragColor: Shade.texture2D(sampler, patch.uv).discard_if(model.mul(v).z().lt(0))
@@ -83,12 +96,86 @@ function osm_tile_array(mvp, model)
         tiles: tiles,
         queue: [],
         current_osm_zoom: 3,
+        longitude_center: opts.longitude_center,
+        latitude_center: opts.latitude_center,
+        zoom: opts.zoom,
+        model_matrix: model,
+        mvp: mvp,
+        resolution_bias: opts.resolution_bias,
+        update_model_matrix: function() {
+            while (this.longitude_center < 0)
+                this.longitude_center += 360;
+            while (this.longitude_center > 360)
+                this.longitude_center -= 360;
+            var r1 = Facet.rotation(this.latitude_center * (Math.PI/180), [ 1, 0, 0]);
+            var r2 = Facet.rotation(this.longitude_center * (Math.PI/180), [ 0,-1, 0]);
+            this.model_matrix.set(mat4.product(r1, r2));
+        },
+        mousedown: function(event) {
+            prev = [event.offsetX, event.offsetY];
+            inertia_delta = [0, 0];
+            starting_inertia_delta = [0, 0];
+        },
+        mousemove: function(event) {
+            var ctx = Facet._globals.ctx;
+            var w = ctx.viewportWidth;
+            var h = ctx.viewportHeight;
+            var w_divider = 218.18;
+            var h_divider = 109.09;
+            if (event.which & 1 && !event.shiftKey) {
+                panning = true;
+                this.longitude_center -= (event.offsetX - prev[0]) / (w * this.zoom / w_divider);
+                this.latitude_center += (event.offsetY - prev[1]) / (h * this.zoom / h_divider);
+                this.latitude_center = Math.max(Math.min(80, this.latitude_center), -80);
+                this.update_model_matrix();
+            }
+            if (event.which & 1 && event.shiftKey) {
+                zooming = true;
+                this.zoom *= 1.0 + (event.offsetY - prev[1]) / 240;
+            }
+            this.new_center(this.latitude_center, this.longitude_center, this.zoom);
+            prev = [event.offsetX, event.offsetY];
+            ctx.display();
+        },
+        mouseup: function(event) {
+            var ctx = Facet._globals.ctx;
+            var w = ctx.viewportWidth;
+            var h = ctx.viewportHeight;
+            var w_divider = 218.18;
+            var h_divider = 109.09;
+            var that = this;
+            if (panning) {
+                inertia_delta[0] = -(event.offsetX - prev[0]) / (w * that.zoom / w_divider);
+                inertia_delta[1] =  (event.offsetY - prev[1]) / (h * that.zoom / h_divider);
+                starting_inertia_delta[0] = inertia_delta[0] === 0 ? 1 : inertia_delta[0];
+                starting_inertia_delta[1] = inertia_delta[1] === 0 ? 1 : inertia_delta[1];
+
+                prev = [event.offsetX, event.offsetY];
+                var f = function() {
+                    var ctx = Facet._globals.ctx;
+                    ctx.display();
+                    that.longitude_center += inertia_delta[0];
+                    that.latitude_center  += inertia_delta[1];
+                    that.latitude_center  = Math.max(Math.min(80, that.latitude_center),
+                                                -80);
+                    that.update_model_matrix();
+                    inertia_delta[0] *= 0.95;
+                    inertia_delta[1] *= 0.95;
+                    if (Math.max(Math.abs(inertia_delta[0] / starting_inertia_delta[0]), 
+                                 Math.abs(inertia_delta[1] / starting_inertia_delta[0])) > 0.01)
+                        window.requestAnimFrame(f, that.canvas);
+                };
+                f();
+            }
+            panning = zooming = false;
+        },
         new_center: function(center_lat, center_lon, center_zoom) {
-            var w = gl.viewportWidth;
+            var ctx = Facet._globals.ctx;
+            var w = ctx.viewportWidth;
             var zoom_divider = 63.6396;
             var base_zoom = Math.log(w / zoom_divider) / Math.log(2);
 
-            var zoom = base_zoom + (Math.log(center_zoom / 3) / Math.log(2));
+            var zoom = this.resolution_bias + base_zoom + (Math.log(center_zoom / 3) / Math.log(2));
             zoom = ~~zoom;
             this.current_osm_zoom = zoom;
             var lst = latlong_to_mercator(center_lat, center_lon);
@@ -151,6 +238,9 @@ function osm_tile_array(mvp, model)
                 for (var i=0; i<(1 << z); ++i)
                     for (var j=0; j<(1 << z); ++j)
                         this.request(i, j, z);
+            this.new_center(this.latitude_center, this.longitude_center,
+                            this.zoom);
+            this.update_model_matrix();
         },
         sanity_check: function() {
             var d = {};
@@ -203,6 +293,7 @@ function osm_tile_array(mvp, model)
             });
         },
         draw: function() {
+            var ctx = Facet._globals.ctx;
             var lst = _.range(cache_size);
             var that = this;
             lst.sort(function(id1, id2) { 
@@ -211,7 +302,7 @@ function osm_tile_array(mvp, model)
                 return g2 - g1;
             });
 
-            gl.disable(gl.DEPTH_TEST);
+            ctx.disable(ctx.DEPTH_TEST);
             for (var i=0; i<cache_size; ++i) {
                 var t = tiles[lst[i]];
                 if (t.active != 2)
@@ -226,178 +317,5 @@ function osm_tile_array(mvp, model)
         }
     };
 
-    return result;
-};
-
-Facet.Marks.globe = function(opts)
-{
-    opts = _.defaults(opts || {}, {
-        longitude_center: -98,
-        latitude_center: 38,
-        zoom: 3
-    });
-
-    var gl = Facet._globals.ctx;
-
-    var zooming = false, panning = false;
-    var prev;
-    var inertia_delta = [0,0];
-    var starting_inertia_delta = [0,0];
-    var min_x, max_x, min_y, max_y;
-    var sphere = spherical_mercator_patch(40);
-    var model_matrix = Shade.parameter("mat4");
-
-    var texture = Facet.texture({
-        width: 2048,
-        height: 2048,
-        mag_filter: gl.LINEAR,
-        min_filter: gl.LINEAR,
-        name: "big_globe"
-    });
-
-    min_x = Shade.parameter("float");
-    max_x = Shade.parameter("float");
-    min_y = Shade.parameter("float");
-    max_y = Shade.parameter("float");
-    var min = Shade.vec(min_x, min_y), max = Shade.vec(max_x, max_y);
-    var sampler = Shade.parameter("sampler2D", texture);
-
-    var mvp = opts.view_proj.mul(model_matrix);
-    var sphere_batch = Facet.bake(sphere, {
-        gl_Position: mvp.mul(sphere.vertex(min, max)),
-        gl_FragColor: Shade.texture2D(sampler, sphere.transformed_uv(min, max))
-    });
-
-    var display = function() { gl.display(); };
-    for (var i=0; i<8; ++i)
-        for (var j=0; j<8; ++j)
-            Facet.load_image_into_texture({
-                texture: texture,
-                src: "http://tile.openstreetmap.org/3/" +
-                     i + "/" + j + ".png",
-                crossOrigin: "anonymous",
-                x_offset: ((i + 4) % 8)  * 256,
-                y_offset: 2048 - (j+1) * 256,
-                onload: display
-            });
-
-    var result = {
-        longitude_center: opts.longitude_center,
-        latitude_center: opts.latitude_center,
-        zoom: opts.zoom,
-        model_matrix: model_matrix,
-        mvp: mvp,
-
-        update_model_matrix: function() {
-            while (this.longitude_center < 0)
-                this.longitude_center += 360;
-            while (this.longitude_center > 360)
-                this.longitude_center -= 360;
-            var r1 = Facet.rotation(this.latitude_center * (Math.PI/180), [ 1, 0, 0]);
-            var r2 = Facet.rotation(this.longitude_center * (Math.PI/180), [ 0,-1, 0]);
-            this.model_matrix.set(mat4.product(r1, r2));
-        },
-
-        mousedown: function(event) {
-            prev = [event.offsetX, event.offsetY];
-            inertia_delta = [0, 0];
-            starting_inertia_delta = [0, 0];
-        },
-
-        mousemove: function(event) {
-            var w = gl.viewportWidth;
-            var h = gl.viewportHeight;
-            var w_divider = 218.18;
-            var h_divider = 109.09;
-
-            if (event.which & 1 && !event.shiftKey) {
-                panning = true;
-                this.longitude_center -= (event.offsetX - prev[0]) / (w * this.zoom / w_divider);
-                this.latitude_center += (event.offsetY - prev[1]) / (h * this.zoom / h_divider);
-                this.latitude_center = Math.max(Math.min(80, this.latitude_center), -80);
-                this.update_model_matrix();
-            }
-            if (event.which & 1 && event.shiftKey) {
-                zooming = true;
-                this.zoom *= 1.0 + (event.offsetY - prev[1]) / 240;
-            }
-            prev = [event.offsetX, event.offsetY];
-            gl.display();
-        },
-        mouseup: function(event) {
-            var w = gl.viewportWidth;
-            var h = gl.viewportHeight;
-            var w_divider = 218.18;
-            var h_divider = 109.09;
-            var that = this;
-            if (panning) {
-                inertia_delta[0] = -(event.offsetX - prev[0]) / (w * that.zoom / w_divider);
-                inertia_delta[1] =  (event.offsetY - prev[1]) / (h * that.zoom / h_divider);
-                starting_inertia_delta[0] = inertia_delta[0] === 0 ? 1 : inertia_delta[0];
-                starting_inertia_delta[1] = inertia_delta[1] === 0 ? 1 : inertia_delta[1];
-
-                prev = [event.offsetX, event.offsetY];
-                var f = function() {
-                    gl.display();
-                    that.longitude_center += inertia_delta[0];
-                    that.latitude_center  += inertia_delta[1];
-                    that.latitude_center  = Math.max(Math.min(80, that.latitude_center),
-                                                -80);
-                    that.update_model_matrix();
-                    inertia_delta[0] *= 0.95;
-                    inertia_delta[1] *= 0.95;
-                    if (Math.max(Math.abs(inertia_delta[0] / starting_inertia_delta[0]), 
-                                 Math.abs(inertia_delta[1] / starting_inertia_delta[0])) > 0.01)
-                        window.requestAnimFrame(f, that.canvas);
-                };
-                f();
-            }
-            panning = zooming = false;
-        },
-
-        draw: function() {
-            this.update_model_matrix();
-            
-            // gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-            gl.enable(gl.DEPTH_TEST);
-            gl.depthFunc(gl.LESS);
-
-            var t = latlong_to_mercator(this.latitude_center, this.longitude_center);
-            var window = Math.PI * Math.min(1, 1 / (this.zoom * Math.cos(this.latitude_center / 180 * Math.PI)));
-
-            var mn_x = (t[0] - window);
-            var mx_x = (t[0] + window);
-            while (mn_x > Math.PI * 2) {
-                mn_x -= Math.PI * 2;
-                mx_x -= Math.PI * 2;
-            }
-
-            min_y.set(t[1] - window);
-            max_y.set(t[1] + window);
-
-            if (mn_x < 0) {
-                min_x.set(mn_x + Math.PI*2);
-                max_x.set(Math.PI*2);
-                sphere_batch.draw();
-
-                min_x.set(0);
-                max_x.set(mx_x);
-                sphere_batch.draw();
-            } else if (mx_x > Math.PI*2) {
-                min_x.set(mn_x);
-                max_x.set(Math.PI*2);
-                sphere_batch.draw();
-
-                min_x.set(0);
-                max_x.set(mx_x - Math.PI*2);
-                sphere_batch.draw();
-            } else {
-                min_x.set(mn_x);
-                max_x.set(mx_x);
-                sphere_batch.draw();
-            }
-        }
-    };
-    result.update_model_matrix();
     return result;
 };
