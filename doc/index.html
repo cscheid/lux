@@ -25,15 +25,15 @@
 	<h2>Essentials</h2>
       </div>
       <div class="span12">
-	<p>A Facet program will probably need the following few
-	functions. With them, you will be able to write programs which
+	<p>A Facet program needs a few essentials.
+	With them, you will be able to write programs which
 	use basic 2D and 3D graphics.
 	</p>
 
 	<h3>Marks</h3>
 	<p>Facet provides some visual primitives which you can use
-	to draw graphics. <b>Marks</b> are almost ready-made
-	graphics: you provide a few details and Facet returns an
+	to draw graphics. <b>Marks</b> are almost ready-made:
+	you give a few details and Facet returns an
 	object ready for drawing:</p>
 <div>
 <div class="negoffset4">
@@ -47,16 +47,15 @@
 var scatterplot_batch = Facet.Marks.scatterplot({
     x: iris.sepalLength,
     y: iris.petalLength,
-    x_scale: Shade.Scale.Linear.fit(iris.sepalLength),
-    y_scale: Shade.Scale.Linear.fit(iris.petalLength),
+    x_scale: Shade.Utils.fit(iris.sepalLength),
+    y_scale: Shade.Utils.fit(iris.petalLength),
     fill_color: Shade.color('red'),
     stroke_color: Shade.color('black'),
     point_diameter: 10
 });
 </div>
 </pre>
-	<p>You then add the object to the
-	scene:</p>
+	<p>You then add the object to the scene:</p>
 <pre class="highlight">
 Facet.Scene.add(scatterplot_batch);
 </pre>
