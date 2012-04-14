@@ -194,9 +194,9 @@ body {
   font-size: 13px;
   font-weight: normal;
   line-height: 18px;
-  color: rgb(255,232,204);
-  background-color: rgb(54, 44, 35); /*rgb(77, 62, 50);*/
-  background-image: url('css/brushed_metal.jpg');
+  color: rgb(0,0,0);
+  background-color: rgb(240, 240, 240);
+  background-image: url('css/brushed_metal_lite.jpg');
 /* brushed metal textures based on zooboing's brushed metal
 
    http://www.flickr.com/photos/zooboing/3662888243/sizes/o/in/set-72157620464703577/
@@ -248,7 +248,6 @@ a {
   font-weight: inherit;
 }
 a:hover {
-  color: rgb(242, 184, 121);
   text-decoration: underline;
 }
 .pull-right {
@@ -417,7 +416,6 @@ p small {
 }
 h1, h2, h3 {
     /* font-weight: bold; */
-    color: rgb(255, 245, 235);
 }
 h3, 
 h4,
@@ -563,7 +561,7 @@ code, pre {
 }
 code {
   background-color: #fee9cc;
-  color: rgba(0, 0, 0, 0.75);
+  /* color: rgba(0, 0, 0, 0.75); */
   padding: 1px 3px;
 }
 pre {
