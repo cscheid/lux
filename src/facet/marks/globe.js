@@ -42,21 +42,28 @@ Facet.Marks.globe = function(opts)
         latitude_center: 38,
         zoom: 3,
         resolution_bias: 0,
-        cache_size: 64,
         patch_size: 10
     });
     var model = Shade.parameter("mat4");
     var patch = spherical_mercator_patch(opts.patch_size);
-    var cache_size = opts.cache_size;
+    var cache_size = 64; // cache size must be (2^n)^2
+    var tile_size = 256;
+    var tiles_per_line  = 1 << (~~Math.round(Math.log(Math.sqrt(cache_size))/Math.log(2)));
+    var super_tile_size = tile_size * tiles_per_line;
 
-    function new_tile() {
-        var texture = Facet.texture({
-            width: 256,
-            height: 256,
-            name: "tile" + i
-        });
+    var ctx = Facet._globals.ctx;
+    var texture = Facet.texture({
+        width: super_tile_size,
+        height: super_tile_size
+    });
+
+    function new_tile(i) {
+        var x = i % tiles_per_line;
+        var y = ~~(i / tiles_per_line);
         return {
             texture: texture,
+            offset_x: x,
+            offset_y: y,
             // 0: inactive,
             // 1: mid-request,
             // 2: ready to draw.
@@ -70,7 +77,7 @@ Facet.Marks.globe = function(opts)
 
     var tiles = [];
     for (var i=0; i<cache_size; ++i) {
-        tiles.push(new_tile());
+        tiles.push(new_tile(i));
     };
 
     var zooming = false, panning = false;
@@ -82,14 +89,26 @@ Facet.Marks.globe = function(opts)
     var max_x = Shade.parameter("float");
     var min_y = Shade.parameter("float");
     var max_y = Shade.parameter("float");
+    var offset_x = Shade.parameter("float");
+    var offset_y = Shade.parameter("float");
+    var texture_scale = 1.0 / tiles_per_line;
     var sampler = Shade.parameter("sampler2D");
 
     var v = patch.vertex(Shade.vec(min_x, min_y), 
                          Shade.vec(max_x, max_y));
     var mvp = opts.view_proj.mul(model);
+
+    var xformed_patch = patch.uv 
+        .mul((tile_size-1.0)/tile_size)
+        .add(0.5/tile_size)
+    // ;
+        .add(Shade.vec(offset_x, offset_y))
+        .mul(texture_scale)
+    ;
+
     var sphere_batch = Facet.bake(patch, {
         gl_Position: mvp.mul(v),
-        gl_FragColor: Shade.texture2D(sampler, patch.uv).discard_if(model.mul(v).z().lt(0))
+        gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0))
     });
 
     var result = {
@@ -289,6 +308,8 @@ Facet.Marks.globe = function(opts)
                 texture: tiles[id].texture,
                 src: "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png",
                 crossOrigin: "anonymous",
+                x_offset: tiles[id].offset_x * tile_size,
+                y_offset: tiles[id].offset_y * tile_size,
                 onload: f(x, y, zoom, id)
             });
         },
@@ -303,6 +324,7 @@ Facet.Marks.globe = function(opts)
             });
 
             ctx.disable(ctx.DEPTH_TEST);
+            sampler.set(texture);
             for (var i=0; i<cache_size; ++i) {
                 var t = tiles[lst[i]];
                 if (t.active != 2)
@@ -311,7 +333,8 @@ Facet.Marks.globe = function(opts)
                 min_y.set((1 - (t.y + 1) / (1 << t.zoom)) * Math.PI*2 - Math.PI);
                 max_x.set(((t.x + 1) / (1 << t.zoom))     * Math.PI*2 + Math.PI);
                 max_y.set((1 - t.y / (1 << t.zoom))       * Math.PI*2 - Math.PI);
-                sampler.set(t.texture);
+                offset_x.set(t.offset_x);
+                offset_y.set(t.offset_y);
                 sphere_batch.draw();
             }
         }
