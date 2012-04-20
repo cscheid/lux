@@ -144,7 +144,7 @@ $().ready(function () {
 
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
-        clearColor: [0,0,0,1],
+        clearColor: [0,0,0,0.1],
         display: function() {
             cube.draw();
 
