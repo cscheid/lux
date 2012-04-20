@@ -147,7 +147,10 @@ facet.js:					\
 	src/facet/models/mesh.js		\
 	src/facet/models/sphere.js		\
 	src/facet/models/square.js		\
+	src/facet/models/teapot_arrays_2.js	\
 	src/facet/models/teapot.js		\
+	src/facet/mesh/_begin.js		\
+	src/facet/mesh/indexed.js		\
 	src/facet/scene/_begin.js		\
 	src/facet/scene/add.js			\
 	src/facet/scene/remove.js		\
