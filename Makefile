@@ -59,6 +59,7 @@ facet.js:					\
 	src/facet/drawing_mode/additive.js	\
 	src/facet/drawing_mode/over.js		\
 	src/facet/drawing_mode/standard.js	\
+	src/facet/drawing_mode/pass.js		\
 	src/facet/data/_begin.js		\
 	src/facet/data/table.js			\
 	src/facet/data/texture_table.js		\

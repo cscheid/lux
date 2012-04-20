@@ -144,3 +144,6 @@ p {
   margin-left: -740px;
 }
 
+table th, table td {
+    padding: 1px;
+}

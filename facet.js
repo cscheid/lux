@@ -4391,7 +4391,7 @@ Facet.DrawingMode.additive = {
 // 
 // In the case of incorrect behavior (that is, when contents are not
 // rendered back-to-front), it is not clear which of the two incorrect 
-// behaviors are preferable:
+// behaviors is preferable:
 // 
 // 1. that depth buffer writing be enabled, and some things which should
 // be rendered "behind" alpha-blended simply disappear (this gets
@@ -4472,6 +4472,26 @@ Facet.DrawingMode.standard = {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
+    }
+};
+Facet.DrawingMode.pass = {
+    set_draw_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.disable(ctx.DEPTH_TEST);
+        ctx.depthMask(false);
+    },
+    set_pick_caps: function()
+    { 
+        var ctx = Facet._globals.ctx;
+        ctx.disable(ctx.DEPTH_TEST);
+        ctx.depthMask(false);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.disable(ctx.DEPTH_TEST);
+        ctx.depthMask(false);
     }
 };
 Facet.Data = {};
@@ -10419,7 +10439,7 @@ Facet.Marks.globe = function(opts)
 
     var v = patch.vertex(Shade.vec(min_x, min_y), 
                          Shade.vec(max_x, max_y));
-    var mvp = opts.view_proj.mul(model);
+    var mvp = opts.view_proj(model);
 
     var xformed_patch = patch.uv 
         .mul((tile_size-1.0)/tile_size)
@@ -10430,8 +10450,9 @@ Facet.Marks.globe = function(opts)
     ;
 
     var sphere_batch = Facet.bake(patch, {
-        gl_Position: mvp.mul(v),
-        gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0))
+        gl_Position: mvp(v),
+        gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
+        mode: Facet.DrawingMode.pass
     });
 
     var result = {
@@ -10457,6 +10478,7 @@ Facet.Marks.globe = function(opts)
             prev = [event.offsetX, event.offsetY];
             inertia_delta = [0, 0];
             starting_inertia_delta = [0, 0];
+            Facet.Scene.invalidate();
         },
         mousemove: function(event) {
             var ctx = Facet._globals.ctx;
@@ -10470,14 +10492,15 @@ Facet.Marks.globe = function(opts)
                 this.latitude_center += (event.offsetY - prev[1]) / (h * this.zoom / h_divider);
                 this.latitude_center = Math.max(Math.min(80, this.latitude_center), -80);
                 this.update_model_matrix();
+                Facet.Scene.invalidate();
             }
             if (event.which & 1 && event.shiftKey) {
                 zooming = true;
                 this.zoom *= 1.0 + (event.offsetY - prev[1]) / 240;
+                Facet.Scene.invalidate();
             }
             this.new_center(this.latitude_center, this.longitude_center, this.zoom);
             prev = [event.offsetX, event.offsetY];
-            ctx.display();
         },
         mouseup: function(event) {
             var ctx = Facet._globals.ctx;
@@ -10517,7 +10540,7 @@ Facet.Marks.globe = function(opts)
             var zoom_divider = 63.6396;
             var base_zoom = Math.log(w / zoom_divider) / Math.log(2);
 
-            var zoom = this.resolution_bias + base_zoom + (Math.log(center_zoom / 3) / Math.log(2));
+            var zoom = this.resolution_bias + base_zoom + (Math.log(center_zoom / 2.6) / Math.log(2));
             zoom = ~~zoom;
             this.current_osm_zoom = zoom;
             var lst = latlong_to_mercator(center_lat, center_lon);
@@ -10587,6 +10610,9 @@ Facet.Marks.globe = function(opts)
         sanity_check: function() {
             var d = {};
             for (var i=0; i<cache_size; ++i) {
+                $("#x" + i).text(this.tiles[i].x);
+                $("#y" + i).text(this.tiles[i].y);
+                $("#z" + i).text(this.tiles[i].zoom);
                 if (this.tiles[i].active !== 2)
                     continue;
                 var k = this.tiles[i].x + "-" +
@@ -10623,7 +10649,8 @@ Facet.Marks.globe = function(opts)
                 return function() {
                     that.tiles[id].active = 2;
                     that.tiles[id].last_touched = new Date().getTime();
-                    that.sanity_check();
+                    // uncomment this during debugging
+                    // that.sanity_check();
                     Facet.Scene.invalidate();
                 };
             };
@@ -10646,11 +10673,10 @@ Facet.Marks.globe = function(opts)
                 return g2 - g1;
             });
 
-            ctx.disable(ctx.DEPTH_TEST);
             sampler.set(texture);
             for (var i=0; i<cache_size; ++i) {
                 var t = tiles[lst[i]];
-                if (t.active != 2)
+                if (t.active !== 2)
                     continue;
                 min_x.set((t.x / (1 << t.zoom))           * Math.PI*2 + Math.PI);
                 min_y.set((1 - (t.y + 1) / (1 << t.zoom)) * Math.PI*2 - Math.PI);
