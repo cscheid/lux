@@ -6,7 +6,7 @@
 // 
 // In the case of incorrect behavior (that is, when contents are not
 // rendered back-to-front), it is not clear which of the two incorrect 
-// behaviors are preferable:
+// behaviors is preferable:
 // 
 // 1. that depth buffer writing be enabled, and some things which should
 // be rendered "behind" alpha-blended simply disappear (this gets
