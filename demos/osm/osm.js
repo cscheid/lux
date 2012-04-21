@@ -1,21 +1,7 @@
-var gl;
-var view_proj;
-var globe;
-
-//////////////////////////////////////////////////////////////////////////////
-
-function draw_it()
-{
-    view_proj.set(mat4.product(Facet.perspective(20 / globe.zoom, 720/480, 0.1, 100.0),
-                               Facet.translation(0, 0, -6)));
-    globe.draw();
-}
-
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    gl = Facet.init(canvas, {
+    var gl = Facet.init(canvas, {
         clearColor: [0,0,0,0.1],
-        display: draw_it,
         mousedown: function(event) {
             var result = globe.mousedown(event);
             return result;
@@ -30,15 +16,18 @@ $().ready(function () {
         }
     });
 
-    view_proj = Shade.parameter("mat4", mat4.identity());
-    globe = Facet.Marks.globe({ 
-        view_proj: view_proj
+    var globe_zoom = Shade.parameter("float", 3.0);
+    var view_proj = Shade.Camera.perspective({
+        look_at: [Shade.vec(0, 0,  6),
+                  Shade.vec(0, 0, -1),
+                  Shade.vec(0, 1,  0)],
+        field_of_view_y: Shade.div(20, globe_zoom)
     });
-    globe.init();
 
-    // var f = function() {
-    //     window.requestAnimFrame(f, canvas);
-    //     gl.display();
-    // };
-    // f();
+    var globe = Facet.Marks.globe({ 
+        view_proj: view_proj,
+        zoom: globe_zoom
+    });
+
+    Facet.Scene.add(globe);
 });
