@@ -10469,8 +10469,7 @@ Facet.Marks.globe = function(opts)
 
     function inertia_tick() {
         var f = function() {
-            var ctx = Facet._globals.ctx;
-            ctx.display();
+            Facet.Scene.invalidate();
             result.longitude_center += move_vec[0] * inertia;
             result.latitude_center  += move_vec[1] * inertia;
             result.latitude_center  = Math.max(Math.min(80, result.latitude_center), -80);
@@ -10480,6 +10479,13 @@ Facet.Marks.globe = function(opts)
             inertia *= 0.95;
         };
         f();
+    }
+
+    if (facet_typeOf(opts.zoom) === "number") {
+        opts.zoom = Shade.parameter("float", opts.zoom);
+    } else if (!(facet_typeOf(opts.zoom) === "object" && opts.zoom.expression_type === "uniform")) {
+        // FIXME ugly typeinfo
+        throw "zoom must be either a number or a parameter";
     }
 
     var result = {
@@ -10513,10 +10519,12 @@ Facet.Marks.globe = function(opts)
             var h = ctx.viewportHeight;
             var w_divider = 218.18;
             var h_divider = 109.09;
+            var zoom = this.zoom.get();
+
             if ((event.which & 1) && !event.shiftKey) {
                 panning = true;
-                move_vec[0] = -(event.offsetX - prev[0]) / (w * this.zoom / w_divider);
-                move_vec[1] =  (event.offsetY - prev[1]) / (h * this.zoom / h_divider);
+                move_vec[0] = -(event.offsetX - prev[0]) / (w * zoom / w_divider);
+                move_vec[1] =  (event.offsetY - prev[1]) / (h * zoom / h_divider);
                 prev[0] = event.offsetX;
                 prev[1] = event.offsetY;
                 log_move();
@@ -10528,10 +10536,11 @@ Facet.Marks.globe = function(opts)
             }
             if (event.which & 1 && event.shiftKey) {
                 zooming = true;
-                this.zoom *= 1.0 + (event.offsetY - prev[1]) / 240;
+                var new_zoom = this.zoom.get() * (1.0 + (event.offsetY - prev[1]) / 240);
+                this.zoom.set(Math.max(new_zoom, 0.5));
                 Facet.Scene.invalidate();
             }
-            this.new_center(this.latitude_center, this.longitude_center, this.zoom);
+            this.new_center(this.latitude_center, this.longitude_center, this.zoom.get());
             prev[0] = event.offsetX;
             prev[1] = event.offsetY;
         },
@@ -10617,8 +10626,7 @@ Facet.Marks.globe = function(opts)
                 for (var i=0; i<(1 << z); ++i)
                     for (var j=0; j<(1 << z); ++j)
                         this.request(i, j, z);
-            this.new_center(this.latitude_center, this.longitude_center,
-                            this.zoom);
+            this.new_center(this.latitude_center, this.longitude_center, this.zoom.get());
             this.update_model_matrix();
         },
         sanity_check: function() {
@@ -10702,6 +10710,7 @@ Facet.Marks.globe = function(opts)
             }
         }
     };
+    result.init();
 
     return result;
 };
