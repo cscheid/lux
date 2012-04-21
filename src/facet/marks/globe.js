@@ -81,9 +81,20 @@ Facet.Marks.globe = function(opts)
     };
 
     var zooming = false, panning = false;
-    var prev;
-    var inertia_delta = [0,0];
-    var starting_inertia_delta = [0,0];
+    var prev = [0,0];
+    var inertia = 1;
+    var move_vec = [0,0];
+
+    // FIXME for some reason, sometimes mouseup is preceded by a quick mousemove,
+    // even when apparently no mouse movement was detected. This extra tick
+    // throws my inertial browsing off. We work around by keeping the
+    // second-to-last tick.
+
+    var last_moves = [0,0];
+    function log_move() {
+        last_moves[1] = last_moves[0];
+        last_moves[0] = new Date().getTime();
+    }
 
     var min_x = Shade.parameter("float");
     var max_x = Shade.parameter("float");
@@ -99,9 +110,10 @@ Facet.Marks.globe = function(opts)
     var mvp = opts.view_proj(model);
 
     var xformed_patch = patch.uv 
+    // These two lines work around the texture seams on the texture atlas
         .mul((tile_size-1.0)/tile_size)
         .add(0.5/tile_size)
-    // ;
+    //
         .add(Shade.vec(offset_x, offset_y))
         .mul(texture_scale)
     ;
@@ -111,6 +123,21 @@ Facet.Marks.globe = function(opts)
         gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
         mode: Facet.DrawingMode.pass
     });
+
+    function inertia_tick() {
+        var f = function() {
+            var ctx = Facet._globals.ctx;
+            ctx.display();
+            result.longitude_center += move_vec[0] * inertia;
+            result.latitude_center  += move_vec[1] * inertia;
+            result.latitude_center  = Math.max(Math.min(80, result.latitude_center), -80);
+            result.update_model_matrix();
+            if (inertia > 0.01)
+                window.requestAnimFrame(f, result.canvas);
+            inertia *= 0.95;
+        };
+        f();
+    }
 
     var result = {
         tiles: tiles,
@@ -132,9 +159,9 @@ Facet.Marks.globe = function(opts)
             this.model_matrix.set(mat4.product(r1, r2));
         },
         mousedown: function(event) {
-            prev = [event.offsetX, event.offsetY];
-            inertia_delta = [0, 0];
-            starting_inertia_delta = [0, 0];
+            prev[0] = event.offsetX;
+            prev[1] = event.offsetY;
+            inertia = 0;
             Facet.Scene.invalidate();
         },
         mousemove: function(event) {
@@ -143,10 +170,15 @@ Facet.Marks.globe = function(opts)
             var h = ctx.viewportHeight;
             var w_divider = 218.18;
             var h_divider = 109.09;
-            if (event.which & 1 && !event.shiftKey) {
+            if ((event.which & 1) && !event.shiftKey) {
                 panning = true;
-                this.longitude_center -= (event.offsetX - prev[0]) / (w * this.zoom / w_divider);
-                this.latitude_center += (event.offsetY - prev[1]) / (h * this.zoom / h_divider);
+                move_vec[0] = -(event.offsetX - prev[0]) / (w * this.zoom / w_divider);
+                move_vec[1] =  (event.offsetY - prev[1]) / (h * this.zoom / h_divider);
+                prev[0] = event.offsetX;
+                prev[1] = event.offsetY;
+                log_move();
+                this.longitude_center += move_vec[0];
+                this.latitude_center += move_vec[1];
                 this.latitude_center = Math.max(Math.min(80, this.latitude_center), -80);
                 this.update_model_matrix();
                 Facet.Scene.invalidate();
@@ -157,7 +189,8 @@ Facet.Marks.globe = function(opts)
                 Facet.Scene.invalidate();
             }
             this.new_center(this.latitude_center, this.longitude_center, this.zoom);
-            prev = [event.offsetX, event.offsetY];
+            prev[0] = event.offsetX;
+            prev[1] = event.offsetY;
         },
         mouseup: function(event) {
             var ctx = Facet._globals.ctx;
@@ -165,30 +198,11 @@ Facet.Marks.globe = function(opts)
             var h = ctx.viewportHeight;
             var w_divider = 218.18;
             var h_divider = 109.09;
-            var that = this;
-            if (panning) {
-                inertia_delta[0] = -(event.offsetX - prev[0]) / (w * that.zoom / w_divider);
-                inertia_delta[1] =  (event.offsetY - prev[1]) / (h * that.zoom / h_divider);
-                starting_inertia_delta[0] = inertia_delta[0] === 0 ? 1 : inertia_delta[0];
-                starting_inertia_delta[1] = inertia_delta[1] === 0 ? 1 : inertia_delta[1];
-
-                prev = [event.offsetX, event.offsetY];
-                var f = function() {
-                    var ctx = Facet._globals.ctx;
-                    ctx.display();
-                    that.longitude_center += inertia_delta[0];
-                    that.latitude_center  += inertia_delta[1];
-                    that.latitude_center  = Math.max(Math.min(80, that.latitude_center),
-                                                -80);
-                    that.update_model_matrix();
-                    inertia_delta[0] *= 0.95;
-                    inertia_delta[1] *= 0.95;
-                    if (Math.max(Math.abs(inertia_delta[0] / starting_inertia_delta[0]), 
-                                 Math.abs(inertia_delta[1] / starting_inertia_delta[0])) > 0.01)
-                        window.requestAnimFrame(f, that.canvas);
-                };
-                f();
-            }
+            var now = new Date().getTime();
+            // assume 16.66 ms per tick,
+            inertia = Math.pow(0.95, (now - last_moves[1]) / 16.666);
+            if (panning)
+                inertia_tick();
             panning = zooming = false;
         },
         new_center: function(center_lat, center_lon, center_zoom) {
