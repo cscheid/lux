@@ -36,8 +36,8 @@ function make_graph_batch(model, center, zoom)
     var dots_batch = Facet.Marks.dots({
         elements: model.node_elements,
         position: camera(model.position),
-        stroke_color: Shade.color("black"),
-        fill_color: Shade.color("slategray", 0.8),
+        stroke_color: Shade.color("white", 0.9),
+        fill_color: Shade.color("slategray", 0.9),
         point_diameter: zoom.mul(2000),
         stroke_width: zoom.mul(200)
     });
@@ -47,7 +47,7 @@ function make_graph_batch(model, center, zoom)
         elements: model.edge_elements
     }, {
         position: Shade.vec(dots_batch.gl_Position.swizzle("xy"), 0.1),
-        color: Shade.vec(1, 1, 1, 0.1),
+        color: Shade.vec(0, 0, 0, 0.2),
         mode: Facet.DrawingMode.over
     });
 
@@ -71,27 +71,24 @@ function draw_it()
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    var model;
-    var graph;
     var center = Shade.parameter("vec2", vec.make([450, 450]));
     var zoom = Shade.parameter("float", 1/450);
     var prev_mouse_pos;
     jQuery.getJSON("graph_extras/1138_bus.graph",
                    function (data) {
-                       graph = data;
-                       model = make_graph_model(graph);
+                       var graph = data;
+                       var model = make_graph_model(graph);
                        graph_batch = make_graph_batch(model, center, zoom);
                        gl.display();
                    });
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
-        clearColor: [0,0,0,0.2],
+        clearColor: [0, 0, 0, 0.05],
         display: draw_it,
         attributes: {
             alpha: true,
             depth: true
-        }
-        , mousedown: function(event) {
+        }, mousedown: function(event) {
             prev_mouse_pos = [event.offsetX, event.offsetY];
         }, mousemove: function(event) {
             if ((event.which & 1) && !event.shiftKey) {

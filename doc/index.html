@@ -1,15 +1,13 @@
 <html>
 <head><title>Facet Documentation</title>
-<link rel="stylesheet" href="css/bootstrap.css"/>
-<!-- don't hate me, hate Linux Chrome 16's broken optimizeLegibility -->
-<script src="js/bdetect.js"></script>
-<script>
-if (BrowserDetect.OS !== "Linux" || BrowserDetect.browser !== "Chrome")
-document.write('<link ref="stylesheet" href="css/legibility.css"/>');
-</script>
-<link rel="stylesheet" href="css/bootstrap.css"/>
-<link rel="stylesheet" href="css/style.css"/>
-<link rel="stylesheet" href="css/mchighlight-javascript.css"/>
+  <link rel="stylesheet" href="css/bootstrap.css"/>
+  <!-- don't hate me, hate Linux Chrome 16-18's broken optimizeLegibility -->
+  <script src="js/bdetect.js">
+    if (BrowserDetect.OS !== "Linux" || BrowserDetect.browser !== "Chrome")
+    document.write('<link ref="stylesheet" href="css/legibility.css"/>');
+  </script>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/mchighlight-javascript.css"/>
   <script src="js/jquery-1.6.2.min.js"></script>
   <script src="js/mclexer.js"></script>
   <script src="js/mchighlight.js"></script>
@@ -27,21 +25,21 @@ document.write('<link ref="stylesheet" href="css/legibility.css"/>');
 	<h2>Essentials</h2>
       </div>
       <div class="span12">
-	<p>A Facet program will probably need the following few
-	functions. With them, you will be able to write programs which
+	<p>A Facet program needs a few essentials.
+	With them, you will be able to write programs which
 	use basic 2D and 3D graphics.
 	</p>
 
 	<h3>Marks</h3>
 	<p>Facet provides some visual primitives which you can use
-	to draw graphics. <b>Marks</b> are almost ready-made
-	graphics: you provide a few details and Facet returns an
+	to draw graphics. <b>Marks</b> are almost ready-made:
+	you give a few details and Facet returns an
 	object ready for drawing:</p>
 <div>
 <div class="negoffset4">
   <div class="span4">
-    <a href="../demos/scatter.html"><img src="img/scatterplot_demo.png"></a>
-    <p class="nomargin"><a href="../demos/scatter.html">Scatterplot demo</a></p>
+    <a href="../demos/scatter/scatter.html"><img src="img/scatterplot_demo.png"></a>
+    <p class="nomargin"><a href="../demos/scatter/scatter.html">Scatterplot demo</a></p>
   </div>
 </div>
 <pre class="highlight">
@@ -57,44 +55,43 @@ var scatterplot_batch = Facet.Marks.scatterplot({
 });
 </div>
 </pre>
-
-	<p>To draw this on the screen, simply
-	call <span class="inline-highlight">scatterplot_batch.draw()</span>.</p>
+	<p>You then add the object to the scene:</p>
+<pre class="highlight">
+Facet.Scene.add(scatterplot_batch);
+</pre>
+	<p>... and you're done.</p>
 
 	<h3>Models and Batches</h3>
-	<p>Facet also provides some <b>models</b>, predefined
-	geometrical shapes which you can use to construct your
-	graphics. For example, we can create a cube like this:</p>
+	<p>Under the hood, a mark is actually created by taking
+	a <b>model</b> and giving it an appearance. Facet provides
+	some predefined models which you can use to construct your
+	graphics. For example, you create a cube like this:</p>
 <div>
 <div class="negoffset4">
   <div class="span4">
-    <a href="../demos/lesson6.html"><img src="img/lesson6_demo.png"></a>
-    <p class="nomargin"><a href="../demos/lesson6.html">Cube model demo</a></p>
+    <a href="../demos/lesson6/lesson6.html"><img src="img/lesson6_demo.png"></a>
+    <p class="nomargin"><a href="../demos/lesson6/lesson6.html">Cube model demo</a></p>
   </div>
 </div>
 <pre class="highlight">
 // The default cube is centered at the origin and has side length 2
 var cube = Facet.Models.flat_cube();
 </pre>
-	<p>With a model in hand, we proceed to create a <b>batch</b>,
+	<p>With a model in hand, you create a <b>batch</b>,
 	which determines how the model is actually drawn on the
-	canvas. We make a batch
-	by <span class="inline-highlight">Facet.bake</span>ing a
-	model. We need to specify where the model vertices will appear
-	on the canvas. We use a
-	"synthetic camera", which will project the model onto the
-	screen, much in the same way that a photographic camera
-	projects light onto a film. Facet provides a synthetic camera
-	class:</p>
+	canvas. A batch is created by <span class="inline-highlight">Facet.bake</span>ing a
+	model and a appearance. 
+	First, you need to specify where the model vertices will appear
+	on the canvas. Facet provides
+	"synthetic camera" classes, which project the model onto the
+	screen in the same way that a photographic camera
+	projects light onto a film. You use them as follow:</p>
 <pre class="highlight">
-var camera = Facet.Camera.perspective({
-    look_at: [[0, 0, 6],  // the position of the camera,
-              [0, 0, -1], // towards where the camera points,
-              [0, 1, 0]], // and towards where its top points;
+var camera = Shade.Camera.perspective({
+    look_at: [Shade.vec(0, 0, 6),  // the position of the camera,
+              Shade.vec(0, 0, -1), // towards where the camera points,
+              Shade.vec(0, 1, 0)], // and towards where its top points;
     field_of_view_y: 45,  // vertical angular extent into the scene;
-    aspect_ratio: 1.3333, // aspect ratio of the canvas;
-    near_distance: 0.1,   // anything closer than this ...
-    far_distance: 100     // ... or further away will be clipped;
 });
 </pre>
         <p>The <span class="inline-highlight">project</span> method of
@@ -107,14 +104,15 @@ var batch = Facet.bake(cube, {
     position: camera.project(cube.vertex),
     color: Shade.color('blue')
 });
+Facet.Scene.add(batch);
 </pre>
-        <p>Voil&agrave;! The batch is ready to draw.</p>
+        <p>Voil&agrave;!</p>
 
 	<h3>Custom Models</h3>
 <div class="negoffset4">
   <div class="span4">
-    <a href="../demos/lesson5.html"><img src="img/lesson5_demo.png"></a>
-    <p class="nomargin"><a href="../demos/lesson5.html">Custom models demo</a></p>
+    <a href="../demos/lesson5/lesson5.html"><img src="img/lesson5_demo.png"></a>
+    <p class="nomargin"><a href="../demos/lesson5/lesson5.html">Custom models demo</a></p>
   </div>
 </div>
 	<p>When the predefined Facet marks and models become too
@@ -130,10 +128,10 @@ var square_model = Facet.model({
                1, -1,
                1,  1,
               -1,  1], 2],
-    colors: [Shade.color('red'),
-             Shade.color('green'),
-             Shade.color('blue'),
-             Shade.color('white')]
+    color: [Shade.color('red'),
+            Shade.color('green'),
+            Shade.color('blue'),
+            Shade.color('white')]
     type: "triangles",
     elements: [0, 1, 2, 
                0, 2, 3],
@@ -156,9 +154,15 @@ var square_model = Facet.model({
         associated <span class="inline-highlight">colors</span>
         attribute. All attributes (in this case only the colors) in a
         model are associated to the respective vertices in the list
-        order. This model can be baked into a batch in the same way as
-        the model above.
+        order. This model can be baked into a batch like the one above:
 	</p>
+
+<pre class="highlight">
+Facet.Scene.add(Facet.bake(square_model, {
+    position: camera.project(square_model.vertex),
+    color: square_model.color
+}));
+</pre>
 
 	<h3>Setting up a Canvas</h3>
 	<p>Facet needs an HTML canvas element in which to draw. Your
@@ -178,23 +182,12 @@ function draw_it()
 }
 
 var canvas = document.getElementById("facet-canvas");
-gl = Facet.init(canvas, {
-    clearDepth: 1.0,
-    clearColor: [0,0,0,1],
-    display: draw_it,
-    attributes: {
-      alpha: true,
-      depth: true
-    },
-});</pre>
-        <p>Every attribute of the second parameter
-        in <span class="inline-highlight">Facet.init</span> is
-        optional, but passing
-        a <span class="inline-highlight">display</span> callback
-        function is recommended, because Facet will use this function
-        to refresh the display when necessary. In the example above, the
-        other option values are the defaults used by Facet if the
-        attributes are omitted.
+gl = Facet.init(canvas);
+</pre>
+        <p>Facet.init takes an optional extra parameter with options
+	that control things like the background color, an explicit
+	display callback, and other WebGL miscellanea. For more
+	details, refer to the <a href="">API reference</a>.
 	</p>
       </div>
     </div>
@@ -230,9 +223,6 @@ gl = Facet.init(canvas, {
     
   </div>
   <script>
-    /* not available yet
-      $('.highlight').each(function(i, v) { HTMLHighlighter.highlight(v); });
-    */
     $('.highlight').each(function(i, v) { Highlighter.highlight(v); });
     $('.inline-highlight').each(function(i, v) { Highlighter.highlight(v); });
   </script>

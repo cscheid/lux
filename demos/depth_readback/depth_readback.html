@@ -1,7 +1,7 @@
 <html>
 <head><title>Depth Readback in Facet</title>
-  <link rel="stylesheet" href="../style.css"/>
-  <link rel="stylesheet" href="../css/mchighlight-javascript.css"/>
+  <link rel="stylesheet" href="../css/bootstrap.css"/>
+  <link rel="stylesheet" href="../css/style.css"/>
   <script src="../../lib/jquery-1.6.2.min.js"></script>
   <script src="../../facet.js"></script>
   <script src="../js/mclexer.js"></script>
@@ -15,7 +15,7 @@
 <h1>Depth Readback</h1>
 <div style="position: relative">
 <canvas id="webgl" width="720" height="480"></canvas>
-<div id="pickresult" style="position: absolute; top: 5px; right: 5px; color: white"></div>
+<div id="pickresult" style="position: absolute; top: 5px; right: 5px"></div>
 </div>
 <div style="text-align: right">View the <a href="depth_readback.js">full source</a>.</div>
 
@@ -27,4 +27,3 @@ $('.highlight').each(function(i, v) { Highlighter.highlight(v); });
 </div>
 </body>
 </html>
-
