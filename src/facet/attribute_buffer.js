@@ -1,4 +1,4 @@
-Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
+Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized, usage)
 {
     var ctx = Facet._globals.ctx;
     if (normalized === undefined) {
@@ -14,11 +14,12 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
 
     itemSize = itemSize || 3;
     itemType = gl_enum_typed_array_map[itemType || 'float'];
+    usage = usage || ctx.STATIC_DRAW;
 
     var typedArray = new itemType[1](vertex_array);
     var result = ctx.createBuffer();
     ctx.bindBuffer(ctx.ARRAY_BUFFER, result);
-    ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
+    ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, usage);
     result._shade_type = 'attribute_buffer';
     result.array = typedArray;
     result.itemSize = itemSize;
