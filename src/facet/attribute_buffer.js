@@ -40,21 +40,33 @@ Facet.attribute_buffer = function(opts)
         throw "opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'";
     }
 
-    var typedArray = new itemType[1](vertex_array);
     var result = ctx.createBuffer();
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, result);
-    ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, usage);
     result._shade_type = 'attribute_buffer';
-    result.array = typedArray;
     result.itemSize = itemSize;
-    result.numItems = vertex_array.length/itemSize;
-    result.bind = function(type) {
-        return function(attribute) {
-            ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-            ctx.vertexAttribPointer(attribute, this.itemSize, type, normalized, 0, 0);
-        };
-    }(itemType[0]);
+    result.usage = usage;
+    result.normalized = normalized;
+    result._webgl_type = itemType[0];
+    result._typed_array_ctor = itemType[1];
+
+    result.set = function(vertex_array) {
+        var ctx = Facet._globals.ctx;
+        var typedArray = new this._typed_array_ctor(vertex_array);
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+        ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+        result.array = typedArray;
+        result.numItems = vertex_array.length/itemSize;
+    };
+
+    result.set(vertex_array);
+
+    result.bind = function(attribute) {
+        var ctx = Facet._globals.ctx;
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+        ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, 0, 0);
+    };
+
     result.draw = function(primitive) {
+        var ctx = Facet._globals.ctx;
         ctx.drawArrays(primitive, 0, this.numItems);
     };
     result.bind_and_draw = function(attribute, primitive) {
