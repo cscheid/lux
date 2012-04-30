@@ -29,7 +29,10 @@ Facet.Models.mesh = function(u_secs, v_secs) {
         }
     }
 
-    var uv_attr = Shade(Facet.attribute_buffer(verts, 2));
+    var uv_attr = Shade(Facet.attribute_buffer({
+        vertex_array: verts, 
+        item_size: 2
+    }));
     return Facet.model({
         type: "triangle_strip",
         tex_coord: uv_attr,

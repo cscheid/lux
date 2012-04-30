@@ -15,7 +15,10 @@ Facet.Marks.aligned_rects = function(opts)
     if (!opts.bottom)   throw "bottom is a required field";
     if (!opts.color)    throw "color is a required field";
 
-    var vertex_index = Facet.attribute_buffer(_.range(opts.elements * 6), 1);
+    var vertex_index = Facet.attribute_buffer({ 
+        vertex_array: _.range(opts.elements * 6), 
+        item_size: 1
+    });
     var primitive_index = Shade.div(vertex_index, 6).floor();
     var vertex_in_primitive = Shade.mod(vertex_index, 6).floor();
 

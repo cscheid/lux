@@ -12,7 +12,10 @@ Facet.Marks.lines = function(opts)
         throw "either position or x and y are required fields";
     }
 
-    var vertex_index        = Facet.attribute_buffer(_.range(opts.elements * 2), 1);
+    var vertex_index        = Facet.attribute_buffer({
+        vertex_array: _.range(opts.elements * 2), 
+        item_size: 1
+    });
     var primitive_index     = Shade.div(vertex_index, 2).floor();
     var vertex_in_primitive = Shade.mod(vertex_index, 2).floor();
 
