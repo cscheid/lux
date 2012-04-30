@@ -16,7 +16,7 @@ function make_graph_model(graph)
         line_elements.push(indices[node.source]);
         line_elements.push(indices[node.target]);
     });
-    var position = Facet.attribute_buffer(pos, 2);
+    var position = Facet.attribute_buffer({ vertex_array: pos, item_size: 2});
     return {
         position: Shade(position),
         name: names,
