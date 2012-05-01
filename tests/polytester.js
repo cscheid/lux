@@ -140,13 +140,6 @@ function data_buffers(num) {
    }
 
 display(poly);
-/*
-   vertices = Facet.models.polygon().Ptriangulate(poly);
-   if( vertices != undefined && vertices.length>0)
-    	display(vertices);
-   poly.points.splice(0);
-   } while ( vertices == undefined || vertices.length === 0);
-*/
 }
 
 function to_opengl(x){ return ((2*x) - 1.);}

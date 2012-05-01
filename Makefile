@@ -149,6 +149,7 @@ facet.js:					\
 	src/facet/models/sphere.js		\
 	src/facet/models/square.js		\
 	src/facet/models/teapot.js		\
+	src/facet/models/polygon.js		\
 	src/facet/mesh/_begin.js		\
 	src/facet/mesh/indexed.js		\
 	src/facet/scene/_begin.js		\
