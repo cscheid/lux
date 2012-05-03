@@ -1,19 +1,9 @@
 var alive = false;
+
 function point_2d(x, y) {
 	this.x = (typeof x == "undefined") ? 0 : x;
 	this.y = (typeof y == "undefined") ? 0 : y;
 	}
-
-function add(p){
-	this.points.push(p);
-	}
-
-function polygon_2d(){
-	this.points = [];
-	}
-polygon_2d.prototype.add = add;
-
-
 
 function init_webgl(){
 	return Facet.init(document.getElementById("webgl"), {
@@ -35,7 +25,7 @@ function init_webgl(){
 
 function radialPoly(n,sz,cntr){
 var angle,px,py,pnt;
-var poly = new polygon_2d();
+var poly = [];
 var vertices;
 
 angle = (2*Math.PI)/n;
@@ -43,7 +33,7 @@ for(var i=0;i<n;i++){
 	px = (sz * (Math.cos(i*angle))) + cntr.x;
 	py = (sz * (Math.sin(i*angle))) + cntr.y;
 	pnt = new point_2d(px,py);
-	poly.add(pnt);
+	poly.push(pnt);
 }
 
 display(poly);
@@ -122,7 +112,7 @@ function data_buffers(num) {
 
 
 
-   var px,py,pnt,poly = new polygon_2d();
+   var px,py,pnt,poly = [];
    var vertices;
 
    var data = data_buffers(num);
@@ -136,7 +126,7 @@ function data_buffers(num) {
 	px = xcoords[i]/mxx;
 	py = ycoords[i]/mxy;
 	pnt = new point_2d(px,py);
-	poly.add(pnt);
+	poly.push(pnt);
    }
 
 display(poly);
@@ -153,20 +143,21 @@ function display(vertices){
         o = Shade.color('orange'),
         y = Shade.color('yellow'),
         b = Shade.color('blue'),
-        v = Shade.color('violet');
+        v = Shade.color('violet')
+		blk = Shade.color('black');
     var color;
 
     if(colorIndx === Math.NaN)
-    	color = [getColor(0,1),getColor(0,1),getColor(0,1)];
+    	color = [getColor(0,1),getColor(0,1),getColor(0,1),getColor(0,1)];
     else if(colorIndx === -1)
-    	color = [r,g,b];
+    	color = [blk,r,g,b];
     else
-    	color = [getColor(colorIndx,1),getColor(colorIndx + 1,1),getColor(colorIndx + 2,1)];
+    	color = [blk,getColor(colorIndx,1),getColor(colorIndx + 1,1),getColor(colorIndx + 2,1)];
     
-    for(var i=0;i < vertices.points.length - 1;i++){
-		for(var j=0;j<3;j++){
-			vertexColor.push(color[j]);
-		}
+    for(var i=0;i < vertices.length;i++){
+			vertexColor.push(color[i%4]);
+		vertices[i].x = to_opengl(vertices[i].x);
+		vertices[i].y = to_opengl(vertices[i].y);
     }
 
 	var polygon_model = Facet.Models.polygon(vertices,vertexColor);
@@ -183,11 +174,11 @@ function display(vertices){
 
 function polyIsClosed(poly){
 var dist,p1x,p1y,p2x,p2y,delta = .01;
-if(poly.points.length > 3){
-	p1x = poly.points[0].x;
-	p1y = poly.points[0].y;
-	p2x = poly.points[poly.points.length-1].x;
-	p2y = poly.points[poly.points.length-1].y;
+if(poly.length > 3){
+	p1x = poly[0].x;
+	p1y = poly[0].y;
+	p2x = poly[poly.length-1].x;
+	p2y = poly[poly.length-1].y;
 	dist = Math.sqrt(Math.pow((p2x - p1x),2) + Math.pow((p2y - p1y),2));
 	if(dist < delta)
 		return 1;
@@ -217,7 +208,7 @@ Facet.Scene.add(Facet.Marks.scatterplot({
 }));
 
 }
-var poly = new polygon_2d();
+var poly = [];
 
 function pick(xcoord,ycoord){
 
@@ -225,15 +216,15 @@ function pick(xcoord,ycoord){
 	px = (xcoord)/viewportWidth;
 	py = (viewportHeight-(ycoord))/viewportHeight;
 	var p = new point_2d(px,py);
-	poly.add(p);
+	poly.push(p);
 
 	dispPoint(px,py);
 
 	if (polyIsClosed(poly)){
 		//remove last point which closed polygon
-			poly.points.splice(poly.points.length-1);
+			poly.splice(poly.length-1);
 	display(poly);
-		poly.points.splice(0);
+		poly.splice(0);
 	}
 }
 
@@ -244,7 +235,6 @@ function changeReduction(){
 	reduction = (1 - (.01 * reduction));
 	reduction = (reduction <= 0. ? .009 : reduction);
 	gl = refresh_webgl();
-	radialPoly(numPoints,reduction,cntr);
 	}
 
 function changenumPoints(){
@@ -255,7 +245,6 @@ function changenumPoints(){
 	numPoints = (numPoints > 100. ? 100. : numPoints);
 	$('input:text[name=numPoints]').val(numPoints);
 	gl = refresh_webgl();
-	radialPoly(numPoints,reduction,cntr);
 	}
 
 function changeXcoord(){
@@ -267,7 +256,6 @@ function changeXcoord(){
 	xcoord /= 100.;
 	cntr = new point_2d(xcoord,ycoord);
 	gl = refresh_webgl();
-	radialPoly(numPoints,reduction,cntr);
 	}
 
 function changeYcoord(){
@@ -279,7 +267,6 @@ function changeYcoord(){
 	ycoord /= 100.;
 	cntr = new point_2d(xcoord,ycoord);
 	gl = refresh_webgl();
-	radialPoly(numPoints,reduction,cntr);
 	}
 
 function changeSchemeOffset(){
@@ -296,7 +283,6 @@ function changeSchemeOffset(){
 	}
 	cntr = new point_2d(xcoord,ycoord);
 	gl = refresh_webgl();
-	radialPoly(numPoints,reduction,cntr);
 	}
 	
 function changeClassNum(){
@@ -322,7 +308,7 @@ xcoord = .5;
 ycoord = .5;
 cntr = new point_2d(xcoord,ycoord);
 
-numPoints = 8;
+numPoints = 12;
 reduction = .4;
 colorIndx = -1.;
 $('input:text[name=reduction]').val((1 - (reduction))*100);
@@ -333,7 +319,6 @@ $('input:text[name=schemeOffset]').val("");
 //$('input:text[name=schemeOffset]').val(colorIndx + 1);
 
 gl = init_webgl();
-//var poly = new polygon_2d();
 radialPoly(numPoints,reduction,cntr);
 //randomPoly(numPoints);
 f();

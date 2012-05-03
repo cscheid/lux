@@ -17,34 +17,34 @@ function dpd_ccw( p1,p2,p3) {
 
 function Ptriangulate(polygon){
 	var i, pointn,minx,minpi,p1,p2,p3;
-	pointn = polygon.points.length;
+	pointn = polygon.length;
 	pointp = [],pointi = [];
 
-	for (var pi = 0, minx = HUGE_VAL, minpi = -1; pi < polygon.points.length; pi++) {
-		if (minx > polygon.points[pi].x)
-	    minx = polygon.points[pi].x, minpi = pi;
+	for (var pi = 0, minx = HUGE_VAL, minpi = -1; pi < polygon.length; pi++) {
+		if (minx > polygon[pi].x)
+	    minx = polygon[pi].x, minpi = pi;
     }
 
 
-    p2 = polygon.points[minpi];
-    p1 = polygon.points[((minpi == 0) ? (polygon.points.length - 1) : minpi - 1)];
-    p3 = polygon.points[((minpi == polygon.points.length - 1) ? 0 : minpi + 1)];
+    p2 = polygon[minpi];
+    p1 = polygon[((minpi == 0) ? (polygon.length - 1) : minpi - 1)];
+    p3 = polygon[((minpi == polygon.length - 1) ? 0 : minpi + 1)];
     if (((p1.x == p2.x && p2.x == p3.x) && (p3.y > p2.y)) ||
 			dpd_ccw(p1, p2, p3) != ISCCW) {
-		for (pi = (polygon.points.length - 1); pi >= 0; pi--) {
-	    	if (pi < (polygon.points.length - 1)
-			&& polygon.points[pi].x == polygon.points[pi + 1].x
-			&& polygon.points[pi].y == polygon.points[pi + 1].y)
+		for (pi = (polygon.length - 1); pi >= 0; pi--) {
+	    	if (pi < (polygon.length - 1)
+			&& polygon[pi].x == polygon[pi + 1].x
+			&& polygon[pi].y == polygon[pi + 1].y)
 			continue;
-	    	pointp.push(polygon.points[pi]);
+	    	pointp.push(polygon[pi]);
 			pointi.push(pi);
 		}
     } else {
-		for (pi = 0; pi < polygon.points.length; pi++) {
-	    	if (pi > 0 && polygon.points[pi].x == polygon.points[pi - 1].x &&
-			polygon.points[pi].y == polygon.points[pi - 1].y)
+		for (pi = 0; pi < polygon.length; pi++) {
+	    	if (pi > 0 && polygon[pi].x == polygon[pi - 1].x &&
+			polygon[pi].y == polygon[pi - 1].y)
 			continue;
-	    	pointp.push(polygon.points[pi]);
+	    	pointp.push(polygon[pi]);
 			pointi.push(pi);
 		}
     }
@@ -73,8 +73,8 @@ function triangulate(pointp,pointn,pointi){
 						pointp[j++] = pointp[i];
 					}
 				element = triangulate(pointp, pointn - 1, pointi);
-				for(var j=0;j<vertex.length;j++){
-					elements.push(vertex[j]);
+				for(var j=0;j<element.length;j++){
+					elements.push(element[j]);
 				}
 			return elements;
 	    	}
@@ -164,31 +164,31 @@ if (! _.isUndefined(poly)){
 
     var verts = [];
     var elements = [];
-	var polygon = new polygon_2d(),pnt;
-	for(var i=0;i<poly.points.length;i++){
-		pnt = new point_2d(poly.points[i].x,poly.points[i].y);
-		polygon.add(pnt);
+	var vColor = [];
+	var polygon = [],pnt;
+	for(var i=0;i<poly.length;i++){
+		pnt = new point_2d(poly[i].x,poly[i].y);
+		polygon.push(pnt);
 	}
 	
 	var indx = [];
 	indx = Ptriangulate(polygon);
-	k = 0;
-	for(var i=(indx.length - 1) ;i>=0;i--){
+	for(var i=0 ;i<indx.length;i++){
 		for(var j=0;j<3;j++){
 			elements.push(indx[i][j]);
 		}
 	}
 
-	for(var i=0;i<polygon.points.length,i++){
-		verts.push(polygon.points[i].x);
-		verts.push(polygon.points[i].y);
+	for(var i=0;i<polygon.length;i++){
+		verts.push(polygon[i].x);
+		verts.push(polygon[i].y);
+		
 	}
 
-	var color;
 	var uv = Shade(Facet.attribute_buffer({vertex_array:verts, item_size:2}));
 
 	if (! _.isUndefined(vertexColor)){
-		var uc = Shade(Facet.attribute_buffer({vertex_array:vertexColor, item_size:4}));
+		
 		return Facet.model({
 			type: "triangles",
         	elements: Facet.element_buffer(elements),
