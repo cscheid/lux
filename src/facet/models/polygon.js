@@ -18,8 +18,7 @@ function dpd_ccw( p1,p2,p3) {
 function Ptriangulate(polygon){
 	var i, pointn,minx,minpi,p1,p2,p3;
 	pointn = polygon.points.length;
-	pointp = [];
-	var vertices;
+	pointp = [],pointi = [];
 
 	for (var pi = 0, minx = HUGE_VAL, minpi = -1; pi < polygon.points.length; pi++) {
 		if (minx > polygon.points[pi].x)
@@ -38,6 +37,7 @@ function Ptriangulate(polygon){
 			&& polygon.points[pi].y == polygon.points[pi + 1].y)
 			continue;
 	    	pointp.push(polygon.points[pi]);
+			pointi.push(pi);
 		}
     } else {
 		for (pi = 0; pi < polygon.points.length; pi++) {
@@ -45,44 +45,47 @@ function Ptriangulate(polygon){
 			polygon.points[pi].y == polygon.points[pi - 1].y)
 			continue;
 	    	pointp.push(polygon.points[pi]);
+			pointi.push(pi);
 		}
     }
-    return triangulate(pointp, pointp.length);
+    return triangulate(pointp, pointp.length,pointi);
 }
 
 
-function triangulate(pointp,pointn){
+function triangulate(pointp,pointn,pointi){
 	var i, ip1, ip2, j;
-	var A = [];
-	var vertices = [],vertex;
+	var I = [];
+	var element,elements = [];
 
 	if(pointn > 3){
 		for (i = 0; i < pointn; i++) {
 	    	ip1 = (i + 1) % pointn;
 	    	ip2 = (i + 2) % pointn;
 	    	if (dpd_isdiagonal(i, ip2, pointp, pointn)) {
-				A[0] = pointp[i];
-				A[1] = pointp[ip1];
-				A[2] = pointp[ip2];
-				vertices.push(A);
+				I[0] = pointi[i];
+				I[1] = pointi[ip1];
+				I[2] = pointi[ip2];
+				elements.push(I);
 				j = 0;
 				for (i = 0; i < pointn; i++)
-		    		if (i != ip1)
+		    		if (i != ip1){
+						pointi[j] = pointi[i];
 						pointp[j++] = pointp[i];
-				vertex = triangulate(pointp, pointn - 1);
+					}
+				element = triangulate(pointp, pointn - 1, pointi);
 				for(var j=0;j<vertex.length;j++){
-					vertices.push(vertex[j]);
+					elements.push(vertex[j]);
 				}
-			return vertices;
+			return elements;
 	    	}
 		}
 	} else {
-		A[0] = pointp[0];
-		A[1] = pointp[1];
-		A[2] = pointp[2];
-		vertices.push(A);
+		I[0] = pointi[0];
+		I[1] = pointi[1];
+		I[2] = pointi[2];
+		elements.push(I);
     }
-	return vertices;
+	return elements;
 }
 
 function dpd_isdiagonal(i, ip2, pointp, pointn){
@@ -167,14 +170,18 @@ if (! _.isUndefined(poly)){
 		polygon.add(pnt);
 	}
 	
-	var vertices,indx = 0;
-	vertices = Ptriangulate(polygon);
-	for(var i=0;i<vertices.length;i++){
+	var indx = [];
+	indx = Ptriangulate(polygon);
+	k = 0;
+	for(var i=(indx.length - 1) ;i>=0;i--){
 		for(var j=0;j<3;j++){
-			elements.push(indx++);
-			verts.push(to_opengl(vertices[i][j].x));
-			verts.push(to_opengl(vertices[i][j].y));
+			elements.push(indx[i][j]);
 		}
+	}
+
+	for(var i=0;i<polygon.points.length,i++){
+		verts.push(polygon.points[i].x);
+		verts.push(polygon.points[i].y);
 	}
 
 	var color;
