@@ -1,80 +1,41 @@
 <html>
 <head><title>Polygon Dev</title>
-  <link rel="stylesheet" href="style.css"/>
   <script src="../lib/jquery-1.6.2.min.js"></script>
   <script src="../facet.js"></script>
   <script src="../brewcolor.js"></script>
-  <script src="polygon.js"></script>
   <script src="polytester.js"></script>
 <style>
- #schemeTitle{
+
+#polyParams {
    top: 4px;
-   width: 100px;
-   height: 20px;
-   margin-top:30px;
+   width: 430px;
+   height: 40px;
    margin-right: 18px;
-   clear:both;
-}
-
-#scheme{
-   top: 4px;
-   width: 100px;
-   height: 30px;
-   float: left;
-   margin-right: 18px;
-   margin-bottom: 4px;
-   clear: left;
-}
-
-#schemeNameTitle {
-   top: 4px;
-   width: 170px;
-   height: 30px;
-   margin-right: 18px;
-   margin-top:10px;
-   float: left;
-}
-
-#schemeName{
-   top: 4px;
-   width: 70px;
-   height: 20px;
-}
-
-#schemeOffsetTitle {
-   top: 4px;
-   width: 210px;
-   height: 30px;
-   margin-right: 18px;
-   margin-top:10px;
-   float: left;
-   clear:both;
-
-}
-
-#schemeOffset{
-   top: 4px;
-   width: 70px;
-   height: 20px;
-}
-
-#classTitle {
-   top: 4px;
-   width: 160px;
-   height: 30px;
-   margin-right: 18px;
-   margin-left: 190px;
-   margin-top:10px;
-   float left;
+   margin-top:20px;
 }
 
 #numPointsTitle {
    top: 4px;
-   width: 230px;
+   width: 170px;
    height: 30px;
-   margin-right: 18px;
-   margin-top:10px;
-   float left;
+   margin-right: 25px;
+   float:left;
+}
+
+
+#styleTitle {
+   top: 4px;
+   width: 40px;
+   height: 30px;
+   margin-left: 20px;
+   float: left;
+}
+
+#polyStyle {
+   top: 4px;
+   width: 120px;
+   height: 30px;
+   float: left;
 }
 
 #reductionTitle {
@@ -82,28 +43,103 @@
    width: 170px;
    height: 30px;
    margin-right: 18px;
-   margin-top:10px;
    float: left;
 }
 
 #coordsTitle {
    top: 4px;
-   width: 180px;
+   width: 200px;
    height: 30px;
    margin-right: 18px;
-   margin-top:10px;
-   margin-left: 190px;
+   margin-left: 27px;
+   float: left;
+}
+
+#colorParams {
+   width: 420px;
+   height: 50px;
+   margin-right: 18px;
+   margin-top:20px;
+}
+
+ #schemeTitle{
+   top: 4px;
+   width: 90px;
+   height: 30px;
+   margin-top:4px;
+   margin-right: 5px;
+   float: left;
+}
+
+#scheme{
+   top: 4px;
+   height: 30px;
+   float: left;
+   margin-right: 5px;
 }
 
 
+#schemeNameTitle {
+   top: 4px;
+   width: 190px;
+   height: 30px;
+   margin-left:25px;
+   float: left;
+}
+
+#schemeName{
+   top: 4px;
+   width: 70px;
+   height: 25px;
+   clear: left;
+}
+
+
+#classParams{
+   width: 480px;
+   height: 30px;
+   margin-right: 18px;
+   margin-top:5px;
+	float: left;
+}
+
+#classTitle {
+   top: 4px;
+   width: 165px;
+   height: 30px;
+   float: left;
+   margin-right: 5px;
+}
+
+#classNum{
+   top: 4px;
+   width: 30px;
+   height: 20px;
+   margin-right: 5px;
+}
+
+#schemeOffsetTitle {
+   top: 4px;
+   width: 185px;
+   height: 30px;
+   margin-left: 42px;
+   float: left;
+}
+
+#schemeOffset{
+   top: 4px;
+   width: 40px;
+   height: 20px;
+   margin-left: 12px;
+}
+
 #cTitle{
    top: 6px;
-   width: 150px;
+   width: 130px;
    height: 20px;
-   margin-left: 30px;
    margin-top: 4px;
    margin-bottom: 4px;
-   float: left;
+   clear: left;
  }
 
 #colorTable {
@@ -111,7 +147,7 @@
    width: 300px;
    height: 40px;
    margin-right: 18px;
-   margin-top: 20px;
+   margin-top: 10px;
    margin-bottom: 300px;
    clear: left;
  }
@@ -119,18 +155,20 @@
 td {
    width: 20px;
    height:20px;
+   background: #000000;
+   color: #FFFFFF;
+}
+
+table {
+	margin: auto;
+	background
 }
 
 input {
    margin-top: 2px;
+   margin-left: 3px;
    width: 40px;
    height:20px;
-
-}
-#classNum{
-   top: 4px;
-   width: 30px;
-   height: 20px;
 }
 
 </style></head>
@@ -140,26 +178,39 @@ input {
 <h1>Polygon Dev</h1>
 <canvas id="webgl" width="480" height="480"></canvas>
 
-<div id="numPointsTitle">Number of Vertices <input type="text" id="numPoints" name="numPoints"></div>
 
+<div id="polyParams">
+<div id="numPointsTitle">Number of Vertices <input type="text" id="numPoints" name="numPoints"> </div>
+<div id="styleTitle">Style</div>
+<select id="polyStyle">
+	<option value="">Select</option>
+	<option title="triangles" value="triangles">Triangles</option>
+	<option title="triangle_strip" value="triangle_strip">Triangle Strip</option>
+	<option title="triangle_fan" value="triangle_fan">Triangle Fan</option>
+	<option title="line_loop" value="line_loop">Line Loop</option>
+	<option title="lines" value="lines">Lines</option>
+	<option title="line_strip" value="line_strip">Line Strip</option>
+	</select>
+</div>
 <div id="reductionTitle">Percent Reduction <input type="text" id="reduction" name="reduction"></div>
 <div id="coordsTitle">Coordinates (<input type="text" id="xcoord" name="xcoord">,<input type="text" id="ycoord" name="ycoord">)</div>
-
-<div id="schemeNameTitle">Scheme Name <input type="text" id="schemeName" name="schemeName"></div>
-<div id="schemeOffsetTitle">Starting Class <input type="text" id="schemeOffset" name="schemeOffset"></div>
-<div id="classTitle">Number of Classes <input type="text" id="classNum" name="classNum"></div>
-	<div id="schemeTitle">Scheme Type</div>
-
-	<div><select id="scheme">
+</div>
+<div id="colorParams">
+<div id="schemeTitle">Scheme Type</div>
+<select id="scheme">
 	<option value="">Select</option>
+	<option title="Common" value="com">Common</option>
 	<option title="Sequential" value="seq">Sequential</option>
 	<option title="Diverging" value="div">Diverging</option>
 	<option title="Qualitative" value="qual">Qualitative</option>
 	</select>
-	</div>
+<div id="schemeNameTitle">Scheme Name <input type="text" id="schemeName" name="schemeName"></div>
+</div>
+<div id="classParams">
+<div id="classTitle">Number of Classes <input type="text" id="classNum" name="classNum"></div>
+<div id="schemeOffsetTitle">Starting Class <input type="text" id="schemeOffset" name="schemeOffset"></div>
+</div>
 <div id="cTitle"></div><div id="colorTable"></div>
-
-
 </div>
 </div>
 </body>

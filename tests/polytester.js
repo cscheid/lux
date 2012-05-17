@@ -18,12 +18,12 @@ function init_webgl(){
     gl = Facet.init(document.getElementById("webgl"), {
         clearColor: [0, 0, 0, 0.2],
    })
-    radialPoly(numPoints,reduction,cntr);
+    genPoly(numPoints,reduction,cntr,style);
     f();
   }
 
 
-function radialPoly(n,sz,cntr){
+function genPoly(n,sz,cntr,style){
 var angle,px,py,pnt;
 var poly = [];
 var vertices;
@@ -36,15 +36,14 @@ for(var i=0;i<n;i++){
 	poly.push(pnt);
 }
 
-display(poly);
+display(poly,style);
 }
 
-
-function randomPoly(num){
+function randomPoly(num,style){
 
 var maxCoord = 10;
 function data_buffers(num) {
-	function genPolygon(numPoints) {
+	function genRandPolygon(numPoints) {
 		var coords = new Array();
 		var m1, m2, x1, x2, x3, y1, y2, y3, b1, b2, i, px;
     		var xn, yn, count, errCount = 0;
@@ -91,7 +90,7 @@ function data_buffers(num) {
 	}
 
 
-	var buffers = genPolygon(num);
+	var buffers = genRandPolygon(num);
 	var xs = buffers.map(function(buffer) {
 		return buffer.x;
 	});
@@ -106,11 +105,6 @@ function data_buffers(num) {
 	//determine maximum coord values
 	return [xs,ys,mxx,mxy]; 
 }
-
-
-
-
-
 
    var px,py,pnt,poly = [];
    var vertices;
@@ -129,13 +123,13 @@ function data_buffers(num) {
 	poly.push(pnt);
    }
 
-display(poly);
+display(poly,style);
 }
 
 function to_opengl(x){ return ((2*x) - 1.);}
 
 
-function display(vertices){
+function display(vertices,style){
 	var vertexColor = [];
 
 	var g = Shade.color('green'),
@@ -148,20 +142,21 @@ function display(vertices){
     var color;
 
     if(colorIndx === Math.NaN)
-    	color = [getColor(0,1),getColor(0,1),getColor(0,1),getColor(0,1)];
+    	color = [getColor(0,1),getColor(0,1),getColor(0,1)];
     else if(colorIndx === -1)
-    	color = [blk,r,g,b];
+    	color = [getColor(colorIndx,1),getColor(colorIndx,1),getColor(colorIndx,1)];
     else
-    	color = [blk,getColor(colorIndx,1),getColor(colorIndx + 1,1),getColor(colorIndx + 2,1)];
+    	color = [getColor(colorIndx,1),getColor(colorIndx + 1,1),getColor(colorIndx + 2,1)];
     
     for(var i=0;i < vertices.length;i++){
-			vertexColor.push(color[i%4]);
+			vertexColor.push(color[i%(color.length)]);
 		vertices[i].x = to_opengl(vertices[i].x);
 		vertices[i].y = to_opengl(vertices[i].y);
     }
 
-	var polygon_model = Facet.Models.polygon(vertices,vertexColor);
-	//var polygon_model = Facet.Models.polygon(vertices);
+		var polygon_model = Facet.Models.polygon(vertices,style,vertexColor);
+	//var polygon_model = Facet.Models.polygon(vertices,vertexColor);
+
 
     var polygon = Facet.bake(polygon_model, {
         position: polygon_model.vertex,
@@ -228,15 +223,6 @@ function pick(xcoord,ycoord){
 	}
 }
 
-function changeReduction(){
- 
-	//get reduction value and refresh
- 	reduction = parseFloat($('input:text[name=reduction]').val());
-	reduction = (1 - (.01 * reduction));
-	reduction = (reduction <= 0. ? .009 : reduction);
-	gl = refresh_webgl();
-	}
-
 function changenumPoints(){
  
 	//get numPoints value and refresh
@@ -244,6 +230,27 @@ function changenumPoints(){
 	numPoints = (numPoints < 3. ? 3. : numPoints);
 	numPoints = (numPoints > 100. ? 100. : numPoints);
 	$('input:text[name=numPoints]').val(numPoints);
+	gl = refresh_webgl();
+	}
+
+function changeStyleType(){
+	$("#polyStyle option:selected").each(function () {
+		style = $(this).val();
+	});
+
+	if( style === "")  //default to line_loop if nothing selected
+		style = "line_loop";
+		
+	gl = refresh_webgl();
+
+}
+
+function changeReduction(){
+ 
+	//get reduction value and refresh
+ 	reduction = parseFloat($('input:text[name=reduction]').val());
+	reduction = (1 - (.01 * reduction));
+	reduction = (reduction <= 0. ? .009 : reduction);
 	gl = refresh_webgl();
 	}
 
@@ -311,6 +318,7 @@ cntr = new point_2d(xcoord,ycoord);
 numPoints = 12;
 reduction = .4;
 colorIndx = -1.;
+style = "line_loop"; //"lines"  "line_strip"  "triangles" "triangle_strip" "triangle_fan"
 $('input:text[name=reduction]').val((1 - (reduction))*100);
 $('input:text[name=numPoints]').val(numPoints);
 $('input:text[name=xcoord]').val(xcoord * 100);
@@ -319,19 +327,25 @@ $('input:text[name=schemeOffset]').val("");
 //$('input:text[name=schemeOffset]').val(colorIndx + 1);
 
 gl = init_webgl();
-radialPoly(numPoints,reduction,cntr);
+genPoly(numPoints,reduction,cntr,style);
+
 //randomPoly(numPoints);
 f();
 }
 $().ready(function() {
 
+    $("input[name='classNum']").change(function(){
+	changeClassNum();
+	changeSchemeType();
+	});
+
+    $("#polyStyle").change(function(){
+ 	$('input:text[name=schemeName]').val("");
+   	changeStyleType();
+  	});
 
    $("#reduction").change(function(){
     	changeReduction();
-   	});
-
-    $("#numPoints").change(function(){
-    	changenumPoints();
    	});
 
     $("#xcoord").change(function(){
@@ -352,14 +366,13 @@ $().ready(function() {
 	changeColorName();
 	});
 
+    $("#numPoints").change(function(){
+    	changenumPoints();
+   	});
+
     $("#schemeOffset").change(function(){
     	changeSchemeOffset();
    	});
-
-    $("input[name='classNum']").change(function(){
-	changeClassNum();
-	changeSchemeType();
-	});
 
 
 

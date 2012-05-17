@@ -1,5 +1,5 @@
 
-Facet.Models.polygon = function(poly,vertexColor) {
+Facet.Models.polygon = function(poly,style,vertexColor) {
 	var ISCCW = 1,
 	ISCW = 2,
 	ISON = 3,
@@ -51,6 +51,18 @@ function Ptriangulate(polygon){
     return triangulate(pointp, pointp.length,pointi);
 }
 
+/*
+ *	input:	pointp:	array of objects with attributes x and y
+ *					that represents a simple, convex and flat polygon
+ *					its points can be clockwise or counter clockwise
+ *
+ *			pointn:	the number of points in pointp to be processed 
+ *
+ *			pointi:	array of indices into the root pointp array
+ *
+ *	returns:	array of indices into the root pointp array that
+ *				represents a set of trianges 
+ */
 
 function triangulate(pointp,pointn,pointi){
 	var i, ip1, ip2, j;
@@ -164,40 +176,55 @@ if (! _.isUndefined(poly)){
 
     var verts = [];
     var elements = [];
-	var vColor = [];
 	var polygon = [],pnt;
 	for(var i=0;i<poly.length;i++){
 		pnt = new point_2d(poly[i].x,poly[i].y);
 		polygon.push(pnt);
 	}
-	
+	if (_.isUndefined(style))
+		style = "line_loop";
+
 	var indx = [];
-	indx = Ptriangulate(polygon);
-	for(var i=0 ;i<indx.length;i++){
-		for(var j=0;j<3;j++){
-			elements.push(indx[i][j]);
+
+	if(style === "triangles" || style === "triangles_loop" || style === "triangles_strip"){
+		// get an array of arrays containing the triangulation of the polygon
+		// every element of indx represents an array of three indices of the polygon
+		// the points of polygon corresponding to the indices define a triangle
+		indx = Ptriangulate(polygon);
+
+		// convert the array of triangle index arrays to a single array of indices
+		for(var i=0 ;i<indx.length;i++){
+			for(var j=0;j<3;j++){
+				elements.push(indx[i][j]);
+			}
 		}
 	}
-
+	else {
+		for(var i=0;i<polygon.length;i++){
+			elements.push(i);
+		}
+	}
+	// extract the x and y coordinates of the polygon
 	for(var i=0;i<polygon.length;i++){
 		verts.push(polygon[i].x);
 		verts.push(polygon[i].y);
 		
 	}
-
 	var uv = Shade(Facet.attribute_buffer({vertex_array:verts, item_size:2}));
 
 	if (! _.isUndefined(vertexColor)){
+		// if an array of color values is provided, they will be assigned to the
+		// polygon vertices in a round-robin fashion
 		
 		return Facet.model({
-			type: "triangles",
+			type: style,
         	elements: Facet.element_buffer(elements),
         	vertex: uv,
 			color: vertexColor
     	});
 	} else {
     	return Facet.model({
-        	type: "triangles",
+        	type: style,
         	elements: Facet.element_buffer(elements),
         	vertex: uv
 		});
