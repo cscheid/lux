@@ -1,22 +1,14 @@
 
-Facet.Models.polygon = function(opts) {
+Facet.Models.polygon = function(poly,style,vertexColor) {
 	var ISCCW = 1,
 	ISCW = 2,
 	ISON = 3,
 	HUGE_VAL = 100000;
 
-    opts = _.defaults(opts, {
-        fill_color: Shade.vec(0,0,0,1),
-		style: "line_loop",
-        mode: Facet.DrawingMode.over_with_depth
-
-    });
-
-    if (!opts.position)
-        throw "missing required parameter 'position'";
-    if (!opts.elements)
-        throw "missing required parameter 'elements'";
-
+function point_2d(x, y) {
+	this.x = (typeof x == "undefined") ? 0 : x;
+	this.y = (typeof y == "undefined") ? 0 : y;
+	}
 
 
 function dpd_ccw( p1,p2,p3) {
@@ -170,7 +162,7 @@ function dpd_intersects(pa, pb, pc, pd)
 
 function dpd_between(pa, pb, pc)
 {
-    var pba = point_2d(), pca = point_2d();
+    var pba = new point_2d(), pca = new point_2d();
 
     pba.x = pb.x - pa.x, pba.y = pb.y - pa.y;
     pca.x = pc.x - pa.x, pca.y = pc.y - pa.y;
@@ -182,17 +174,24 @@ function dpd_between(pa, pb, pc)
 
 
 
+function to_opengl(x){ return ((2*x) - 1.);}
+
+if (! _.isUndefined(poly)){
+
+
     var verts = [];
     var elements = [];
 	var polygon = [],pnt;
-	for(var i=0;i<opts.position.length;i+=2){
-		pnt = new point_2d(opts.position[i],opts.position[i+1]);
+	for(var i=0;i<poly.length;i++){
+		pnt = new point_2d(poly[i].x,poly[i].y);
 		polygon.push(pnt);
 	}
+	if (_.isUndefined(style))
+		style = "line_loop";
 
 	var indx = [];
 
-	if(style === "triangles" || style === "triangles_loop" || style === "triangles_fan"){
+	if(style === "triangles" || style === "triangles_loop" || style === "triangles_strip"){
 		// get an array of arrays containing the triangulation of the polygon
 		// every element of indx represents an array of three indices of the polygon
 		// the points of polygon corresponding to the indices define a triangle
@@ -218,6 +217,7 @@ function dpd_between(pa, pb, pc)
 	}
 	var uv = Shade(Facet.attribute_buffer({vertex_array:verts, item_size:2}));
 
+	if (! _.isUndefined(vertexColor)){
 		// if an array of color values is provided, they will be assigned to the
 		// polygon vertices in a round-robin fashion
 		
@@ -225,8 +225,16 @@ function dpd_between(pa, pb, pc)
 			type: style,
         	elements: Facet.element_buffer(elements),
         	vertex: uv,
-			color: opts.fill_color,
-			mode: opts.mode
+			color: vertexColor
     	});
+	} else {
+    	return Facet.model({
+        	type: style,
+        	elements: Facet.element_buffer(elements),
+        	vertex: uv
+		});
+	}
 
+} else
+throw "poly is a required parameter";
 };
