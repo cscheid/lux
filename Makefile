@@ -148,6 +148,7 @@ facet.js:					\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\
 	src/facet/marks/globe.js		\
+	src/facet/marks/polygon.js		\
 	src/facet/models/_begin.js		\
 	src/facet/models/flat_cube.js		\
 	src/facet/models/mesh.js		\
