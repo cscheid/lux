@@ -22,21 +22,33 @@ function init_webgl(){
     f();
   }
 
+function currentColor(){
+	var color;
+
+    if(colorIndx === Math.NaN)
+    	color = [getColor(0,1),getColor(0,1),getColor(0,1)];
+    else if(colorIndx === -1)
+    	color = [getColor(colorIndx,1),getColor(colorIndx,1),getColor(colorIndx,1)];
+    else 
+    	color = [getColor(colorIndx,1),getColor(colorIndx + 1,1),getColor(colorIndx + 2,1)];
+	return color;
+}
+
 
 function genPoly(n,sz,cntr,style){
 var angle,px,py,pnt;
 var poly = [];
-var vertices;
+var vertices, color;
 
-angle = (2*Math.PI)/n;
-for(var i=0;i<n;i++){
-	px = (sz * (Math.cos(i*angle))) + cntr.x;
-	py = (sz * (Math.sin(i*angle))) + cntr.y;
-	pnt = new point_2d(px,py);
-	poly.push(pnt);
-}
-
-display(poly,style);
+	angle = (2*Math.PI)/n;
+	for(var i=0;i<n;i++){
+		px = (sz * (Math.cos(i*angle))) + cntr.x;
+		py = (sz * (Math.sin(i*angle))) + cntr.y;
+		pnt = new point_2d(px,py);
+		poly.push(pnt);
+	}
+	color = currentColor();
+	display_x_y(poly,style,color);
 }
 
 function randomPoly(num,style){
@@ -122,50 +134,36 @@ function data_buffers(num) {
 	pnt = new point_2d(px,py);
 	poly.push(pnt);
    }
-
-display(poly,style);
+	color = currentColor();
+	display(poly,style,color);
 }
 
-function to_opengl(x){ return ((2*x) - 1.);}
 
+function display_x_y(vertices,style,color){
+var xCoord, yCoord, vertexColor = [],model;
 
-function display(vertices,style){
-	var vertexColor = [];
-
-	var g = Shade.color('green'),
-        r = Shade.color('red'),
-        o = Shade.color('orange'),
-        y = Shade.color('yellow'),
-        b = Shade.color('blue'),
-        v = Shade.color('violet')
-		blk = Shade.color('black');
-    var color;
-
-    if(colorIndx === Math.NaN)
-    	color = [getColor(0,1),getColor(0,1),getColor(0,1)];
-    else if(colorIndx === -1)
-    	color = [getColor(colorIndx,1),getColor(colorIndx,1),getColor(colorIndx,1)];
-    else
-    	color = [getColor(colorIndx,1),getColor(colorIndx + 1,1),getColor(colorIndx + 2,1)];
-    
-    for(var i=0;i < vertices.length;i++){
-			vertexColor.push(color[i%(color.length)]);
-		vertices[i].x = to_opengl(vertices[i].x);
-		vertices[i].y = to_opengl(vertices[i].y);
+	for(var i=0;i<vertices.length;i++){
+		vertexColor.push(color[i%(color.length)]);
+		xCoord = vertices.map(function(v) { return v.x; });
+		yCoord = vertices.map(function(v) { return v.y; });
     }
 
-		var polygon_model = Facet.Models.polygon(vertices,style,vertexColor);
-	//var polygon_model = Facet.Models.polygon(vertices,vertexColor);
-
-
-    var polygon = Facet.bake(polygon_model, {
-        position: polygon_model.vertex,
-		color: polygon_model.color
+	model = Facet.Marks.polygon({
+        elements: vertices.length,
+        x: xCoord,
+        y: yCoord,
+		style: style,
+        fill_color: vertexColor,
+        mode: Facet.DrawingMode.over
     });
 
-    Facet.Scene.add(polygon);
-
+    Facet.Scene.add(Facet.bake(model, {
+        position: model.vertex,
+		color: model.color
+    }));
 }
+
+
 
 function polyIsClosed(poly){
 var dist,p1x,p1y,p2x,p2y,delta = .01;
@@ -207,7 +205,7 @@ var poly = [];
 
 function pick(xcoord,ycoord){
 
-	var px,py,vertices;
+	var px,py,vertices,color;
 	px = (xcoord)/viewportWidth;
 	py = (viewportHeight-(ycoord))/viewportHeight;
 	var p = new point_2d(px,py);
@@ -217,8 +215,9 @@ function pick(xcoord,ycoord){
 
 	if (polyIsClosed(poly)){
 		//remove last point which closed polygon
-			poly.splice(poly.length-1);
-	display(poly);
+		poly.splice(poly.length-1);
+		color = currentColor();
+		display_x_y(poly,style,color);
 		poly.splice(0);
 	}
 }
@@ -318,13 +317,12 @@ cntr = new point_2d(xcoord,ycoord);
 numPoints = 12;
 reduction = .4;
 colorIndx = -1.;
-style = "line_loop"; //"lines"  "line_strip"  "triangles" "triangle_strip" "triangle_fan"
+style = "triangles"; //"lines"  "line_strip"   "triangle_strip" "triangle_fan" "line_loop"
 $('input:text[name=reduction]').val((1 - (reduction))*100);
 $('input:text[name=numPoints]').val(numPoints);
 $('input:text[name=xcoord]').val(xcoord * 100);
 $('input:text[name=ycoord]').val(ycoord * 100);
 $('input:text[name=schemeOffset]').val("");
-//$('input:text[name=schemeOffset]').val(colorIndx + 1);
 
 gl = init_webgl();
 genPoly(numPoints,reduction,cntr,style);
