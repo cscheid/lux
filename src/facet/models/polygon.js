@@ -1,218 +1,498 @@
-
 Facet.Models.polygon = function(poly,style,vertexColor) {
-	var ISCCW = 1,
-	ISCW = 2,
-	ISON = 3,
-	HUGE_VAL = 100000;
 
 function point_2d(x, y) {
 	this.x = (typeof x == "undefined") ? 0 : x;
 	this.y = (typeof y == "undefined") ? 0 : y;
-	}
+}
 
-
-function dpd_ccw( p1,p2,p3) {
-	var d,ret;
-	d = ((p1.y - p2.y) * (p3.x - p2.x)) -
-		((p3.y - p2.y) * (p1.x - p2.x));
-	ret = (d > 0) ? ISCW : ((d < 0) ? ISCCW : ISON);
-	return ret;
+function hidePolyListElement(polyList,indx){
+	polyList[polyList[indx].prev].next = polyList[indx].next;
+	polyList[polyList[indx].next].prev = polyList[indx].prev;
+	polyList[indx].next = -1;
+	polyList[indx].prev = -1;
 }
 
 
-function Ptriangulate(polygon){
-	var i, pointn,minx,minpi,p1,p2,p3;
-	pointn = polygon.length;
-	pointp = [],pointi = [];
+//adjust linked list pointers and remove element from array
+function hideElement(list,val){
+for(var i=0;i<list.length;i++){
 
-	for (var pi = 0, minx = HUGE_VAL, minpi = -1; pi < polygon.length; pi++) {
-		if (minx > polygon[pi].x)
-	    minx = polygon[pi].x, minpi = pi;
-    }
+	if((list[i].val === val) && (list[i].next >= 0)){
+		list[list[i].prev].next = list[i].next;
+		list[list[i].next].prev = list[i].prev;
+		return i;
+	}
+}
+return -1;
+}
 
 
-    p2 = polygon[minpi];
-    p1 = polygon[((minpi == 0) ? (polygon.length - 1) : minpi - 1)];
-    p3 = polygon[((minpi == polygon.length - 1) ? 0 : minpi + 1)];
-    if (((p1.x == p2.x && p2.x == p3.x) && (p3.y > p2.y)) ||
-			dpd_ccw(p1, p2, p3) != ISCCW) {
-		for (pi = (polygon.length - 1); pi >= 0; pi--) {
-	    	if (pi < (polygon.length - 1)
-			&& polygon[pi].x == polygon[pi + 1].x
-			&& polygon[pi].y == polygon[pi + 1].y)
-			continue;
-	    	pointp.push(polygon[pi]);
-			pointi.push(pi);
+function removeElement(list,val){
+var indx;
+
+indx = hideElement(list,val);
+if(indx >= 0){
+	list[indx].next = -1;
+	list[indx].prev = -1;
+}
+}
+
+function addElement(list,val){
+		element = new Object();
+		if(list.length === 0){
+			element.prev = 0;
+			element.next = 0;
 		}
-    } else {
-		for (pi = 0; pi < polygon.length; pi++) {
-	    	if (pi > 0 && polygon[pi].x == polygon[pi - 1].x &&
-			polygon[pi].y == polygon[pi - 1].y)
-			continue;
-	    	pointp.push(polygon[pi]);
-			pointi.push(pi);
+		else {
+			for(var i=0;i<list.length;i++)
+				if(list[i].next >= 0)
+					break;
+			if(i === list.length){
+				element.prev = i;
+				element.next = i;
+			}
+			else {
+				element.prev = i;
+				element.next = list[i].next;
+				list[list[i].next].prev = list.length;
+				list[i].next = list.length;
+			}
 		}
-    }
-    return triangulate(pointp, pointp.length,pointi);
+		element.val = val;
+		list.push(element);
+}
+
+function isElementInList(list,val){
+var i;
+
+if(list.length === 0)
+	return false;
+	
+for(i=0;i<list.length;i++){
+	if((list[i].val === val) && list[i].prev >= 0)
+		return true;
+}
+
+return false;
 }
 
 /*
- *	input:	pointp:	array of objects with attributes x and y
- *					that represents a simple, convex and flat polygon
- *					its points can be clockwise or counter clockwise
- *
- *			pointn:	the number of points in pointp to be processed 
- *
- *			pointi:	array of indices into the root pointp array
- *
- *	returns:	array of indices into the root pointp array that
- *				represents a set of trianges 
- */
+  pt1 is the intersection of a vertext´s test ray and a vertex edge
+  pt2 is a point on a vertext´s diagnal
+  pt3 is a point on the line defined by m and b
+  determine if the point of intersection is on the same side of the 
+  reference line as the diagnal
+*/
 
-function triangulate(pointp,pointn,pointi){
-	var i, ip1, ip2, j;
-	var I = [];
-	var element,elements = [];
+function isSameSide(pt1,pt2,pt3,m,b){
+if(m === Number.NEGATIVE_INFINITY || m === Number.POSITIVE_INFINITY){
+	if((pt1.x < pt3.x) && (pt2.x < pt3.x))
+		return true;
+	else if((pt1.x > pt3.x) && (pt2.x > pt3.x))
+		return true;
+}
+else {	
+	if(pt1.y < ((m*pt1.x) + b)){
+		if(pt2.y < ((m*pt2.x) + b))
+			return true;
+	}
+	else if(pt1.y > ((m*pt1.x) + b)){
+		if(pt2.y > ((m*pt2.x) + b))
+			return true;
+	}
+}
+return false;
 
-	if(pointn > 3){
-		for (i = 0; i < pointn; i++) {
-	    	ip1 = (i + 1) % pointn;
-	    	ip2 = (i + 2) % pointn;
-	    	if (dpd_isdiagonal(i, ip2, pointp, pointn)) {
-				I[0] = pointi[i];
-				I[1] = pointi[ip1];
-				I[2] = pointi[ip2];
-				elements.push(I);
-				j = 0;
-				for (i = 0; i < pointn; i++)
-		    		if (i != ip1){
-						pointi[j] = pointi[i];
-						pointp[j++] = pointp[i];
-					}
-				element = triangulate(pointp, pointn - 1, pointi);
-				for(var j=0;j<element.length;j++){
-					elements.push(element[j]);
-				}
-			return elements;
-	    	}
+}
+
+
+function angleType(polyList,indx){
+var next,prev,current,item,nextItem;
+var cx,cy,be,br,me,mr,minx,maxx,miny,maxy,count,iteration;
+var intersection = new point_2d();
+var testRay = {point:new point_2d()};
+var isEar;
+
+//vertex being processed - Vi
+current = polyList[indx];
+//line segment connecting midpoint of edge Vi-Vn and midpoint of segment Vp-Vn
+count = 0;
+//count the number of times testRay intersects a polygon edge
+//an even number of intersections means points in the vertex's acute angle 
+//region are external to the polygon and the vertex angle is reflex
+for(var i=0;i<polyList.length;i++){
+	//diagnal length is 0
+	if(isNaN(current.diag.edge.m))
+		break;
+		
+	//skip the vertex being processed
+	if(i === indx)
+		continue;
+
+	//skip the vertex if it has been removed from the linked list
+	if(polyList[i].next === -1)
+		continue;
+	testRay = getLineParams(current.diag.edge,current.edge);
+	br = testRay.b;
+	mr = testRay.m;
+
+	item = polyList[i];
+	nextItem = polyList[item.next];
+
+	//get the coordinates of the edge
+	if(item.point.x === nextItem.point.x){
+		if(item.point.y === nextItem.point.y){
+			alert("Could not determine vertex angle type for singular point");
+			continue;
 		}
-	} else {
-		I[0] = pointi[0];
-		I[1] = pointi[1];
-		I[2] = pointi[2];
-		elements.push(I);
-    }
-	return elements;
-}
-
-function dpd_isdiagonal(i, ip2, pointp, pointn){
-    var ip1, im1, j, jp1, res;
-
-    /* neighborhood test */
-    ip1 = (i + 1) % pointn;
-    im1 = (i + pointn - 1) % pointn;
-
-   
-    /* If P[i] is a convex vertex [ i+1 left of (i-1,i) ]. */
-    if (dpd_ccw(pointp[im1], pointp[i], pointp[ip1]) === ISCCW){
-	res = (dpd_ccw(pointp[i], pointp[ip2], pointp[im1]) === ISCCW) && 
-		(dpd_ccw(pointp[ip2], pointp[i], pointp[ip1]) === ISCCW);
+		miny = Math.min(item.point.y,nextItem.point.y);
+		if(miny === item.point.y){
+			minx = item.point.x;
+			maxy = nextItem.point.y;
+			maxx = nextItem.point.x;
+		}
+		else {
+			minx = nextItem.point.x;
+			maxy = item.point.y;
+			maxx = item.point.x;
+		}
+	}
+	else {
+		minx = Math.min(item.point.x,nextItem.point.x);
+		if(minx === item.point.x){
+			miny = item.point.y;
+			maxx = nextItem.point.x;
+			maxy = nextItem.point.y;
+		}
+		else {
+			miny = nextItem.point.y;
+			maxx = item.point.x;
+			maxy = item.point.y;
+		}
 	}
 
-    /* Assume (i - 1, i, i + 1) not collinear. */
-    else {
-	res = (dpd_ccw(pointp[i], pointp[ip2], pointp[ip1]) === ISCW);
+	//get the line parameters for the edge between vertex(i) and vertex(i+1)
+	be = item.edge.b;
+	me = item.edge.m;
+
+	//get the coordinates of the point where the test ray intersects the edge
+	if(me === mr){
+		//ray is parallel to the edge so they don´t intersect
+		continue;
 	}
-    if (!res) {
-	return 0;
-    }
+	if(isNaN(be)){
+		intersection.x = minx;
+		intersection.y = (mr * minx) + br;
+	}
+	else if(isNaN(br)){
+		intersection.x = current.edge.point.x;
+		intersection.y = (me * intersection.x) + be;
+	}
+	else {
+		intersection.x = (be - br)/(mr - me);
+		intersection.y = (me * intersection.x) + be;
+	}
 
-    /* check against all other edges */
-    for (j = 0; j < pointn; j++) {
-	jp1 = (j + 1) % pointn;
-	if (!((j == i) || (jp1 == i) || (j == ip2) || (jp1 == ip2)))
-	    if (dpd_intersects
-		(pointp[i], pointp[ip2], pointp[j], pointp[jp1])) {
-		return 0;
-	    }
-    }
-    return 1;
+	iteration = 0;
+	//it is not permitted for the intersection point to be on a vertex
+	while(
+			((intersection.x === minx && intersection.y === miny) || 
+			(intersection.x === maxx && intersection.y === miny)) &&
+			(iteration < 5)){
+		iteration++;
+		//change the angle of testRay slightly to get a new intersection with the edge
+		testRay = getLineParams(current.diag.edge,current.edge,iteration);
+		br = testRay.b;
+		mr = testRay.m;
+		if(me === mr){
+			continue;
+		}
+		if(isNaN(be)){
+			intersection.x = minx;
+			intersection.y = (mr * minx) + br;
+		}
+		else if(isNaN(br)){
+			intersection.x = current.edge.point.x;
+			intersection.y = (me * intersection.x) + be;
+		}
+		else {
+			intersection.x = (be - br)/(mr - me);
+			intersection.y = (me * intersection.x) + be;
+		}
+	}
+	if(iteration === 5){
+		alert("Could not determine vertex angle type");
+		continue;
+	}
+
+	//if the ray intersects the vertex diagnal then increment the counter
+	if((intersection.x > minx && intersection.x < maxx) || 
+		(intersection.y > miny && intersection.y < maxy)){
+		if( isSameSide(intersection,current.diag.edge.point,
+			current.edge.point,current.edge.m,current.edge.b))
+		count++;
+	}
 }
 
 
-function dpd_intersects(pa, pb, pc, pd)
-{
-    var ccw1, ccw2, ccw3, ccw4;
+//if count is odd then the vertex angle is concave
+if(count%2){
+	polyList[indx].isReflex = false;
+	isEar = true;
+	next = polyList[current.next];
+	prev = polyList[current.prev];
+	//determine if this vertex is an ear tip
+	for(var i=0;i<polyList.length;i++){
 
-    if (dpd_ccw(pa, pb, pc) === ISON || dpd_ccw(pa, pb, pd) === ISON ||
-	dpd_ccw(pc, pd, pa) === ISON || dpd_ccw(pc, pd, pb) === ISON) {
-	if (dpd_between(pa, pb, pc) || dpd_between(pa, pb, pd) ||
-	    dpd_between(pc, pd, pa) || dpd_between(pc, pd, pb))
-	    return 1;
-    } else {
-	ccw1 = (dpd_ccw(pa, pb, pc) === ISCCW) ? 1 : 0;
-	ccw2 = (dpd_ccw(pa, pb, pd) === ISCCW) ? 1 : 0;
-	ccw3 = (dpd_ccw(pc, pd, pa) === ISCCW) ? 1 : 0;
-	ccw4 = (dpd_ccw(pc, pd, pb) === ISCCW) ? 1 : 0;
-	return (ccw1 ^ ccw2) && (ccw3 ^ ccw4);
-    }
-    return 0;
+		//exclude vertices that cannot be in the interior of the acute angle
+		if(polyList[i] === current || polyList[i] === next || polyList[i] === prev)
+		continue;
+
+		//if any vertex falls within the triangle then it is not an ear
+		if(isSameSide(current.point,polyList[i].point,next.point,current.diag.edge.m,current.diag.edge.b) &&
+			isSameSide(next.point,polyList[i].point,prev.point,prev.edge.m,prev.edge.b) &&
+			isSameSide(prev.point,polyList[i].point,current.point,current.edge.m,current.edge.b)){
+				isEar = false;
+				break;
+			}	
+	}
+	polyList[indx].isEar = isEar;
+}
+else {
+	polyList[indx].isReflex = true;
+	polyList[indx].isEar = false;
 }
 
 
-function dpd_between(pa, pb, pc)
-{
-    var pba = new point_2d(), pca = new point_2d();
-
-    pba.x = pb.x - pa.x, pba.y = pb.y - pa.y;
-    pca.x = pc.x - pa.x, pca.y = pc.y - pa.y;
-    if (dpd_ccw(pa, pb, pc) !== ISON)
-	return 0;
-    return (pca.x * pba.x + pca.y * pba.y >= 0) &&
-	((pca.x * pca.x + pca.y * pca.y) <= (pba.x * pba.x + pba.y * pba.y));
 }
 
 
+function getLineParams(vertx1,vertx2,shift){
+var edge = new Object(),mid = new point_2d();
+var deltaY,deltaX,cx,cy,rayStart,rayEnd;
+var m,b,displacement = .000001;
 
-function to_opengl(x){ return ((2*x) - 1.);}
+rayStart = new point_2d(vertx1.point.x,vertx1.point.y);
+if(typeof shift == "undefined")
+	shift = 0;
+
+//change position of the point where the ray ends
+if(shift > 0){
+	m = vertx2.m;
+	b = vertx2.b;
+	cx = vertx2.point.x - (shift * displacement);
+	cy = (m * cx) + b;
+	rayEnd = new point_2d(cx,cy);
+}
+else
+	rayEnd = new point_2d(vertx2.point.x,vertx2.point.y);
+
+deltaX = rayEnd.x - rayStart.x;
+deltaY = rayEnd.y - rayStart.y;
+cx = rayStart.x;
+cy = rayStart.y;
+
+if(deltaX === 0.){
+	if(deltaY === 0.){ //single point
+		edge.m = Number.NaN;
+		edge.b = Number.NaN;
+	}
+	else if(deltaY < 0.){ //verticle line
+		edge.m = Number.NEGATIVE_INFINITY;
+		edge.b = Number.NaN;
+	}
+	else { //verticle line
+		edge.m = Number.POSITIVE_INFINITY;
+		edge.b = Number.NaN;
+	}
+	mid.x = cx;
+	mid.y = cy + (deltaY/2.);
+}
+else if(deltaY === 0.){ //horizontal line
+	edge.m = 0.;
+	edge.b = cy;
+	mid.x = cx + (deltaX/2.);
+	mid.y = cy
+}
+else { //arbitrary slope
+	edge.m = deltaY/deltaX;
+	edge.b = cy -(edge.m * cx);
+	mid.x = cx + (deltaX/2.);
+	mid.y = cy + (deltaY/2.)
+}
+edge.point = mid;
+
+return edge;
+}
+
+/*
+ *
+ *	get the line parameters (slope m and y intercept b)
+ *	for each edge and the line that closes the triange
+ *	defined by a vertex and its previous and next vertices
+ *
+ */
+function getListParams(polyList,indx){
+
+var prev,next,current,prevElmt,nextElmt;
+var point = {};
+var edge = {point:{}};
+var diag = {point:{}};
+	current = polyList[indx];
+	prev = polyList[indx].prev;
+	next = polyList[indx].next;
+	prevElmt = polyList[prev];
+	nextElmt = polyList[next];
+
+	//get edge slope, y-intersect and midpoint coordinates
+	edge = getLineParams(current,nextElmt);
+	current.edge = {};
+	current.edge.m = edge.m;
+	current.edge.b = edge.b;
+	current.edge.point = new point_2d();
+	current.edge.point.x = edge.point.x;
+	current.edge.point.y = edge.point.y;
+
+	//get diagnal slope, y-intersect and midpoint coordinates
+	current.diag = {};
+	current.diag.edge = getLineParams(prevElmt,nextElmt);;
+}
+
+function triangulate(poly){
+var polyList = new Array();
+var reflex = new Array();
+var concave = new Array();
+var earTip = new Array();
+var currentEar,tPrev,tNext,triangle,prev,next,aType,vertxCount;	
+
+	//create linked list
+	for(var i=0;i<poly.length;i++){
+		var polyListItem = {};
+		polyListItem.point = new point_2d(poly[i].x,poly[i].y);
+		if(i === 0)
+			polyListItem.prev = poly.length - 1;
+		else
+			polyListItem.prev = i-1;
+
+		if(i === (poly.length -1))
+			polyListItem.next = 0;
+		else
+			polyListItem.next = i + 1;
+
+		polyList.push(polyListItem);
+	}
+
+
+	//assign vertex edges and diagnals
+	for(var i=0;i<polyList.length;i++)
+		getListParams(polyList,i);
+
+	for(var i=0;i<polyList.length;i++){
+		angleType(polyList,i);
+		if(polyList[i].isReflex){
+			addElement(reflex,i);
+		}
+		else {
+			addElement(concave,i);
+			if(polyList[i].isEar){
+				element = new Object;
+				addElement(earTip,i);
+			}
+		}
+	}
+	//the polygon, reflex, concave and ear tip structures are initialize at this point
+
+	vertxCount = polyList.length;
+	while(vertxCount >= 3){
+		for(var i=0;i<earTip.length;i++)
+			if(earTip[i].next >= 0)
+				break;
+		if(i === earTip.length)
+				break;
+		currentEar = earTip[i];
+		tPrev = polyList[currentEar.val].prev;
+		tNext = polyList[currentEar.val].next;
+		triangle = [tPrev,currentEar.val,tNext];
+		triangles.push(triangle);
+		removeElement(earTip,currentEar.val);
+		removeElement(concave,currentEar.val);
+		hidePolyListElement(polyList,currentEar.val);
+		getListParams(polyList,tPrev);
+		aType = angleType(polyList,tPrev);
+		if(polyList[tPrev].isReflex){
+			if(!isElementInList(reflex,tPrev))
+				addElement(reflex,tPrev);
+			if(isElementInList(concave,tPrev))
+				removeElement(concave,tPrev);
+			if(isElementInList(earTip,tPrev))
+				removeElement(earTip,tPrev);
+		}
+		else {
+			if(!isElementInList(concave,tPrev))
+				addElement(concave,tPrev);
+			if(isElementInList(reflex,tPrev))
+				removeElement(reflex,tPrev);
+			if(polyList[tPrev].isEar){
+				if(!isElementInList(earTip,tPrev))
+					addElement(earTip,tPrev);
+			}
+		}
+		getListParams(polyList,tNext);
+		aType = angleType(polyList,tNext);
+		if(polyList[tNext].isReflex){
+			if(!isElementInList(reflex,tNext))
+				addElement(reflex,tNext);
+			if(isElementInList(concave,tNext))
+				removeElement(concave,tNext);
+			if(isElementInList(earTip,tNext))
+				removeElement(earTip,tNext);
+		}
+		else {
+			if(!isElementInList(concave,tNext))
+				addElement(concave,tNext);
+			if(isElementInList(reflex,tNext))
+				removeElement(reflex,tNext);
+			if(polyList[tNext].isEar){
+				if(!isElementInList(earTip,tNext))
+					addElement(earTip,tNext);
+			}
+		}
+		vertxCount--;
+	}
+	return triangles;
+}
 
 if (! _.isUndefined(poly)){
 
-
+	var triangles = [];
     var verts = [];
     var elements = [];
-	var polygon = [],pnt;
-	for(var i=0;i<poly.length;i++){
-		pnt = new point_2d(poly[i].x,poly[i].y);
-		polygon.push(pnt);
-	}
+
 	if (_.isUndefined(style))
 		style = "line_loop";
-
-	var indx = [];
 
 	if(style === "triangles" || style === "triangles_loop" || style === "triangles_strip"){
 		// get an array of arrays containing the triangulation of the polygon
 		// every element of indx represents an array of three indices of the polygon
 		// the points of polygon corresponding to the indices define a triangle
-		indx = Ptriangulate(polygon);
+		triangles = triangulate(poly);
 
 		// convert the array of triangle index arrays to a single array of indices
-		for(var i=0 ;i<indx.length;i++){
+		for(var i=0 ;i<triangles.length;i++){
 			for(var j=0;j<3;j++){
-				elements.push(indx[i][j]);
+				elements.push(triangles[i][j]);
 			}
 		}
 	}
 	else {
-		for(var i=0;i<polygon.length;i++){
+		for(var i=0;i<poly.length;i++){
 			elements.push(i);
 		}
 	}
 	// extract the x and y coordinates of the polygon
-	for(var i=0;i<polygon.length;i++){
-		verts.push(polygon[i].x);
-		verts.push(polygon[i].y);
+	for(var i=0;i<poly.length;i++){
+		verts.push(poly[i].x);
+		verts.push(poly[i].y);
 		
 	}
 	var uv = Shade(Facet.attribute_buffer({vertex_array:verts, item_size:2}));
@@ -238,3 +518,4 @@ if (! _.isUndefined(poly)){
 } else
 throw "poly is a required parameter";
 };
+
