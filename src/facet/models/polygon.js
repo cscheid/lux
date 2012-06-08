@@ -1,20 +1,24 @@
 Facet.Models.polygon = function(poly,style,vertexColor) {
 
+var minDist = .0000000000001;
+
 function point_2d(x, y) {
 	this.x = (typeof x == "undefined") ? 0 : x;
 	this.y = (typeof y == "undefined") ? 0 : y;
 }
 
 function hidePolyListElement(polyList,indx){
-	polyList[polyList[indx].prev].next = polyList[indx].next;
-	polyList[polyList[indx].next].prev = polyList[indx].prev;
-	polyList[indx].next = -1;
-	polyList[indx].prev = -1;
+
+polyList[polyList[indx].prev].next = polyList[indx].next;
+polyList[polyList[indx].next].prev = polyList[indx].prev;
+polyList[indx].next = -1;
+polyList[indx].prev = -1;
 }
 
 
 //adjust linked list pointers and remove element from array
 function hideElement(list,val){
+
 for(var i=0;i<list.length;i++){
 
 	if((list[i].val === val) && (list[i].next >= 0)){
@@ -38,16 +42,17 @@ if(indx >= 0){
 }
 
 function addElement(list,val){
+var i;
 		element = new Object();
 		if(list.length === 0){
 			element.prev = 0;
 			element.next = 0;
 		}
 		else {
-			for(var i=0;i<list.length;i++)
+			for(i=list.length - 1;i>=0;i--)
 				if(list[i].next >= 0)
 					break;
-			if(i === list.length){
+			if(i === -1){
 				element.prev = i;
 				element.next = i;
 			}
@@ -76,165 +81,120 @@ for(i=0;i<list.length;i++){
 return false;
 }
 
+
 /*
-  pt1 is the intersection of a vertext´s test ray and a vertex edge
-  pt2 is a point on a vertext´s diagnal
-  pt3 is a point on the line defined by m and b
-  determine if the point of intersection is on the same side of the 
-  reference line as the diagnal
+  pt1 is the first point for comparison
+  pt2 is the second point for comparison
+  pt3 is a point on the line used for comparison
+  m and b are the parameters of the line used for comparison
+  
+  determine if the two points are on the same side of the line
 */
 
 function isSameSide(pt1,pt2,pt3,m,b){
-if(m === Number.NEGATIVE_INFINITY || m === Number.POSITIVE_INFINITY){
+if(!isFinite(m)){
 	if((pt1.x < pt3.x) && (pt2.x < pt3.x))
 		return true;
 	else if((pt1.x > pt3.x) && (pt2.x > pt3.x))
 		return true;
 }
 else {	
-	if(pt1.y < ((m*pt1.x) + b)){
-		if(pt2.y < ((m*pt2.x) + b))
+	if((pt1.y < ((m*pt1.x) + b)) && (pt2.y < ((m*pt2.x) + b)))
 			return true;
-	}
-	else if(pt1.y > ((m*pt1.x) + b)){
-		if(pt2.y > ((m*pt2.x) + b))
+	else if((pt1.y > ((m*pt1.x) + b)) && (pt2.y > ((m*pt2.x) + b)))
 			return true;
-	}
 }
 return false;
 
 }
 
 
-function angleType(polyList,indx){
-var next,prev,current,item,nextItem;
-var cx,cy,be,br,me,mr,minx,maxx,miny,maxy,count,iteration;
-var intersection = new point_2d();
-var testRay = {point:new point_2d()};
-var isEar;
 
-//vertex being processed - Vi
-current = polyList[indx];
-//line segment connecting midpoint of edge Vi-Vn and midpoint of segment Vp-Vn
-count = 0;
-//count the number of times testRay intersects a polygon edge
-//an even number of intersections means points in the vertex's acute angle 
-//region are external to the polygon and the vertex angle is reflex
-for(var i=0;i<polyList.length;i++){
-	//diagnal length is 0
-	if(isNaN(current.diag.edge.m))
+
+function insidePolygon(polyList, indx){
+var counter = 0;
+var i,j,xinters,p1,p2,pt,numpts,br,mr,current,diff;
+var delta = minDist,deltaX,deltaY;
+numpts = polyList.length;
+
+//check that the polygon contains points
+if(numpts === 0)
+	return -1;
+
+//check that the linked list contains points
+for(var j=0;j<numpts;j++)
+	if(polyList[j].next > 0)
 		break;
-		
-	//skip the vertex being processed
-	if(i === indx)
+if(j === numpts)
+	return -1;
+
+//check that the vertex being examined is in the linked list
+if(polyList[indx].next < 0)
+	return -1;
+
+current = polyList[indx];
+
+//check that the vertex is not colinear with it? neighbors
+if(current.point.y === polyList[current.next].point.y &&
+	current.point.y === polyList[current.prev].point.y)
+	return -1;
+
+testRay = getLineParams(current,current.diag.edge);
+br = testRay.b;
+mr = testRay.m;
+pt = new point_2d();
+deltaX = 0.;
+deltaY = 0.;
+if(current.point.x > current.diag.edge.point.x )
+	deltaX = -delta;
+else if(current.point.x < current.diag.edge.point.x )
+	deltaX = delta;
+else {
+	if(current.point.y > current.diag.edge.point.y)
+		deltaY = -delta;
+	else
+		deltaY = delta;
+}
+
+pt.x = current.point.x + deltaX;
+if(isFinite(mr)){
+	pt.y = (mr * pt.x) + br + deltaY;
+}
+else 
+	pt.y = current.point.y + deltaY;	
+	
+p1 = polyList[j].point;
+for(i=1;i<=numpts;i++){
+	if(polyList[i%numpts].next < 0)
 		continue;
+	p2 = polyList[i%numpts].point;
+		if(pt.y > Math.min(p1.y,p2.y)){
+			if(pt.y <= Math.max(p1.y,p2.y)){
+				if(pt.x <= Math.max(p1.x,p2.x)){
+					if(p1.y != p2.y){
+						xinters = (pt.y-p1.y)*(p2.x-p1.x)/(p2.y-p1.y)+p1.x;
+            			if (p1.x == p2.x || pt.x <= xinters)
+              				counter++;
+          			}
+        		}
+      		}
+    	}
+  	p1 = p2;
+  }
 
-	//skip the vertex if it has been removed from the linked list
-	if(polyList[i].next === -1)
-		continue;
-	testRay = getLineParams(current.diag.edge,current.edge);
-	br = testRay.b;
-	mr = testRay.m;
-
-	item = polyList[i];
-	nextItem = polyList[item.next];
-
-	//get the coordinates of the edge
-	if(item.point.x === nextItem.point.x){
-		if(item.point.y === nextItem.point.y){
-			alert("Could not determine vertex angle type for singular point");
-			continue;
-		}
-		miny = Math.min(item.point.y,nextItem.point.y);
-		if(miny === item.point.y){
-			minx = item.point.x;
-			maxy = nextItem.point.y;
-			maxx = nextItem.point.x;
-		}
-		else {
-			minx = nextItem.point.x;
-			maxy = item.point.y;
-			maxx = item.point.x;
-		}
-	}
-	else {
-		minx = Math.min(item.point.x,nextItem.point.x);
-		if(minx === item.point.x){
-			miny = item.point.y;
-			maxx = nextItem.point.x;
-			maxy = nextItem.point.y;
-		}
-		else {
-			miny = nextItem.point.y;
-			maxx = item.point.x;
-			maxy = item.point.y;
-		}
-	}
-
-	//get the line parameters for the edge between vertex(i) and vertex(i+1)
-	be = item.edge.b;
-	me = item.edge.m;
-
-	//get the coordinates of the point where the test ray intersects the edge
-	if(me === mr){
-		//ray is parallel to the edge so they don´t intersect
-		continue;
-	}
-	if(isNaN(be)){
-		intersection.x = minx;
-		intersection.y = (mr * minx) + br;
-	}
-	else if(isNaN(br)){
-		intersection.x = current.edge.point.x;
-		intersection.y = (me * intersection.x) + be;
-	}
-	else {
-		intersection.x = (be - br)/(mr - me);
-		intersection.y = (me * intersection.x) + be;
-	}
-
-	iteration = 0;
-	//it is not permitted for the intersection point to be on a vertex
-	while(
-			((intersection.x === minx && intersection.y === miny) || 
-			(intersection.x === maxx && intersection.y === miny)) &&
-			(iteration < 5)){
-		iteration++;
-		//change the angle of testRay slightly to get a new intersection with the edge
-		testRay = getLineParams(current.diag.edge,current.edge,iteration);
-		br = testRay.b;
-		mr = testRay.m;
-		if(me === mr){
-			continue;
-		}
-		if(isNaN(be)){
-			intersection.x = minx;
-			intersection.y = (mr * minx) + br;
-		}
-		else if(isNaN(br)){
-			intersection.x = current.edge.point.x;
-			intersection.y = (me * intersection.x) + be;
-		}
-		else {
-			intersection.x = (be - br)/(mr - me);
-			intersection.y = (me * intersection.x) + be;
-		}
-	}
-	if(iteration === 5){
-		alert("Could not determine vertex angle type");
-		continue;
-	}
-
-	//if the ray intersects the vertex diagnal then increment the counter
-	if((intersection.x > minx && intersection.x < maxx) || 
-		(intersection.y > miny && intersection.y < maxy)){
-		if( isSameSide(intersection,current.diag.edge.point,
-			current.edge.point,current.edge.m,current.edge.b))
-		count++;
-	}
+return counter;
 }
 
 
+function angleType(polyList,indx){
+var next,prev,current;
+var count;
+var isEar;
+
+
+current = polyList[indx];
+
+count = insidePolygon(polyList,indx);
 //if count is odd then the vertex angle is concave
 if(count%2){
 	polyList[indx].isReflex = false;
@@ -263,9 +223,7 @@ else {
 	polyList[indx].isEar = false;
 }
 
-
 }
-
 
 function getLineParams(vertx1,vertx2,shift){
 var edge = new Object(),mid = new point_2d();
@@ -363,103 +321,105 @@ var polyList = new Array();
 var reflex = new Array();
 var concave = new Array();
 var earTip = new Array();
+var triangles = new Array();
 var currentEar,tPrev,tNext,triangle,prev,next,aType,vertxCount;	
 
-	//create linked list
-	for(var i=0;i<poly.length;i++){
-		var polyListItem = {};
-		polyListItem.point = new point_2d(poly[i].x,poly[i].y);
-		if(i === 0)
-			polyListItem.prev = poly.length - 1;
-		else
-			polyListItem.prev = i-1;
+//create linked list
+for(var i=0;i<poly.length;i++){
+	var polyListItem = {};
+	polyListItem.point = new point_2d(poly[i].x,poly[i].y);
+	if(i === 0)
+		polyListItem.prev = poly.length - 1;
+	else
+		polyListItem.prev = i-1;
 
-		if(i === (poly.length -1))
-			polyListItem.next = 0;
-		else
-			polyListItem.next = i + 1;
+	if(i === (poly.length -1))
+		polyListItem.next = 0;
+	else
+		polyListItem.next = i + 1;
 
-		polyList.push(polyListItem);
+	polyList.push(polyListItem);
+}
+
+
+//assign vertex edges and diagnals
+for(var i=0;i<polyList.length;i++)
+	getListParams(polyList,i);
+
+for(var i=0;i<polyList.length;i++){
+	angleType(polyList,i);
+	if(polyList[i].isReflex){
+		addElement(reflex,i);
 	}
-
-
-	//assign vertex edges and diagnals
-	for(var i=0;i<polyList.length;i++)
-		getListParams(polyList,i);
-
-	for(var i=0;i<polyList.length;i++){
-		angleType(polyList,i);
-		if(polyList[i].isReflex){
-			addElement(reflex,i);
-		}
-		else {
-			addElement(concave,i);
-			if(polyList[i].isEar){
-				element = new Object;
-				addElement(earTip,i);
-			}
+	else {
+		addElement(concave,i);
+		if(polyList[i].isEar){
+			element = new Object;
+			addElement(earTip,i);
 		}
 	}
-	//the polygon, reflex, concave and ear tip structures are initialize at this point
+}
+//the polygon, reflex, concave and ear tip structures are initialize at this point
 
-	vertxCount = polyList.length;
-	while(vertxCount >= 3){
-		for(var i=0;i<earTip.length;i++)
-			if(earTip[i].next >= 0)
-				break;
-		if(i === earTip.length)
-				break;
-		currentEar = earTip[i];
-		tPrev = polyList[currentEar.val].prev;
-		tNext = polyList[currentEar.val].next;
-		triangle = [tPrev,currentEar.val,tNext];
-		triangles.push(triangle);
-		removeElement(earTip,currentEar.val);
-		removeElement(concave,currentEar.val);
-		hidePolyListElement(polyList,currentEar.val);
-		getListParams(polyList,tPrev);
-		aType = angleType(polyList,tPrev);
-		if(polyList[tPrev].isReflex){
-			if(!isElementInList(reflex,tPrev))
-				addElement(reflex,tPrev);
-			if(isElementInList(concave,tPrev))
-				removeElement(concave,tPrev);
-			if(isElementInList(earTip,tPrev))
-				removeElement(earTip,tPrev);
-		}
-		else {
-			if(!isElementInList(concave,tPrev))
-				addElement(concave,tPrev);
-			if(isElementInList(reflex,tPrev))
-				removeElement(reflex,tPrev);
-			if(polyList[tPrev].isEar){
-				if(!isElementInList(earTip,tPrev))
-					addElement(earTip,tPrev);
-			}
-		}
-		getListParams(polyList,tNext);
-		aType = angleType(polyList,tNext);
-		if(polyList[tNext].isReflex){
-			if(!isElementInList(reflex,tNext))
-				addElement(reflex,tNext);
-			if(isElementInList(concave,tNext))
-				removeElement(concave,tNext);
-			if(isElementInList(earTip,tNext))
-				removeElement(earTip,tNext);
-		}
-		else {
-			if(!isElementInList(concave,tNext))
-				addElement(concave,tNext);
-			if(isElementInList(reflex,tNext))
-				removeElement(reflex,tNext);
-			if(polyList[tNext].isEar){
-				if(!isElementInList(earTip,tNext))
-					addElement(earTip,tNext);
-			}
-		}
-		vertxCount--;
+vertxCount = polyList.length;
+while(vertxCount >= 3){
+	for(var i=0;i<earTip.length;i++)
+		if(earTip[i].next >= 0)
+			break;
+	if(i === earTip.length)
+		break;
+	currentEar = earTip[i];
+	tPrev = polyList[currentEar.val].prev;
+	tNext = polyList[currentEar.val].next;
+	triangle = [tPrev,currentEar.val,tNext];
+	triangles.push(triangle);
+	removeElement(earTip,currentEar.val);
+	removeElement(concave,currentEar.val);
+	hidePolyListElement(polyList,currentEar.val);
+	getListParams(polyList,tPrev);
+	aType = angleType(polyList,tPrev);
+	if(polyList[tPrev].isReflex){
+		if(!isElementInList(reflex,tPrev))
+			addElement(reflex,tPrev);
+		if(isElementInList(concave,tPrev))
+			removeElement(concave,tPrev);
+		if(isElementInList(earTip,tPrev))
+			removeElement(earTip,tPrev);
 	}
-	return triangles;
+	else {
+		if(!isElementInList(concave,tPrev))
+			addElement(concave,tPrev);
+		if(isElementInList(reflex,tPrev))
+			removeElement(reflex,tPrev);
+		if(polyList[tPrev].isEar){
+			if(!isElementInList(earTip,tPrev))
+				addElement(earTip,tPrev);
+		}
+	}
+	getListParams(polyList,tNext);
+	aType = angleType(polyList,tNext);
+	if(polyList[tNext].isReflex){
+		if(!isElementInList(reflex,tNext))
+			addElement(reflex,tNext);
+		if(isElementInList(concave,tNext))
+			removeElement(concave,tNext);
+		if(isElementInList(earTip,tNext))
+			removeElement(earTip,tNext);
+	}
+	else {
+		if(!isElementInList(concave,tNext))
+			addElement(concave,tNext);
+		if(isElementInList(reflex,tNext))
+			removeElement(reflex,tNext);
+		if(polyList[tNext].isEar){
+			if(!isElementInList(earTip,tNext))
+				addElement(earTip,tNext);
+		}
+	}
+	vertxCount--;
+}
+return triangles;
+
 }
 
 if (! _.isUndefined(poly)){
