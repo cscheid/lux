@@ -22,12 +22,11 @@ Facet.Marks.polygon = function(opts)
        position.push(to_opengl(opts.y[i]));
 	}
 
-	return polygon_model = Facet.Models.polygon({
-		position: position,
-		elements: opts.elements,
-		style: style,
-		fill_color: opts.fill_color,
-		mode: opts.mode
-	});
+	return polygon_model = Facet.Models.polygon(
+		position,
+		opts.style,
+		opts.fill_color,
+		opts.mode
+	);
 
 };

@@ -135,8 +135,10 @@ if(polyList[indx].next < 0)
 current = polyList[indx];
 
 //check that the vertex is not colinear with it? neighbors
-if(current.point.y === polyList[current.next].point.y &&
-	current.point.y === polyList[current.prev].point.y)
+testRay = getLineParams(current,polyList[current.next]);
+br = testRay.b;
+mr = testRay.m;
+if(polyList[current.prev].point.y === (mr * polyList[current.prev].point.x) + br)
 	return -1;
 
 testRay = getLineParams(current,current.diag.edge);
@@ -163,11 +165,10 @@ if(isFinite(mr)){
 else 
 	pt.y = current.point.y + deltaY;	
 	
-p1 = polyList[j].point;
-for(i=1;i<=numpts;i++){
-	if(polyList[i%numpts].next < 0)
-		continue;
-	p2 = polyList[i%numpts].point;
+var first = j;
+for(i=0;i<numpts;i++){
+	p1 = polyList[j].point;
+	p2 = polyList[polyList[j].next].point;
 		if(pt.y > Math.min(p1.y,p2.y)){
 			if(pt.y <= Math.max(p1.y,p2.y)){
 				if(pt.x <= Math.max(p1.x,p2.x)){
@@ -179,7 +180,9 @@ for(i=1;i<=numpts;i++){
         		}
       		}
     	}
-  	p1 = p2;
+	j = polyList[j].next;
+	if(j === first)
+		break;
   }
 
 return counter;
@@ -195,6 +198,15 @@ var isEar;
 current = polyList[indx];
 
 count = insidePolygon(polyList,indx);
+
+if(count < 0){
+	polyList[indx].isReflex = false;
+	polyList[indx].isEar = false;
+	return;
+}
+
+
+
 //if count is odd then the vertex angle is concave
 if(count%2){
 	polyList[indx].isReflex = false;
@@ -316,7 +328,7 @@ var diag = {point:{}};
 	current.diag.edge = getLineParams(prevElmt,nextElmt);;
 }
 
-function triangulate(poly){
+function triangulate(polygon){
 var polyList = new Array();
 var reflex = new Array();
 var concave = new Array();
@@ -325,15 +337,15 @@ var triangles = new Array();
 var currentEar,tPrev,tNext,triangle,prev,next,aType,vertxCount;	
 
 //create linked list
-for(var i=0;i<poly.length;i++){
+for(var i=0;i<polygon.length;i++){
 	var polyListItem = {};
-	polyListItem.point = new point_2d(poly[i].x,poly[i].y);
+	polyListItem.point = polygon[i];
 	if(i === 0)
-		polyListItem.prev = poly.length - 1;
+		polyListItem.prev = polygon.length - 1;
 	else
 		polyListItem.prev = i-1;
 
-	if(i === (poly.length -1))
+	if(i === (polygon.length -1))
 		polyListItem.next = 0;
 	else
 		polyListItem.next = i + 1;
@@ -427,6 +439,10 @@ if (! _.isUndefined(poly)){
 	var triangles = [];
     var verts = [];
     var elements = [];
+	var polygon = [];
+
+	for(var i=0;i<poly.length;i+=2)
+		polygon.push(new point_2d(poly[i], poly[i+1]));
 
 	if (_.isUndefined(style))
 		style = "line_loop";
@@ -435,7 +451,7 @@ if (! _.isUndefined(poly)){
 		// get an array of arrays containing the triangulation of the polygon
 		// every element of indx represents an array of three indices of the polygon
 		// the points of polygon corresponding to the indices define a triangle
-		triangles = triangulate(poly);
+		triangles = triangulate(polygon);
 
 		// convert the array of triangle index arrays to a single array of indices
 		for(var i=0 ;i<triangles.length;i++){
@@ -445,14 +461,14 @@ if (! _.isUndefined(poly)){
 		}
 	}
 	else {
-		for(var i=0;i<poly.length;i++){
+		for(var i=0;i<polygon.length;i++){
 			elements.push(i);
 		}
 	}
 	// extract the x and y coordinates of the polygon
-	for(var i=0;i<poly.length;i++){
-		verts.push(poly[i].x);
-		verts.push(poly[i].y);
+	for(var i=0;i<polygon.length;i++){
+		verts.push(polygon[i].x);
+		verts.push(polygon[i].y);
 		
 	}
 	var uv = Shade(Facet.attribute_buffer({vertex_array:verts, item_size:2}));
