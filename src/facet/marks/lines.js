@@ -23,9 +23,9 @@ Facet.Marks.lines = function(opts)
                     opts.z(primitive_index, vertex_in_primitive));
     return Facet.bake({
         type: "lines",
-        elements: vertex_index,
-        mode: opts.mode
+        elements: vertex_index
     }, {
+        mode: opts.mode,
         position: position,
         color: opts.color(primitive_index, vertex_in_primitive)
     });
