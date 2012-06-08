@@ -1,40 +1,45 @@
 (function() {
 
-var previous_batch = {};
+var previous_batch_opts = {};
 
 Facet.unload_batch = function()
 {
     var ctx = Facet._globals.ctx;
-    if (previous_batch.attributes) {
-        for (var key in previous_batch.attributes) {
-            ctx.disableVertexAttribArray(previous_batch.program[key]);
+    if (previous_batch_opts.attributes) {
+        for (var key in previous_batch_opts.attributes) {
+            ctx.disableVertexAttribArray(previous_batch_opts.program[key]);
         }
-        _.each(previous_batch.program.uniforms, function (uniform) {
+        _.each(previous_batch_opts.program.uniforms, function (uniform) {
             delete uniform._facet_active_uniform;
         });
     }
-    previous_batch = {};
+    // FIXME setting line width belongs somewhere else, but I'm not quite sure where.
+    // resets line width
+    if (previous_batch_opts.line_width)
+        ctx.lineWidth(1.0);
 
     // reset the opengl capabilities which are determined by
     // Facet.DrawingMode.*
     ctx.disable(ctx.DEPTH_TEST);
     ctx.disable(ctx.BLEND);
     ctx.depthMask(true);
+
+    previous_batch_opts = {};
 };
 
-function draw_it(batch)
+function draw_it(batch_opts)
 {
     var ctx = Facet._globals.ctx;
-    if (batch.batch_id !== previous_batch.batch_id) {
-        var attributes = batch.attributes || {};
-        var uniforms = batch.uniforms || {};
-        var program = batch.program;
-        var primitives = batch.primitives;
+    if (batch_opts.batch_id !== previous_batch_opts.batch_id) {
+        var attributes = batch_opts.attributes || {};
+        var uniforms = batch_opts.uniforms || {};
+        var program = batch_opts.program;
+        var primitives = batch_opts.primitives;
         var key;
 
         Facet.unload_batch();
-        previous_batch = batch;
-        batch.set_caps();
+        previous_batch_opts = batch_opts;
+        batch_opts.set_caps();
 
         ctx.useProgram(program);
 
@@ -83,7 +88,7 @@ function draw_it(batch)
         });
     }
 
-    batch.draw_chunk();
+    batch_opts.draw_chunk();
 }
 
 var largest_batch_id = 1;
@@ -234,14 +239,24 @@ Facet.bake = function(model, appearance)
     // readers.
 
     function create_batch_opts(program, caps_name) {
-        return {
+        var result = {
             program: program,
             attributes: build_attribute_arrays_obj(program),
-            set_caps: ((appearance.mode && appearance.mode[caps_name]) ||
-                       Facet.DrawingMode.standard[caps_name]),
+            set_caps: function() {
+                var ctx = Facet._globals.ctx;
+                var mode_caps = ((appearance.mode && appearance.mode[caps_name]) ||
+                       Facet.DrawingMode.standard[caps_name]);
+                mode_caps();
+                if (this.line_width) {
+                    ctx.lineWidth(this.line_width);
+                }
+            },
             draw_chunk: draw_chunk,
             batch_id: largest_batch_id++
         };
+        if (appearance.line_width)
+            result.line_width = appearance.line_width;
+        return result;
     }
 
     var draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
