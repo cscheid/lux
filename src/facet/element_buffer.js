@@ -12,7 +12,7 @@ Facet.element_buffer = function(vertex_array)
     result.bind = function() {
         /* Javascript functions are quirky in that they can take unused arguments.
          So if a call passes an argument to result.bind, it won't fail; the argument
-         is simply dropped on the floor.
+         is simply dropped.
 
          This has the fortuitous consequence of making attribute
          buffers and element buffers share the same interface

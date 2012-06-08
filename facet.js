@@ -3111,12 +3111,36 @@ function facet_typeOf(value)
     }
     return s;
 }
-Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
+Facet.attribute_buffer = function(opts)
 {
     var ctx = Facet._globals.ctx;
-    if (normalized === undefined) {
-        normalized = false;
+    opts = _.defaults(opts, {
+        item_size: 3,
+        item_type: 'float',
+        usage: ctx.STATIC_DRAW,
+        normalized: false
+    });
+
+    var vertex_array = opts.vertex_array;
+    if (_.isUndefined(vertex_array)) {
+        throw "opts.vertex_array must be defined";
     }
+
+    var usage = opts.usage;
+    if ([ctx.STATIC_DRAW, ctx.DYNAMIC_DRAW, ctx.STREAM_DRAW].indexOf(usage) === -1) {
+        throw "opts.usage must be one of STATIC_DRAW, DYNAMIC_DRAW, STREAM_DRAW";
+    }
+
+    var itemSize = opts.item_size;
+    if ([1,2,3,4].indexOf(itemSize) === -1) {
+        throw "opts.item_size must be one of 1, 2, 3, or 4";
+    }
+
+    var normalized = opts.normalized;
+    if (facet_typeOf(normalized) !== "boolean") {
+        throw "opts.normalized must be boolean";
+    }
+
     var gl_enum_typed_array_map = {
         'float': [ctx.FLOAT, Float32Array],
         'short': [ctx.SHORT, Int16Array],
@@ -3124,25 +3148,38 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
         'byte': [ctx.BYTE, Int8Array],
         'ubyte': [ctx.UNSIGNED_BYTE, Uint8Array]
     };
+    var itemType = gl_enum_typed_array_map[opts.item_type];
+    if (_.isUndefined(itemType)) {
+        throw "opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'";
+    }
 
-    itemSize = itemSize || 3;
-    itemType = gl_enum_typed_array_map[itemType || 'float'];
-
-    var typedArray = new itemType[1](vertex_array);
     var result = ctx.createBuffer();
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, result);
-    ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
     result._shade_type = 'attribute_buffer';
-    result.array = typedArray;
     result.itemSize = itemSize;
-    result.numItems = vertex_array.length/itemSize;
-    result.bind = function(type) {
-        return function(attribute) {
-            ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-            ctx.vertexAttribPointer(attribute, this.itemSize, type, normalized, 0, 0);
-        };
-    }(itemType[0]);
+    result.usage = usage;
+    result.normalized = normalized;
+    result._webgl_type = itemType[0];
+    result._typed_array_ctor = itemType[1];
+
+    result.set = function(vertex_array) {
+        var ctx = Facet._globals.ctx;
+        var typedArray = new this._typed_array_ctor(vertex_array);
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+        ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+        result.array = typedArray;
+        result.numItems = vertex_array.length/itemSize;
+    };
+
+    result.set(vertex_array);
+
+    result.bind = function(attribute) {
+        var ctx = Facet._globals.ctx;
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+        ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, 0, 0);
+    };
+
     result.draw = function(primitive) {
+        var ctx = Facet._globals.ctx;
         ctx.drawArrays(primitive, 0, this.numItems);
     };
     result.bind_and_draw = function(attribute, primitive) {
@@ -3153,41 +3190,46 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
 };
 (function() {
 
-var previous_batch = {};
+var previous_batch_opts = {};
 
 Facet.unload_batch = function()
 {
     var ctx = Facet._globals.ctx;
-    if (previous_batch.attributes) {
-        for (var key in previous_batch.attributes) {
-            ctx.disableVertexAttribArray(previous_batch.program[key]);
+    if (previous_batch_opts.attributes) {
+        for (var key in previous_batch_opts.attributes) {
+            ctx.disableVertexAttribArray(previous_batch_opts.program[key]);
         }
-        _.each(previous_batch.program.uniforms, function (uniform) {
+        _.each(previous_batch_opts.program.uniforms, function (uniform) {
             delete uniform._facet_active_uniform;
         });
     }
-    previous_batch = {};
+    // FIXME setting line width belongs somewhere else, but I'm not quite sure where.
+    // resets line width
+    if (previous_batch_opts.line_width)
+        ctx.lineWidth(1.0);
 
     // reset the opengl capabilities which are determined by
     // Facet.DrawingMode.*
     ctx.disable(ctx.DEPTH_TEST);
     ctx.disable(ctx.BLEND);
     ctx.depthMask(true);
+
+    previous_batch_opts = {};
 };
 
-function draw_it(batch)
+function draw_it(batch_opts)
 {
     var ctx = Facet._globals.ctx;
-    if (batch.batch_id !== previous_batch.batch_id) {
-        var attributes = batch.attributes || {};
-        var uniforms = batch.uniforms || {};
-        var program = batch.program;
-        var primitives = batch.primitives;
+    if (batch_opts.batch_id !== previous_batch_opts.batch_id) {
+        var attributes = batch_opts.attributes || {};
+        var uniforms = batch_opts.uniforms || {};
+        var program = batch_opts.program;
+        var primitives = batch_opts.primitives;
         var key;
 
         Facet.unload_batch();
-        previous_batch = batch;
-        batch.set_caps();
+        previous_batch_opts = batch_opts;
+        batch_opts.set_caps();
 
         ctx.useProgram(program);
 
@@ -3236,7 +3278,7 @@ function draw_it(batch)
         });
     }
 
-    batch.draw_chunk();
+    batch_opts.draw_chunk();
 }
 
 var largest_batch_id = 1;
@@ -3387,14 +3429,24 @@ Facet.bake = function(model, appearance)
     // readers.
 
     function create_batch_opts(program, caps_name) {
-        return {
+        var result = {
             program: program,
             attributes: build_attribute_arrays_obj(program),
-            set_caps: ((appearance.mode && appearance.mode[caps_name]) ||
-                       Facet.DrawingMode.standard[caps_name]),
+            set_caps: function() {
+                var ctx = Facet._globals.ctx;
+                var mode_caps = ((appearance.mode && appearance.mode[caps_name]) ||
+                       Facet.DrawingMode.standard[caps_name]);
+                mode_caps();
+                if (this.line_width) {
+                    ctx.lineWidth(this.line_width);
+                }
+            },
             draw_chunk: draw_chunk,
             batch_id: largest_batch_id++
         };
+        if (appearance.line_width)
+            result.line_width = appearance.line_width;
+        return result;
     }
 
     var draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
@@ -3436,7 +3488,7 @@ Facet.element_buffer = function(vertex_array)
     result.bind = function() {
         /* Javascript functions are quirky in that they can take unused arguments.
          So if a call passes an argument to result.bind, it won't fail; the argument
-         is simply dropped on the floor.
+         is simply dropped.
 
          This has the fortuitous consequence of making attribute
          buffers and element buffers share the same interface
@@ -3477,7 +3529,12 @@ Facet.id_buffer = function(vertex_array)
         throw "id_buffer expects array of integers";
     var typedArray = new Int32Array(vertex_array);
     var byteArray = new Uint8Array(typedArray.buffer);
-    return Facet.attribute_buffer(byteArray, 4, 'ubyte', true);
+    return Facet.attribute_buffer({
+        vertex_array: byteArray, 
+        item_size: 4, 
+        item_type: 'ubyte', 
+        normalized: true
+    });
 };
 (function() {
 
@@ -3766,6 +3823,7 @@ Facet.model = function(input)
                 // example: 'type: "triangles"'
                 result.type = v;
             else if (k === 'elements') {
+                // FIXME: why are these element buffers Shade objects??
                 if (v._shade_type === 'element_buffer')
                     // example: 'elements: Facet.element_buffer(...)'
                     result.elements = Shade(v);
@@ -3787,10 +3845,14 @@ Facet.model = function(input)
                 if (facet_typeOf(v[0]) !== "array" && v[0]._facet_expression) {
                     // example: 'color: [Shade.color('white'), Shade.color('blue'), ...]
                     // assume it's a list of shade vecs, assume they all have the same dimension
+                    // FIXME: check this
                     var dimension = v[0].type.vec_dimension();
                     var new_v = [];
                     _.each(v, push_into(new_v, dimension));
-                    buffer = Facet.attribute_buffer(new_v, dimension);
+                    buffer = Facet.attribute_buffer({
+                        vertex_array: new_v, 
+                        item_size: dimension
+                    });
                     result[k] = Shade(buffer);
                     n_elements = buffer.numItems;
                 } else {
@@ -3798,7 +3860,10 @@ Facet.model = function(input)
                     // a pair, the first element being the list, the second 
                     // being the per-element size
                     // example: 'color: [[1,0,0, 0,1,0, 0,0,1], 3]'
-                    buffer = Facet.attribute_buffer(v[0], v[1]);
+                    buffer = Facet.attribute_buffer({
+                        vertex_array: v[0], 
+                        item_size: v[1]
+                    });
                     result[k] = Shade(buffer);
                     n_elements = buffer.numItems;
                 }
@@ -4136,8 +4201,9 @@ Facet.Unprojector = {
         // the right depth value. We do it via the batch below.
 
         if (!clear_batch) {
-            var xy = Shade(Facet.attribute_buffer(
-                [-1, -1,   1, -1,   -1,  1,   1,  1], 2));
+            var xy = Shade(Facet.attribute_buffer({
+                vertex_array: [-1, -1,   1, -1,   -1,  1,   1,  1], 
+                item_size: 2}));
             var model = Facet.model({
                 type: "triangle_strip",
                 elements: 4,
@@ -10164,7 +10230,10 @@ Facet.Marks.aligned_rects = function(opts)
     if (!opts.bottom)   throw "bottom is a required field";
     if (!opts.color)    throw "color is a required field";
 
-    var vertex_index = Facet.attribute_buffer(_.range(opts.elements * 6), 1);
+    var vertex_index = Facet.attribute_buffer({ 
+        vertex_array: _.range(opts.elements * 6), 
+        item_size: 1
+    });
     var primitive_index = Shade.div(vertex_index, 6).floor();
     var vertex_in_primitive = Shade.mod(vertex_index, 6).floor();
 
@@ -10216,7 +10285,10 @@ Facet.Marks.lines = function(opts)
         throw "either position or x and y are required fields";
     }
 
-    var vertex_index        = Facet.attribute_buffer(_.range(opts.elements * 2), 1);
+    var vertex_index        = Facet.attribute_buffer({
+        vertex_array: _.range(opts.elements * 2), 
+        item_size: 1
+    });
     var primitive_index     = Shade.div(vertex_index, 2).floor();
     var vertex_in_primitive = Shade.mod(vertex_index, 2).floor();
 
@@ -10225,14 +10297,19 @@ Facet.Marks.lines = function(opts)
         : Shade.vec(opts.x(primitive_index, vertex_in_primitive),
                     opts.y(primitive_index, vertex_in_primitive),
                     opts.z(primitive_index, vertex_in_primitive));
-    return Facet.bake({
-        type: "lines",
-        elements: vertex_index
-    }, {
+
+    var appearance = {
         mode: opts.mode,
         position: position,
         color: opts.color(primitive_index, vertex_in_primitive)
-    });
+    };
+    if (opts.line_width) {
+        appearance.line_width = opts.line_width;
+    }
+    return Facet.bake({
+        type: "lines",
+        elements: vertex_index
+    }, appearance);
 };
 Facet.Marks.dots = function(opts)
 {
@@ -10775,7 +10852,10 @@ Facet.Models.mesh = function(u_secs, v_secs) {
         }
     }
 
-    var uv_attr = Shade(Facet.attribute_buffer(verts, 2));
+    var uv_attr = Shade(Facet.attribute_buffer({
+        vertex_array: verts, 
+        item_size: 2
+    }));
     return Facet.model({
         type: "triangle_strip",
         tex_coord: uv_attr,
@@ -10811,7 +10891,7 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
     }
 
     var S = Shade;
-    var uv_attr = Facet.attribute_buffer(verts, 2);
+    var uv_attr = Facet.attribute_buffer({ vertex_array: verts, item_size: 2});
     phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
     theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
     var cosphi = S.cos(phi);
@@ -10824,7 +10904,10 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
     });
 };
 Facet.Models.square = function() {
-    var uv = Shade(Facet.attribute_buffer([0, 0, 1, 0, 0, 1, 1, 1], 2));
+    var uv = Shade(Facet.attribute_buffer({
+        vertex_array: [0, 0, 1, 0, 0, 1, 1, 1], 
+        item_size: 2
+    }));
     return Facet.model({
         type: "triangles",
         elements: Facet.element_buffer([0, 1, 2, 1, 3, 2]),

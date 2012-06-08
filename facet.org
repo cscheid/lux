@@ -144,3 +144,5 @@ I've done this one-off in the beauty of roots demo. Maybe I shouldn't
 integrate it and leave it instead to app writers. But it's a type of
 interaction that's bound to be necessary over and over again...
 * Other
+* Demos
+** Fix buffers.js

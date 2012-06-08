@@ -18,6 +18,7 @@ Facet.model = function(input)
                 // example: 'type: "triangles"'
                 result.type = v;
             else if (k === 'elements') {
+                // FIXME: why are these element buffers Shade objects??
                 if (v._shade_type === 'element_buffer')
                     // example: 'elements: Facet.element_buffer(...)'
                     result.elements = Shade(v);
@@ -39,10 +40,14 @@ Facet.model = function(input)
                 if (facet_typeOf(v[0]) !== "array" && v[0]._facet_expression) {
                     // example: 'color: [Shade.color('white'), Shade.color('blue'), ...]
                     // assume it's a list of shade vecs, assume they all have the same dimension
+                    // FIXME: check this
                     var dimension = v[0].type.vec_dimension();
                     var new_v = [];
                     _.each(v, push_into(new_v, dimension));
-                    buffer = Facet.attribute_buffer(new_v, dimension);
+                    buffer = Facet.attribute_buffer({
+                        vertex_array: new_v, 
+                        item_size: dimension
+                    });
                     result[k] = Shade(buffer);
                     n_elements = buffer.numItems;
                 } else {
@@ -50,7 +55,10 @@ Facet.model = function(input)
                     // a pair, the first element being the list, the second 
                     // being the per-element size
                     // example: 'color: [[1,0,0, 0,1,0, 0,0,1], 3]'
-                    buffer = Facet.attribute_buffer(v[0], v[1]);
+                    buffer = Facet.attribute_buffer({
+                        vertex_array: v[0], 
+                        item_size: v[1]
+                    });
                     result[k] = Shade(buffer);
                     n_elements = buffer.numItems;
                 }

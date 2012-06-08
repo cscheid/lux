@@ -26,7 +26,7 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
     }
 
     var S = Shade;
-    var uv_attr = Facet.attribute_buffer(verts, 2);
+    var uv_attr = Facet.attribute_buffer({ vertex_array: verts, item_size: 2});
     phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
     theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
     var cosphi = S.cos(phi);

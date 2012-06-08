@@ -19,7 +19,7 @@ function data_buffers()
 {
     var d = Data.flowers();
     var tt = Facet.Data.texture_table(d);
-    var point_index = Facet.attribute_buffer(_.range(tt.n_rows), 1);
+    var point_index = Facet.attribute_buffer({ vertex_array: _.range(tt.n_rows), item_size: 1 });
     
     return {
         sepalLength: tt.at(point_index, 0),
