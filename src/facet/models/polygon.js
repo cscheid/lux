@@ -1,11 +1,42 @@
 Facet.Models.polygon = function(poly,style,vertexColor) {
 
-var minDist = .0000000000001;
+vvar CW = 1, CCW = 0;
 
 function point_2d(x, y) {
 	this.x = (typeof x == "undefined") ? 0 : x;
 	this.y = (typeof y == "undefined") ? 0 : y;
 }
+
+
+function getRotation(polyList){
+var z = 0, current, next, prev, j, numpts;
+
+numpts = polyList.length;
+
+//check that the linked list contains points
+for(var j=0;j<numpts;j++)
+	if(polyList[j].next > 0)
+		break;
+if(j === numpts)
+	return -1;
+
+first = j;
+for(var i=0;i<polyList.length;i++){
+	current = polyList[j];
+	next = polyList[current.next];
+	prev = polyList[current.prev];
+	z += ((current.point.x - prev.point.x) * (next.point.y - current.point.y));
+	z -= ((current.point.y - prev.point.y) * (next.point.x - current.point.x));
+	j = polyList[j].next;
+	if(j === first)
+		break;
+}
+if(z > 0)
+	return CCW;
+else
+	return CW;
+}
+
 
 function hidePolyListElement(polyList,indx){
 
@@ -111,111 +142,41 @@ return false;
 
 
 
-function insidePolygon(polyList, indx){
-var counter = 0;
-var i,j,xinters,p1,p2,pt,numpts,br,mr,current,diff;
-var delta = minDist,deltaX,deltaY;
-numpts = polyList.length;
-
-//check that the polygon contains points
-if(numpts === 0)
-	return -1;
-
-//check that the linked list contains points
-for(var j=0;j<numpts;j++)
-	if(polyList[j].next > 0)
-		break;
-if(j === numpts)
-	return -1;
-
-//check that the vertex being examined is in the linked list
-if(polyList[indx].next < 0)
-	return -1;
-
-current = polyList[indx];
-
-//check that the vertex is not colinear with it? neighbors
-testRay = getLineParams(current,polyList[current.next]);
-br = testRay.b;
-mr = testRay.m;
-if(polyList[current.prev].point.y === (mr * polyList[current.prev].point.x) + br)
-	return -1;
-
-testRay = getLineParams(current,current.diag.edge);
-br = testRay.b;
-mr = testRay.m;
-pt = new point_2d();
-deltaX = 0.;
-deltaY = 0.;
-if(current.point.x > current.diag.edge.point.x )
-	deltaX = -delta;
-else if(current.point.x < current.diag.edge.point.x )
-	deltaX = delta;
-else {
-	if(current.point.y > current.diag.edge.point.y)
-		deltaY = -delta;
-	else
-		deltaY = delta;
-}
-
-pt.x = current.point.x + deltaX;
-if(isFinite(mr)){
-	pt.y = (mr * pt.x) + br + deltaY;
-}
-else 
-	pt.y = current.point.y + deltaY;	
-	
-var first = j;
-for(i=0;i<numpts;i++){
-	p1 = polyList[j].point;
-	p2 = polyList[polyList[j].next].point;
-		if(pt.y > Math.min(p1.y,p2.y)){
-			if(pt.y <= Math.max(p1.y,p2.y)){
-				if(pt.x <= Math.max(p1.x,p2.x)){
-					if(p1.y != p2.y){
-						xinters = (pt.y-p1.y)*(p2.x-p1.x)/(p2.y-p1.y)+p1.x;
-            			if (p1.x == p2.x || pt.x <= xinters)
-              				counter++;
-          			}
-        		}
-      		}
-    	}
-	j = polyList[j].next;
-	if(j === first)
-		break;
-  }
-
-return counter;
-}
-
-
-function angleType(polyList,indx){
-var next,prev,current;
+function angleType(polyList,indx,rotation){
+var next,prev,current,angle,angleN,angleP,degree;
 var count;
 var isEar;
 
 
 current = polyList[indx];
+next = polyList[current.next];
+prev = polyList[current.prev];
 
-count = insidePolygon(polyList,indx);
 
-if(count < 0){
-	polyList[indx].isReflex = false;
-	polyList[indx].isEar = false;
-	return;
+if(rotation === CCW){
+	angleN = Math.atan2((next.point.y - current.point.y),(next.point.x - current.point.x));
+	angleP = Math.atan2((prev.point.y - current.point.y),(prev.point.x - current.point.x));
+	angle = angleP - angleN;
+}
+else{
+	angleN = Math.atan2((next.point.y - current.point.y),(next.point.x - current.point.x));
+	angleP = Math.atan2((prev.point.y - current.point.y),(prev.point.x - current.point.x));
+	angle = angleN - angleP;
 }
 
+degree = angle * (180/Math.PI);
+if(degree < 0)
+	degree += 360;
 
-
-//if count is odd then the vertex angle is concave
-if(count%2){
+if(degree < 180){
 	polyList[indx].isReflex = false;
 	isEar = true;
 	next = polyList[current.next];
 	prev = polyList[current.prev];
 	//determine if this vertex is an ear tip
 	for(var i=0;i<polyList.length;i++){
-
+		if(polyList[i].next < 0)
+			continue;
 		//exclude vertices that cannot be in the interior of the acute angle
 		if(polyList[i] === current || polyList[i] === next || polyList[i] === prev)
 		continue;
@@ -236,6 +197,7 @@ else {
 }
 
 }
+
 
 function getLineParams(vertx1,vertx2,shift){
 var edge = new Object(),mid = new point_2d();
@@ -328,7 +290,7 @@ var diag = {point:{}};
 	current.diag.edge = getLineParams(prevElmt,nextElmt);;
 }
 
-function triangulate(polygon){
+function triangulate(poly){
 var polyList = new Array();
 var reflex = new Array();
 var concave = new Array();
@@ -337,15 +299,15 @@ var triangles = new Array();
 var currentEar,tPrev,tNext,triangle,prev,next,aType,vertxCount;	
 
 //create linked list
-for(var i=0;i<polygon.length;i++){
+for(var i=0;i<poly.length;i++){
 	var polyListItem = {};
-	polyListItem.point = polygon[i];
+	polyListItem.point = new point_2d(poly[i].x,poly[i].y);
 	if(i === 0)
-		polyListItem.prev = polygon.length - 1;
+		polyListItem.prev = poly.length - 1;
 	else
 		polyListItem.prev = i-1;
 
-	if(i === (polygon.length -1))
+	if(i === (poly.length -1))
 		polyListItem.next = 0;
 	else
 		polyListItem.next = i + 1;
@@ -354,12 +316,15 @@ for(var i=0;i<polygon.length;i++){
 }
 
 
+rotation = getRotation(polyList);
+
+
 //assign vertex edges and diagnals
 for(var i=0;i<polyList.length;i++)
 	getListParams(polyList,i);
 
 for(var i=0;i<polyList.length;i++){
-	angleType(polyList,i);
+	angleType(polyList,i,rotation);
 	if(polyList[i].isReflex){
 		addElement(reflex,i);
 	}
@@ -389,7 +354,7 @@ while(vertxCount >= 3){
 	removeElement(concave,currentEar.val);
 	hidePolyListElement(polyList,currentEar.val);
 	getListParams(polyList,tPrev);
-	aType = angleType(polyList,tPrev);
+	aType = angleType(polyList,tPrev,rotation);
 	if(polyList[tPrev].isReflex){
 		if(!isElementInList(reflex,tPrev))
 			addElement(reflex,tPrev);
@@ -407,9 +372,13 @@ while(vertxCount >= 3){
 			if(!isElementInList(earTip,tPrev))
 				addElement(earTip,tPrev);
 		}
+		else{
+			if(isElementInList(earTip,tPrev))
+				removeElement(earTip,tPrev);
+		}
 	}
 	getListParams(polyList,tNext);
-	aType = angleType(polyList,tNext);
+	aType = angleType(polyList,tNext,rotation);
 	if(polyList[tNext].isReflex){
 		if(!isElementInList(reflex,tNext))
 			addElement(reflex,tNext);
@@ -427,6 +396,10 @@ while(vertxCount >= 3){
 			if(!isElementInList(earTip,tNext))
 				addElement(earTip,tNext);
 		}
+		else{
+			if(isElementInList(earTip,tNext))
+				removeElement(earTip,tNext);
+		}
 	}
 	vertxCount--;
 }
@@ -439,10 +412,6 @@ if (! _.isUndefined(poly)){
 	var triangles = [];
     var verts = [];
     var elements = [];
-	var polygon = [];
-
-	for(var i=0;i<poly.length;i+=2)
-		polygon.push(new point_2d(poly[i], poly[i+1]));
 
 	if (_.isUndefined(style))
 		style = "line_loop";
@@ -451,7 +420,7 @@ if (! _.isUndefined(poly)){
 		// get an array of arrays containing the triangulation of the polygon
 		// every element of indx represents an array of three indices of the polygon
 		// the points of polygon corresponding to the indices define a triangle
-		triangles = triangulate(polygon);
+		triangles = triangulate(poly);
 
 		// convert the array of triangle index arrays to a single array of indices
 		for(var i=0 ;i<triangles.length;i++){
@@ -461,14 +430,14 @@ if (! _.isUndefined(poly)){
 		}
 	}
 	else {
-		for(var i=0;i<polygon.length;i++){
+		for(var i=0;i<poly.length;i++){
 			elements.push(i);
 		}
 	}
 	// extract the x and y coordinates of the polygon
-	for(var i=0;i<polygon.length;i++){
-		verts.push(polygon[i].x);
-		verts.push(polygon[i].y);
+	for(var i=0;i<poly.length;i++){
+		verts.push(poly[i].x);
+		verts.push(poly[i].y);
 		
 	}
 	var uv = Shade(Facet.attribute_buffer({vertex_array:verts, item_size:2}));
