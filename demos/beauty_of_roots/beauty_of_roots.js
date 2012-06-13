@@ -1,6 +1,6 @@
 var gl;
 var points_batch;
-var rb, rb_batch;
+var rb;
 var pointsize, pointweight;
 var interactor;
 
@@ -72,7 +72,7 @@ function center_zoom_interactor(opts)
     };
 }
 
-function parameter_slider(element, parameter, opts)
+function parameter_slider(opts)
 {
     opts = _.defaults(opts, {
         min: 0,
@@ -92,7 +92,8 @@ function parameter_slider(element, parameter, opts)
         return (v-slider_min) / (slider_max - slider_min) *
             (opts.max - opts.min) + opts.min;
     }
-
+    var element = opts.element;
+    var parameter =  opts.parameter;
     $(element).slider({
         min: slider_min,
         max: slider_max,
@@ -123,7 +124,7 @@ function make_points_batch(x, y, width, height)
     var pt = Shade.vec(points_model.x, points_model.y);
 
     rb = Facet.render_buffer({ width: width, height: height, type: gl.FLOAT });
-    rb_batch = rb.make_screen_batch(function(texel_at_uv) {
+    var rb_batch = rb.make_screen_batch(function(texel_at_uv) {
         return Shade.vec(1,1,1,2)
             .sub(Shade.Utils.lerp([Shade.color("white"),
                                    Shade.color("#d29152"),
@@ -158,8 +159,8 @@ function make_points_batch(x, y, width, height)
 
 function init_gui()
 {
-    parameter_slider("#pointsize",   pointsize,   { min: 0, max: 10 });
-    parameter_slider("#pointweight", pointweight, { min: 0, max: 1  });
+    parameter_slider({ element: "#pointsize", parameter: pointsize, min: 0, max: 10 });
+    parameter_slider({ element: "#pointweight", parameter: pointweight, min: 0, max: 1 });
 
     $("#set_center").click(function() {
         var x = Number($("#realvalue").val()),
