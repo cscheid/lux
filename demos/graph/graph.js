@@ -1,5 +1,6 @@
 var gl;
 var height = 480;
+var interactor;
 
 function make_graph_model(graph)
 {
@@ -27,15 +28,9 @@ function make_graph_model(graph)
 
 function make_graph_batch(model, center, zoom)
 {
-    var camera = Shade.Camera.ortho({
-        center: center,
-        zoom: zoom,
-        aspect_ratio: 720/480
-    });
-
     var dots_batch = Facet.Marks.dots({
         elements: model.node_elements,
-        position: camera(model.position),
+        position: interactor.camera(model.position),
         stroke_color: Shade.color("white", 0.9),
         fill_color: Shade.color("slategray", 0.9),
         point_diameter: zoom.mul(2000),
@@ -74,6 +69,11 @@ $().ready(function () {
     var center = Shade.parameter("vec2", vec.make([450, 450]));
     var zoom = Shade.parameter("float", 1/450);
     var prev_mouse_pos;
+    
+    interactor = Facet.UI.center_zoom_interactor({
+        width: 720, height: 480, zoom: 1/450, center: vec.make([450, 450])
+    });
+
     jQuery.getJSON("graph_extras/1138_bus.graph",
                    function (data) {
                        var graph = data;
@@ -85,24 +85,7 @@ $().ready(function () {
         clearDepth: 1.0,
         clearColor: [0, 0, 0, 0.05],
         display: draw_it,
-        attributes: {
-            alpha: true,
-            depth: true
-        }, mousedown: function(event) {
-            prev_mouse_pos = [event.offsetX, event.offsetY];
-        }, mousemove: function(event) {
-            if ((event.which & 1) && !event.shiftKey) {
-                var deltaX =  (event.offsetX - prev_mouse_pos[0]) / (height * zoom.get() / 2);
-                var deltaY = -(event.offsetY - prev_mouse_pos[1]) / (height * zoom.get() / 2);
-                var delta = vec.make([deltaX, deltaY]);
-                center.set(vec.minus(center.get(), delta));
-            }
-            if ((event.which & 1) && event.shiftKey) {
-                zoom.set(zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
-            }
-            prev_mouse_pos = [event.offsetX, event.offsetY];
-            gl.display();
-        }
+        interactor: interactor
     });
     gl.display();
 });
