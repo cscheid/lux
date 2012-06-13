@@ -1,0 +1,76 @@
+<html>
+<head>
+  <link rel="stylesheet" href="../css/bootstrap.css"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <link rel="stylesheet" href="../css/mchighlight-javascript.css"/>
+  <link type="text/css" href="../../lib/ui-lightness/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
+  <script src="../../lib/jquery-1.6.2.min.js"></script>
+  <script src="../../lib/jquery-mousewheel.js"></script>
+  <script src="../../lib/jquery-ui-1.8.16.custom.min.js"></script>
+  <script src="../../facet.js"></script>
+  <script src="fractal_flame.js"></script>
+<style>
+.ui-slider .ui-slider-handle { 
+    width: 9px; 
+    height: 9px;
+}
+.slider-div {
+   top: 3px;
+   width: 50px;
+   height: 2px;
+   float: left;
+   clear: left;
+   margin-right: 18px;
+}
+</style>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1><a href="http://scottdraves.com/flame.html">fractal flames</a> on
+  the gpu via facet and webgl</h1>
+<canvas id="webgl" width="640" height="480"></canvas>
+
+<div>
+  <table><tr><td id="name1"></td>
+             <td>a</td><td><div class="slider-div" id="a1"></div></td>
+             <td>b</td><td><div class="slider-div" id="b1"></div></td>
+             <td>c</td><td><div class="slider-div" id="c1"></div></td>
+             <td>d</td><td><div class="slider-div" id="d1"></div></td>
+             <td>e</td><td><div class="slider-div" id="e1"></div></td>
+             <td>f</td><td><div class="slider-div" id="f1"></div></td></tr>
+         <tr><td id="name2"></td>
+             <td>a</td><td><div class="slider-div" id="a2"></div></td>
+             <td>b</td><td><div class="slider-div" id="b2"></div></td>
+             <td>c</td><td><div class="slider-div" id="c2"></div></td>
+             <td>d</td><td><div class="slider-div" id="d2"></div></td>
+             <td>e</td><td><div class="slider-div" id="e2"></div></td>
+             <td>f</td><td><div class="slider-div" id="f2"></div></td></tr>
+         <tr><td id="name3"></td>
+             <td>a</td><td><div class="slider-div" id="a3"></div></td>
+             <td>b</td><td><div class="slider-div" id="b3"></div></td>
+             <td>c</td><td><div class="slider-div" id="c3"></div></td>
+             <td>d</td><td><div class="slider-div" id="d3"></div></td>
+             <td>e</td><td><div class="slider-div" id="e3"></div></td>
+             <td>f</td><td><div class="slider-div" id="f3"></div></td></tr>
+         <tr><td id="name4"></td>
+             <td>a</td><td><div class="slider-div" id="a4"></div></td>
+             <td>b</td><td><div class="slider-div" id="b4"></div></td>
+             <td>c</td><td><div class="slider-div" id="c4"></div></td>
+             <td>d</td><td><div class="slider-div" id="d4"></div></td>
+             <td>e</td><td><div class="slider-div" id="e4"></div></td>
+             <td>f</td><td><div class="slider-div" id="f4"></div></td></tr>
+	 </table>
+  <table>
+    <tr><td>brightness:</td><td><div class="slider-div" id="global-scale"></div></td></tr>
+    <tr><td>hue:</td><td><div class="slider-div" id="hue"></div></td></tr>
+    <tr><td>hue rotation:</td><td><div class="slider-div" id="hue-rotation"></div></td></tr>
+    <tr><td>gamma:</td><td><div class="slider-div" id="gamma"></div></td></tr>
+    <tr><td><input type="checkbox" id="run-it"><label for="run-it">running</label></input></td></tr>
+  </table>
+  </div>
+</div>
+</div>
+</div>
+</body>
+</html>
