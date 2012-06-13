@@ -1718,8 +1718,6 @@ ColorData.colors = function() {
     };
 };
 
-
-var S = Shade;
 var dfltClassNum = 3;
 var classColors = [];
 var color = colorBuffers();
@@ -1814,18 +1812,6 @@ function getColors (pAlpha){
  
 }
 
-function getColor(indx,pAlpha){
-	if(classColors[indx] != undefined){
-		if(schemeType === "com")
-			return S.color(classColors[indx]);
-		else
-			return S.vec(classColors[indx],pAlpha);
-	}
-	else 
-		return S.vec(0,0,0,pAlpha);
-}
-
-
 function setClassNum(val){
 	classNum = val;
 	$('input:text[name=classNum]').val(classNum);
@@ -1853,6 +1839,8 @@ function colorBuffers()
 
 	var schemeTypeName = "";
 	var name;
+	var scheme = new Array();
+	var colorSet = new Array();
 
 	$("#scheme option:selected").each(function () {
 		schemeType = $(this).val();
@@ -1865,226 +1853,9 @@ function colorBuffers()
 		return;
 	}
 
-
 	//create table to contain the color palette
 	initTable("colorTable");
-	if(schemeType === "com")
-		handleCommonColors();
-	else
-		handleBrewColors(schemeTypeName);
-    }
-    
-    
-    function handleCommonColors(){
-var css_colors = {
-    "aliceblue":            "#F0F8FF",
-    "antiquewhite":         "#FAEBD7",
-    "aqua":                 "#00FFFF",
-    "aquamarine":           "#7FFFD4",
-    "azure":                "#F0FFFF",
-    "beige":                "#F5F5DC",
-    "bisque":               "#FFE4C4",
-    "black":                "#000000",
-    "blanchedalmond":       "#FFEBCD",
-    "blue":                 "#0000FF",
-    "blueviolet":           "#8A2BE2",
-    "brown":                "#A52A2A",
-    "burlywood":            "#DEB887",
-    "cadetblue":            "#5F9EA0",
-    "chartreuse":           "#7FFF00",
-    "chocolate":            "#D2691E",
-    "coral":                "#FF7F50",
-    "cornflowerblue":       "#6495ED",
-    "cornsilk":             "#FFF8DC",
-    "crimson":              "#DC143C",
-    "cyan":                 "#00FFFF",
-    "darkblue":             "#00008B",
-    "darkcyan":             "#008B8B",
-    "darkgoldenrod":        "#B8860B",
-    "darkgray":             "#A9A9A9",
-    "darkgrey":             "#A9A9A9",
-    "darkgreen":            "#006400",
-    "darkkhaki":            "#BDB76B",
-    "darkmagenta":          "#8B008B",
-    "darkolivegreen":       "#556B2F",
-    "darkorange":           "#FF8C00",
-    "darkorchid":           "#9932CC",
-    "darkred":              "#8B0000",
-    "darksalmon":           "#E9967A",
-    "darkseagreen":         "#8FBC8F",
-    "darkslateblue":        "#483D8B",
-    "darkslategray":        "#2F4F4F",
-    "darkslategrey":        "#2F4F4F",
-    "darkturquoise":        "#00CED1",
-    "darkviolet":           "#9400D3",
-    "deeppink":             "#FF1493",
-    "deepskyblue":          "#00BFFF",
-    "dimgray":              "#696969",
-    "dimgrey":              "#696969",
-    "dodgerblue":           "#1E90FF",
-    "firebrick":            "#B22222",
-    "floralwhite":          "#FFFAF0",
-    "forestgreen":          "#228B22",
-    "fuchsia":              "#FF00FF",
-    "gainsboro":            "#DCDCDC",
-    "ghostwhite":           "#F8F8FF",
-    "gold":                 "#FFD700",
-    "goldenrod":            "#DAA520",
-    "gray":                 "#808080",
-    "grey":                 "#808080",
-    "green":                "#008000",
-    "greenyellow":          "#ADFF2F",
-    "honeydew":             "#F0FFF0",
-    "hotpink":              "#FF69B4",
-    "indianred":            "#CD5C5C",
-    "indigo":               "#4B0082",
-    "ivory":                "#FFFFF0",
-    "khaki":                "#F0E68C",
-    "lavender":             "#E6E6FA",
-    "lavenderblush":        "#FFF0F5",
-    "lawngreen":            "#7CFC00",
-    "lemonchiffon":         "#FFFACD",
-    "lightblue":            "#ADD8E6",
-    "lightcoral":           "#F08080",
-    "lightcyan":            "#E0FFFF",
-    "lightgoldenrodyellow": "#FAFAD2",
-    "lightgray":            "#D3D3D3",
-    "lightgrey":            "#D3D3D3",
-    "lightgreen":           "#90EE90",
-    "lightpink":            "#FFB6C1",
-    "lightsalmon":          "#FFA07A",
-    "lightseagreen":        "#20B2AA",
-    "lightskyblue":         "#87CEFA",
-    "lightslategray":       "#778899",
-    "lightslategrey":       "#778899",
-    "lightsteelblue":       "#B0C4DE",
-    "lightyellow":          "#FFFFE0",
-    "lime":                 "#00FF00",
-    "limegreen":            "#32CD32",
-    "linen":                "#FAF0E6",
-    "magenta":              "#FF00FF",
-    "maroon":               "#800000",
-    "mediumaquamarine":     "#66CDAA",
-    "mediumblue":           "#0000CD",
-    "mediumorchid":         "#BA55D3",
-    "mediumpurple":         "#9370D8",
-    "mediumseagreen":       "#3CB371",
-    "mediumslateblue":      "#7B68EE",
-    "mediumspringgreen":    "#00FA9A",
-    "mediumturquoise":      "#48D1CC",
-    "mediumvioletred":      "#C71585",
-    "midnightblue":         "#191970",
-    "mintcream":            "#F5FFFA",
-    "mistyrose":            "#FFE4E1",
-    "moccasin":             "#FFE4B5",
-    "navajowhite":          "#FFDEAD",
-    "navy":                 "#000080",
-    "oldlace":              "#FDF5E6",
-    "olive":                "#808000",
-    "olivedrab":            "#6B8E23",
-    "orange":               "#FFA500",
-    "orangered":            "#FF4500",
-    "orchid":               "#DA70D6",
-    "palegoldenrod":        "#EEE8AA",
-    "palegreen":            "#98FB98",
-    "paleturquoise":        "#AFEEEE",
-    "palevioletred":        "#D87093",
-    "papayawhip":           "#FFEFD5",
-    "peachpuff":            "#FFDAB9",
-    "peru":                 "#CD853F",
-    "pink":                 "#FFC0CB",
-    "plum":                 "#DDA0DD",
-    "powderblue":           "#B0E0E6",
-    "purple":               "#800080",
-    "red":                  "#FF0000",
-    "rosybrown":            "#BC8F8F",
-    "royalblue":            "#4169E1",
-    "saddlebrown":          "#8B4513",
-    "salmon":               "#FA8072",
-    "sandybrown":           "#F4A460",
-    "seagreen":             "#2E8B57",
-    "seashell":             "#FFF5EE",
-    "sienna":               "#A0522D",
-    "silver":               "#C0C0C0",
-    "skyblue":              "#87CEEB",
-    "slateblue":            "#6A5ACD",
-    "slategray":            "#708090",
-    "slategrey":            "#708090",
-    "snow":                 "#FFFAFA",
-    "springgreen":          "#00FF7F",
-    "steelblue":            "#4682B4",
-    "tan":                  "#D2B48C",
-    "teal":                 "#008080",
-    "thistle":              "#D8BFD8",
-    "tomato":               "#FF6347",
-    "turquoise":            "#40E0D0",
-    "violet":               "#EE82EE",
-    "wheat":                "#F5DEB3",
-    "white":                "#FFFFFF",
-    "whitesmoke":           "#F5F5F5",
-    "yellow":               "#FFFF00",
-    "yellowgreen":          "#9ACD32"
-};
-	var scheme = new Array();
-	var colorSet = new Array();
-	var newRow;
-    
-	//create array of the colors matching the sheme type, and number of classes
-	scheme = jQuery.map(css_colors,function(v,i) { 
-			return i;
-		});
-	
-	if( scheme.length === 0) {
-		$("#cTitle").html("");
-		showError("colorTable","No " + schemeTypeName + 
-			" palette available ");
-		return;
-	}
 
-	//load the colorSet array with the rgb values for each class
-	colorSet = jQuery.map(css_colors,function(v,i){
-		return new Array(v);
-	});
-
-	$("#cTitle").html("Color Schemes");
-	var tableName = "colorTable";
-	for (var i = 0; i < scheme.length; i++) {
-		name = scheme[i];
-
-		//add a column to the palette for the current scheme		
-		loadTable(tableName,name, colorSet[i],i);
-	}
-	
-	txt = $('input:text[name=schemeName]').val();
-	if( txt === null || txt === ""){
-		$('input:text[name=schemeName]').val(scheme[0]);
-		$("input[name='rdio']")[0].checked = true;
-		$("input:text[name=schemeOffset]").val("1");
-		changeColor(scheme[0]);
-	}
-	else {
-		for(var i=0;i<scheme.length;i++){
-			if($("input[name='rdio']")[i].value === txt){
-				$("input[name='rdio']")[i].checked = true;
-				changeColor(scheme[i]);
-				break;
-			}
-		}
-
-	}
-	
-	//now that the radio buttons are defined, set event handler
-     	$("input[name='rdio']").change(function(){
-		$('input:text[name=schemeName]').val("");
-		return changeColor(
-			$("input[name='rdio']:checked").val());
-	});
-    }
-    
-    function handleBrewColors(schemeTypeName){
-	var scheme = new Array();
-	var colorSet = new Array();
-    
 	var txt=$('input:text[name=classNum]').val();
 
 	if( txt === null || txt === ""){
@@ -2142,24 +1913,6 @@ var css_colors = {
 
 	}
 	
-	txt = $('input:text[name=schemeName]').val();
-	if( txt === null || txt === ""){
-		$('input:text[name=schemeName]').val(scheme[0]);
-		$("input[name='rdio']")[0].checked = true;
-		$("input:text[name=schemeOffset]").val("1");
-		changeColor(scheme[0]);
-	}
-	else {
-		for(var i=0;i<scheme.length;i++){
-			if($("input[name='rdio']")[i].value === txt){
-				$("input[name='rdio']")[i].checked = true;
-				changeColor(scheme[i]);
-				break;
-			}
-		}
-
-	}
-	
 	//now that the radio buttons are defined, set event handler
      	$("input[name='rdio']").change(function(){
 		$('input:text[name=schemeName]').val("");
@@ -2199,21 +1952,15 @@ var css_colors = {
 	* Loads the rgb values for a color scheme into the rows
 	* of a color scheme table
 	*/
-    function loadTable(ID,name,colorSet,indx){
-	var rId, bId,hexcolor;
+    function loadTable(ID,name,colorSet){
+	var rId, tId,hexcolor;
 	var htmlString;
-
-	bId = "#b" + ID;
+	rId = "#r" + ID;
+	tId = "#t" + ID;
 
 	htmlString = createCol(name);
 
 	//add current palette colors to table
-	
-	if(colorSet[0][0] === "#")
-		htmlString += "<tr><td style='background-color:" + 
-				colorSet + "' > </td></tr>";
-	else
-
 	for(var i=0;i<classNum;i++){
 		//convert rgb color to hex value
 		hexcolor = "#" + 
@@ -2225,19 +1972,7 @@ var css_colors = {
 				hexcolor + "'> </td></tr>";
 	}
 	htmlString += "</table></td>";
-
 	//add the current palette to the color scheme table
-	if(indx%7 === 0 && indx != 0){
-		rId = "#r" + Math.floor(indx/7) + ID;
-		$(bId).append("<tr id='r" + Math.floor(indx/7) + ID + "'></tr>");
-	}
-	else {
-		if(indx > 7)
-			rId = "#r" + Math.floor(indx/7) + ID;
-		else
-		rId = "#r" + ID;
-	}
-
 	$(rId).append(htmlString);
     }
 
@@ -2271,27 +2006,24 @@ var css_colors = {
 	//get color scheme name and verify it is valid
  	var txt = $('input:text[name=schemeName]').val();
 	var sName = null;
-	if(schemeType !== "com"){
-		jQuery.map(color.name,function(v,i) { 
-			if( v.toLowerCase() === txt.toLowerCase()){
-				sName = color.name[i];
-				return;
-			}
-			});
-
-		if( sName === null || sName === ""){
-			initTable("colorTable");
-			showError("colorTable","Color scheme name not recognized");
+	jQuery.map(color.name,function(v,i) { 
+		if( v.toLowerCase() === txt.toLowerCase()){
+			sName = color.name[i];
 			return;
 		}
-		//refresh display with the selected color scheme
-		$("#cTitle").html("");
-		$("#colorTable").html("");
-		$('input:text[name=classNum]').val("");
-		$("#scheme").val("");	
+		});
+
+	if( sName === null || sName === ""){
+		initTable("colorTable");
+		showError("colorTable","Color scheme name not recognized");
+		return;
 	}
-	else
-		sName = txt;
+
+	//refresh display with the selected color scheme
+	$("#cTitle").html("");
+	$("#colorTable").html("");
+	$('input:text[name=classNum]').val("");
+	$("#scheme").val("");	
 	pickColorScheme(sName,classNum);	
    }
 
@@ -2310,19 +2042,12 @@ var css_colors = {
 
    }
 
-
     function pickColorScheme(name,number){
-		classColors.splice(0);
 
 	//load classColors array with the rgb values of a color scheme
 	var c = getByClassNum(number,getByName(name));
-	for(var i=0;i<classNum;i++){
-		if(c.length != 0)
-			classColors[i] = Shade.vec(c[i].R/255, c[i].G/255, c[i].B/255);
-		else 
-		classColors[i] = name;
-	}
-		
+	for(var i=0;i<classNum;i++)
+		classColors[i] = Shade.vec(c[i].R/255, c[i].G/255, c[i].B/255);
 	refresh_webgl();	
 
    }
