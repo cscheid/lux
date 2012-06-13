@@ -2,10 +2,73 @@ var gl;
 var points_batch;
 var rb, rb_batch;
 var pointsize, pointweight;
-var camera, center, zoom;
-var aspect_ratio;
+var interactor;
 
 //////////////////////////////////////////////////////////////////////////////
+
+function center_zoom_interactor(opts)
+{
+    opts = _.defaults(opts, {
+        mouse_move: function() {},
+        mouse_down: function() {},
+        mouse_wheel: function() {},
+        center: vec.make([0,0]),
+        zoom: 1
+    });
+
+    var height = opts.height;
+    var width = opts.width;
+    var center = Shade.parameter("vec2", opts.center);
+    var zoom = Shade.parameter("float", opts.zoom);
+    
+    var prev_mouse_pos;
+    function mouse_down(event) {
+        prev_mouse_pos = [event.offsetX, event.offsetY];
+        opts.mouse_down(event);
+    }
+    function mouse_move(event) {
+        if ((event.which & 1) && !event.shiftKey) {
+            var deltaX =  (event.offsetX - prev_mouse_pos[0]) / (height * zoom.get() / 2);
+            var deltaY = -(event.offsetY - prev_mouse_pos[1]) / (height * zoom.get() / 2);
+            var delta = vec.make([deltaX, deltaY]);
+            center.set(vec.minus(center.get(), delta));
+        } else if ((event.which & 1) && event.shiftKey) {
+            zoom.set(zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
+        }
+        prev_mouse_pos = [ event.offsetX, event.offsetY ];
+        opts.mouse_move(event);
+        Facet.Scene.invalidate();
+    }
+    function mouse_wheel(event, delta, deltaX, deltaY) {
+        zoom.set(zoom.get() * (1.0 - deltaY / 15));
+        opts.mouse_wheel(event, delta, deltaX, deltaY);
+        Facet.Scene.invalidate();
+    }
+
+    var aspect_ratio = Shade.parameter("float", width/height);
+    var camera = Shade.Camera.ortho({
+        center: center,
+        zoom: zoom,
+        aspect_ratio: aspect_ratio
+    });
+
+    return {
+        camera: camera,
+        center: center,
+        zoom: zoom,
+
+        resize: function(w, h) {
+            aspect_ratio.set(w/h);
+            width = w;
+            height = h;
+            Facet.Scene.invalidate();
+        },
+
+        mouse_down: mouse_down,
+        mouse_move: mouse_move,
+        mouse_wheel: mouse_wheel
+    };
+}
 
 function draw_it()
 {
@@ -17,47 +80,62 @@ function draw_it()
     rb_batch.draw();
 }
 
-function change_pointsize()
-{
-    var new_value = $("#pointsize").slider("value") / 100.0;
-    pointsize.set(new_value);
-    gl.display();
-}
-
-function change_pointweight()
-{
-    var new_value = $("#pointweight").slider("value") / 1000.0;
-    pointweight.set(new_value);
-    gl.display();
-}
-
 function update_camera() {
     gl.display();
 };
 
+function parameter_slider(element, parameter, opts)
+{
+    opts = _.defaults(opts, {
+        min: 0,
+        max: 1,
+        orientation: "horizontal",
+        slide: function() {},
+        change: function() {}
+    });
+
+    var slider_min = 0,
+        slider_max = 1000;
+
+    function to_slider(v) {
+        return (v-opts.min) / (opts.max - opts.min) * 
+            (slider_max - slider_min) + slider_min;
+    }
+    function to_parameter(v) {
+        return (v-slider_min) / (slider_max - slider_min) *
+            (opts.max - opts.min) + opts.min;
+    }
+
+    $(element).slider({
+        min: slider_min,
+        max: slider_max,
+        value: to_slider(parameter.get()),
+        orientation: opts.orientation,
+        slide: function() {
+            var v = to_parameter($(element).slider("value"));
+            parameter.set(v);
+            opts.slide(parameter, v);
+            Facet.Scene.invalidate();
+        },
+        change: function() {
+            var v = to_parameter($(element).slider("value"));
+            parameter.set(v);
+            opts.change(parameter, v);
+            Facet.Scene.invalidate();
+        }
+    });
+}
+
 function init_gui()
 {
-    $("#pointsize").slider({
-        min: 0, 
-        max: 1000, 
-        orientation: "horizontal",
-        value: 250,
-        slide: change_pointsize,
-        change: change_pointsize
-    });
-    $("#pointweight").slider({
-        min: 0, 
-        max: 1000, 
-        orientation: "horizontal",
-        value: 500,
-        slide: change_pointweight,
-        change: change_pointweight
-    });
+    parameter_slider("#pointsize",   pointsize,   { min: 0, max: 10 });
+    parameter_slider("#pointweight", pointweight, { min: 0, max: 1  });
+
     $("#set_center").click(function() {
         var x = Number($("#realvalue").val()),
             y = Number($("#imagvalue").val());
         if (!isNaN(x) && !isNaN(y)) {
-            center.set(vec.make([x, y]));
+            interactor.center.set(vec.make([x, y]));
             update_camera();
         }
     });
@@ -66,7 +144,7 @@ function init_gui()
             return;
         var w = window.innerWidth;
         var h = window.innerHeight;
-        aspect_ratio.set(w/h);
+        interactor.resize(w, h);
         gl.resize(w, h);
         rb.resize(w, h);
         gl.display();
@@ -74,6 +152,8 @@ function init_gui()
 }
 
 $().ready(function() {
+    pointsize = Shade.parameter("float", 2.5);
+    pointweight = Shade.parameter("float", 0.5);
     init_gui();
 
     $("#greeting").click(function() {
@@ -92,8 +172,12 @@ $().ready(function() {
 
     center = Shade.parameter("vec2", vec.make([0, 0]));
     zoom = Shade.parameter("float", 2/3);
-    pointsize = Shade.parameter("float", 2.5);
-    pointweight = Shade.parameter("float", 0.5);
+
+    interactor = center_zoom_interactor({
+        width: width,
+        height: height,
+        zoom: 2/3
+    });
 
     // FIXME That hardcoded 240 should be computed based on screen size or something
     gl = Facet.init(canvas, {
@@ -103,33 +187,12 @@ $().ready(function() {
         attributes: {
             alpha: true,
             depth: true
-        }, mousedown: function(event) {
-            prev_mouse_pos = [ event.offsetX, event.offsetY ];
-        }, mousemove: function(event) {
-            if ((event.which & 1) && !event.shiftKey) {
-                var deltaX =  (event.offsetX - prev_mouse_pos[0]) / (height * zoom.get() / 2);
-                var deltaY = -(event.offsetY - prev_mouse_pos[1]) / (height * zoom.get() / 2);
-                var delta = vec.make([deltaX, deltaY]);
-                center.set(vec.minus(center.get(), delta));
-            } else if ((event.which & 1) && event.shiftKey) {
-                zoom.set(zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
-            }
-            prev_mouse_pos = [ event.offsetX, event.offsetY ];
-            update_camera();
-        }
+        },
+        mousedown: interactor.mouse_down,
+        mousemove: interactor.mouse_move
     });
 
-    $(canvas).bind('mousewheel', function(event, delta, deltaX, deltaY) {
-        zoom.set(zoom.get() * (1.0 - deltaY / 15));
-        update_camera();
-    });
-
-    aspect_ratio = Shade.parameter("float", width/height);
-    camera = Shade.Camera.ortho({
-        center: center,
-        zoom: zoom,
-        aspect_ratio: aspect_ratio
-    });
+    $(canvas).bind('mousewheel', interactor.mouse_wheel);
 
     rb = Facet.render_buffer({ width: width, height: height, type: gl.FLOAT });
     rb_batch = rb.make_screen_batch(function(texel_at_uv) {
@@ -150,7 +213,7 @@ $().ready(function() {
         });
         var pt = Shade.vec(points_model.x, points_model.y);
         points_batch = Facet.bake(points_model, {
-            position: camera(pt),
+            position: interactor.camera(pt),
             mode: Facet.DrawingMode.additive,
             
             //color: Shade.round_dot(Shade.vec(0.1,0,0,1)),
@@ -159,9 +222,9 @@ $().ready(function() {
                 .mul(20)
                 .exp()
                 .mul(pointweight)
-                .mul(zoom.pow(0.33))
+                .mul(interactor.zoom.pow(0.33))
                 .mul(Shade.color("white")),
-            gl_PointSize: zoom.pow(0.5).mul(pointsize)
+            gl_PointSize: interactor.zoom.pow(0.5).mul(pointsize)
         });
         $("#loading").fadeOut(500);
         gl.display();
