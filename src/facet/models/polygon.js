@@ -1,6 +1,6 @@
 Facet.Models.polygon = function(poly,style,vertexColor) {
 
-vvar CW = 1, CCW = 0;
+var CW = 1, CCW = 0;
 
 function point_2d(x, y) {
 	this.x = (typeof x == "undefined") ? 0 : x;
