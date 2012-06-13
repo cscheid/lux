@@ -22,16 +22,34 @@ function data_buffers()
 }
 
 $().ready(function() {
-    setup_ui();
+
+    point_diameter = S.parameter("float", 10);
+    stroke_width   = S.parameter("float", 2.5);
+    point_alpha    = S.parameter("float", 1.0);
+    Facet.UI.parameter_slider({
+        element: "#pointsize",
+        parameter: point_diameter,
+        min: 0, 
+        max: 100
+    });
+    Facet.UI.parameter_slider({
+        element: "#pointalpha",
+        parameter: point_alpha,
+        min: 0,
+        max: 1
+    });
+    Facet.UI.parameter_slider({
+        element: "#strokewidth",
+        parameter: stroke_width,
+        min: 0,
+        max: 100
+    });
+
     gl = Facet.init(document.getElementById("scatterplot"), {
         clearColor: [0, 0, 0, 0.2]
     });
 
     var data = data_buffers();
-
-    point_diameter = S.parameter("float", 10);
-    stroke_width   = S.parameter("float", 2.5);
-    point_alpha    = S.parameter("float", 1.0);
 
     var species_color = S.vec(S.Utils.choose(
         [S.vec(1, 0, 0),
@@ -51,43 +69,3 @@ $().ready(function() {
         mode: Facet.DrawingMode.over
     }));
 });
-
-function setup_ui()
-{
-    function change_pointsize() {
-        point_diameter.set($("#pointsize").slider("value") / 10.0);
-        gl.display();
-    };
-    function change_alpha() {
-        point_alpha.set($("#pointalpha").slider("value") / 100.0);
-        gl.display();
-    };
-    function change_stroke_width() {
-        stroke_width.set($("#strokewidth").slider("value") / 10.0);
-        gl.display();
-    };
-    $("#pointsize").slider({
-        min: 0, 
-        max: 1000, 
-        orientation: "horizontal",
-        value: 100,
-        slide: change_pointsize,
-        change: change_pointsize
-    });
-    $("#pointalpha").slider({
-        min: 0, 
-        max: 100, 
-        orientation: "horizontal",
-        value: 100,
-        slide: change_alpha,
-        change: change_alpha
-    });
-    $("#strokewidth").slider({
-        min: 0, 
-        max: 150, 
-        orientation: "horizontal",
-        value: 25,
-        slide: change_stroke_width,
-        change: change_stroke_width
-    });
-}
