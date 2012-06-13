@@ -70,6 +70,9 @@ facet.js:					\
 	src/facet/data/texture_table.js		\
 	src/facet/data/texture_array.js		\
 	src/facet/data/array_1d.js		\
+	src/facet/ui/_begin.js			\
+	src/facet/ui/parameter_slider.js	\
+	src/facet/ui/center_zoom_interactor.js	\
 	src/shade/_begin.js			\
 	src/shade/make.js			\
 	src/shade/memoize_on_field.js		\
