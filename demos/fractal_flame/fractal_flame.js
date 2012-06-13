@@ -2,6 +2,7 @@ var gl;
 var global_seed_offset;
 var is_running = false;
 var batch_size = 1000;
+var interactor;
 
 // we need something quick and dirty and with word size < 24...
 // http://en.wikipedia.org/wiki/MINSTD#Parameters_in_common_use
@@ -178,23 +179,13 @@ function make_points_batch()
     };
 
     var state = start;
-    for (var i=0; i<5; ++i) {
+    for (var i=0; i<15; ++i) {
         state = iterate_f5(state);
     }
 
-    var half_width = Shade.parameter("float", 1);
-    var half_height = Shade.parameter("float", 1);
-
-    var camera = Shade.Camera.ortho({
-        left: half_width.neg(),
-        right: half_width,
-        bottom: half_height.neg(),
-        top: half_height
-    });
-
     var batch =  Facet.bake(model, {
         mode: Facet.DrawingMode.additive,
-        position: Shade.vec(state.pos.swizzle("xy"), 0, 1),
+        position: interactor.camera(state.pos.swizzle("xy")),
         color: Shade.vec(state.col, 1)
     });
 
@@ -288,12 +279,16 @@ $().ready(function() {
         Facet.Scene.invalidate();
     }
     var canvas = document.getElementById("webgl");
+    interactor = Facet.UI.center_zoom_interactor({
+        width: 640, height: 480, zoom: 1,
+        mousemove: function(event) { 
+            if (event.which & 1)
+                main_batch.clear(); 
+        },
+        mousewheel: function() { main_batch.clear(); }
+    });
     gl = Facet.init(canvas, {
-        clearColor: [1,1,1,1],
-        attributes: {
-            alpha: true,
-            depth: true
-        }
+        interactor: interactor
     });
     for (var i=0; i<4; ++i) {
         $("#name" + (i+1)).text(variation_names[i]);
