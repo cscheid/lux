@@ -1,7 +1,7 @@
 var gl;
 var global_seed_offset;
 var is_running = false;
-var batch_size = 1000;
+var batch_size = 500;
 var interactor;
 
 // we need something quick and dirty and with word size < 24...
@@ -14,17 +14,16 @@ function next_rng(v) {
 function iterate_at_random(fs)
 {
     var l = fs.length;
-
     return function(v) {
-        var choice = v.seed.mod(l);
+        var choice = v.seed.div(65537).mul(l);
         var next = next_rng(v.seed);
         var result = fs[l-1](v); // fall-through
         for (var i=l-2; i>=0; --i) {
             var current = fs[i](v);
             result = {
-                pos: Shade.ifelse(choice.eq(i), current.pos, result.pos),
-                col: Shade.ifelse(choice.eq(i), current.col, result.col),
-                seed: Shade.ifelse(choice.eq(i), current.seed, result.seed)
+                pos: Shade.ifelse(choice.le(i+1), current.pos, result.pos),
+                col: Shade.ifelse(choice.le(i+1), current.col, result.col),
+                seed: Shade.ifelse(choice.le(i+1), current.seed, result.seed)
             };
         }
         return result;
@@ -140,7 +139,8 @@ var iterate_f5 = (function() {
         variation_name_index.push(k);
     for (var i=0; i<total_size; ++i) {
         var u = Math.random() * variation_name_index.length;
-        var name = "spherical"; // variation_name_index[~~u];
+        // var name = "spherical";
+        var name = variation_name_index[~~u];
         variation_names.push(name);
         var variation = variations[name];
         var affine_xform = affine_xform_params[i];
@@ -158,8 +158,8 @@ function make_points_batch()
     function update_random() {
         for (var i=0; i<batch_size; ++i)
             for (var j=0; j<batch_size; ++j) {
-                x[i * batch_size + j] = Math.random() * 2 - 1; // i / batch_size * 2 - 1;
-                y[i * batch_size + j] = Math.random() * 2 - 1; // j / batch_size * 2 - 1;
+                x[i * batch_size + j] = (i + Math.random()) / batch_size * 2 - 1;
+                y[i * batch_size + j] = (j + Math.random()) / batch_size * 2 - 1;
                 r[i * batch_size + j] = ~~(Math.random() * 65536);
             }
     }
@@ -179,7 +179,7 @@ function make_points_batch()
     };
 
     var state = start;
-    for (var i=0; i<15; ++i) {
+    for (var i=0; i<10; ++i) {
         state = iterate_f5(state);
     }
 
@@ -187,6 +187,9 @@ function make_points_batch()
         mode: Facet.DrawingMode.additive,
         position: interactor.camera(state.pos.swizzle("xy")),
         color: Shade.vec(state.col, 1)
+    }, {
+        force_no_pick: true,
+        force_no_unproject: true
     });
 
     return {
@@ -208,7 +211,7 @@ function offscreen_batch()
     var count_scale = Shade.parameter("float", 1);
     var vibrancy = 1.0;
     var gamma_value = Shade.div(1.0, gamma);
-    var rb = Facet.render_buffer({ width: 640, height: 480, type: gl.FLOAT });
+    var rb = Facet.render_buffer({ width: 720, height: 600, type: gl.FLOAT });
     function clear() {
         rb.with_bound_buffer(function() {
             // ugly...
@@ -270,7 +273,7 @@ $().ready(function() {
     }
     function change_hue_rotation(evt, obj)
     {
-        hue_rotation.set(obj.value / 100 * (2 * Math.PI));
+        hue_rotation.set(obj.value / 100 * Math.PI);
         main_batch.clear();
     }
     function change_gamma(evt, obj)
@@ -346,11 +349,13 @@ $().ready(function() {
         main_batch.count_scale.set(1/Math.log(frame_count-1));
         var offset = global_seed_offset.get();
         if (offset == 20) {
+            console.log("click", offset * batch_size * batch_size);
             offset = 0;
             main_batch.update_random();
         }
         global_seed_offset.set(offset+1);
         Facet.Scene.invalidate();
     };
-    
+    is_running = true;
+    main_loop();
 });

@@ -32,7 +32,7 @@
 <div class="content">
 <h1><a href="http://scottdraves.com/flame.html">fractal flames</a> on
   the gpu via facet and webgl</h1>
-<canvas id="webgl" width="640" height="480"></canvas>
+<canvas id="webgl" width="720" height="600"></canvas>
 
 <div>
   <table><tr><td id="name1"></td>
@@ -69,9 +69,74 @@
     <tr><td>hue:</td><td><div class="slider-long-div" id="hue"></div></td></tr>
     <tr><td>hue rotation:</td><td><div class="slider-long-div" id="hue-rotation"></div></td></tr>
     <tr><td>gamma:</td><td><div class="slider-long-div" id="gamma"></div></td></tr>
-    <tr><td><input type="checkbox" id="run-it"><label for="run-it">running</label></input></td></tr>
+    <tr><td><input type="checkbox" id="run-it" checked="checked"><label for="run-it">running</label></input></td></tr>
   </table>
-  </div>
+
+  <p>
+    This is a rough attempt at implementing Scott
+    Draves's <a href="http://scottdraves.com/flame.html">Fractal
+    Flames</a> algorithm in Facet. Although the full algorithm
+    contains many more parameters than what I'm showing here, this 
+    version picks a random set of four variations and lets you interact with the parameters of the affine
+    projection and see the results on the iterated function system. If
+    you reload the page, you'll get a different set of variations
+    which will potentially look better (or worse).
+  </p>
+
+  <p>
+    Because this is running on the GPU, it's also fast enough to
+    dynamically pan and zoom. Drag the mouse around the canvas to pan
+    the viewport, and use either the mousewheel or shift-drag to zoom
+    in and out. 
+  </p>
+
+  <p>
+    Gamma and brightness can be tweaked without resetting
+    the frame buffer, but other parameters will change the
+    distribution of mass on the screen, and so require a clear of the
+    frame buffer.
+  </p>
+
+  <p>
+    The hue slider sets the hue of the first variation, while the "hue
+    rotation" slider determines how much the hue changes between
+    consecutive variations. Setting the slider right at the middle will give
+    you constant hue, while setting it at the extremes will give you
+    180 degrees between consecutive variations.
+  </p>
+
+  <p>
+    What's happening behind the scenes is we're dynamically
+    creating a GPU program that applies a constant number of
+    iterations of the flame's function,
+    currently 10. This would be a fairly ugly problem with other
+    libraries, but it is trivial in Facet (you
+    can <a href="fractal_flame.js">inspect the source</a> to see how
+    that's done). Then this GPU program
+    is used to with a large batch of points, currently 250k at a time,
+    which go to their (approximate)
+    fixed points. We get overall
+    better throughput by increasing the batch size, but interactivity
+    suffers. On my test machine (with an admittedly beefy GPU), I've
+    been getting ~15.3 million points per second.
+  </p>
+
+  <p>
+    The original algorithm asks for a minimum of 20 iterations, and although
+    Facet can do that without a problem, for some reason I find the
+    quality of the resulting drawings to be inferior in this case
+    (GPU precision issues?).
+  </p>
+
+  <p>
+    <b>Future work</b> The right way to do this would be
+    to <a href="http://www.google.com/search?aq=1&oq=gpu+ping-&sugexp=chrome,mod=1&sourceid=chrome&ie=UTF-8&q=gpu+ping-pong+technique">ping-pong</a>
+    a pair of textures for indefinitely long iterations. Since Facet
+    could use an explicit API for ping-ponging, this is probably a
+    good opportunity. 
+    
+  </p>
+
 </div>
 </div>
 </div>
