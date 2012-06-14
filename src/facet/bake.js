@@ -24,6 +24,9 @@ Facet.unload_batch = function()
 
 function draw_it(batch)
 {
+    if (_.isUndefined(batch))
+        throw "drawing mode undefined";
+
     var ctx = Facet._globals.ctx;
     if (batch.batch_id !== previous_batch.batch_id) {
         var attributes = batch.attributes || {};
@@ -88,8 +91,14 @@ function draw_it(batch)
 
 var largest_batch_id = 1;
 
-Facet.bake = function(model, appearance)
+Facet.bake = function(model, appearance, opts)
 {
+    opts = _.defaults(opts || {}, {
+        force_no_draw: false,
+        force_no_pick: false,
+        force_no_unproject: false
+    });
+
     appearance = Shade.canonicalize_program_object(appearance);
 
     if (_.isUndefined(appearance.gl_FragColor)) {
@@ -244,9 +253,18 @@ Facet.bake = function(model, appearance)
         };
     }
 
-    var draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
-    var pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
-    var unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
+    var draw_opts, pick_opts, unproject_opts;
+
+
+    if (!opts.force_no_draw)
+        draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
+
+    if (!opts.force_no_pick)
+        pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
+
+    if (!opts.force_no_unproject)
+        unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
+
     var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {

@@ -54,10 +54,11 @@ Shade.Exp = {
     // if stage is "vertex" then this expression will be hoisted to the vertex shader
     stage: null,
     // returns all sub-expressions in topologically-sorted order
-    sorted_sub_expressions: function() {
+    sorted_sub_expressions: Shade.memoize_on_field("_sorted_sub_expressions", function() {
         var so_far = [];
+        var visited_guids = {};
         var topological_sort_internal = function(exp) {
-            if (so_far.indexOf(exp) != -1) {
+            if (exp.guid in visited_guids) { // so_far.indexOf(exp) != -1) {
                 return;
             }
             var parents = exp.parents;
@@ -69,10 +70,11 @@ Shade.Exp = {
                 topological_sort_internal(parents[i]);
             }
             so_far.push(exp);
+            visited_guids[exp.guid] = true;
         };
         topological_sort_internal(this);
         return so_far;
-    },
+    }),
 
     //////////////////////////////////////////////////////////////////////////
     // constant checking, will be useful for folding and for enforcement
@@ -411,38 +413,42 @@ Shade.Exp = {
     find_if: function(check) {
         return _.select(this.sorted_sub_expressions(), check);
     },
+
     replace_if: function(check, replacement) {
         var subexprs = this.sorted_sub_expressions();
-        var replaced_pairs = [];
+        var replaced_pairs = {};
         function has_been_replaced(x) {
-            return _.some(replaced_pairs, function(v) {
-                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid); //_.isEqual(x, v[0]);
-            });
+            return x.guid in replaced_pairs;
+            // var guid = x.guid;
+            // if (!(guid in replaced_pairs))
+            //     return false;
+            // var v = replaced_pairs[guid];
+            // return v[0].guid !== v[1].guid;
         }
         function parent_replacement(x) {
-            var r = _.select(replaced_pairs, function(v) {
-                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid); //_.isEqual(x, v[0]);
-            });
-            if (r.length === 0)
+            if (!(x.guid in replaced_pairs)) {
                 return x;
-            else
-                return r[0][1];
+            } else
+                return replaced_pairs[x.guid];
         }
+        var last_replacement;
         for (var i=0; i<subexprs.length; ++i) {
             var exp = subexprs[i];
             if (check(exp)) {
-                replaced_pairs.push([exp, replacement(exp)]);
+                var t = replacement(exp);
+                replaced_pairs[exp.guid] = t;
+                last_replacement = t;
             } else if (_.some(exp.parents, has_been_replaced)) {
-                var x = [exp, Shade._create(exp, {
+                var t = Shade._create(exp, {
                     parents: _.map(exp.parents, parent_replacement)
-                })];
-                replaced_pairs.push(x);
+                });
+                last_replacement = t;
+                replaced_pairs[exp.guid] = t;
             } else {
-                replaced_pairs.push([exp, exp]);
+                last_replacement = exp;
             }
         }
-        var result = replaced_pairs[replaced_pairs.length-1][1];
-        return result;
+        return last_replacement;
     }
 };
 
