@@ -3111,12 +3111,36 @@ function facet_typeOf(value)
     }
     return s;
 }
-Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
+Facet.attribute_buffer = function(opts)
 {
     var ctx = Facet._globals.ctx;
-    if (normalized === undefined) {
-        normalized = false;
+    opts = _.defaults(opts, {
+        item_size: 3,
+        item_type: 'float',
+        usage: ctx.STATIC_DRAW,
+        normalized: false
+    });
+
+    var vertex_array = opts.vertex_array;
+    if (_.isUndefined(vertex_array)) {
+        throw "opts.vertex_array must be defined";
     }
+
+    var usage = opts.usage;
+    if ([ctx.STATIC_DRAW, ctx.DYNAMIC_DRAW, ctx.STREAM_DRAW].indexOf(usage) === -1) {
+        throw "opts.usage must be one of STATIC_DRAW, DYNAMIC_DRAW, STREAM_DRAW";
+    }
+
+    var itemSize = opts.item_size;
+    if ([1,2,3,4].indexOf(itemSize) === -1) {
+        throw "opts.item_size must be one of 1, 2, 3, or 4";
+    }
+
+    var normalized = opts.normalized;
+    if (facet_typeOf(normalized) !== "boolean") {
+        throw "opts.normalized must be boolean";
+    }
+
     var gl_enum_typed_array_map = {
         'float': [ctx.FLOAT, Float32Array],
         'short': [ctx.SHORT, Int16Array],
@@ -3124,25 +3148,38 @@ Facet.attribute_buffer = function(vertex_array, itemSize, itemType, normalized)
         'byte': [ctx.BYTE, Int8Array],
         'ubyte': [ctx.UNSIGNED_BYTE, Uint8Array]
     };
+    var itemType = gl_enum_typed_array_map[opts.item_type];
+    if (_.isUndefined(itemType)) {
+        throw "opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'";
+    }
 
-    itemSize = itemSize || 3;
-    itemType = gl_enum_typed_array_map[itemType || 'float'];
-
-    var typedArray = new itemType[1](vertex_array);
     var result = ctx.createBuffer();
-    ctx.bindBuffer(ctx.ARRAY_BUFFER, result);
-    ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
     result._shade_type = 'attribute_buffer';
-    result.array = typedArray;
     result.itemSize = itemSize;
-    result.numItems = vertex_array.length/itemSize;
-    result.bind = function(type) {
-        return function(attribute) {
-            ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-            ctx.vertexAttribPointer(attribute, this.itemSize, type, normalized, 0, 0);
-        };
-    }(itemType[0]);
+    result.usage = usage;
+    result.normalized = normalized;
+    result._webgl_type = itemType[0];
+    result._typed_array_ctor = itemType[1];
+
+    result.set = function(vertex_array) {
+        var ctx = Facet._globals.ctx;
+        var typedArray = new this._typed_array_ctor(vertex_array);
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+        ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+        result.array = typedArray;
+        result.numItems = vertex_array.length/itemSize;
+    };
+
+    result.set(vertex_array);
+
+    result.bind = function(attribute) {
+        var ctx = Facet._globals.ctx;
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+        ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, 0, 0);
+    };
+
     result.draw = function(primitive) {
+        var ctx = Facet._globals.ctx;
         ctx.drawArrays(primitive, 0, this.numItems);
     };
     result.bind_and_draw = function(attribute, primitive) {
@@ -3177,6 +3214,9 @@ Facet.unload_batch = function()
 
 function draw_it(batch)
 {
+    if (_.isUndefined(batch))
+        throw "drawing mode undefined";
+
     var ctx = Facet._globals.ctx;
     if (batch.batch_id !== previous_batch.batch_id) {
         var attributes = batch.attributes || {};
@@ -3241,8 +3281,14 @@ function draw_it(batch)
 
 var largest_batch_id = 1;
 
-Facet.bake = function(model, appearance)
+Facet.bake = function(model, appearance, opts)
 {
+    opts = _.defaults(opts || {}, {
+        force_no_draw: false,
+        force_no_pick: false,
+        force_no_unproject: false
+    });
+
     appearance = Shade.canonicalize_program_object(appearance);
 
     if (_.isUndefined(appearance.gl_FragColor)) {
@@ -3397,9 +3443,18 @@ Facet.bake = function(model, appearance)
         };
     }
 
-    var draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
-    var pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
-    var unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
+    var draw_opts, pick_opts, unproject_opts;
+
+
+    if (!opts.force_no_draw)
+        draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
+
+    if (!opts.force_no_pick)
+        pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
+
+    if (!opts.force_no_unproject)
+        unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
+
     var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {
@@ -3436,7 +3491,7 @@ Facet.element_buffer = function(vertex_array)
     result.bind = function() {
         /* Javascript functions are quirky in that they can take unused arguments.
          So if a call passes an argument to result.bind, it won't fail; the argument
-         is simply dropped on the floor.
+         is simply dropped.
 
          This has the fortuitous consequence of making attribute
          buffers and element buffers share the same interface
@@ -3477,7 +3532,12 @@ Facet.id_buffer = function(vertex_array)
         throw "id_buffer expects array of integers";
     var typedArray = new Int32Array(vertex_array);
     var byteArray = new Uint8Array(typedArray.buffer);
-    return Facet.attribute_buffer(byteArray, 4, 'ubyte', true);
+    return Facet.attribute_buffer({
+        vertex_array: byteArray, 
+        item_size: 4, 
+        item_type: 'ubyte', 
+        normalized: true
+    });
 };
 (function() {
 
@@ -3548,6 +3608,11 @@ Facet.init = function(canvas, opts)
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
             throw "failed context creation";
+        if ("interactor" in opts) {
+            for (var key in opts.interactor.events) {
+                opts[key] = opts.interactor.events[key];
+            }
+        }
         
         if (opts.debugging) {
             var throwOnGLError = function(err, funcName, args) {
@@ -3558,10 +3623,9 @@ Facet.init = function(canvas, opts)
         }
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
-        var names = ["mouseover", "mousemove", "mousedown", 
-                     "mouseout", "mouseup"];
-        for (var i=0; i<names.length; ++i) {
-            var ename = names[i];
+        var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", "mouseup"];
+        for (var i=0; i<canvas_events.length; ++i) {
+            var ename = canvas_events[i];
             var listener = opts[ename];
             if (!_.isUndefined(listener)) {
                 (function(listener) {
@@ -3574,6 +3638,10 @@ Facet.init = function(canvas, opts)
                 })(listener);
             }
         }
+        if (!_.isUndefined(opts.mousewheel)) {
+            $(canvas).bind('mousewheel', opts.mousewheel);
+        };
+
         var ext;
         var exts = _.map(gl.getSupportedExtensions(), function (x) { 
             return x.toLowerCase();
@@ -3766,6 +3834,7 @@ Facet.model = function(input)
                 // example: 'type: "triangles"'
                 result.type = v;
             else if (k === 'elements') {
+                // FIXME: why are these element buffers Shade objects??
                 if (v._shade_type === 'element_buffer')
                     // example: 'elements: Facet.element_buffer(...)'
                     result.elements = Shade(v);
@@ -3787,10 +3856,14 @@ Facet.model = function(input)
                 if (facet_typeOf(v[0]) !== "array" && v[0]._facet_expression) {
                     // example: 'color: [Shade.color('white'), Shade.color('blue'), ...]
                     // assume it's a list of shade vecs, assume they all have the same dimension
+                    // FIXME: check this
                     var dimension = v[0].type.vec_dimension();
                     var new_v = [];
                     _.each(v, push_into(new_v, dimension));
-                    buffer = Facet.attribute_buffer(new_v, dimension);
+                    buffer = Facet.attribute_buffer({
+                        vertex_array: new_v, 
+                        item_size: dimension
+                    });
                     result[k] = Shade(buffer);
                     n_elements = buffer.numItems;
                 } else {
@@ -3798,7 +3871,10 @@ Facet.model = function(input)
                     // a pair, the first element being the list, the second 
                     // being the per-element size
                     // example: 'color: [[1,0,0, 0,1,0, 0,0,1], 3]'
-                    buffer = Facet.attribute_buffer(v[0], v[1]);
+                    buffer = Facet.attribute_buffer({
+                        vertex_array: v[0], 
+                        item_size: v[1]
+                    });
                     result[k] = Shade(buffer);
                     n_elements = buffer.numItems;
                 }
@@ -4136,8 +4212,9 @@ Facet.Unprojector = {
         // the right depth value. We do it via the batch below.
 
         if (!clear_batch) {
-            var xy = Shade(Facet.attribute_buffer(
-                [-1, -1,   1, -1,   -1,  1,   1,  1], 2));
+            var xy = Shade(Facet.attribute_buffer({
+                vertex_array: [-1, -1,   1, -1,   -1,  1,   1,  1], 
+                item_size: 2}));
             var model = Facet.model({
                 type: "triangle_strip",
                 elements: 4,
@@ -4698,6 +4775,160 @@ Facet.Data.array_1d = function(array)
         index: index
     };
 };
+Facet.UI = {};
+/*
+ * Facet.UI.parameter_slider is a function to help create UI elements
+ * that control Shade.parameter objects. 
+ * 
+ * It uses jquery-ui sliders, and so assumes jquery-ui in addition to jquery.
+ * 
+ * I hear jquery-ui is about as cool as pocket protectors, but hey, 
+ * it does the job.
+ * 
+ */
+
+/*
+ * Facet.UI.parameter_slider requires "element" and "parameter" options.
+ * 
+ * opts.element is the HTML element used by jquery-ui to create the slider. That
+ *   object needs to have the correct CSS class assigned to it ahead of calling
+ *   this function.
+ * 
+ * opts.parameter is the Shade.parameter object under control.
+ * 
+ * opts.change is a user-defined callback to the slider change event.
+ * opts.slide is a user-defined callback to the slider slide event.
+ * 
+ *   Both event handlers are passed the HTML element, the parameter object, 
+ *   and the new value, in that order.
+ * 
+ * opts.min is the minimum value allowed by the slider
+ * opts.max is the maximum value allowed by the slider
+ * opts.orientation is the slider's orientation, either "horizontal" or "vertical"
+ */
+
+Facet.UI.parameter_slider = function(opts)
+{
+    opts = _.defaults(opts, {
+        min: 0,
+        max: 1,
+        orientation: "horizontal",
+        slide: function() {},
+        change: function() {}
+    });
+    var element = opts.element;
+    var parameter =  opts.parameter;
+
+    var slider_min = 0, slider_max = 1000;
+
+    function to_slider(v) {
+        return (v-opts.min) / (opts.max - opts.min) * 
+            (slider_max - slider_min) + slider_min;
+    }
+    function to_parameter(v) {
+        return (v-slider_min) / (slider_max - slider_min) *
+            (opts.max - opts.min) + opts.min;
+    }
+    $(element).slider({
+        min: slider_min,
+        max: slider_max,
+        value: to_slider(parameter.get()),
+        orientation: opts.orientation,
+        slide: function() {
+            var v = to_parameter($(element).slider("value"));
+            parameter.set(v);
+            opts.slide(element, parameter, v);
+            Facet.Scene.invalidate();
+        },
+        change: function() {
+            var v = to_parameter($(element).slider("value"));
+            parameter.set(v);
+            opts.change(element, parameter, v);
+            Facet.Scene.invalidate();
+        }
+    });
+};
+/*
+ * A Facet interactor is an object that exposes a list of events that
+ * Facet.init uses to hook up to canvas event handlers.
+ * 
+ * Facet.UI.center_zoom_interactor provides event handlers for the
+ * common interaction mode of zooming and panning. Its main visible variables
+ * are center and zoom Shade.parameter objects, together with a Shade.camera
+ * that computes the appropriate projection matrix.
+ * 
+ * usage examples:
+ *   demos/beauty_of_roots
+ * 
+ */
+
+Facet.UI.center_zoom_interactor = function(opts)
+{
+    opts = _.defaults(opts, {
+        mousemove: function() {},
+        mousedown: function() {},
+        mousewheel: function() {},
+        center: vec.make([0,0]),
+        zoom: 1
+    });
+
+    var height = opts.height;
+    var width = opts.width;
+    var center = Shade.parameter("vec2", opts.center);
+    var zoom = Shade.parameter("float", opts.zoom);
+    var prev_mouse_pos;
+
+    function mousedown(event) {
+        prev_mouse_pos = [event.offsetX, event.offsetY];
+        opts.mousedown(event);
+    }
+
+    function mousemove(event) {
+        if ((event.which & 1) && !event.shiftKey) {
+            var deltaX =  (event.offsetX - prev_mouse_pos[0]) / (height * zoom.get() / 2);
+            var deltaY = -(event.offsetY - prev_mouse_pos[1]) / (height * zoom.get() / 2);
+            var delta = vec.make([deltaX, deltaY]);
+            center.set(vec.minus(center.get(), delta));
+        } else if ((event.which & 1) && event.shiftKey) {
+            zoom.set(zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
+        }
+        prev_mouse_pos = [ event.offsetX, event.offsetY ];
+        opts.mousemove(event);
+        Facet.Scene.invalidate();
+    }
+
+    function mousewheel(event, delta, deltaX, deltaY) {
+        zoom.set(zoom.get() * (1.0 - deltaY / 15));
+        opts.mousewheel(event, delta, deltaX, deltaY);
+        Facet.Scene.invalidate();
+    }
+
+    var aspect_ratio = Shade.parameter("float", width/height);
+    var camera = Shade.Camera.ortho({
+        center: center,
+        zoom: zoom,
+        aspect_ratio: aspect_ratio
+    });
+
+    return {
+        camera: camera,
+        center: center,
+        zoom: zoom,
+
+        resize: function(w, h) {
+            aspect_ratio.set(w/h);
+            width = w;
+            height = h;
+            Facet.Scene.invalidate();
+        },
+
+        events: {
+            mousedown: mousedown,
+            mousemove: mousemove,
+            mousewheel: mousewheel
+        }
+    };
+}
 /*
  * Shade is the javascript DSL for writing GLSL shaders, part of Facet.
  * 
@@ -5250,7 +5481,7 @@ Shade._create = (function() {
         for (var key in new_obj) {
             result[key] = new_obj[key];
         }
-        result.guid = "GUID_" + guid;
+        result.guid = guid;
 
         // this is where memoize_on_field stashes results. putting
         // them all in a single member variable makes it easy to
@@ -5602,7 +5833,6 @@ Shade.Types.function_t = function(return_type, param_types) {
 Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
-
 Shade.CompilationContext = function(compile_type) {
     return {
         freshest_glsl_name: 0,
@@ -5762,25 +5992,27 @@ Shade.Exp = {
     // if stage is "vertex" then this expression will be hoisted to the vertex shader
     stage: null,
     // returns all sub-expressions in topologically-sorted order
-    sorted_sub_expressions: function() {
+    sorted_sub_expressions: Shade.memoize_on_field("_sorted_sub_expressions", function() {
         var so_far = [];
+        var visited_guids = [];
         var topological_sort_internal = function(exp) {
-            if (so_far.indexOf(exp) != -1) {
+            var guid = exp.guid;
+            if (visited_guids[guid]) {
                 return;
             }
             var parents = exp.parents;
-            if (_.isUndefined(parents)) {
-                throw "Internal error: expression " + exp.evaluate()
-                    + " has undefined parents.";
-            }
-            for (var i=0; i<parents.length; ++i) {
+            var i = parents.length;
+            while (i--) {
                 topological_sort_internal(parents[i]);
             }
+            // for (var i=0; i<l; ++i) {
+            // }
             so_far.push(exp);
+            visited_guids[guid] = true;
         };
         topological_sort_internal(this);
         return so_far;
-    },
+    }),
 
     //////////////////////////////////////////////////////////////////////////
     // constant checking, will be useful for folding and for enforcement
@@ -6119,39 +6351,43 @@ Shade.Exp = {
     find_if: function(check) {
         return _.select(this.sorted_sub_expressions(), check);
     },
+
     replace_if: function(check, replacement) {
+        // this code is not particularly clear, but this is a compiler
+        // hot-path, bear with me.
         var subexprs = this.sorted_sub_expressions();
-        var replaced_pairs = [];
-        function has_been_replaced(x) {
-            return _.some(replaced_pairs, function(v) {
-                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid); //_.isEqual(x, v[0]);
-            });
-        }
+        var replaced_pairs = {};
         function parent_replacement(x) {
-            var r = _.select(replaced_pairs, function(v) {
-                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid); //_.isEqual(x, v[0]);
-            });
-            if (r.length === 0)
+            if (!(x.guid in replaced_pairs)) {
                 return x;
-            else
-                return r[0][1];
+            } else
+                return replaced_pairs[x.guid];
         }
+        var latest_replacement, replaced;
         for (var i=0; i<subexprs.length; ++i) {
             var exp = subexprs[i];
             if (check(exp)) {
-                replaced_pairs.push([exp, replacement(exp)]);
-            } else if (_.some(exp.parents, has_been_replaced)) {
-                var x = [exp, Shade._create(exp, {
-                    parents: _.map(exp.parents, parent_replacement)
-                })];
-                replaced_pairs.push(x);
+                latest_replacement = replacement(exp);
+                replaced_pairs[exp.guid] = latest_replacement;
             } else {
-                replaced_pairs.push([exp, exp]);
+                replaced = false;
+                for (var j=0; j<exp.parents.length; ++j) {
+                    if (exp.parents[j].guid in replaced_pairs) {
+                        latest_replacement = Shade._create(exp, {
+                            parents: _.map(exp.parents, parent_replacement)
+                        });
+                        replaced_pairs[exp.guid] = latest_replacement;
+                        replaced = true;
+                        break;
+                    }
+                }
+                if (!replaced) {
+                    latest_replacement = exp;
+                }
             }
         }
-        var result = replaced_pairs[replaced_pairs.length-1][1];
-        return result;
-    }
+        return latest_replacement;
+    },
 };
 
 _.each(["r", "g", "b", "a",
@@ -10164,7 +10400,10 @@ Facet.Marks.aligned_rects = function(opts)
     if (!opts.bottom)   throw "bottom is a required field";
     if (!opts.color)    throw "color is a required field";
 
-    var vertex_index = Facet.attribute_buffer(_.range(opts.elements * 6), 1);
+    var vertex_index = Facet.attribute_buffer({ 
+        vertex_array: _.range(opts.elements * 6), 
+        item_size: 1
+    });
     var primitive_index = Shade.div(vertex_index, 6).floor();
     var vertex_in_primitive = Shade.mod(vertex_index, 6).floor();
 
@@ -10216,7 +10455,10 @@ Facet.Marks.lines = function(opts)
         throw "either position or x and y are required fields";
     }
 
-    var vertex_index        = Facet.attribute_buffer(_.range(opts.elements * 2), 1);
+    var vertex_index        = Facet.attribute_buffer({
+        vertex_array: _.range(opts.elements * 2), 
+        item_size: 1
+    });
     var primitive_index     = Shade.div(vertex_index, 2).floor();
     var vertex_in_primitive = Shade.mod(vertex_index, 2).floor();
 
@@ -10714,6 +10956,38 @@ Facet.Marks.globe = function(opts)
 
     return result;
 };
+Facet.Marks.polygon = function(opts)
+{
+    opts = _.defaults(opts, {
+        fill_color: Shade.vec(0,0,0,1),
+        mode: Facet.DrawingMode.over_with_depth,
+   });
+
+    if (!opts.x)
+        throw "missing required parameter 'x'";
+    if (!opts.y)
+        throw "missing required parameter 'y'";
+    if (!opts.elements)
+        throw "missing required parameter 'elements'";
+
+
+
+    function to_opengl(x) { return (x * 2) - 1; }
+    var position = [], elements;
+
+	for(var i=0;i<opts.x.length;i++){
+       position.push(to_opengl(opts.x[i])); 
+       position.push(to_opengl(opts.y[i]));
+	}
+
+	return polygon_model = Facet.Models.polygon(
+		position,
+		opts.style,
+		opts.fill_color,
+		opts.mode
+	);
+
+};
 Facet.Models = {};
 Facet.Models.flat_cube = function() {
     return Facet.model({
@@ -10775,7 +11049,10 @@ Facet.Models.mesh = function(u_secs, v_secs) {
         }
     }
 
-    var uv_attr = Shade(Facet.attribute_buffer(verts, 2));
+    var uv_attr = Shade(Facet.attribute_buffer({
+        vertex_array: verts, 
+        item_size: 2
+    }));
     return Facet.model({
         type: "triangle_strip",
         tex_coord: uv_attr,
@@ -10811,7 +11088,7 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
     }
 
     var S = Shade;
-    var uv_attr = Facet.attribute_buffer(verts, 2);
+    var uv_attr = Facet.attribute_buffer({ vertex_array: verts, item_size: 2});
     phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
     theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
     var cosphi = S.cos(phi);
@@ -10824,7 +11101,10 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
     });
 };
 Facet.Models.square = function() {
-    var uv = Shade(Facet.attribute_buffer([0, 0, 1, 0, 0, 1, 1, 1], 2));
+    var uv = Shade(Facet.attribute_buffer({
+        vertex_array: [0, 0, 1, 0, 0, 1, 1, 1], 
+        item_size: 2
+    }));
     return Facet.model({
         type: "triangles",
         elements: Facet.element_buffer([0, 1, 2, 1, 3, 2]),
@@ -12402,6 +12682,472 @@ Facet.Models.teapot = function()
     mesh.make_normals();
     return mesh.model;
 };
+Facet.Models.polygon = function(poly,style,vertexColor) {
+
+var CW = 1, CCW = 0;
+
+function point_2d(x, y) {
+	this.x = (typeof x == "undefined") ? 0 : x;
+	this.y = (typeof y == "undefined") ? 0 : y;
+}
+
+
+function getRotation(polyList){
+var z = 0, current, next, prev, j, numpts;
+
+numpts = polyList.length;
+
+//check that the linked list contains points
+for(var j=0;j<numpts;j++)
+	if(polyList[j].next > 0)
+		break;
+if(j === numpts)
+	return -1;
+
+first = j;
+for(var i=0;i<polyList.length;i++){
+	current = polyList[j];
+	next = polyList[current.next];
+	prev = polyList[current.prev];
+	z += ((current.point.x - prev.point.x) * (next.point.y - current.point.y));
+	z -= ((current.point.y - prev.point.y) * (next.point.x - current.point.x));
+	j = polyList[j].next;
+	if(j === first)
+		break;
+}
+if(z > 0)
+	return CCW;
+else
+	return CW;
+}
+
+
+function hidePolyListElement(polyList,indx){
+
+polyList[polyList[indx].prev].next = polyList[indx].next;
+polyList[polyList[indx].next].prev = polyList[indx].prev;
+polyList[indx].next = -1;
+polyList[indx].prev = -1;
+}
+
+
+//adjust linked list pointers and remove element from array
+function hideElement(list,val){
+
+for(var i=0;i<list.length;i++){
+
+	if((list[i].val === val) && (list[i].next >= 0)){
+		list[list[i].prev].next = list[i].next;
+		list[list[i].next].prev = list[i].prev;
+		return i;
+	}
+}
+return -1;
+}
+
+
+function removeElement(list,val){
+var indx;
+
+indx = hideElement(list,val);
+if(indx >= 0){
+	list[indx].next = -1;
+	list[indx].prev = -1;
+}
+}
+
+function addElement(list,val){
+var i;
+		element = new Object();
+		if(list.length === 0){
+			element.prev = 0;
+			element.next = 0;
+		}
+		else {
+			for(i=list.length - 1;i>=0;i--)
+				if(list[i].next >= 0)
+					break;
+			if(i === -1){
+				element.prev = i;
+				element.next = i;
+			}
+			else {
+				element.prev = i;
+				element.next = list[i].next;
+				list[list[i].next].prev = list.length;
+				list[i].next = list.length;
+			}
+		}
+		element.val = val;
+		list.push(element);
+}
+
+function isElementInList(list,val){
+var i;
+
+if(list.length === 0)
+	return false;
+	
+for(i=0;i<list.length;i++){
+	if((list[i].val === val) && list[i].prev >= 0)
+		return true;
+}
+
+return false;
+}
+
+
+/*
+  pt1 is the first point for comparison
+  pt2 is the second point for comparison
+  pt3 is a point on the line used for comparison
+  m and b are the parameters of the line used for comparison
+  
+  determine if the two points are on the same side of the line
+*/
+
+function isSameSide(pt1,pt2,pt3,m,b){
+if(!isFinite(m)){
+	if((pt1.x < pt3.x) && (pt2.x < pt3.x))
+		return true;
+	else if((pt1.x > pt3.x) && (pt2.x > pt3.x))
+		return true;
+}
+else {	
+	if((pt1.y < ((m*pt1.x) + b)) && (pt2.y < ((m*pt2.x) + b)))
+			return true;
+	else if((pt1.y > ((m*pt1.x) + b)) && (pt2.y > ((m*pt2.x) + b)))
+			return true;
+}
+return false;
+
+}
+
+
+
+
+function angleType(polyList,indx,rotation){
+var next,prev,current,angle,angleN,angleP,degree;
+var count;
+var isEar;
+
+
+current = polyList[indx];
+next = polyList[current.next];
+prev = polyList[current.prev];
+
+
+if(rotation === CCW){
+	angleN = Math.atan2((next.point.y - current.point.y),(next.point.x - current.point.x));
+	angleP = Math.atan2((prev.point.y - current.point.y),(prev.point.x - current.point.x));
+	angle = angleP - angleN;
+}
+else{
+	angleN = Math.atan2((next.point.y - current.point.y),(next.point.x - current.point.x));
+	angleP = Math.atan2((prev.point.y - current.point.y),(prev.point.x - current.point.x));
+	angle = angleN - angleP;
+}
+
+degree = angle * (180/Math.PI);
+if(degree < 0)
+	degree += 360;
+
+if(degree < 180){
+	polyList[indx].isReflex = false;
+	isEar = true;
+	next = polyList[current.next];
+	prev = polyList[current.prev];
+	//determine if this vertex is an ear tip
+	for(var i=0;i<polyList.length;i++){
+		if(polyList[i].next < 0)
+			continue;
+		//exclude vertices that cannot be in the interior of the acute angle
+		if(polyList[i] === current || polyList[i] === next || polyList[i] === prev)
+		continue;
+
+		//if any vertex falls within the triangle then it is not an ear
+		if(isSameSide(current.point,polyList[i].point,next.point,current.diag.edge.m,current.diag.edge.b) &&
+			isSameSide(next.point,polyList[i].point,prev.point,prev.edge.m,prev.edge.b) &&
+			isSameSide(prev.point,polyList[i].point,current.point,current.edge.m,current.edge.b)){
+				isEar = false;
+				break;
+			}	
+	}
+	polyList[indx].isEar = isEar;
+}
+else {
+	polyList[indx].isReflex = true;
+	polyList[indx].isEar = false;
+}
+
+}
+
+
+function getLineParams(vertx1,vertx2,shift){
+var edge = new Object(),mid = new point_2d();
+var deltaY,deltaX,cx,cy,rayStart,rayEnd;
+var m,b,displacement = .000001;
+
+rayStart = new point_2d(vertx1.point.x,vertx1.point.y);
+if(typeof shift == "undefined")
+	shift = 0;
+
+//change position of the point where the ray ends
+if(shift > 0){
+	m = vertx2.m;
+	b = vertx2.b;
+	cx = vertx2.point.x - (shift * displacement);
+	cy = (m * cx) + b;
+	rayEnd = new point_2d(cx,cy);
+}
+else
+	rayEnd = new point_2d(vertx2.point.x,vertx2.point.y);
+
+deltaX = rayEnd.x - rayStart.x;
+deltaY = rayEnd.y - rayStart.y;
+cx = rayStart.x;
+cy = rayStart.y;
+
+if(deltaX === 0.){
+	if(deltaY === 0.){ //single point
+		edge.m = Number.NaN;
+		edge.b = Number.NaN;
+	}
+	else if(deltaY < 0.){ //verticle line
+		edge.m = Number.NEGATIVE_INFINITY;
+		edge.b = Number.NaN;
+	}
+	else { //verticle line
+		edge.m = Number.POSITIVE_INFINITY;
+		edge.b = Number.NaN;
+	}
+	mid.x = cx;
+	mid.y = cy + (deltaY/2.);
+}
+else if(deltaY === 0.){ //horizontal line
+	edge.m = 0.;
+	edge.b = cy;
+	mid.x = cx + (deltaX/2.);
+	mid.y = cy
+}
+else { //arbitrary slope
+	edge.m = deltaY/deltaX;
+	edge.b = cy -(edge.m * cx);
+	mid.x = cx + (deltaX/2.);
+	mid.y = cy + (deltaY/2.)
+}
+edge.point = mid;
+
+return edge;
+}
+
+/*
+ *
+ *	get the line parameters (slope m and y intercept b)
+ *	for each edge and the line that closes the triange
+ *	defined by a vertex and its previous and next vertices
+ *
+ */
+function getListParams(polyList,indx){
+
+var prev,next,current,prevElmt,nextElmt;
+var point = {};
+var edge = {point:{}};
+var diag = {point:{}};
+	current = polyList[indx];
+	prev = polyList[indx].prev;
+	next = polyList[indx].next;
+	prevElmt = polyList[prev];
+	nextElmt = polyList[next];
+
+	//get edge slope, y-intersect and midpoint coordinates
+	edge = getLineParams(current,nextElmt);
+	current.edge = {};
+	current.edge.m = edge.m;
+	current.edge.b = edge.b;
+	current.edge.point = new point_2d();
+	current.edge.point.x = edge.point.x;
+	current.edge.point.y = edge.point.y;
+
+	//get diagnal slope, y-intersect and midpoint coordinates
+	current.diag = {};
+	current.diag.edge = getLineParams(prevElmt,nextElmt);;
+}
+
+function triangulate(poly){
+var polyList = new Array();
+var reflex = new Array();
+var concave = new Array();
+var earTip = new Array();
+var triangles = new Array();
+var currentEar,tPrev,tNext,triangle,prev,next,aType,vertxCount;	
+
+//create linked list
+for(var i=0;i<poly.length;i++){
+	var polyListItem = {};
+	polyListItem.point = new point_2d(poly[i].x,poly[i].y);
+	if(i === 0)
+		polyListItem.prev = poly.length - 1;
+	else
+		polyListItem.prev = i-1;
+
+	if(i === (poly.length -1))
+		polyListItem.next = 0;
+	else
+		polyListItem.next = i + 1;
+
+	polyList.push(polyListItem);
+}
+
+
+rotation = getRotation(polyList);
+
+
+//assign vertex edges and diagnals
+for(var i=0;i<polyList.length;i++)
+	getListParams(polyList,i);
+
+for(var i=0;i<polyList.length;i++){
+	angleType(polyList,i,rotation);
+	if(polyList[i].isReflex){
+		addElement(reflex,i);
+	}
+	else {
+		addElement(concave,i);
+		if(polyList[i].isEar){
+			element = new Object;
+			addElement(earTip,i);
+		}
+	}
+}
+//the polygon, reflex, concave and ear tip structures are initialize at this point
+
+vertxCount = polyList.length;
+while(vertxCount >= 3){
+	for(var i=0;i<earTip.length;i++)
+		if(earTip[i].next >= 0)
+			break;
+	if(i === earTip.length)
+		break;
+	currentEar = earTip[i];
+	tPrev = polyList[currentEar.val].prev;
+	tNext = polyList[currentEar.val].next;
+	triangle = [tPrev,currentEar.val,tNext];
+	triangles.push(triangle);
+	removeElement(earTip,currentEar.val);
+	removeElement(concave,currentEar.val);
+	hidePolyListElement(polyList,currentEar.val);
+	getListParams(polyList,tPrev);
+	aType = angleType(polyList,tPrev,rotation);
+	if(polyList[tPrev].isReflex){
+		if(!isElementInList(reflex,tPrev))
+			addElement(reflex,tPrev);
+		if(isElementInList(concave,tPrev))
+			removeElement(concave,tPrev);
+		if(isElementInList(earTip,tPrev))
+			removeElement(earTip,tPrev);
+	}
+	else {
+		if(!isElementInList(concave,tPrev))
+			addElement(concave,tPrev);
+		if(isElementInList(reflex,tPrev))
+			removeElement(reflex,tPrev);
+		if(polyList[tPrev].isEar){
+			if(!isElementInList(earTip,tPrev))
+				addElement(earTip,tPrev);
+		}
+		else{
+			if(isElementInList(earTip,tPrev))
+				removeElement(earTip,tPrev);
+		}
+	}
+	getListParams(polyList,tNext);
+	aType = angleType(polyList,tNext,rotation);
+	if(polyList[tNext].isReflex){
+		if(!isElementInList(reflex,tNext))
+			addElement(reflex,tNext);
+		if(isElementInList(concave,tNext))
+			removeElement(concave,tNext);
+		if(isElementInList(earTip,tNext))
+			removeElement(earTip,tNext);
+	}
+	else {
+		if(!isElementInList(concave,tNext))
+			addElement(concave,tNext);
+		if(isElementInList(reflex,tNext))
+			removeElement(reflex,tNext);
+		if(polyList[tNext].isEar){
+			if(!isElementInList(earTip,tNext))
+				addElement(earTip,tNext);
+		}
+		else{
+			if(isElementInList(earTip,tNext))
+				removeElement(earTip,tNext);
+		}
+	}
+	vertxCount--;
+}
+return triangles;
+
+}
+
+if (! _.isUndefined(poly)){
+
+	var triangles = [];
+    var verts = [];
+    var elements = [];
+
+	if (_.isUndefined(style))
+		style = "line_loop";
+
+	if(style === "triangles" || style === "triangles_loop" || style === "triangles_strip"){
+		// get an array of arrays containing the triangulation of the polygon
+		// every element of indx represents an array of three indices of the polygon
+		// the points of polygon corresponding to the indices define a triangle
+		triangles = triangulate(poly);
+
+		// convert the array of triangle index arrays to a single array of indices
+		for(var i=0 ;i<triangles.length;i++){
+			for(var j=0;j<3;j++){
+				elements.push(triangles[i][j]);
+			}
+		}
+	}
+	else {
+		for(var i=0;i<poly.length;i++){
+			elements.push(i);
+		}
+	}
+	// extract the x and y coordinates of the polygon
+	for(var i=0;i<poly.length;i++){
+		verts.push(poly[i].x);
+		verts.push(poly[i].y);
+		
+	}
+	var uv = Shade(Facet.attribute_buffer({vertex_array:verts, item_size:2}));
+
+	if (! _.isUndefined(vertexColor)){
+		// if an array of color values is provided, they will be assigned to the
+		// polygon vertices in a round-robin fashion
+		
+		return Facet.model({
+			type: style,
+        	elements: Facet.element_buffer(elements),
+        	vertex: uv,
+			color: vertexColor
+    	});
+	} else {
+    	return Facet.model({
+        	type: style,
+        	elements: Facet.element_buffer(elements),
+        	vertex: uv
+		});
+	}
+
+} else
+throw "poly is a required parameter";
+};
+
 Facet.Mesh = {};
 Facet.Mesh.indexed = function(vertices, elements)
 {
