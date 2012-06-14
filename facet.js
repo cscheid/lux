@@ -5481,7 +5481,7 @@ Shade._create = (function() {
         for (var key in new_obj) {
             result[key] = new_obj[key];
         }
-        result.guid = "GUID_" + guid;
+        result.guid = guid;
 
         // this is where memoize_on_field stashes results. putting
         // them all in a single member variable makes it easy to
@@ -5833,7 +5833,6 @@ Shade.Types.function_t = function(return_type, param_types) {
 Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
-
 Shade.CompilationContext = function(compile_type) {
     return {
         freshest_glsl_name: 0,
@@ -5995,21 +5994,21 @@ Shade.Exp = {
     // returns all sub-expressions in topologically-sorted order
     sorted_sub_expressions: Shade.memoize_on_field("_sorted_sub_expressions", function() {
         var so_far = [];
-        var visited_guids = {};
+        var visited_guids = [];
         var topological_sort_internal = function(exp) {
-            if (exp.guid in visited_guids) { // so_far.indexOf(exp) != -1) {
+            var guid = exp.guid;
+            if (visited_guids[guid]) {
                 return;
             }
             var parents = exp.parents;
-            if (_.isUndefined(parents)) {
-                throw "Internal error: expression " + exp.evaluate()
-                    + " has undefined parents.";
-            }
-            for (var i=0; i<parents.length; ++i) {
+            var i = parents.length;
+            while (i--) {
                 topological_sort_internal(parents[i]);
             }
+            // for (var i=0; i<l; ++i) {
+            // }
             so_far.push(exp);
-            visited_guids[exp.guid] = true;
+            visited_guids[guid] = true;
         };
         topological_sort_internal(this);
         return so_far;
@@ -6354,41 +6353,41 @@ Shade.Exp = {
     },
 
     replace_if: function(check, replacement) {
+        // this code is not particularly clear, but this is a compiler
+        // hot-path, bear with me.
         var subexprs = this.sorted_sub_expressions();
         var replaced_pairs = {};
-        function has_been_replaced(x) {
-            return x.guid in replaced_pairs;
-            // var guid = x.guid;
-            // if (!(guid in replaced_pairs))
-            //     return false;
-            // var v = replaced_pairs[guid];
-            // return v[0].guid !== v[1].guid;
-        }
         function parent_replacement(x) {
             if (!(x.guid in replaced_pairs)) {
                 return x;
             } else
                 return replaced_pairs[x.guid];
         }
-        var last_replacement;
+        var latest_replacement, replaced;
         for (var i=0; i<subexprs.length; ++i) {
             var exp = subexprs[i];
             if (check(exp)) {
-                var t = replacement(exp);
-                replaced_pairs[exp.guid] = t;
-                last_replacement = t;
-            } else if (_.some(exp.parents, has_been_replaced)) {
-                var t = Shade._create(exp, {
-                    parents: _.map(exp.parents, parent_replacement)
-                });
-                last_replacement = t;
-                replaced_pairs[exp.guid] = t;
+                latest_replacement = replacement(exp);
+                replaced_pairs[exp.guid] = latest_replacement;
             } else {
-                last_replacement = exp;
+                replaced = false;
+                for (var j=0; j<exp.parents.length; ++j) {
+                    if (exp.parents[j].guid in replaced_pairs) {
+                        latest_replacement = Shade._create(exp, {
+                            parents: _.map(exp.parents, parent_replacement)
+                        });
+                        replaced_pairs[exp.guid] = latest_replacement;
+                        replaced = true;
+                        break;
+                    }
+                }
+                if (!replaced) {
+                    latest_replacement = exp;
+                }
             }
         }
-        return last_replacement;
-    }
+        return latest_replacement;
+    },
 };
 
 _.each(["r", "g", "b", "a",

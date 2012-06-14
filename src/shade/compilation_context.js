@@ -1,7 +1,6 @@
 Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
-
 Shade.CompilationContext = function(compile_type) {
     return {
         freshest_glsl_name: 0,
