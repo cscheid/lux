@@ -105,6 +105,13 @@ Facet.bake = function(model, appearance, opts)
         appearance.gl_FragColor = Shade.vec(1,1,1,1);
     }
 
+    // these are necessary outputs which must be compiled by Shade.program
+    function is_program_output(key)
+    {
+        return ["color", "position", "point_size",
+                "gl_FragColor", "gl_Position", "gl_PointSize"].indexOf(key) != -1;
+    };
+
     if (appearance.gl_Position.type.equals(Shade.Types.vec2)) {
         appearance.gl_Position = Shade.vec(appearance.gl_Position, 0, 1);
     } else if (appearance.gl_Position.type.equals(Shade.Types.vec3)) {
@@ -126,7 +133,7 @@ Facet.bake = function(model, appearance, opts)
     function process_appearance(val_key_function) {
         var result = {};
         _.each(appearance, function(value, key) {
-            if (Shade.is_program_parameter(key)) {
+            if (is_program_output(key)) {
                 result[key] = val_key_function(value, key);
             }
         });
