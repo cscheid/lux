@@ -3118,7 +3118,8 @@ Facet.attribute_buffer = function(opts)
         item_size: 3,
         item_type: 'float',
         usage: ctx.STATIC_DRAW,
-        normalized: false
+        normalized: false,
+        keep_array: false
     });
 
     var vertex_array = opts.vertex_array;
@@ -3142,11 +3143,11 @@ Facet.attribute_buffer = function(opts)
     }
 
     var gl_enum_typed_array_map = {
-        'float': [ctx.FLOAT, Float32Array],
-        'short': [ctx.SHORT, Int16Array],
-        'ushort': [ctx.UNSIGNED_SHORT, Uint16Array],
-        'byte': [ctx.BYTE, Int8Array],
-        'ubyte': [ctx.UNSIGNED_BYTE, Uint8Array]
+        'float': { webgl_enum: ctx.FLOAT, typed_array_ctor: Float32Array, size: 4 },
+        'short': { webgl_enum: ctx.SHORT, typed_array_ctor: Int16Array, size: 2 },
+        'ushort': { webgl_enum: ctx.UNSIGNED_SHORT, typed_array_ctor: Uint16Array, size: 2 },
+        'byte': { webgl_enum: ctx.BYTE, typed_array_ctor: Int8Array, size: 1 },
+        'ubyte': { webgl_enum: ctx.UNSIGNED_BYTE, typed_array_ctor: Uint8Array, size: 1 }
     };
     var itemType = gl_enum_typed_array_map[opts.item_type];
     if (_.isUndefined(itemType)) {
@@ -3158,19 +3159,38 @@ Facet.attribute_buffer = function(opts)
     result.itemSize = itemSize;
     result.usage = usage;
     result.normalized = normalized;
-    result._webgl_type = itemType[0];
-    result._typed_array_ctor = itemType[1];
+    result._webgl_type = itemType.webgl_enum;
+    result._typed_array_ctor = itemType.typed_array_ctor;
+    result._word_length = itemType.size;
 
     result.set = function(vertex_array) {
+        if (vertex_array.length % itemSize !== 0) {
+            throw "length of array must be multiple of item_size";
+        }
         var ctx = Facet._globals.ctx;
         var typedArray = new this._typed_array_ctor(vertex_array);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
-        result.array = typedArray;
-        result.numItems = vertex_array.length/itemSize;
+        if (opts.keep_array) {
+            this.array = typedArray;
+        }
+        this.numItems = vertex_array.length/itemSize;
     };
-
     result.set(vertex_array);
+
+    result.set_region = function(index, array) {
+        if ((index + array.length) > (this.numItems * this.itemSize) || (index < 0))
+            throw "set_region index out of bounds";
+        var ctx = Facet._globals.ctx;
+        var typedArray = new this._typed_array_ctor(array);
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+        ctx.bufferSubData(ctx.ARRAY_BUFFER, index * this._word_length, typedArray);
+        if (opts.keep_array) {
+            for (var i=0; i<array.length; ++i) {
+                this.array[index+i] = array[i];
+            }
+        }
+    };
 
     result.bind = function(attribute) {
         var ctx = Facet._globals.ctx;
@@ -3477,6 +3497,7 @@ Facet.bake = function(model, appearance, opts)
 (function() {
 
 })();
+// FIXME make API similar to Facet.attribute_buffer
 Facet.element_buffer = function(vertex_array)
 {
     var ctx = Facet._globals.ctx;
@@ -5764,7 +5785,6 @@ Shade.basic = function(repr) {
         }
     });
 };
-// FIXME should be Shade.Types.array
 Shade.Types.array = function(base_type, size) {
     return Shade._create(Shade.Types.base_t, {
         is_array: function() { return true; },
@@ -8893,6 +8913,8 @@ Shade.Utils.fit = function(data) {
     if (t === 'attribute_buffer') {
         if (data.itemSize !== 1)
             throw "only dimension-1 attribute buffers are supported";
+        if (_.isUndefined(data.array))
+            throw "Shade.Utils.fit on attribute buffers requires keep_array:true in options";
         data = data.array;
     }
 

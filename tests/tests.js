@@ -120,20 +120,33 @@ test("Shade compilation", function() {
         var root = Shade.ifelse(cond, c, s);
         var cc = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE);
         cc.compile(root);
-        equal(cc.source(), "precision highp float;\n" +
-              " uniform float _unique_name_2;\n" + 
-              " uniform vec4 _unique_name_1;\n" + 
-              " vec4 glsl_name_8 ;\n" + 
-              " bool glsl_name_9 ;\n" + 
-              " vec4 glsl_name_4 (void) {\n" + 
-              "     return  (glsl_name_9?glsl_name_8: ((glsl_name_9=true),(glsl_name_8=exp ( _unique_name_1 )))) ;\n" + 
-              "}\n" + 
-              " vec4 glsl_name_7 (void) {\n" + 
-              "     return  ((_unique_name_2 > float(0.0))?cos ( glsl_name_4() ):sin ( glsl_name_4() )) ;\n" + 
-              "}\n" + 
-              " void main() {\n" + 
-              "      glsl_name_9 = false ;\n" + 
-              "      glsl_name_7() ;\n" + 
+        // This optimization was making the GLSL compiler too slow, so I removed it.
+        // equal(cc.source(), "precision highp float;\n" +
+        //       " uniform float _unique_name_2;\n" + 
+        //       " uniform vec4 _unique_name_1;\n" + 
+        //       " vec4 glsl_name_8 ;\n" + 
+        //       " bool glsl_name_9 ;\n" + 
+        //       " vec4 glsl_name_4 (void) {\n" + 
+        //       "     return  (glsl_name_9?glsl_name_8: ((glsl_name_9=true),(glsl_name_8=exp ( _unique_name_1 )))) ;\n" + 
+        //       "}\n" + 
+        //       " vec4 glsl_name_7 (void) {\n" + 
+        //       "     return  ((_unique_name_2 > float(0.0))?cos ( glsl_name_4() ):sin ( glsl_name_4() )) ;\n" + 
+        //       "}\n" + 
+        //       " void main() {\n" + 
+        //       "      glsl_name_9 = false ;\n" + 
+        //       "      glsl_name_7() ;\n" + 
+        //       " }\n");
+
+        equal(cc.source(), "precision highp float;\n" + 
+              " uniform vec4 _unique_name_1;\n" +
+              " vec4 glsl_name_8 ;\n" +
+              " uniform float _unique_name_2;\n" +
+              " vec4 glsl_name_7 (void) {\n" +
+              "     return  ((_unique_name_2 > float(0.0))?cos ( glsl_name_8 ):sin ( glsl_name_8 )) ;\n" +
+              "}\n" +
+              " void main() {\n" +
+              "      glsl_name_8 = exp ( _unique_name_1 ) ;\n" +
+              "      glsl_name_7() ;\n" +
               " }\n");
     })();
 
@@ -724,4 +737,29 @@ test("Shade Bits", function() {
             almost_equal(t, convert_through_encode(t), "encode_float");
         }
     })();
+});
+
+module("Facet tests");
+test("Facet.attribute_buffer", function() {
+    ok(Facet.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 1}));
+    ok(Facet.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 2}));
+    ok(Facet.attribute_buffer({ vertex_array: [1,2,3,4,5], item_size: 1}));
+    raises(function() {
+        Facet.attribute_buffer({ vertex_array: [1,2,3,4,5], item_size: 2});
+    });
+    var x = Facet.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 1});
+    ok((function() {
+        x.set_region(1, [1]);
+        return true;
+    })());
+    ok((function() {
+        x.set_region(2, [1,2]);
+        return true;
+    })());
+    raises(function() {
+        x.set_region(6, [1]);
+    });
+    raises(function() {
+        x.set_region(2, [1,2,3]);
+    });
 });
