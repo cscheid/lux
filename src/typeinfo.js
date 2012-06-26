@@ -1,3 +1,23 @@
+// run-time type information helper functions
+// 
+// All of this would be unnecessary if Javascript was SML. Alas,
+// Javascript is no SML.
+// 
+//////////////////////////////////////////////////////////////////////////////
+
+// returns false if object is not a Shade expression, or returns
+// the AST type of the shade expression.
+//
+// For example, in some instances it is useful to know whether the
+// float value comes from a constant or a GLSL uniform or an attribute 
+// buffer.
+Facet.is_shade_expression = function(obj)
+{
+    return typeof obj === 'function' && obj._facet_expression && obj.expression_type;
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
 // FIXME Can I make these two the same function call?
 function facet_constant_type(obj)
 // it is convenient in many places to accept as a parameter a scalar,
@@ -23,7 +43,10 @@ function facet_constant_type(obj)
 //   http://javascript.crockford.com/remedial.html
 //
 // In particular, facet_typeOf will return "object" if given Shade expressions.
-// This is something of a hack, but it is the simplest way I know to get
+// 
+// Shade expressions are actually functions with a bunch of extra methods.
+// 
+// This is something of a hack, but it is the simplest way I know of to get
 // operator() overloading, which turns out to be notationally quite powerful.
 //
 

@@ -140,8 +140,7 @@ Facet.Marks.globe = function(opts)
 
     if (facet_typeOf(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
-    } else if (!(facet_typeOf(opts.zoom) === "object" && opts.zoom.expression_type === "uniform")) {
-        // FIXME ugly typeinfo
+    } else if (Facet.is_shade_expression(opts.zoom) !== "parameter") {
         throw "zoom must be either a number or a parameter";
     }
 

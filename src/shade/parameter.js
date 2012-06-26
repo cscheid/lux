@@ -26,7 +26,7 @@ Shade.parameter = function(type, v)
     var result = Shade._create_concrete_exp({
         parents: [],
         type: type,
-        expression_type: 'uniform',
+        expression_type: 'parameter',
         evaluate: function() {
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";

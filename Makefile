@@ -97,7 +97,7 @@ facet.js:					\
 	src/shade/constant.js			\
 	src/shade/array.js			\
 	src/shade/set.js			\
-	src/shade/uniform.js			\
+	src/shade/parameter.js			\
 	src/shade/sampler2D_from_texture.js	\
 	src/shade/attribute.js			\
 	src/shade/varying.js			\
