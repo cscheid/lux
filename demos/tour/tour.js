@@ -23,14 +23,17 @@ function display()
 function data_buffers()
 {
     var d = Data.flowers();
-    return {
-        sepalLength: Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalLength; }), item_size: 1}),
-        sepalWidth:  Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalWidth; }), item_size: 1}),
-        petalLength: Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalLength; }), item_size: 1}),
-        petalWidth:  Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalWidth; }), item_size: 1}),
-        species:     Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.species; }), item_size: 1, item_type: 'ubyte'}),
-        columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species']
-    };
+    var result = {};
+    var fields = ["sepalLength", "sepalWidth", "petalLength", "petalWidth", "species"];
+    _.each(fields, function(field) {
+        result[field] = Facet.attribute_buffer({
+            vertex_array: d.data.map(function(v) { return v[field]; }),
+            item_size: 1,
+            keep_array: true
+        });
+    });
+    result.columns = fields;
+    return result;
 }
 
 function random_2d_frame(dimension)
