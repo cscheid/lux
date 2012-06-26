@@ -41,7 +41,7 @@ function make_graph_batch(model, center, zoom)
         type: 'lines',
         elements: model.edge_elements
     }, {
-        position: Shade.vec(dots_batch.gl_Position.swizzle("xy"), 0.1),
+        position: interactor.camera(Shade(model.position, -0.1)),
         color: Shade.vec(0, 0, 0, 0.2),
         mode: Facet.DrawingMode.over
     });
@@ -67,7 +67,6 @@ function draw_it()
 $().ready(function () {
     var canvas = document.getElementById("webgl");
     var center = Shade.parameter("vec2", vec.make([450, 450]));
-    var zoom = Shade.parameter("float", 1/450);
     var prev_mouse_pos;
     
     interactor = Facet.UI.center_zoom_interactor({
@@ -78,7 +77,7 @@ $().ready(function () {
                    function (data) {
                        var graph = data;
                        var model = make_graph_model(graph);
-                       graph_batch = make_graph_batch(model, center, zoom);
+                       graph_batch = make_graph_batch(model, center, interactor.zoom);
                        gl.display();
                    });
     gl = Facet.init(canvas, {
