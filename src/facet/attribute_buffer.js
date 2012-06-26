@@ -5,7 +5,8 @@ Facet.attribute_buffer = function(opts)
         item_size: 3,
         item_type: 'float',
         usage: ctx.STATIC_DRAW,
-        normalized: false
+        normalized: false,
+        keep_array: false
     });
 
     var vertex_array = opts.vertex_array;
@@ -29,11 +30,11 @@ Facet.attribute_buffer = function(opts)
     }
 
     var gl_enum_typed_array_map = {
-        'float': { webgl_type: ctx.FLOAT, typed_array_ctor: Float32Array, size: 4 },
-        'short': { webgl_type: ctx.SHORT, typed_array_ctor: Int16Array, size: 2 },
-        'ushort': { webgl_type: ctx.UNSIGNED_SHORT, typed_array_ctor: Uint16Array, size: 2 },
-        'byte': { webgl_type: ctx.BYTE, typed_array_ctor: Int8Array, size: 1 },
-        'ubyte': { webgl_type: ctx.UNSIGNED_BYTE, typed_array_ctor: Uint8Array, size: 1 }
+        'float': { webgl_enum: ctx.FLOAT, typed_array_ctor: Float32Array, size: 4 },
+        'short': { webgl_enum: ctx.SHORT, typed_array_ctor: Int16Array, size: 2 },
+        'ushort': { webgl_enum: ctx.UNSIGNED_SHORT, typed_array_ctor: Uint16Array, size: 2 },
+        'byte': { webgl_enum: ctx.BYTE, typed_array_ctor: Int8Array, size: 1 },
+        'ubyte': { webgl_enum: ctx.UNSIGNED_BYTE, typed_array_ctor: Uint8Array, size: 1 }
     };
     var itemType = gl_enum_typed_array_map[opts.item_type];
     if (_.isUndefined(itemType)) {
@@ -46,37 +47,36 @@ Facet.attribute_buffer = function(opts)
     result.usage = usage;
     result.normalized = normalized;
     result._webgl_type = itemType.webgl_enum;
-    result._typed_array_ctor = itemType.TypedArrayCtor;
+    result._typed_array_ctor = itemType.typed_array_ctor;
     result._word_length = itemType.size;
 
     result.set = function(vertex_array) {
+        if (vertex_array.length % itemSize !== 0) {
+            throw "length of array must be multiple of item_size";
+        }
         var ctx = Facet._globals.ctx;
         var typedArray = new this._typed_array_ctor(vertex_array);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
-        this.array = typedArray; // FIXME Should only store this optionally.
+        if (opts.keep_array) {
+            this.array = typedArray;
+        }
         this.numItems = vertex_array.length/itemSize;
     };
     result.set(vertex_array);
 
     result.set_region = function(index, array) {
+        if ((index + array.length) > (this.numItems * this.itemSize) || (index < 0))
+            throw "set_region index out of bounds";
         var ctx = Facet._globals.ctx;
         var typedArray = new this._typed_array_ctor(array);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-        ctx.bufferSubData(ctx.ARRAY_BUFFER, index * this._word_length, typedArray, this.usage);
-        for (var i=0; i<array.length; ++i) {
-            this.array[index+i] = array[i];
+        ctx.bufferSubData(ctx.ARRAY_BUFFER, index * this._word_length, typedArray);
+        if (opts.keep_array) {
+            for (var i=0; i<array.length; ++i) {
+                this.array[index+i] = array[i];
+            }
         }
-    };
-
-    // This function is relatively slow; you should call set_region if
-    // at all possible
-    result.set_value = function(index, value) {
-        var ctx = Facet._globals.ctx;
-        var typedArray = new this._typed_array_ctor([value]);
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-        ctx.bufferSubData(ctx.ARRAY_BUFFER, index * this._word_length, typedArray, this.usage);
-        this.array[index] = value;
     };
 
     result.bind = function(attribute) {
