@@ -9,6 +9,8 @@ Shade.Utils.fit = function(data) {
     if (t === 'attribute_buffer') {
         if (data.itemSize !== 1)
             throw "only dimension-1 attribute buffers are supported";
+        if (_.isUndefined(data.array))
+            throw "Shade.Utils.fit on attribute buffers requires keep_array:true in options";
         data = data.array;
     }
 
