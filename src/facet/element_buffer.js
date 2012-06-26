@@ -1,3 +1,4 @@
+// FIXME make API similar to Facet.attribute_buffer
 Facet.element_buffer = function(vertex_array)
 {
     var ctx = Facet._globals.ctx;
