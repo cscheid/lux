@@ -108,27 +108,6 @@ function create_function(variation, affine_parameters, color)
     };
 }
 
-var iterate_f2 = iterate_at_random([
-    create_function(variations.spherical, [-0.681206, -0.0779465, 0.20769,   0.755065, -0.0416126, -0.262334], Shade.color("orange").swizzle("rgb")),
-    create_function(variations.spherical, [0.953766,   0.48396,   0.43268,  -0.054276,  0.642503,  -0.995898], Shade.color("darkblue").swizzle("rgb")),
-    create_function(variations.spherical, [0.840613,  -0.816191,  0.318971, -0.430402,  0.905589,   0.909402], Shade.color("gray").swizzle("rgb")),
-    create_function(variations.spherical, [0.960492,  -0.466555,  0.215383, -0.727377, -0.126074,   0.253509], Shade.color("white").swizzle("rgb"))
-]);
-
-var iterate_f3 = iterate_at_random([
-    create_function(variations.spherical,  [0.81206,  -0.0779465, -0.20769,   0.755065, -1.0416126, -0.262334], Shade.color("orange").swizzle("rgb")),
-    create_function(variations.horseshoe,  [0.953766,   0.48396,   0.43268,  -0.054276,  0.642503,  -0.995898], Shade.color("darkblue").swizzle("rgb")),
-    create_function(variations.swirl,      [0.840613,  -0.816191,  0.318971, -0.430402,  0.905589,   0.909402], Shade.color("gray").swizzle("rgb")),
-    create_function(variations.sinusoidal, [0.960492,  -0.466555,  0.215383, -0.727377, -0.126074,   0.253509], Shade.color("white").swizzle("rgb"))
-]);
-
-var iterate_f4 = iterate_at_random([
-    create_function(variations.spherical, [Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5], Shade.color("darkgreen").swizzle("rgb")),
-    create_function(variations.horseshoe, [Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5], Shade.color("magenta").swizzle("rgb")),
-    create_function(variations.swirl,     [Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5], Shade.color("white").swizzle("rgb")),
-    create_function(variations.sinusoidal,[Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5,Math.random()-0.5], Shade.color("green").swizzle("rgb"))
-]);
-
 var hue = Shade.parameter("float", Math.random() * 2 * Math.PI - Math.PI);
 var hue_rotation = Shade.parameter("float", Math.PI/2);
 var iterate_f5 = (function() {
@@ -172,21 +151,18 @@ function make_points_batch()
         x: bx, y: by, seed: b_seed, type: "points"
     });
     
-    var start = {
-        seed: model.seed.add(global_seed_offset).mod(65536),
-        pos: Shade.vec(model.x, model.y),
-        col: Shade.vec(0,0,0)
-    };
-
-    var state = start;
-    for (var i=0; i<10; ++i) {
-        state = iterate_f5(state);
+    var start = state(Shade.vec(model.x, model.y),
+                      Shade(0),
+                      model.seed.add(global_seed_offset).mod(65536));
+    var it_state = start;
+    for (var i=0; i<5; ++i) {
+        it_state = sheep.iteration(it_state);
     }
 
-    var batch =  Facet.bake(model, {
+    var batch = Facet.bake(model, {
         mode: Facet.DrawingMode.additive,
-        position: interactor.camera(state.pos.swizzle("xy")),
-        color: Shade.vec(state.col, 1)
+        position: interactor.camera(it_state.pos().swizzle("xy")),
+        color: Shade.vec(sheep.colormap(it_state.color()), 1)
     }, {
         force_no_pick: true,
         force_no_unproject: true
@@ -222,7 +198,7 @@ function offscreen_batch()
     clear();
     var rb_batch = rb.make_screen_batch(function(texel_at_uv) {
         var scale = texel_at_uv.a().log().div(texel_at_uv.a()).mul(count_scale);
-        var pregamma = texel_at_uv.swizzle("rgba").mul(scale);
+        var pregamma = texel_at_uv.mul(scale);
         var alpha_gamma_factor = pregamma.a().pow(gamma_value).div(pregamma.a());
         var rgb_gamma_factor = pregamma.swizzle("rgb").pow(Shade.vec(gamma_value, gamma_value, gamma_value)).div(pregamma.swizzle("rgb"));
         var vibrancy_factor = Shade.mix(rgb_gamma_factor, 
@@ -254,6 +230,7 @@ function offscreen_batch()
 };
 
 $().ready(function() {
+    var main_batch;
     function change_xform_param(evt, obj)
     {
         var i = Number(evt.target.id[1])-1,
@@ -289,6 +266,13 @@ $().ready(function() {
                 main_batch.clear(); 
         },
         mousewheel: function() { main_batch.clear(); }
+    });
+    flame_parse("flames/ex0.xml", function(d) {
+        sheep = d;
+        interactor.center.set(vec.make(d.center));
+        interactor.zoom.set(1.0/d.scale);
+        main_batch = offscreen_batch();
+        Facet.Scene.add(main_batch);
     });
     gl = Facet.init(canvas, {
         interactor: interactor
@@ -338,8 +322,8 @@ $().ready(function() {
         }
     });
     global_seed_offset = Shade.parameter("float", 0);
-    var main_batch = offscreen_batch();
-    Facet.Scene.add(main_batch);
+    // var main_batch = offscreen_batch();
+    // Facet.Scene.add(main_batch);
     var frame_count = 0;
     var main_loop = function() {
         if (is_running) {
@@ -349,7 +333,6 @@ $().ready(function() {
         main_batch.count_scale.set(1/Math.log(frame_count-1));
         var offset = global_seed_offset.get();
         if (offset == 20) {
-            console.log("click", offset * batch_size * batch_size);
             offset = 0;
             main_batch.update_random();
         }
