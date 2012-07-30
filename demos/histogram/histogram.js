@@ -39,7 +39,7 @@ function histo_buffer(opts)
     function bin_to_screen(pos) {
         // the call to floor() prevents spillage when pos is fractional
         var xy = Shade.vec(pos.mod(sz), pos.div(sz)).floor().add(0.5);
-        var map = Shade.Utils.linear(0, sz, -1, 1);
+        var map = Shade.Scale.linear({ domain: [0, sz], range: [-1, 1] });
         return Shade.vec(map(xy), 0, 1);
     }
 
@@ -141,7 +141,7 @@ function init_webgl()
     var bin_count = 24;
     histo = histo_buffer({
         bin_count: bin_count,
-        bin: Shade.Utils.linear(4, 8, 0, bin_count)(data.sepalLength),
+        bin: Shade.Scale.linear({domain: [4, 8], range: [0, bin_count]})(data.sepalLength),
         elements: data.n_rows
     });
     histo.compute();

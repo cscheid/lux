@@ -29,6 +29,9 @@ Facet.unload_batch = function()
 
 function draw_it(batch_opts)
 {
+    if (_.isUndefined(batch))
+        throw "drawing mode undefined";
+
     var ctx = Facet._globals.ctx;
     if (batch_opts.batch_id !== previous_batch_opts.batch_id) {
         var attributes = batch_opts.attributes || {};
@@ -93,13 +96,26 @@ function draw_it(batch_opts)
 
 var largest_batch_id = 1;
 
-Facet.bake = function(model, appearance)
+Facet.bake = function(model, appearance, opts)
 {
+    opts = _.defaults(opts || {}, {
+        force_no_draw: false,
+        force_no_pick: false,
+        force_no_unproject: false
+    });
+
     appearance = Shade.canonicalize_program_object(appearance);
 
     if (_.isUndefined(appearance.gl_FragColor)) {
         appearance.gl_FragColor = Shade.vec(1,1,1,1);
     }
+
+    // these are necessary outputs which must be compiled by Shade.program
+    function is_program_output(key)
+    {
+        return ["color", "position", "point_size",
+                "gl_FragColor", "gl_Position", "gl_PointSize"].indexOf(key) != -1;
+    };
 
     if (appearance.gl_Position.type.equals(Shade.Types.vec2)) {
         appearance.gl_Position = Shade.vec(appearance.gl_Position, 0, 1);
@@ -122,7 +138,7 @@ Facet.bake = function(model, appearance)
     function process_appearance(val_key_function) {
         var result = {};
         _.each(appearance, function(value, key) {
-            if (Shade.is_program_parameter(key)) {
+            if (is_program_output(key)) {
                 result[key] = val_key_function(value, key);
             }
         });
@@ -259,9 +275,18 @@ Facet.bake = function(model, appearance)
         return result;
     }
 
-    var draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
-    var pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
-    var unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
+    var draw_opts, pick_opts, unproject_opts;
+
+
+    if (!opts.force_no_draw)
+        draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
+
+    if (!opts.force_no_pick)
+        pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
+
+    if (!opts.force_no_unproject)
+        unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
+
     var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {

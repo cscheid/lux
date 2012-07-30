@@ -3,7 +3,12 @@
 
 JS_COMPILER = ./node_modules/uglify-js/bin/uglifyjs
 
-all: facet.js facet.min.js data.js
+all: facet.js facet.min.js data.js brewcolor.js
+
+brewcolor.js:					\
+	src/brewcolor/_begin.js			\
+	src/brewcolor/color_data.js		\
+	src/brewcolor/color_src.js
 
 data.js:					\
 	src/data/_begin.js			\
@@ -49,7 +54,7 @@ facet.js:					\
 	src/facet/net/_begin.js			\
 	src/facet/net/ajax.js			\
 	src/facet/net/json.js			\
-	src/facet/net/buffer_ajax.js		\
+	src/facet/net/binary.js			\
 	src/facet/net/_end.js			\
 	src/facet/scale/_begin.js		\
 	src/facet/scale/geo/_begin.js		\
@@ -65,6 +70,9 @@ facet.js:					\
 	src/facet/data/texture_table.js		\
 	src/facet/data/texture_array.js		\
 	src/facet/data/array_1d.js		\
+	src/facet/ui/_begin.js			\
+	src/facet/ui/parameter_slider.js	\
+	src/facet/ui/center_zoom_interactor.js	\
 	src/shade/_begin.js			\
 	src/shade/make.js			\
 	src/shade/memoize_on_field.js		\
@@ -89,7 +97,7 @@ facet.js:					\
 	src/shade/constant.js			\
 	src/shade/array.js			\
 	src/shade/set.js			\
-	src/shade/uniform.js			\
+	src/shade/parameter.js			\
 	src/shade/sampler2D_from_texture.js	\
 	src/shade/attribute.js			\
 	src/shade/varying.js			\
@@ -104,7 +112,6 @@ facet.js:					\
 	src/shade/builtins.js			\
 	src/shade/seq.js			\
 	src/shade/program.js			\
-	src/shade/is_program_parameter.js	\
 	src/shade/round.js			\
 	src/shade/utils/_begin.js		\
 	src/shade/utils/lerp.js			\
@@ -137,18 +144,22 @@ facet.js:					\
 	src/shade/bits/mask_last.js		\
 	src/shade/bits/shift_left.js		\
 	src/shade/bits/shift_right.js		\
+	src/shade/scale/_begin.js		\
+	src/shade/scale/linear.js		\
 	src/facet/marks/_begin.js		\
 	src/facet/marks/aligned_rects.js	\
 	src/facet/marks/lines.js		\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\
 	src/facet/marks/globe.js		\
+	src/facet/marks/polygon.js		\
 	src/facet/models/_begin.js		\
 	src/facet/models/flat_cube.js		\
 	src/facet/models/mesh.js		\
 	src/facet/models/sphere.js		\
 	src/facet/models/square.js		\
 	src/facet/models/teapot.js		\
+	src/facet/models/polygon.js		\
 	src/facet/mesh/_begin.js		\
 	src/facet/mesh/indexed.js		\
 	src/facet/scene/_begin.js		\
@@ -174,6 +185,11 @@ endif
 	chmod -w $@ 
 
 data.js: Makefile
+	@rm -f $@
+	cat $(filter %.js,$^) > $@
+	chmod -w $@
+
+brewcolor.js: Makefile
 	@rm -f $@
 	cat $(filter %.js,$^) > $@
 	chmod -w $@
