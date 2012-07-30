@@ -12,11 +12,11 @@ function data_buffers()
 {
     var d = Data.flowers();
     return {
-        sepalLength: Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalLength; }), item_size: 1}),
-        sepalWidth:  Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalWidth; }), item_size: 1}),
-        petalLength: Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalLength; }), item_size: 1}),
-        petalWidth:  Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalWidth; }), item_size: 1}),
-        species:     Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.species; }), item_size: 1, item_type: 'ubyte'}),
+        sepalLength: Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalLength; }), item_size: 1, keep_array: true }),
+        sepalWidth:  Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalWidth; }), item_size: 1, keep_array: true}),
+        petalLength: Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalLength; }), item_size: 1, keep_array: true}),
+        petalWidth:  Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalWidth; }), item_size: 1, keep_array: true}),
+        species:     Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.species; }), item_size: 1, item_type: 'ubyte', keep_array: true}),
         columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species']
     };
 }
