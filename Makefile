@@ -54,7 +54,7 @@ facet.js:					\
 	src/facet/net/_begin.js			\
 	src/facet/net/ajax.js			\
 	src/facet/net/json.js			\
-	src/facet/net/buffer_ajax.js		\
+	src/facet/net/binary.js			\
 	src/facet/net/_end.js			\
 	src/facet/scale/_begin.js		\
 	src/facet/scale/geo/_begin.js		\
@@ -112,7 +112,6 @@ facet.js:					\
 	src/shade/builtins.js			\
 	src/shade/seq.js			\
 	src/shade/program.js			\
-	src/shade/is_program_parameter.js	\
 	src/shade/round.js			\
 	src/shade/utils/_begin.js		\
 	src/shade/utils/lerp.js			\

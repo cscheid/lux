@@ -3064,6 +3064,26 @@ mat.str = function(m1)
 };
 
 })();
+// run-time type information helper functions
+// 
+// All of this would be unnecessary if Javascript was SML. Alas,
+// Javascript is no SML.
+// 
+//////////////////////////////////////////////////////////////////////////////
+
+// returns false if object is not a Shade expression, or returns
+// the AST type of the shade expression.
+//
+// For example, in some instances it is useful to know whether the
+// float value comes from a constant or a GLSL uniform or an attribute 
+// buffer.
+Facet.is_shade_expression = function(obj)
+{
+    return typeof obj === 'function' && obj._facet_expression && obj.expression_type;
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
 // FIXME Can I make these two the same function call?
 function facet_constant_type(obj)
 // it is convenient in many places to accept as a parameter a scalar,
@@ -3089,7 +3109,10 @@ function facet_constant_type(obj)
 //   http://javascript.crockford.com/remedial.html
 //
 // In particular, facet_typeOf will return "object" if given Shade expressions.
-// This is something of a hack, but it is the simplest way I know to get
+// 
+// Shade expressions are actually functions with a bunch of extra methods.
+// 
+// This is something of a hack, but it is the simplest way I know of to get
 // operator() overloading, which turns out to be notationally quite powerful.
 //
 
@@ -3601,8 +3624,7 @@ Facet.init = function(canvas, opts)
                                         depth: true
                                     }
                                   });
-    // FIXME This should be a "is Shade expression" check
-    if (opts.clearColor.expression_type) {
+    if (Facet.is_shade_expression(opts.clearColor)) {
         if (!opts.clearColor.is_constant())
             throw "clearColor must be constant expression";
         if (!opts.clearColor.type.equals(Shade.Types.vec4))
@@ -3612,7 +3634,7 @@ Facet.init = function(canvas, opts)
         clearColor = opts.clearColor;
 
     // FIXME This should be a "is Shade expression" check
-    if (opts.clearDepth.expression_type) {
+    if (Facet.is_shade_expression(opts.clearDepth)) {
         if (!opts.clearDepth.is_constant())
             throw "clearDepth must be constant expression";
         if (!opts.clearDepth.type.equals(Shade.Types.float_t))
@@ -6805,7 +6827,7 @@ Shade.parameter = function(type, v)
     var result = Shade._create_concrete_exp({
         parents: [],
         type: type,
-        expression_type: 'uniform',
+        expression_type: 'parameter',
         evaluate: function() {
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
@@ -10304,7 +10326,7 @@ Shade.Colors.shadetable = table;
 Shade.Bits = {};
 /* Shade.Bits.encode_float encodes a single 32-bit IEEE 754
    floating-point number as a 32-bit RGBA value, so that when rendered
-   to a non-floating-point render uffer and read with readPixels, the
+   to a non-floating-point render buffer and read with readPixels, the
    resulting ArrayBufferView can be cast directly as a Float32Array,
    which will encode the correct value.
 
@@ -10748,8 +10770,7 @@ Facet.Marks.globe = function(opts)
 
     if (facet_typeOf(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
-    } else if (!(facet_typeOf(opts.zoom) === "object" && opts.zoom.expression_type === "uniform")) {
-        // FIXME ugly typeinfo
+    } else if (Facet.is_shade_expression(opts.zoom) !== "parameter") {
         throw "zoom must be either a number or a parameter";
     }
 
