@@ -10453,17 +10453,19 @@ Shade.Scale.linear = function(opts)
 
     var domain_types = _.map(opts.domain, function(v) { return v.type; });
     var range_types =  _.map(opts.range,  function(v) { return v.type; });
-    var allowable_range_types = [
+    var allowable_types = [
         Shade.Types.float_t,
         Shade.Types.vec2,
         Shade.Types.vec3,
         Shade.Types.vec4
     ];
-    if (!(domain_types[0].equals(Shade.Types.float_t)))
-        throw "Shade.Scale.linear requires domain type to be float";
+    // if (!(domain_types[0].equals(Shade.Types.float_t)))
+    //     throw "Shade.Scale.linear requires domain type to be float";
+    if (!(_.any(allowable_types, function(v) { return v.equals(domain_types[0]); })))
+        throw "Shade.Scale.linear requires domain type to be one of {float, vec2, vec3, vec4}";
     if (!(_.all(domain_types, function(v) { return v.equals(domain_types[0]); })))
         throw "Shade.Scale.linear requires domain elements to have the same type";
-    if (!(_.any(allowable_range_types, function(v) { return v.equals(range_types[0]); })))
+    if (!(_.any(allowable_types, function(v) { return v.equals(range_types[0]); })))
         throw "Shade.Scale.linear requires range type to be one of {float, vec2, vec3, vec4}";
     if (!(_.all(range_types, function(v) { return v.equals(range_types[0]); })))
         throw "Shade.Scale.linear requires range elements to have the same type";
