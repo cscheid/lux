@@ -144,6 +144,8 @@ facet.js:					\
 	src/shade/bits/mask_last.js		\
 	src/shade/bits/shift_left.js		\
 	src/shade/bits/shift_right.js		\
+	src/shade/scale/_begin.js		\
+	src/shade/scale/linear.js		\
 	src/facet/marks/_begin.js		\
 	src/facet/marks/aligned_rects.js	\
 	src/facet/marks/lines.js		\
