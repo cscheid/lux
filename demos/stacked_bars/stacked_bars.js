@@ -71,7 +71,12 @@ function init_webgl()
         Facet.Scene.add(Facet.Marks.aligned_rects({
             elements: left.length,
             bottom: _.compose(project, function(i) { return 0; }),
-            top:    _.compose(project, function(i) { return Shade.Utils.linear(i, i.add(1), 0, top.at(i).div(mx))(Shade.clamp(this_t, i, i.add(1))); }),
+            top:    _.compose(project, function(i) { 
+                return Shade.Scale.linear({
+                    domain: [i, i.add(1)],
+                    range:  [0, top.at(i).div(mx)]
+                })(Shade.clamp(this_t, i, i.add(1)));
+            }),
             left:   _.compose(project, function(i) { return left.at(i).div(left.length); }),
             right:  _.compose(project, function(i) { return left.at(i).add(0.9).div(left.length); }),
             color:  Shade.Colors.shadetable.hcl.create(3, 50 + i * 5, 50 + i * 10).as_shade()
