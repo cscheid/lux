@@ -759,7 +759,7 @@ mat4.lookAt = function(eye, center, up)
 	x0 /= len;
 	x1 /= len;
 	x2 /= len;
-    };
+    }
     
     //vec3.normalize(vec3.cross(z, x, y));
     y0 = z1*x2 - z2*x1;

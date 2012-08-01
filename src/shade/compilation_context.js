@@ -18,7 +18,7 @@ function new_scope()
 
 Shade.CompilationContext = function(compile_type)
 {
-    var result = {
+    return {
         freshest_glsl_name: 0,
         compile_type: compile_type || Shade.UNSET_PROGRAM_COMPILE,
         float_precision: "highp",
@@ -39,7 +39,7 @@ Shade.CompilationContext = function(compile_type)
         //     this.min_version = Math.max(this.min_version, version);
         // },
         declare: function(decltype, glsl_name, type, declmap) {
-            if (typeof type === 'undefined') {
+            if (_.isUndefined(type)) {
                 throw "must define type";                
             }
             if (!(glsl_name in declmap)) {
@@ -48,10 +48,10 @@ Shade.CompilationContext = function(compile_type)
             } else {
                 var existing_type = declmap[glsl_name];
                 if (!existing_type.equals(type)) {
-                    throw ("Compile error: Different expressions use "
+                    throw ("compile error: different expressions use "
                            + "conflicting types for '" + decltype + " " + glsl_name
                            + "': '" + existing_type.repr() + "', '"
-                           + type.repr() + "'.");
+                           + type.repr() + "'");
                 }
             }
         },
@@ -65,9 +65,23 @@ Shade.CompilationContext = function(compile_type)
             this.declare("attribute", glsl_name, type, this.declarations.attribute);
         },
         compile: function(fun) {
+            // for now, add_declaration works differently on global scope. When
+            // we finish the inevitable route of creating a real GLSL AST, then this
+            // will again change. 
+            var that = this;
+
+            this.global_scope = {
+                initializations: [],
+                add_declaration: function(exp) {
+                    that.strings.push(exp, ";\n");
+                },
+                add_initialization: function(exp) {
+                    this.initializations.push(exp);
+                }
+            };
+
             var topo_sort = fun.sorted_sub_expressions();
             var i;
-            var that = this;
             _.each(topo_sort, function(n) {
                 n.children_count = 0;
                 n.is_unconditional = false;
@@ -76,8 +90,7 @@ Shade.CompilationContext = function(compile_type)
                 for (var j=0; j<n.parents.length; ++j) {
                     n.parents[j].children_count++;
                     // adds base scope to objects which have them.
-                    if (n.has_scope)
-                        n.scope = new_scope();
+                    n.scope = n.has_scope ? new_scope() : undefined;
                 }
             });
 
@@ -104,7 +117,10 @@ Shade.CompilationContext = function(compile_type)
             _.each(this.global_scope.initializations, function(exp) {
                 that.strings.push("    ", exp, ";\n");
             });
-            this.strings.push("    ", fun.eval(), ";\n", "}\n");
+            this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
+            // for (i=0; i<this.initialization_exprs.length; ++i)
+            //     this.strings.push("    ", this.initialization_exprs[i], ";\n");
+            // this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
         },
         add_initialization: function(expr) {
             this.global_scope.initializations.push(expr);
@@ -130,20 +146,4 @@ Shade.CompilationContext = function(compile_type)
             this.strings.push(";\n}\n");
         }
     };
-
-    // for now, add_declaration works differently on global scope. When
-    // we finish the inevitable route of creating a real GLSL AST, then this
-    // will again change. 
-    var global_scope = {
-        initializations: [],
-        add_declaration: function(exp) {
-            result.strings.push(exp, ";\n");
-        },
-        add_initialization: function(exp) {
-            this.initializations.push(exp);
-        }
-    };
-    result.global_scope = global_scope;
-
-    return result;
 };

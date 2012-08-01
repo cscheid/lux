@@ -1,8 +1,8 @@
 {
   "name": "facet",
   "version": "0.0.1",
-  "description": "Facet makes writing WebGL fun",
-  "keywords": [ "webgl", "graphics", "visualization" ],
+  "description": "Facet is the DSEL for WebGL graphics",
+  "keywords": [ "webgl", "graphics", "visualization", "edsl" ],
   "dependencies": {
     "uglify-js": "1.0.6"
   }

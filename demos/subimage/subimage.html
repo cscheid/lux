@@ -1,0 +1,44 @@
+<html>
+<head><title>Subimage support in Facet</title>
+  <link rel="stylesheet" href="../css/bootstrap.css"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <link rel="stylesheet" href="../css/mchighlight-javascript.css"/>
+  <script src="../../lib/jquery-1.6.2.min.js"></script>
+  <script src="../../facet.js"></script>
+  <script src="../../src/models.js"></script>
+  <script src="../js/mclexer.js"></script>
+  <script src="../js/mchighlight.js"></script>
+  <script src="../js/mchighlight-javascript.js"></script>
+  <script src="subimage.js"></script>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>Subimage support in Facet</h1>
+<div style="position: relative;">
+  <canvas id="webgl" width="720" height="480"></canvas>
+  <div style="position: absolute; top: 5px; right: 5px; color:white;">Cartography OpenStreetMap CC-by-sa</div></div>
+<div style="text-align: right">View the <a href="subimage.js">full source</a>.</div>
+
+<pre class="highlight">
+var texture = Facet.texture({ width: 2048, height: 2048 });
+for (var i=0; i < 8; ++i)
+for (var j=0; j < 8; ++j)
+    Facet.load_image_into_texture({
+        texture: texture,
+        src: "http://tile.openstreetmap.org/3/" + i + "/" + j + ".png",
+        crossOrigin: "anonymous",
+        x_offset: i * 256,
+        y_offset: 2048 - (j+1) * 256,
+        onload: function() { gl.display(); }
+    });
+</pre>
+
+<p>Back to the <a href="index.html">index</a>.</p>
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</body>
+</html>
+

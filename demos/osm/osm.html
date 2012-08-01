@@ -1,0 +1,75 @@
+<html>
+<head><title>OpenStreetMap 3D Globe viewer in Facet</title>
+  <link rel="stylesheet" href="../css/bootstrap.css"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <link rel="stylesheet" href="../css/mchighlight-javascript.css"/>
+  <script src="../../lib/jquery-1.6.2.min.js"></script>
+  <script src="../../facet.js"></script>
+  <script src="../../src/models.js"></script>
+  <script src="osm.js"></script>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>OpenStreetMap 3D Globe viewer in Facet</h1>
+<!--
+<div style="position:absolute; top: 0px; left: 730px; width: 240px">
+<table width=100%>
+<tr><td width=20%>ix</td><td width=20%>x</td><td width=20%>y</td><td width=20%>z</td><td width=20%>a</td><td width=20%>t</td></tr>
+<tr><td width=20%>0</td><td width=20%><div  id="x0" ></div></td><td width=20%><div id="y0" ></div></td><td width=20%><div id="z0" ></div></td><td width=20%><div id="a0" ></div></td><td width=20%><div id="t0" ></div></td></tr>
+<tr><td width=20%>1</td><td width=20%><div  id="x1" ></div></td><td width=20%><div id="y1" ></div></td><td width=20%><div id="z1" ></div></td><td width=20%><div id="a1" ></div></td><td width=20%><div id="t1" ></div></td></tr>
+<tr><td width=20%>2</td><td width=20%><div  id="x2" ></div></td><td width=20%><div id="y2" ></div></td><td width=20%><div id="z2" ></div></td><td width=20%><div id="a2" ></div></td><td width=20%><div id="t2" ></div></td></tr>
+<tr><td width=20%>3</td><td width=20%><div  id="x3" ></div></td><td width=20%><div id="y3" ></div></td><td width=20%><div id="z3" ></div></td><td width=20%><div id="a3" ></div></td><td width=20%><div id="t3" ></div></td></tr>
+<tr><td width=20%>4</td><td width=20%><div  id="x4" ></div></td><td width=20%><div id="y4" ></div></td><td width=20%><div id="z4" ></div></td><td width=20%><div id="a4" ></div></td><td width=20%><div id="t4" ></div></td></tr>
+<tr><td width=20%>5</td><td width=20%><div  id="x5" ></div></td><td width=20%><div id="y5" ></div></td><td width=20%><div id="z5" ></div></td><td width=20%><div id="a5" ></div></td><td width=20%><div id="t5" ></div></td></tr>
+<tr><td width=20%>6</td><td width=20%><div  id="x6" ></div></td><td width=20%><div id="y6" ></div></td><td width=20%><div id="z6" ></div></td><td width=20%><div id="a6" ></div></td><td width=20%><div id="t6" ></div></td></tr>
+<tr><td width=20%>7</td><td width=20%><div  id="x7" ></div></td><td width=20%><div id="y7" ></div></td><td width=20%><div id="z7" ></div></td><td width=20%><div id="a7" ></div></td><td width=20%><div id="t7" ></div></td></tr>
+<tr><td width=20%>8</td><td width=20%><div  id="x8" ></div></td><td width=20%><div id="y8" ></div></td><td width=20%><div id="z8" ></div></td><td width=20%><div id="a8" ></div></td><td width=20%><div id="t8" ></div></td></tr>
+<tr><td width=20%>9</td><td width=20%><div  id="x9" ></div></td><td width=20%><div id="y9" ></div></td><td width=20%><div id="z9" ></div></td><td width=20%><div id="a9" ></div></td><td width=20%><div id="t9" ></div></td></tr>
+<tr><td width=20%>10</td><td width=20%><div id="x10"></div></td><td width=20%><div id="y10"></div></td><td width=20%><div id="z10"></div></td><td width=20%><div id="a10"></div></td><td width=20%><div id="t10"></div></td></tr>
+<tr><td width=20%>11</td><td width=20%><div id="x11"></div></td><td width=20%><div id="y11"></div></td><td width=20%><div id="z11"></div></td><td width=20%><div id="a11"></div></td><td width=20%><div id="t11"></div></td></tr>
+<tr><td width=20%>12</td><td width=20%><div id="x12"></div></td><td width=20%><div id="y12"></div></td><td width=20%><div id="z12"></div></td><td width=20%><div id="a12"></div></td><td width=20%><div id="t12"></div></td></tr>
+<tr><td width=20%>13</td><td width=20%><div id="x13"></div></td><td width=20%><div id="y13"></div></td><td width=20%><div id="z13"></div></td><td width=20%><div id="a13"></div></td><td width=20%><div id="t13"></div></td></tr>
+<tr><td width=20%>14</td><td width=20%><div id="x14"></div></td><td width=20%><div id="y14"></div></td><td width=20%><div id="z14"></div></td><td width=20%><div id="a14"></div></td><td width=20%><div id="t14"></div></td></tr>
+<tr><td width=20%>15</td><td width=20%><div id="x15"></div></td><td width=20%><div id="y15"></div></td><td width=20%><div id="z15"></div></td><td width=20%><div id="a15"></div></td><td width=20%><div id="t15"></div></td></tr>
+<tr><td width=20%>16</td><td width=20%><div id="x16"></div></td><td width=20%><div id="y16"></div></td><td width=20%><div id="z16"></div></td><td width=20%><div id="a16"></div></td><td width=20%><div id="t16"></div></td></tr>
+<tr><td width=20%>17</td><td width=20%><div id="x17"></div></td><td width=20%><div id="y17"></div></td><td width=20%><div id="z17"></div></td><td width=20%><div id="a17"></div></td><td width=20%><div id="t17"></div></td></tr>
+<tr><td width=20%>18</td><td width=20%><div id="x18"></div></td><td width=20%><div id="y18"></div></td><td width=20%><div id="z18"></div></td><td width=20%><div id="a18"></div></td><td width=20%><div id="t18"></div></td></tr>
+<tr><td width=20%>19</td><td width=20%><div id="x19"></div></td><td width=20%><div id="y19"></div></td><td width=20%><div id="z19"></div></td><td width=20%><div id="a19"></div></td><td width=20%><div id="t19"></div></td></tr>
+<tr><td width=20%>20</td><td width=20%><div id="x20"></div></td><td width=20%><div id="y20"></div></td><td width=20%><div id="z20"></div></td><td width=20%><div id="a20"></div></td><td width=20%><div id="t20"></div></td></tr>
+<tr><td width=20%>21</td><td width=20%><div id="x21"></div></td><td width=20%><div id="y21"></div></td><td width=20%><div id="z21"></div></td><td width=20%><div id="a21"></div></td><td width=20%><div id="t21"></div></td></tr>
+<tr><td width=20%>22</td><td width=20%><div id="x22"></div></td><td width=20%><div id="y22"></div></td><td width=20%><div id="z22"></div></td><td width=20%><div id="a22"></div></td><td width=20%><div id="t22"></div></td></tr>
+<tr><td width=20%>23</td><td width=20%><div id="x23"></div></td><td width=20%><div id="y23"></div></td><td width=20%><div id="z23"></div></td><td width=20%><div id="a23"></div></td><td width=20%><div id="t23"></div></td></tr>
+<tr><td width=20%>24</td><td width=20%><div id="x24"></div></td><td width=20%><div id="y24"></div></td><td width=20%><div id="z24"></div></td><td width=20%><div id="a24"></div></td><td width=20%><div id="t24"></div></td></tr>
+<tr><td width=20%>25</td><td width=20%><div id="x25"></div></td><td width=20%><div id="y25"></div></td><td width=20%><div id="z25"></div></td><td width=20%><div id="a25"></div></td><td width=20%><div id="t25"></div></td></tr>
+<tr><td width=20%>26</td><td width=20%><div id="x26"></div></td><td width=20%><div id="y26"></div></td><td width=20%><div id="z26"></div></td><td width=20%><div id="a26"></div></td><td width=20%><div id="t26"></div></td></tr>
+<tr><td width=20%>27</td><td width=20%><div id="x27"></div></td><td width=20%><div id="y27"></div></td><td width=20%><div id="z27"></div></td><td width=20%><div id="a27"></div></td><td width=20%><div id="t27"></div></td></tr>
+<tr><td width=20%>28</td><td width=20%><div id="x28"></div></td><td width=20%><div id="y28"></div></td><td width=20%><div id="z28"></div></td><td width=20%><div id="a28"></div></td><td width=20%><div id="t28"></div></td></tr>
+<tr><td width=20%>29</td><td width=20%><div id="x29"></div></td><td width=20%><div id="y29"></div></td><td width=20%><div id="z29"></div></td><td width=20%><div id="a29"></div></td><td width=20%><div id="t29"></div></td></tr>
+<tr><td width=20%>30</td><td width=20%><div id="x30"></div></td><td width=20%><div id="y30"></div></td><td width=20%><div id="z30"></div></td><td width=20%><div id="a30"></div></td><td width=20%><div id="t30"></div></td></tr>
+<tr><td width=20%>31</td><td width=20%><div id="x31"></div></td><td width=20%><div id="y31"></div></td><td width=20%><div id="z31"></div></td><td width=20%><div id="a31"></div></td><td width=20%><div id="t31"></div></td></tr>
+</table>
+</div>
+-->
+<div style="position: relative;">
+  <canvas id="webgl" width="720" height="480"></canvas>
+  <div style="position: absolute; top: 5px; right: 5px;">Cartography OpenStreetMap CC-by-sa</div></div>
+<div style="text-align: right">View the <a href="osm.js">full source</a>.</div>
+
+<p>Drag the globe to pan around, shift-drag to zoom in and out.</p>
+
+<p>Back to the <a href="index.html">index</a>.</p>
+<!--
+<table width=100%>
+<tr><td width=25%>zoom</td><td width=25%><div id="zoom"></div></td><td width=25%>osm zoom</td><td width=25%><div id="osmzoom"></div></td></tr>
+<tr><td width=25%>center_lat</td><td width=25%><div id="lat"></div></td><td width=25%>osm y</td><td width=25%><div id="osmy"></div></td></tr>
+<tr><td width=25%>center_lon</td><td width=25%><div id="lon"></div></td><td width=25%>osm x</td><td width=25%><div id="osmx"></div></td></tr>
+</table>
+-->
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</body>
+</html>
+

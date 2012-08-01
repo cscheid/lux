@@ -1,0 +1,12 @@
+Facet checklists
+
+* before you push to master:
+** does it pass the test suite?
+run it on chrome
+** does it contain stray console.log calls? 
+rg grep
+
+* before you push to gh-pages:
+** does this break any of the demos?
+This will get unwieldy as the demo count increases. Maybe this means I
+should only merge gh-pages once a week or so?

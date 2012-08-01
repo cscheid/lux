@@ -10,23 +10,26 @@ Facet.load_image_into_texture = function(opts)
     var onload = opts.onload;
     var x_offset = opts.x_offset;
     var y_offset = opts.y_offset;
-    var ctx = Facet._globals.ctx;
 
     function image_handler(image) {
+        var ctx = Facet._globals.ctx;
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
         ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
         ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset,
                           ctx.RGBA, ctx.UNSIGNED_BYTE, image);
+        Facet.unload_batch();
         onload(image);
     }
 
     function buffer_handler()
     {
+        var ctx = Facet._globals.ctx;
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
         ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
         ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset,
                           opts.width, opts.height,
                           ctx.RGBA, ctx.UNSIGNED_BYTE, opts.buffer);
+        Facet.unload_batch();
         onload();
     }
 

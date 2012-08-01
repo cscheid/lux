@@ -4,14 +4,43 @@
 // static polymorphism
 Shade.make = function(exp)
 {
-    var t = typeOf(exp);
-    if (t === 'boolean' ||
-        t === 'number') {
+    if (_.isUndefined(exp)) {
+        throw "expected a value, got undefined instead";
+    }
+    var t = facet_typeOf(exp);
+    if (t === 'string') {
+        // Did you accidentally say exp1 + exp2 when you meant
+        // exp1.add(exp2)?
+        throw "strings are not valid shade expressions";
+    } else if (t === 'boolean' || t === 'number') {
+        if (isNaN(exp)) {
+            // Did you accidentally say exp1 / exp2 or exp1 - exp2 when you meant
+            // exp1.div(exp2) or exp1.sub(exp2)?
+            throw "nans are not valid in shade expressions";
+        }
         return Shade.constant(exp);
     } else if (t === 'array') {
         return Shade.seq(exp);
+    } else if (t === 'function') {
+        /* lifts the passed function to a "shade function".
+        
+        In other words, this creates a function that replaces every
+        passed parameter p by Shade.make(p) This way, we save a lot of
+        typing and errors. If a javascript function is expected to
+        take shade values and produce shade expressions as a result,
+        simply wrap that function around a call to Shade.make()
+
+         */
+
+        return function() {
+            var wrapped_arguments = [];
+            for (var i=0; i<arguments.length; ++i) {
+                wrapped_arguments.push(Shade.make(arguments[i]));
+            }
+            return exp.apply(this, wrapped_arguments);
+        };
     }
-    t = constant_type(exp);
+    t = facet_constant_type(exp);
     if (t === 'vector' || t === 'matrix') {
         return Shade.constant(exp);
     } else if (exp._shade_type === 'attribute_buffer') {

@@ -1,15 +1,16 @@
 
 // only memoizes on value of first argument, so will fail if function
 // takes more than one argument!!
-Shade.memoize_on_field = function(field_name, fun)
+Shade.memoize_on_field = function(field_name, fun, key_fun)
 {
+    key_fun = key_fun || function(i) { return i; };
     return function() {
-        if (typeOf(this[field_name]) === "undefined") {
-            this[field_name] = {};
+        if (_.isUndefined(this._caches[field_name])) {
+            this._caches[field_name] = {};
         }
-        if (typeOf(this[field_name][arguments[0]]) === "undefined") {
-            this[field_name][arguments[0]] = fun.apply(this, arguments);
+        if (_.isUndefined(this._caches[field_name][arguments[0]])) {
+            this._caches[field_name][arguments[0]] = fun.apply(this, arguments);
         }
-        return this[field_name][arguments[0]];
+        return this._caches[field_name][arguments[0]];
     };
-}
+};

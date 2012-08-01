@@ -13,3 +13,8 @@ Shade.id = function(id_value)
     
     return vec4.make([r / 255, g / 255, b / 255, a / 255]);
 };
+
+Shade.shade_id = Shade(function(id_value)
+{
+    return id_value.div(Shade.vec(1, 256, 65536, 16777216)).mod(256).floor().div(255);
+});

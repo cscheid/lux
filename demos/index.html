@@ -1,64 +1,89 @@
 <html>
 <head><title>Facet demos</title>
-<link rel="stylesheet" href="style.css"/>
+<link rel="stylesheet" href="css/bootstrap.css"/>
+<link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
   <div class="body">
     <div class="content">
-      <h1>Facet Demos</h1>
-
       <div class="sidebar">
-	<a href="#NeHe examples">NeHe Examples</a><br>
-	<a href="#hlgl_features">Facet Features</a><br>
+	<h3>Sections</h3>
+	<a href="#data_viz">Visualization</a><br>
+	<a href="#3d_graphics">3D Graphics</a><br>
+	<a href="#facet_features">Facet Features</a><br>
 	<a href="#full_demos">Full Demos</a><br>
+	<a href="#misc">Miscellaneous</a><br>
       </div>
 
-      <h2>OpenGL Examples from NeHe in Facet</h2>
+      <h1>Facet Demos</h1>
 
-      <p>The <a href="http://nehe.gamedev.net">classic OpenGL tutorial
-	  examples</a>, ported to Facet.</p>
-
+      <h2><a name="data_viz"></a>Visualization</h2>
       <ul>
-	<li><a href="lesson2.html">Lesson 2</a></li>
-	<li><a href="lesson3.html">Lesson 3</a></li>
-	<li><a href="lesson4.html">Lesson 4</a></li>
-	<li><a href="lesson5.html">Lesson 5</a></li>
-	<li><a href="lesson6.html">Lesson 6</a></li>
-	<li><a href="lesson7.html">Lesson 7</a></li>
-	<li><a href="lesson8.html">Lesson 8</a></li>
-	<li><a href="lesson9.html">Lesson 9</a></li>
-	<li><a href="lesson11.html">Lesson 11</a></li>
-	<li><a href="lesson16.html">Lesson 16</a></li>
+	<li><a href="scatter/scatter.html">Basic scatterplot</a></li>
+	<li><a href="splom/splom.html">Scatterplot matrix</a></li>
+	<li><a href="graph/graph.html">Graph visualization</a></li>
+	<li><a href="tour/tour.html">Grand tour</a></li>
+	<li><a href="parallel_coordinates/parallel_coordinates.html">Parallel coordinates</a></li>
+	<li><a href="stacked_bars/stacked_bars.html">Stacked bars</a></li>
+	<li>GPU-computed <a href="histogram/histogram.html">histograms</a></li>
+	<li>Defining new shapes, such as <a href="wedge/wedge.html">wedges</a></li>
+	<li>Navigating the <a href="hcl/hcl.html">HCL color space</a> and the RGB gamut</li>
       </ul>
 
-     
-      <h2>Facet Features</h2><a name="#hlgl_features"/>
+      <h2><a name="3d_graphics"></a>3D Graphics</h2>
+      <h3>NeHe tutorials</h3>
+      <p>The babiest of baby steps in 3D graphics,
+	  the <a href="http://nehe.gamedev.net">classic NeHe OpenGL tutorial
+	  examples</a> have been ported to Facet. There
+	  are <a href="http://learningwebgl.com">WebGL equivalents</a>
+	  which you can compare to as well.
+      </p>
+
       <ul>
-	<li><a href="per_vertex_vs_per_fragment.html">Showing off how to specify
-	    per-vertex computations.</a></li>
-	<li><a href="scatter.html">Basic scatterplot.</a></li>
-	<li><a href="texture_test.html">Basic texturing.</a></li>
-	<li><a href="subimage.html">Subimages</a>: changing only bits of
+	<li><a href="lesson2/lesson2.html">Lesson 2</a></li>
+	<li><a href="lesson3/lesson3.html">Lesson 3</a></li>
+	<li><a href="lesson4/lesson4.html">Lesson 4</a></li>
+	<li><a href="lesson5/lesson5.html">Lesson 5</a></li>
+	<li><a href="lesson6/lesson6.html">Lesson 6</a></li>
+	<li><a href="lesson7/lesson7.html">Lesson 7</a></li>
+	<li><a href="lesson8/lesson8.html">Lesson 8</a></li>
+	<li><a href="lesson9/lesson9.html">Lesson 9</a></li>
+	<li><a href="lesson11/lesson11.html">Lesson 11</a></li>
+	<li><a href="lesson16/lesson16.html">Lesson 16</a></li>
+      </ul>
+
+      <h2><a name="full_demos"></a>Full demos</h2>
+      <ul>
+	<li>A <a href="graphing_calculator/graphing_calculator.html">graphing calculator</a></li>
+	<li><a href="osm/osm.html">OpenStreetMap</a>: 3D globe.</li>
+	<li><a href="beauty_of_roots/beauty_of_roots.html">Beauty of Roots</a>.</li>
+	<li><a href="fractal_flame/fractal_flame.html">GPU-computed Fractal Flame</a>.</li>
+      </ul>
+
+      <h2><a name="facet_features"></a>Specific Facet Features</h2>
+      <ul>
+	<li><a href="texture_test/texture_test.html">Basic texturing.</a></li>
+	<li><a href="subimage/subimage.html">Subimages</a>: changing only bits of
 	a texture at a time.</li>
-	<li><a href="simple_conditionals.html">Simple
+	<li><a href="simple_conditionals/simple_conditionals.html">Simple
 	conditionals</a>: branching support.</li>
-	<li><a href="discard.html">Discarding fragments</a> to poke holes
+	<li><a href="discard/discard.html">Discarding fragments</a> to poke holes
 	on primitives.</li>
-	<li><a href="picking.html">Picking</a>: how to have Facet
+	<li><a href="picking/picking.html">Picking</a>: how to have Facet
 	tell you on what you clicked.</li>
-	<li><a href="render_to_texture.html">Rendering to a
+	<li><a href="depth_readback/depth_readback.html">Depth Readback</a>: reading
+	the depth of a pixel in Facet.</li>
+	<li><a href="render_to_texture/render_to_texture.html">Rendering to a
 	texture</a> lets you use the result of drawing operations as
 	input to others.</li>
-	<li>Defining new shapes, such as <a href="wedge.html">wedges</a>.</li>
       </ul>
 
-      <h2>Full demos</h2><a name="#full_demos"/>
+      <h2><a name="misc"></a>Miscellaneous</h2>
+     
       <ul>
-	<li><a href="osm.html">OpenStreetMap</a>: 3D globe.</li>
-	<li><a href="graph.html">Graph visualization</a></li>
-	<li><a href="tour.html">Grand tour</a>.</li>
-	<li><a href="parallel_coordinates.html">Parallel coordinates</a>.</li>
-	
+	<li>The <a href="teapot/teapot.html">Utah Teapot</a>.</li>
+	<li><a href="per_vertex_vs_per_fragment/per_vertex_vs_per_fragment.html">Showing off how to specify
+	    per-vertex computations.</a></li>
       </ul>
     </div>
 

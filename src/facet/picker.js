@@ -3,28 +3,28 @@
 var rb;
 
 Facet.Picker = {
-    picking_mode: 0,
     draw_pick_scene: function(callback) {
         var ctx = Facet._globals.ctx;
         if (!rb) {
             rb = Facet.render_buffer({
                 width: ctx.viewportWidth,
                 height: ctx.viewportHeight,
-                TEXTURE_MAG_FILTER: ctx.NEAREST,
-                TEXTURE_MIN_FILTER: ctx.NEAREST
+                mag_filter: ctx.NEAREST,
+                min_filter: ctx.NEAREST
             });
         }
 
-        callback = callback || Facet._globals.display_callback;
-        this.picking_mode = 1;
+        callback = callback || ctx._facet_globals.display_callback;
+        var old_scene_render_mode = ctx._facet_globals.batch_render_mode;
+        ctx._facet_globals.batch_render_mode = 1;
         try {
-            rb.render_to_buffer(function() {
+            rb.with_bound_buffer(function() {
                 ctx.clearColor(0,0,0,0);
                 ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
                 callback();
             });
         } finally {
-            this.picking_mode = 0;
+            ctx._facet_globals.batch_render_mode = old_scene_render_mode;
         }
     },
     pick: function(x, y) {
@@ -33,7 +33,7 @@ Facet.Picker = {
         var result_bytes = new Uint8Array(4);
         ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                        result_bytes);
-        rb.render_to_buffer(function() {
+        rb.with_bound_buffer(function() {
             ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
                            result_bytes);
         });

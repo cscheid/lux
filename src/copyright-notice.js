@@ -2,7 +2,7 @@
  * Facet: An EDSL for WebGL graphics
  * By Carlos Scheidegger, cscheid@research.att.com
  * 
- * Copyright (c) 2011 AT&T Intellectual Property
+ * Copyright (c) 2011, 2012 AT&T Intellectual Property
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0

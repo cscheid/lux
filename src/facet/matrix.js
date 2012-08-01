@@ -19,7 +19,7 @@ Facet.translation = function(v)
     else if (v.length === 2) return t_3x3(v);
     else if (arguments.length === 2) return t_3x3(arguments);
 
-    throw "Invalid vector size for translation";
+    throw "invalid vector size for translation";
 };
 
 Facet.scaling = function (v)
@@ -40,7 +40,7 @@ Facet.scaling = function (v)
     else if (v.length === 2) return s_3x3(v);
     else if (arguments.length === 2) return s_3x3(arguments);
 
-    throw "Invalid size for scale";
+    throw "invalid size for scale";
 };
 
 Facet.rotation = function(angle, axis)

@@ -8,7 +8,10 @@
 
 // FIXME: Move this object inside Facet's main object.
 
-var Shade = {};
+var Shade = function(exp)
+{
+    return Shade.make(exp);
+};
 
 (function() {
 

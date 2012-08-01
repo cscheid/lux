@@ -8,6 +8,10 @@ Facet.program = function(vs_src, fs_src)
         ctx.compileShader(shader);
         if (!ctx.getShaderParameter(shader, ctx.COMPILE_STATUS)) {
             alert(ctx.getShaderInfoLog(shader));
+            console.log("Error message: ");
+            console.log(ctx.getShaderInfoLog(shader));
+            console.log("Failing shader: ");
+            console.log(str);
             return null;
         }
         return shader;
@@ -26,10 +30,11 @@ Facet.program = function(vs_src, fs_src)
         return null;
     }
 
-    var active_uniforms = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
+    var active_parameters = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
     var array_name_regexp = /.*\[0\]/;
-    for (var i=0; i<active_uniforms; ++i) {
-        var info = ctx.getActiveUniform(shaderProgram, i);
+    var info;
+    for (var i=0; i<active_parameters; ++i) {
+        info = ctx.getActiveUniform(shaderProgram, i);
         if (array_name_regexp.test(info.name)) {
             var array_name = info.name.substr(0, info.name.length-3);
             shaderProgram[array_name] = ctx.getUniformLocation(shaderProgram, array_name);
@@ -39,7 +44,7 @@ Facet.program = function(vs_src, fs_src)
     }
     var active_attributes = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_ATTRIBUTES);
     for (i=0; i<active_attributes; ++i) {
-        var info = ctx.getActiveAttrib(shaderProgram, i);
+        info = ctx.getActiveAttrib(shaderProgram, i);
         shaderProgram[info.name] = ctx.getAttribLocation(shaderProgram, info.name);
     }
     return shaderProgram;    

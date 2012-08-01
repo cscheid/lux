@@ -1,7 +1,10 @@
-// FIXME: Shade.set should be (name, exp), not (exp, name)
+/* Shade.set is essentially an internal method for Shade. Don't use it
+   unless you know exactly what you're doing.
+ */
+
 Shade.set = function(exp, name)
 {
-    exp = Shade.make(exp);
+    exp = Shade(exp);
     var type = exp.type;
     return Shade._create_concrete_exp({
         expression_type: "set",
@@ -21,16 +24,16 @@ Shade.set = function(exp, name)
             if ((ctx.compile_type !== Shade.VERTEX_PROGRAM_COMPILE) &&
                 (name !== "gl_FragColor") &&
                 (name.substring(0, 11) !== "gl_FragData")) {
-                throw ("The only allowed output variables on a fragment"
+                throw ("the only allowed output variables on a fragment"
                        + " shader are gl_FragColor and gl_FragData[]");
             }
             if (name !== "gl_FragColor" &&
                 name !== "gl_Position" &&
                 name !== "gl_PointSize" &&
-                !(name.substring(0, 11) == "gl_FragData")) {
+                name.substring(0, 11) !== "gl_FragData") {
                 ctx.declare_varying(name, type);
             }
-            ctx.void_function(this, "(", name, "=", this.parents[0].eval(), ")");
+            ctx.void_function(this, "(", name, "=", this.parents[0].evaluate(), ")");
         },
         type: Shade.basic('void'),
         parents: [exp]

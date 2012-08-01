@@ -4,7 +4,7 @@ Shade.attribute_from_buffer = function(buffer)
         var itemTypeMap = [ undefined, Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec3, Shade.Types.vec4 ];
         var itemType = itemTypeMap[buffer.itemSize];
         var itemName;
-        if (typeof buffer._shade_name === 'undefined') {
+        if (_.isUndefined(buffer._shade_name)) {
             itemName = Shade.unique_name();
             buffer._shade_name = itemName;
         } else {
@@ -19,7 +19,7 @@ Shade.attribute_from_buffer = function(buffer)
 
 Shade.attribute = function(name, type)
 {
-    if (typeof type === 'undefined') throw "attribute requires type";
+    if (_.isUndefined(type)) throw "attribute requires type";
     if (typeof type === 'string') type = Shade.basic(type);
     return Shade._create_concrete_exp( {
         parents: [],
@@ -34,7 +34,7 @@ Shade.attribute = function(name, type)
             } else
                 return this.at(i);
         }),
-        eval: function() { 
+        evaluate: function() { 
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
             } else

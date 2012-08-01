@@ -1,17 +1,31 @@
 module("Shade tests");
 
 var canvas = document.getElementById("webgl");
-var gl = Facet.initGL(canvas);
+var gl = Facet.init(canvas);
 $(canvas).hide();
+
+// returns a uniformly distributed random integer x such mn <= x < mx
+function random_int(mn, mx) {
+    return Math.floor(Math.random() * (mx - mn)) + mn;
+}
+
+function almost_equal(expected, got, msg, eps) {
+    eps = eps || 1e-4;
+    ok(Math.abs(expected - got) < eps, msg + " expected: " + expected + " got: " + got);
+}
 
 test("Shade types", function() {
     var x = Shade.basic('float');
-    expect(20);
+    expect(21);
     raises(function() {
         Shade.basic('askldjasdf');
+    }, function(e) {
+        return e === "invalid basic type 'askldjasdf'";
     }, "bad basic objects should fail");
     raises(function() {
         Shade.basic('vec2').swizzle('rx');
+    }, function(e) {
+        return e === "swizzle pattern 'rx' belongs to more than one group";
     }, "bad swizzle pattern");
     ok(Shade.basic('vec2').swizzle('rg'), "basic swizzle pattern #1");
     ok(Shade.basic('vec2').equals(Shade.Types.vec2), "type equality");
@@ -24,30 +38,47 @@ test("Shade types", function() {
     equal(Shade.basic('vec4').swizzle('q').repr(),
           'float', "basic swizzle to scalar");
     raises(function() {
-        Shade.Shade.varying("model_pos");
-    }, "declarations require types");
+        Shade.varying("model_pos");
+    }, function(e) { return e === "varying requires type"; });
 
-    equal(Shade.basic('vec4').is_vec(), true, "type check methods");
+    equal(Shade.basic('vec4').is_vec(),  true,  "type check methods");
     equal(Shade.basic('float').is_vec(), false, "type check methods");
-    equal(Shade.basic('mat4').is_vec(), false, "type check methods");
-    equal(Shade.basic('mat4').is_pod(), false, "type check methods");
-    equal(Shade.basic('float').is_pod(), true, "type check methods");
+    equal(Shade.basic('mat4').is_vec(),  false, "type check methods");
+    equal(Shade.basic('mat4').is_pod(),  false, "type check methods");
+    equal(Shade.basic('float').is_pod(), true,  "type check methods");
     raises(function() {
-        Shade.constant($V([1, false]), "bad constant");
-    }, "bad constant");
+        var v = [];
+        Shade.array(v);
+    }, function(e) { 
+        return e === "array constant must be non-empty"; 
+    });
+    raises(function() {
+        var v = [1, false];
+        Shade.array(v);
+    }, function(e) {
+        return e === "array elements must have identical types";
+    });
 
     ok(Shade.basic('vec4').element_type(0).equals(Shade.Types.float_t), "element_type");
     ok(Shade.vec(Shade.vec(3, 4), 0).type.element_type(2).equals(Shade.Types.float_t), "element_type");
     raises(function() {
         Shade.vec(Shade.vec(3, 4), true);
+    }, function(e) {
+        return e === "vec requires equal types";
     }, "bad vec construction");
     raises(function() {
         Shade.vec(Shade.vec(3, 4), 5).type.element_type(3);
+    }, function(e) {
+        return e === "invalid call: vec3 has no element 3";
     }, "out-of-bounds element_type check");
 
     raises(function() {
         Shade.constant(1.5).equal(Shade.as_int(3));
+    }, function(e) {
+        return e === "type error on equal: could not find appropriate type match for (float, int)";
     }, "comparison type check");
+
+    
 });
 
 test("Shade expressions", function() {
@@ -66,39 +97,89 @@ test("Shade expressions", function() {
                             Shade.vec(0,2,3)).type.repr(), "bvec3", "relational ops");
     ok(Shade.any(Shade.greaterThan(Shade.vec(1,2,3),
                                    Shade.vec(0,2,3))), "relational ops");
+
+    raises(function() {
+        Shade.array([1,2,3,4]).swizzle("a");
+    }, function(e) {
+        return e === "type 'float[4]' does not support swizzling";
+    }, "disallow swizzle on arrays");
 });
 
 test("Shade compilation", function() {
-    ok(Shade.constant(vec.make([1,2,3,4])).eval());
+    ok(Shade.constant(vec.make([1,2,3,4])).evaluate());
 
     // this is a little finicky because the unique names might get
     // incremented, but I don't know any easy way around it.
 
     (function () {
-        var u = Shade.uniform("vec4");
+        var u = Shade.parameter("vec4");
         var v = u.exp();
         var c = v.cos();
         var s = v.sin();
-        var cond = Shade.uniform("float").gt(0);
-        var root = Shade.selection(cond, c, s);
+        var cond = Shade.parameter("float").gt(0);
+        var root = Shade.ifelse(cond, c, s);
         var cc = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE);
         cc.compile(root);
-        equal(cc.source(), "precision highp float;\n" +
-              " uniform float _unique_name_2;\n" +
+        // This optimization was making the GLSL compiler too slow, so I removed it.
+        // equal(cc.source(), "precision highp float;\n" +
+        //       " uniform float _unique_name_2;\n" + 
+        //       " uniform vec4 _unique_name_1;\n" + 
+        //       " vec4 glsl_name_8 ;\n" + 
+        //       " bool glsl_name_9 ;\n" + 
+        //       " vec4 glsl_name_4 (void) {\n" + 
+        //       "     return  (glsl_name_9?glsl_name_8: ((glsl_name_9=true),(glsl_name_8=exp ( _unique_name_1 )))) ;\n" + 
+        //       "}\n" + 
+        //       " vec4 glsl_name_7 (void) {\n" + 
+        //       "     return  ((_unique_name_2 > float(0.0))?cos ( glsl_name_4() ):sin ( glsl_name_4() )) ;\n" + 
+        //       "}\n" + 
+        //       " void main() {\n" + 
+        //       "      glsl_name_9 = false ;\n" + 
+        //       "      glsl_name_7() ;\n" + 
+        //       " }\n");
+
+        equal(cc.source(), "precision highp float;\n" + 
               " uniform vec4 _unique_name_1;\n" +
               " vec4 glsl_name_8 ;\n" +
-              " bool glsl_name_9 ;\n" +
-              " vec4 glsl_name_4 (void) {\n" +
-              "     return  (glsl_name_9?glsl_name_8: ((glsl_name_9=true),(glsl_name_8=exp ( _unique_name_1 )))) ;\n" +
+              " uniform float _unique_name_2;\n" +
+              " vec4 glsl_name_7 (void) {\n" +
+              "     return  ((_unique_name_2 > float(0.0))?cos ( glsl_name_8 ):sin ( glsl_name_8 )) ;\n" +
               "}\n" +
               " void main() {\n" +
-              "      glsl_name_9 = false ;\n" +
-              "      ((_unique_name_2 > float(0))?cos ( glsl_name_4() ):sin ( glsl_name_4() )) ;\n"+
+              "      glsl_name_8 = exp ( _unique_name_1 ) ;\n" +
+              "      glsl_name_7() ;\n" +
               " }\n");
+    })();
+
+    raises(function () {
+        Shade.program({
+            gl_Position: Shade.vec(0,0,0,1),
+            gl_FragColor: Shade.vec(1,1,1,1),
+            gl_Nononono: Shade.vec(1,0,0,0)
+        });
+    }, function(e) {
+        return e === "gl_* are reserved GLSL names";
+    }, "reserved GLSL names in Facet");
+    
+    (function () {
+        Shade.program({
+            gl_Position: Shade.vec(16777216, 0, 0, 1),
+            gl_FragColor: Shade.vec(1,1,1,1)
+        });
     })();
 });
 
 test("Shade constant folding", function() {
+    equal(Shade.unknown("float").guid, Shade.unknown("float").guid);
+    notEqual(Shade.unknown("float").guid, Shade.unknown("mat2").guid);
+
+    var x = Shade.parameter("float");
+    equal(Shade.mul(2, Shade.vec(2, 2)).element(1).constant_value(), 4, 
+          "different dimensions on float-vec operations and element()");
+    equal(Shade.add(Shade.vec(2,2), 4).element(1).constant_value(), 6, 
+          "different dimensions on float-vec operations and element()");
+    equal(Shade.max(Shade.vec(3,1,2), 2).element(1).constant_value(), 2,
+          "different dimensions on float-vec max-min-mod built-ins");
+    
     equal(Shade.constant(1).constant_value(), 1);
     equal(Shade.add(4,5).constant_value(), 9);
     equal(Shade.mul(4,5).constant_value(), 20);
@@ -130,6 +211,17 @@ test("Shade constant folding", function() {
     equal(v.element_is_constant(1), false, "constant element checks");
     equal(v.element_is_constant(2), true, "constant element checks");
     equal(v.element_is_constant(3), true, "constant element checks");
+    equal(Shade.array([1,2,3,4,5,6]).is_constant(), false, 
+          "constant checking for arrays");
+    equal(Shade.array([1,2,3,4,5,6]).at(2).is_constant(), true, 
+          "constant checking for array elements");
+    raises(function() {
+        var x = Shade.array([1,2,3,4,5]);
+        var y = Shade.array([1,2,3,4,5]);
+        x.eq(y);
+    }, function(e) {
+        return e === "operator== does not support arrays";
+    }, "operator== does not support arrays");
 
     equal(Shade.mul(Shade.vec(1, Shade.attribute("foo", "vec2")),
                     Shade.vec(4, Shade.attribute("bar", "vec2"))).element_constant_value(0),
@@ -242,12 +334,12 @@ test("Shade constant folding", function() {
                  mat.make([2, 6, 12, 20])),
        "matrixCompMult folding");
 
-    equal(Shade.selection(true, 3, 5).constant_value(), 3, "selection folding");
-    ok(vec.equal(Shade.selection(Shade.lt(4, 6), 
-                                 Shade.vec(1,1,1,1),
-                                 Shade.vec(0,0,0,0)).constant_value(),
+    equal(Shade.ifelse(true, 3, 5).constant_value(), 3, "ifelse folding");
+    ok(vec.equal(Shade.ifelse(Shade.lt(4, 6), 
+                              Shade.vec(1,1,1,1),
+                              Shade.vec(0,0,0,0)).constant_value(),
                  vec.make([1,1,1,1])),
-       "selection folding");
+       "ifelse folding");
 
     equal(Shade.sub(Shade.constant(1, Shade.Types.int_t),
                     Shade.constant(2, Shade.Types.int_t)).constant_value(), -1,
@@ -256,11 +348,125 @@ test("Shade constant folding", function() {
     equal(Shade.add(Shade.constant(1, Shade.Types.int_t),
                     Shade.constant(2, Shade.Types.int_t)).constant_value(), 3,
           "int constant folding");
+
+    equal(Shade.or(true).constant_value(), true, "single logical value");
+    equal(Shade(true).discard_if(false).is_constant(), true, "discard constant folding");
+    equal(Shade(false).discard_if(false).constant_value(), false, "discard constant folding");
+
+    var tex = Shade.parameter("sampler2D");
+    var texcoord = Shade.varying("fooobarasdf", "vec2");
+
+    equal(Shade.ifelse(true,
+                       Shade.ifelse(false,
+                                    Shade.color('red'),
+                                    Shade.texture2D(tex, texcoord)),
+                       Shade.color('black')).is_constant(), false, "11052011 Marks.dots issue");
+
+    ok(Shade.vec(1,0,0).eq(Shade.vec(0,1,0)).constant_value() === false, 
+       "equality comparison on vectors");
+    ok(Shade.mat(Shade.vec(1,1),
+                 Shade.vec(1,1)).eq(Shade.mat(Shade.vec(1,1),
+                                              Shade.vec(1,1))).constant_value() === true, 
+       "equality comparison on matrices");
+
+    //////////////////////////////////////////////////////////////////////////
+    // constant folding on ifelses:
+    var parameter_logical = Shade.parameter("bool"), 
+        parameter_float = Shade.parameter("float");
+
+    ok(Shade.ifelse(parameter_logical, 3, 3).is_constant() === true,
+       "ifelse is_constant() when both sides are the same");
+
+    equal(Shade.ifelse(parameter_logical, 3, 3).constant_value(), 3,
+       "ifelse constant_value() when both sides are the same");
+
+    ok(Shade.ifelse(parameter_logical, parameter_float, 3).is_constant() === false,
+       "ifelse is_constant() when both sides are the same");
+
+    equal(Shade.ifelse(parameter_logical, 
+                       Shade.vec(parameter_float, 5, parameter_float, parameter_float),
+                       Shade.vec(parameter_float, 5, parameter_float, parameter_float))
+          .element_is_constant(1), true,
+          "ifelse element_is_constant when both sides are the same");
+
+    equal(Shade.ifelse(parameter_logical, 
+                       Shade.vec(parameter_float, 5, parameter_float, parameter_float),
+                       Shade.vec(parameter_float, 6, parameter_float, parameter_float))
+          .element_is_constant(1), false,
+          "ifelse element_is_constant when both sides aren't the same");
+
+    equal(Shade.ifelse(parameter_logical, 
+                       Shade.vec(parameter_float, 5, parameter_float, parameter_float),
+                       Shade.vec(parameter_float, 5, parameter_float, parameter_float))
+          .element_constant_value(1), 5,
+          "ifelse element_constant_value when both sides are the same");
+
+    ok(Shade.vec(Shade.max(0, 1), 1, 1).element(0).constant_value() === 1,
+       "element() on built-in expressions");
+
+    ok(Shade.add(2, Shade.vec(1, 2)).element_is_constant(1),
+       "operator element_is_constant");
+
+    ok(Shade.div(Shade.vec(1,2,3).swizzle("gb"),
+                 Shade.mul(Shade.vec(1,2,3).swizzle("r"), 13)).element_is_constant(1),
+       "operator element_is_constant");
+
+    (function() {
+        var m1 = Shade.mat(Shade.vec(Math.random(), Math.random()),
+                           Shade.vec(Math.random(), Math.random()));
+        var m2 = Shade.mat(Shade.vec(Math.random(), Math.random()),
+                           Shade.vec(Math.random(), Math.random()));
+        var v1 = Shade.vec(Math.random(), Math.random()),
+            v2 = Shade.vec(Math.random(), Math.random());
+        var s = Math.random();
+        ok(Math.abs(m1.mul(v1).element_constant_value(0) - m1.mul(v1).constant_value()[0]) < 1e-4, 
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 1");
+        ok(Math.abs(v1.mul(m1).element_constant_value(0) - v1.mul(m1).constant_value()[0]) < 1e-4, 
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 2");
+        ok(vec.length(vec.minus(m1.mul(m2).element_constant_value(0),
+                                _.toArray(m1.mul(m2).constant_value()).slice(0, 2))) < 1e-4, 
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 3");
+        ok(Math.abs(v1.mul(v2).element_constant_value(0) - v1.mul(v2).constant_value()[0]) < 1e-4,
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 4");
+        ok(Math.abs(v1.mul(s).element_constant_value(0) -
+                    v1.mul(s).constant_value()[0]) < 1e-4,
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 5");
+        ok(Math.abs(Shade.mul(s, v1).element_constant_value(0) -
+                    Shade.mul(s, v1).constant_value()[0]) < 1e-4,
+           "element_constant_value(i) <-> element(i).constant_value() equivalence on operator* 6");
+    })();
+
+    equal(Shade(2).norm().constant_value(), 2,  "norm constant evaluator");
+    equal(Shade(-2).norm().constant_value(), 2, "norm constant evaluator");
+
+    //////////////////////////////////////////////////////////////////////////
+    // constant folding on elements
+
+    equal(Shade.array([1,2,3,4]).at(1.5).constant_value(), 2,
+          "array indexing with floats should cast");
+
+    equal(Shade.max(Shade.vec(x,1,x), 2).element(1).constant_value(), 2,
+          "partially-constant float-vec max-min-mod built-ins");
+
+    equal(Shade.lessThanEqual(Shade.vec(1,2,3,4),
+                              Shade.vec(4,3,2,1)).element(1).constant_value(), true,
+          "partially constant folding on element-wise comparisons");
+
+    //////////////////////////////////////////////////////////////////////////
+    // 
+
+    (function() {
+        var nonconst = Shade.parameter("float");
+        var exp = Shade.array([Shade.vec(1,1), Shade.vec(1,1)]).at(nonconst).sub(Shade.vec(2,3));
+        ok(exp.element(0));
+    })();
 });
 
 test("Shade optimizer", function() {
-    var uniform = Shade.uniform("vec4");
-    var exp = Shade.mul(uniform, Shade.constant(0));
+    var parameter = Shade.parameter("vec4");
+    var parameter_logical = Shade.parameter("bool");
+    var parameter_logical_2 = Shade.parameter("bool");
+    var exp = Shade.mul(parameter, Shade.constant(0));
     equal(Shade.Optimizer.is_times_zero(exp), true, "detect times zero");
 
     var result = Shade.Optimizer.replace_with_zero(exp);
@@ -268,27 +474,27 @@ test("Shade optimizer", function() {
     ok(vec.equal(result.constant_value(),
                  vec.make([0,0,0,0])), "replace times zero");
 
-    exp = Shade.mul(uniform, Shade.constant(1));
+    exp = Shade.mul(parameter, Shade.constant(1));
     equal(Shade.Optimizer.is_times_one(exp), true, "detect times one");
     result = Shade.Optimizer.replace_with_notone(exp);
-    equal(result.guid, uniform.guid, "times one simplifies to original expression");
+    equal(result.guid, parameter.guid, "times one simplifies to original expression");
 
-    exp = Shade.mul(Shade.constant(1), uniform);
+    exp = Shade.mul(Shade.constant(1), parameter);
     equal(Shade.Optimizer.is_times_one(exp), true, "detect times one");
     result = Shade.Optimizer.replace_with_notone(exp);
-    equal(result.guid, uniform.guid, "times one simplifies to original expression");
+    equal(result.guid, parameter.guid, "times one simplifies to original expression");
 
-    exp = Shade.add(Shade.constant(0), uniform);
+    exp = Shade.add(Shade.constant(0), parameter);
     equal(Shade.Optimizer.is_plus_zero(exp), true, "detect plus zero");
     result = Shade.Optimizer.replace_with_nonzero(exp);
-    equal(result.guid, uniform.guid, "plus zero simplifies to original expression");
+    equal(result.guid, parameter.guid, "plus zero simplifies to original expression");
 
-    exp = Shade.add(uniform, Shade.constant(0));
+    exp = Shade.add(parameter, Shade.constant(0));
     equal(Shade.Optimizer.is_plus_zero(exp), true, "detect plus zero");
     result = Shade.Optimizer.replace_with_nonzero(exp);
-    equal(result.guid, uniform.guid, "plus zero simplifies to original expression");
+    equal(result.guid, parameter.guid, "plus zero simplifies to original expression");
 
-    exp = Shade.mul(uniform, Shade.vec(0.5, 0.5, 0.5, 1));
+    exp = Shade.mul(parameter, Shade.vec(0.5, 0.5, 0.5, 1));
     equal(Shade.Optimizer.is_times_one(exp), false, "detect false times one");
 
     // There's a slight subtlety here in that vec(1,1,1,1) is identity in
@@ -305,6 +511,38 @@ test("Shade optimizer", function() {
     exp = Shade.mul(identity,
                     Shade.vec(1,1,1,1));
     equal(Shade.Optimizer.is_times_one(exp), true, "detect heterogenous times one");
+
+    equal(Shade.Optimizer.is_logical_or_with_constant(
+        Shade.or(true, parameter_logical)), true, "detect true || x");
+
+    ok(parameter_logical.guid !== undefined, "parameter_logical has guid");
+    equal(Shade.Optimizer.replace_logical_or_with_constant(
+        Shade.or(false, parameter_logical)).guid, parameter_logical.guid, "optimize false || x");
+    equal(Shade.Optimizer.replace_logical_or_with_constant(
+        Shade.or(true, parameter_logical)).constant_value(), true, "optimize true || x");
+
+    equal(Shade.Optimizer.replace_logical_and_with_constant(
+        Shade.and(true, parameter_logical)).guid, parameter_logical.guid, "optimize true && x");
+    equal(Shade.Optimizer.replace_logical_and_with_constant(
+        Shade.and(false, parameter_logical)).constant_value(), false, "optimize false && x");
+
+    equal(Shade.Optimizer.is_known_branch(
+        Shade.ifelse(true, parameter_logical, parameter_logical_2)), true, "detect known branch");
+    equal(Shade.Optimizer.prune_ifelse_branch(
+        Shade.ifelse(true, parameter_logical, parameter_logical_2)).guid, 
+          parameter_logical.guid, "optimize known branch");
+    equal(Shade.Optimizer.prune_ifelse_branch(
+        Shade.ifelse(false, parameter_logical, parameter_logical_2)).guid, 
+          parameter_logical_2.guid, "optimize known branch");
+
+    ok(vec4.equal(Shade.mul(Shade.translation(Shade.vec(0,0,0)),
+                            Shade.vec(1, 0)).constant_value(),
+                  vec4.make([1,0,0,1])),
+       "Shade mat4 * vec2 shortcuts");
+    ok(vec4.equal(Shade.mul(Shade.translation(Shade.vec(0,0,0)),
+                            Shade.vec(1, 0, 2)).constant_value(),
+                  vec4.make([1,0,2,1])),
+       "Shade mat4 * vec3 shortcuts");
 });
 
 test("Shade programs", function() {
@@ -339,4 +577,219 @@ test("Shade loops", function() {
             .fold(function(i, j) { return Shade.min(i, j); }, 1000)
                   // Shade.constant(1000).as_int())
     }), "program with fold");
+
+    var p = Shade.program({
+        color: Shade.vec(1,1,1,1),
+        position: Shade.vec(1,1,1,1),
+        point_size: Shade.range(from, to).average()
+    });
+    ok(p, "Basic looping program");
+});
+
+test("Texture tables", function() {
+    var simple_data = {
+        number_columns: [0, 1, 2],
+        columns: [0, 1, 2],
+        data: [ { 0: 0, 1: 1, 2: 2 },
+                { 0: 3, 1: 4, 2: 5 },
+                { 0: 6, 1: 7, 2: 8 } ]
+    };
+    var table = Facet.Data.texture_table(Facet.Data.table(simple_data));
+
+    for (var row_ix=0; row_ix<3; ++row_ix) {
+        for (var col_ix=0; col_ix<3; ++col_ix) {
+            var linear_index = row_ix * 3 + col_ix;
+            var texel_index = Math.floor(linear_index / 4);
+            var texel_offset = linear_index % 4;
+            var tex_y = Math.floor(texel_index / 2);
+            var tex_x = texel_index % 2;
+            ok(vec.equal(table.index(row_ix, col_ix).constant_value(),
+                         vec.make([tex_x, tex_y, texel_offset])));
+        }
+    }
+});
+
+test("color conversion", function() {
+
+    /* The serious tests will be: Javascript and shade expressions
+    // must behave identically (up to floating-point issues);
+    // 
+    // Javascript and shade expressions must have appropriate inverses
+     */
+
+    function match(c1, c2, tol) {
+        tol = _.isUndefined(tol)?1e-5:tol;
+        c1 = c1.values();
+        c2 = c2.values();
+        var d = 0, d1 = 0, d2 = 0;
+        for (var i=0; i<c1.length; ++i) {
+            d += (c1[i] - c2[i]) * (c1[i] - c2[i]);
+            d1 += c1[i] * c1[i];
+            d2 += c2[i] * c2[i];
+        }
+        d = Math.sqrt(d) / Math.max(Math.sqrt(d1), Math.sqrt(d2));
+        return d < tol;
+    }
+
+    function check(v1, v2, v3, source, target, tol) {
+        var shade_source  = Shade.Colors.shadetable[source].create(v1, v2, v3);
+        var js_source     = Shade.Colors.jstable[source].create(v1, v2, v3);
+        
+        var shade_target  = shade_source[target]();
+        var js_target     = js_source[target]();
+
+        var shade_source2 = shade_target[source]();
+        var js_source2    = js_target[source]();
+
+        if (!match(shade_source2, shade_source, tol)) {
+            console.log("source",  shade_source,shade_source.values(),  js_source,js_source.values());
+            console.log("target",  shade_target,shade_target.values(),  js_target,js_target.values());
+            console.log("source2", shade_source2,shade_source2.values(), js_source2,js_source2.values());
+            console.log("---");
+        };
+
+        ok(match(shade_source, js_source, tol), "constructors match");
+        ok(match(shade_target, js_target, tol), source + "->" + target + " match");
+        ok(match(shade_source2, js_source2, tol), source+"->"+target+"->"+source + " match");
+        ok(match(shade_source, shade_source2, tol), source+"->"+target+"->"+source+" inverse shade");
+        ok(match(js_source, js_source2, tol), source+"->"+target+"->"+source+" inverse js");
+    }
+
+    var test_count = 10;
+
+    for (var i=0; i<test_count; ++i) {
+        var r = Math.random(), g = Math.random(), b = Math.random();
+
+        // Test the 6 basic conversion routines
+        check(r, g, b, "rgb", "hls");
+        check(r, g, b, "rgb", "srgb");
+        check(r, g, b, "rgb", "hsv");
+        check(r, g, b, "rgb", "xyz", 1e-3);
+
+        check(r, g, b, "srgb", "xyz", 1e-3);
+
+        var xyz = Shade.Colors.jstable.rgb.create(r, g, b).xyz();
+        check(xyz.x, xyz.y, xyz.z, "xyz", "luv");
+
+        var luv = xyz.luv();
+        check(luv.l, luv.u, luv.v, "luv", "hcl");
+    }
+
+    // with the basic conversions verified, check the compound ones just
+    // to prevent typos
+
+    (function() {
+        var r = Math.random(), g = Math.random(), b = Math.random();
+        var rgb = Shade.Colors.jstable.rgb.create(r, g, b);
+        var srgb = rgb.srgb();
+        var xyz = rgb.xyz();
+        var luv = xyz.luv();
+        var hcl = luv.hcl();
+        var hsv = rgb.hsv();
+        var hls = rgb.hls();
+        check(luv.l, luv.u, luv.v, "luv", "rgb");
+        check(luv.l, luv.u, luv.v, "luv", "srgb");
+        check(hcl.h, hcl.c, hcl.l, "hcl", "xyz");
+        check(hcl.h, hcl.c, hcl.l, "hcl", "rgb");
+        check(hcl.h, hcl.c, hcl.l, "hcl", "srgb");
+        check(hcl.h, hcl.c, hcl.l, "hcl", "hsv");
+        check(hcl.h, hcl.c, hcl.l, "hcl", "hls");
+        check(hls.h, hls.l, hls.s, "hls", "hsv");
+        check(hls.h, hls.l, hls.s, "hls", "srgb");
+        check(hls.h, hls.l, hls.s, "hls", "xyz");
+        check(hls.h, hls.l, hls.s, "hls", "luv");
+        check(hsv.h, hsv.s, hsv.v, "hsv", "srgb");
+        check(hsv.h, hsv.s, hsv.v, "hsv", "xyz");
+        check(hsv.h, hsv.s, hsv.v, "hsv", "luv");
+    })();
+});
+
+test("Shade Bits", function() {
+    (function() {
+        for (var i=0; i<24; ++i) {
+            var t = i;
+            var t1 = 1 << t;
+            var t2 = Shade.Bits.shift_left(1, t).constant_value();
+            var t3 = Shade.Bits.shift_right(t1, t).constant_value();
+            almost_equal(t1, t2, "shift left");
+            almost_equal(1, t3, "shift right (" + t + " " + t1 + ") ");
+        }
+        for (i=0; i<10; ++i) {
+            var v = random_int(0, 65536);
+            var amt = random_int(0, 16);
+            var t1 = v >> amt;
+            var t2 = Shade.Bits.shift_right(v, amt).constant_value(); 
+            almost_equal(t1, t2, "shift right (" + v + ", " + amt + ")");
+        }
+    })();
+
+    (function() {
+        for (var i=0; i<10; ++i) {
+            var v = random_int(0, 65536);
+            var bits = random_int(0, 16);
+
+            // straight from the spec
+            var t3 = v % (1 << bits);
+            var t4 = Shade.Bits.mask_last(v, bits).constant_value();
+            almost_equal(t3, t4, "mask_last (" + v + ", " + bits + ")");
+        }
+    })();
+
+    (function() {
+        for (var i=0; i<10; ++i) {
+            var num = random_int(0, 256);
+            var from = random_int(0, 7);
+            var to = random_int(from+1, 8);
+       
+            // var num = 255;
+            // var from = 0;
+            // var to = 1;
+            // straight from the spec
+            var t3 = (num >> from) & ((1 << (to - from)) - 1);
+            var t4 = Shade.Bits.extract_bits(num, from, to).constant_value();
+            almost_equal(t3, t4, "extract_bits (" + num + ", " + from + ", " + to + ") ");
+        }
+    })();
+
+    (function() {
+        function convert_through_encode(t) {
+            var v = Shade.Bits.encode_float(t).constant_value();
+            var v1 = new ArrayBuffer(4);
+            var v2 = new DataView(v1);
+
+            // this is flipped because RGBA is stored ABGR
+            for (var i=0; i<4; ++i)
+                v2.setInt8(i, Math.round(v[3-i] * 255));
+            return v2.getFloat32(0);
+        }
+        for (var i=0; i<10; ++i) {
+            var t = Math.random() * 1000 - 500;
+            almost_equal(t, convert_through_encode(t), "encode_float");
+        }
+    })();
+});
+
+module("Facet tests");
+test("Facet.attribute_buffer", function() {
+    ok(Facet.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 1}));
+    ok(Facet.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 2}));
+    ok(Facet.attribute_buffer({ vertex_array: [1,2,3,4,5], item_size: 1}));
+    raises(function() {
+        Facet.attribute_buffer({ vertex_array: [1,2,3,4,5], item_size: 2});
+    });
+    var x = Facet.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 1});
+    ok((function() {
+        x.set_region(1, [1]);
+        return true;
+    })());
+    ok((function() {
+        x.set_region(2, [1,2]);
+        return true;
+    })());
+    raises(function() {
+        x.set_region(6, [1]);
+    });
+    raises(function() {
+        x.set_region(2, [1,2,3]);
+    });
 });

@@ -1,5 +1,7 @@
 The Big List of Facet TODOs
 
+* BUGS
+** Documentation fixes
 * Optimizer
 ** TODO Common subexpression elimination
     
@@ -16,6 +18,15 @@ float(x) => x, if x is known to be float
 
 ** TODO Initialization optimization for conditional expressions.
 * Types
+** TODO GLSL disallows swizzling from a float, but I could allow it
+The idea would be to make Shade.Types.float_t.is_vec() true, and then
+special-case a swizzle from a float to simple return a Shade.vec()
+with the right dimension. This would make the language slightly
+incompatible with GLSL ES, but it might be harmless. And having
+is_vec() true for float, vec2, vec3 and vec4 would be very convenient,
+since is_vec() could become a proxy for "can use .add, .sub and
+.mul".
+
 ** TODO Function types
 These will be useful when we have user-defined GLSL.
 
@@ -32,86 +43,54 @@ These will be useful when we have user-defined GLSL.
 functions like cosh which just build other expressions should have
 stricter type checking.
 
+It should be possible to implement some form of static checking for
+Shade.make when passing functions.
+
 * Documentation
 ** TODO NeHe Lessons
 ** TODO Change lesson2.html to reflect camera class.
+** TODO We need a "pitfalls". For example, zoom.get() vs. zoom...
 * Expressions
 ** TODO ternary op performance fixes.
 Right now the algorithm in place is correct, but conservative. Ideally,
 I will want to propagate BDDs up the expression tree and check them
 
-** TODO discard
-
-Discard is a statement; I don't really have statements in the
-language.
-
-
-*** discard is fragment-only.
-
-How do I implement discard in a vertex shader?
-
-**** Possibilities:
-***** Disallow it to happen in the vertex shader
-Good: Simplest
-Bad: Breaks the model in Facet programs where we don't care much about
-what happens in vertex expressions vs fragment expressions
-Ugly: The error messages would be really opaque, unless I specifically
-detect where the discard statement would appear.
-***** Send the vertex outside the homogenous cube
-Good: Simple
-Bad: doesn't discard the whole primitive
-Ugly: would make triangles, etc look really weird.
-***** Set some special varying which discards every single fragment in the shader
-Good: Discards an entire primitive.
-Bad: Wastes a varying, which might be a scarce resource.
-Ugly: varying cannot be discrete (bool). The solution would be to
-discard if varying is greater than zero, set the discarded varying to be greater
-than the largest possible distance between two vertices on the screen,
-and the non-discarded to zero.
-
-*** Implementation ideas:
-
-**** special key for the program description
-
-like so:
-
-{
-  gl_Position: foo
-  gl_FragColor: bar
-  discard_if: baz
-}
-
-The main disadvantage here is that one application of discard is to
-save computation time. This means that my current initialization of
-variables used in more than one context will be wasteful if none of
-these variables are actually used before the discard condition is
-verified. What I would need, then, is some dependency analysis that
-determines which variables are used for which discard checks, and
-computes those in the correct order.
-
-This discard interacts with the initializer code.
-
-**** new expression called discard_if
-
-We add a discard_when(condition, value_if_not) expression, which
-issues the discard statement if condition is true. 
-
-But what about discard_when being executed inside conditional
-expressions? Worse: discard_when would turn case D above from a
-performance problem into an actual bug.
-
 ** TODO precision declarations
 
 * Rendering
+** Batch Drawing Mode and Scene Rendering Mode
+Batches can be drawn in different modes, currently:
+
+- "regular" drawing
+- additive blending
+- alpha-blended
+
+But scenes can also be rendered in different modes, currently
+
+- regular drawing mode
+- picking mode
+- depth unproject mode
+
+These two possibilities interact, and the result is a double dispatch,
+currently implemented badly on Facet.DrawingMode.*
+
+This should be fixed.
+
+Namely, the Facet.DrawingMode.<foo>.set_<bar>_caps functions dispatch on both foo and bar.
+
+One better solution is to have a dictionary and dispatch on (<foo>,
+<bar>) pairs.
+
+This would pave the way for extensible batch drawing modes. But extending
+rendering modes is not as easy because, for example, the picking
+procedure requires extra state to be kept around. This should be
+designed carefully (in other words, I'm afraid of trying it out right
+now)
+
 * API
+** TODO Support for boolean vectors
+Part of it exists throughout Facet, but it's scattered and untested.
 ** TODO I really should have a matrix stack.
-** TODO I should have a camera class
-
-This class would expose Shade functions to perform transformations. A
-cool demo would be a real non-linear fisheye distortion
-projection. Obviously tesselation would be necessary, but it'd get the
-point across.
-
 ** TODO There should be an API for strided attribute buffers.
 The advantage here is that I could get different attributes from a
 single bound array buffer. This would reduce the overhead of binding
@@ -120,24 +99,58 @@ the different attributes when switching state.
 The main difficulty is that I currently
 assume a one-to-one relationship between array buffers and attributes
 throughout the API.
+** TODO Fix inconsistent case conventions between Shade and GLSL
+The way to do this is to *add* underscore_equivalents of the GLSL ugly
+camelCase functions. This way, people familiar with GLSL can use them,
+while people coming directly to Facet will use underscore
+** TODO Shade.Utils is terrible. Move that stuff to Shade.Scale or something like that.
+** Shade.model vs Shade.bake is getting annoying. Find a way out.
+** TODO Shade.Colors is the mother of all messes. Do I even need the JS api?
+** TODO Contact TypedArray spec authors about new entry point.
 * Testing/Engineering
+** TODO fix the _shade_type ugliness
+One possibility is to create a WebGLObject prototype that knows how to
+turn itself into a Shade expression
+** TODO runtime type information
+It is very convenient to use runtime type checking to get
+polymorphism, but it seems like it tends to proliferate along the
+code. I should try to consolidate all these calls in a single API of
+some sort.
 ** TODO Write test suite for all builtins constant folding
 I've been seeing a lot of infinite loops because of co-recursion in
 constant_value. What do I do about it?
 
+Update: the issue here is that many expressions lack a true definition
+of element(), and so when element(i) returns element.at(i),
+at(i).element() runs the risk of diverging.
+
+This should go together with writing the semantics for Shade expressions.
+
 ** TODO Typechecking code review 
 functions like cosh which just build other expressions should have
 stricter type checking.
-
-
 ** TODO Code review on FIXMEs
-* Features
-** Unprojecting
-Since I can't read from the depth buffer, I need a WebGL unproject by
-rendering the Z value into RGBA and reading back the same way as we do
-picking.
-
-** Multiple WebGL canvases in a same page
+** TODO Review best practices on exception raising/handling in JS.
+** TODO Multiple WebGL canvases in a same page
 This means multiple contexts, and lots of things are going to break.
+We already have set_context, but many calls use a possibly stale
+context on the closure scope. A code review and tests are in order.
+** TODO Facet.Marks.* need to be on the same coordinate system, need to consistently all take functions or expressions.
+* Features
+** More basic marks
+Now that I figured out a nice way to make aligned rects work, I should
+extend this to lines, etc. The main problem is interaction with
+attribute_buffer, but that's inevitable without geometry shaders. I'll
+need documentation.
+** TEXT SUPPORT
+** WebGL FBOs are square?!
+According to the spec, they must be square. But I can create them in
+WebGL without any trouble. I wonder if things will break.
+** Mousewheel support
+*** Integrate https://github.com/brandonaaron/jquery-mousewheel ?
+I've done this one-off in the beauty of roots demo. Maybe I shouldn't
+integrate it and leave it instead to app writers. But it's a type of
+interaction that's bound to be necessary over and over again...
 * Other
-** FIXME what do we do on canvas resizing?
+* Demos
+** Fix buffers.js

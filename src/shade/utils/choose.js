@@ -6,7 +6,7 @@
 Shade.Utils.choose = function(lst) {
     var new_lst = _.toArray(lst);
     return function(v) {
-        var vals_exp = Shade.constant(new_lst);
+        var vals_exp = Shade.array(new_lst);
         v = Shade.clamp(v, 0, new_lst.length-1).floor().as_int();
         return vals_exp.at(v);
     };

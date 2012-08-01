@@ -24,6 +24,9 @@ Facet.unload_batch = function()
 
 function draw_it(batch)
 {
+    if (_.isUndefined(batch))
+        throw "drawing mode undefined";
+
     var ctx = Facet._globals.ctx;
     if (batch.batch_id !== previous_batch.batch_id) {
         var attributes = batch.attributes || {};
@@ -40,7 +43,7 @@ function draw_it(batch)
 
         for (key in attributes) {
             var attr = program[key];
-            if (typeof attr !== 'undefined') {
+            if (!_.isUndefined(attr)) {
                 ctx.enableVertexAttribArray(attr);
                 attributes[key].bind(attr);
             }
@@ -51,10 +54,10 @@ function draw_it(batch)
             var key = uniform.uniform_name;
             var call = uniform.uniform_call,
                 value = uniform.get();
-            if (typeOf(value) === 'undefined') {
-                throw "uniform " + key + " has not been set.";
+            if (_.isUndefined(value)) {
+                throw "parameter " + key + " has not been set.";
             }
-            var t = constant_type(value);
+            var t = facet_constant_type(value);
             if (t === "other") {
                 uniform._facet_active_uniform = (function(uid, cat) {
                     return function(v) {
@@ -64,7 +67,7 @@ function draw_it(batch)
                     };
                 })(program[key], currentActiveTexture);
                 currentActiveTexture++;
-            } else if (t === "number" || t == "vector") {
+            } else if (t === "number" || t === "vector" || t === "boolean") {
                 uniform._facet_active_uniform = (function(call, uid) {
                     return function(v) {
                         call.call(ctx, uid, v);
@@ -76,30 +79,141 @@ function draw_it(batch)
                         ctx[call](uid, false, v);
                     };
                 })(call, program[key]);
+            } else {
+                throw "could not figure out parameter type! " + t;
             }
             uniform._facet_active_uniform(value);
         });
     }
 
     batch.draw_chunk();
-};
+}
 
 var largest_batch_id = 1;
 
-// FIXME: push the primitives weirdness fix down the API
-Facet.bake = function(model, appearance)
+Facet.bake = function(model, appearance, opts)
 {
-    var ctx = Facet._globals.ctx;
-    var draw_program_exp = {};
-    _.each(appearance, function(value, key) {
-        if (Shade.is_program_parameter(key)) {
-            draw_program_exp[key] = value;
-        }
+    opts = _.defaults(opts || {}, {
+        force_no_draw: false,
+        force_no_pick: false,
+        force_no_unproject: false
     });
-    var draw_program = Shade.program(draw_program_exp);
-    var draw_attribute_arrays = _.build(_.map(
-        draw_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
-    ));
+
+    appearance = Shade.canonicalize_program_object(appearance);
+
+    if (_.isUndefined(appearance.gl_FragColor)) {
+        appearance.gl_FragColor = Shade.vec(1,1,1,1);
+    }
+
+    // these are necessary outputs which must be compiled by Shade.program
+    function is_program_output(key)
+    {
+        return ["color", "position", "point_size",
+                "gl_FragColor", "gl_Position", "gl_PointSize"].indexOf(key) != -1;
+    };
+
+    if (appearance.gl_Position.type.equals(Shade.Types.vec2)) {
+        appearance.gl_Position = Shade.vec(appearance.gl_Position, 0, 1);
+    } else if (appearance.gl_Position.type.equals(Shade.Types.vec3)) {
+        appearance.gl_Position = Shade.vec(appearance.gl_Position, 1);
+    } else if (!appearance.gl_Position.type.equals(Shade.Types.vec4)) {
+        throw "position appearance attribute must be vec2, vec3 or vec4";
+    }
+
+    var ctx = Facet._globals.ctx;
+
+    var batch_id = Facet.fresh_pick_id();
+
+    function build_attribute_arrays_obj(prog) {
+        return _.build(_.map(
+            prog.attribute_buffers, function(v) { return [v._shade_name, v]; }
+        ));
+    }
+
+    function process_appearance(val_key_function) {
+        var result = {};
+        _.each(appearance, function(value, key) {
+            if (is_program_output(key)) {
+                result[key] = val_key_function(value, key);
+            }
+        });
+        return Shade.program(result);
+    }
+
+    function create_draw_program() {
+        return process_appearance(function(value, key) {
+            return value;
+        });
+    }
+
+    function create_pick_program() {
+        var pick_id;
+        if (appearance.pick_id)
+            pick_id = Shade(appearance.pick_id);
+        else {
+            pick_id = Shade(Shade.id(batch_id));
+        }
+        return process_appearance(function(value, key) {
+            if (key === 'gl_FragColor') {
+                var pick_if = (appearance.pick_if || 
+                               Shade(value).swizzle("a").gt(0));
+                return pick_id.discard_if(Shade.not(pick_if));
+            } else
+                return value;
+        });
+    }
+
+    /* Facet unprojecting uses the render-as-depth technique suggested
+     by Benedetto et al. in the SpiderGL paper in the context of
+     shadow mapping:
+
+     SpiderGL: A JavaScript 3D Graphics Library for Next-Generation
+     WWW
+
+     Marco Di Benedetto, Federico Ponchio, Fabio Ganovelli, Roberto
+     Scopigno. Visual Computing Lab, ISTI-CNR
+
+     http://vcg.isti.cnr.it/Publications/2010/DPGS10/spidergl.pdf
+
+     FIXME: Perhaps there should be an option of doing this directly as
+     render-to-float-texture.
+
+     */
+    
+    function create_unproject_program() {
+        return process_appearance(function(value, key) {
+            if (key === 'gl_FragColor') {
+                var position_z = appearance.gl_Position.swizzle('z'),
+                    position_w = appearance.gl_Position.swizzle('w');
+                var normalized_z = position_z.div(position_w).add(1).div(2);
+
+                // normalized_z ranges from 0 to 1.
+
+                // an opengl z-buffer actually stores information as
+                // 1/z, so that more precision is spent on the close part
+                // of the depth range. Here, we are storing z, and so our efficiency won't be great.
+                // 
+                // However, even 1/z is only an approximation to the ideal scenario, and 
+                // if we're already doing this computation on a shader, it might be worthwhile to use
+                // Thatcher Ulrich's suggestion about constant relative precision using 
+                // a logarithmic mapping:
+
+                // http://tulrich.com/geekstuff/log_depth_buffer.txt
+
+                // This mapping, incidentally, is more directly interpretable as
+                // linear interpolation in log space.
+
+                var result_rgba = Shade.vec(
+                    normalized_z,
+                    normalized_z.mul(1 << 8),
+                    normalized_z.mul(1 << 16),
+                    normalized_z.mul(1 << 24)
+                );
+                return result_rgba;
+            } else
+                return value;
+        });
+    }
 
     var primitive_types = {
         points: ctx.POINTS,
@@ -114,7 +228,7 @@ Facet.bake = function(model, appearance)
     var primitive_type = primitive_types[model.type];
     var elements = model.elements;
     var draw_chunk;
-    if (typeOf(model.elements) === 'number') {
+    if (facet_typeOf(elements) === 'number') {
         draw_chunk = function() {
             ctx.drawArrays(primitive_type, 0, elements);
         };
@@ -125,9 +239,7 @@ Facet.bake = function(model, appearance)
     }
     var primitives = [primitive_types[model.type], model.elements];
 
-    var draw_batch_id = largest_batch_id++;
-
-    // NB: the batch_id field in the *_opts objects is not
+    // FIXME the batch_id field in the batch_opts objects is not
     // the same as the batch_id in the batch itself. 
     // 
     // The former is used to avoid state switching, while the latter is
@@ -137,57 +249,35 @@ Facet.bake = function(model, appearance)
     // This should not lead to any problems right now but might be confusing to
     // readers.
 
-    var draw_opts = {
-        program: draw_program,
-        attributes: draw_attribute_arrays,
-        set_caps: ((appearance.mode && appearance.mode.set_draw_caps) || 
-                   Facet.DrawingMode.standard.set_draw_caps),
-        draw_chunk: draw_chunk,
-        batch_id: draw_batch_id
-    };
-
-    var batch_id = Facet.fresh_pick_id();
-    var pick_id;
-    if (appearance.pick_id)
-        pick_id = Shade.make(appearance.pick_id);
-    else {
-        pick_id = Shade.make(Shade.id(batch_id));
+    function create_batch_opts(program, caps_name) {
+        return {
+            program: program,
+            attributes: build_attribute_arrays_obj(program),
+            set_caps: ((appearance.mode && appearance.mode[caps_name]) ||
+                       Facet.DrawingMode.standard[caps_name]),
+            draw_chunk: draw_chunk,
+            batch_id: largest_batch_id++
+        };
     }
 
-    var pick_program_exp = {};
-    _.each(appearance, function(value, key) {
-        if (Shade.is_program_parameter(key)) {
-            if (key === 'color' || key === 'gl_FragColor') {
-                var pick_if = (appearance.pick_if ||
-                               Shade.make(value).swizzle("a").gt(0));
-                pick_program_exp[key] = pick_id
-                    .discard_if(Shade.not(pick_if));
-            } else {
-                pick_program_exp[key] = value;
-            }
-        }
-    });
-    var pick_program = Shade.program(pick_program_exp);
-    var pick_attribute_arrays = _.build(_.map(
-        pick_program.attribute_buffers, function(v) { return [v._shade_name, v]; }
-    ));
-        
-    var pick_batch_id = largest_batch_id++;
-    var pick_opts = {
-        program: pick_program,
-        attributes: pick_attribute_arrays,
-        set_caps: ((appearance.mode && appearance.mode.set_pick_caps) || 
-                   Facet.DrawingMode.standard.set_pick_caps),
-        draw_chunk: draw_chunk,
-        batch_id: pick_batch_id
-    };
+    var draw_opts, pick_opts, unproject_opts;
 
-    var which_opts = [ draw_opts, pick_opts ];
+
+    if (!opts.force_no_draw)
+        draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
+
+    if (!opts.force_no_pick)
+        pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
+
+    if (!opts.force_no_unproject)
+        unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
+
+    var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {
         batch_id: batch_id,
         draw: function() {
-            draw_it(which_opts[Facet.Picker.picking_mode]);
+            draw_it(which_opts[Facet._globals.ctx._facet_globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.

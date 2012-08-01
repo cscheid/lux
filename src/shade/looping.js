@@ -15,7 +15,7 @@ Shade.variable = function(type)
     return Shade._create_concrete_exp({
         parents: [],
         type: type,
-        eval: function() {
+        evaluate: function() {
             return this.glsl_name;
         },
         compile: function() {}
@@ -63,9 +63,6 @@ BasicRange.prototype.fold = function(operation, starting_value)
                   index_variable, //  accumulator_value, element_value,
                   starting_value, operation_value],
         type: result_type,
-        eval: function() {
-            return this.glsl_name + "()";
-        },
         element: Shade.memoize_on_field("_element", function(i) {
             if (this.type.is_pod()) {
                 if (i === 0)
@@ -85,11 +82,11 @@ BasicRange.prototype.fold = function(operation, starting_value)
             var operation_value = this.parents[4];
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
             ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
-                             starting_value.eval(), ";\n");
+                             starting_value.evaluate(), ";\n");
             ctx.strings.push("    for (int",
-                             index_variable.eval(),"=",beg.eval(),";",
-                             index_variable.eval(),"<",end.eval(),";",
-                             "++",index_variable.eval(),") {\n");
+                             index_variable.evaluate(),"=",beg.evaluate(),";",
+                             index_variable.evaluate(),"<",end.evaluate(),";",
+                             "++",index_variable.evaluate(),") {\n");
             _.each(this.scope.declarations, function(exp) {
                 ctx.strings.push("        ", exp, ";\n");
             });
@@ -97,11 +94,11 @@ BasicRange.prototype.fold = function(operation, starting_value)
                 ctx.strings.push("        ", exp, ";\n");
             });
             ctx.strings.push("        ",
-                             accumulator_value.eval(),"=",
-                             operation_value.eval() + ";\n");
+                             accumulator_value.evaluate(),"=",
+                             operation_value.evaluate() + ";\n");
             ctx.strings.push("    }\n");
             ctx.strings.push("    return", 
-                             this.type.repr(), "(", accumulator_value.eval(), ");\n");
+                             this.type.repr(), "(", accumulator_value.evaluate(), ");\n");
             ctx.strings.push("}\n");
         }
     });

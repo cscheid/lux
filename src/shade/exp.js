@@ -1,22 +1,39 @@
 Shade.Exp = {
-    debug_print: function(indent) {
-        if (indent === undefined) indent = 0;
-        var str = "";
-        for (var i=0; i<indent; ++i) { str = str + ' '; }
-        if (this.parents.length === 0) 
-            console.log(str + "[" + this.expression_type + ":" + this.guid + "]"
-                        // + "[is_constant: " + this.is_constant() + "]"
-                        + "()");
-        else {
-            console.log(str + "[" + this.expression_type + ":" + this.guid + "]"
-                        // + "[is_constant: " + this.is_constant() + "]"
-                        + "(");
-            for (i=0; i<this.parents.length; ++i)
-                this.parents[i].debug_print(indent + 2);
-            console.log(str + ')');
-        }
+    debug_print: function(do_what) {
+        var lst = [];
+        var refs = {};
+        function _debug_print(which, indent) {
+            var i;
+            var str = new Array(indent+2).join(" "); // This is python's '" " * indent'
+            // var str = "";
+            // for (var i=0; i<indent; ++i) { str = str + ' '; }
+            if (which.parents.length === 0) 
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " ()");
+            else {
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " (");
+                for (i=0; i<which.parents.length; ++i) {
+                    if (refs[which.parents[i].guid])
+                        lst.push(str + "  {{" + which.parents[i].guid + "}}");
+                    else {
+                        _debug_print(which.parents[i], indent + 2);
+                        refs[which.parents[i].guid] = 1;
+                    }
+                }
+                lst.push(str + ')');
+            }
+        };
+        _debug_print(this, 0);
+        do_what = do_what || function(l) {
+            var s = l.join("\n");
+            console.log(s);
+        };
+        do_what(lst);
     },
-    eval: function() {
+    evaluate: function() {
         return this.glsl_name + "()";
     },
     parent_is_unconditional: function(i) {
@@ -36,25 +53,27 @@ Shade.Exp = {
     set_requirements: function() {},
 
     // returns all sub-expressions in topologically-sorted order
-    sorted_sub_expressions: function() {
+    sorted_sub_expressions: Shade.memoize_on_field("_sorted_sub_expressions", function() {
         var so_far = [];
+        var visited_guids = [];
         var topological_sort_internal = function(exp) {
-            if (so_far.indexOf(exp) != -1) {
+            var guid = exp.guid;
+            if (visited_guids[guid]) {
                 return;
             }
             var parents = exp.parents;
-            if (typeOf(parents) === "undefined") {
-                throw "Internal error: expression " + exp.eval()
-                    + " has undefined parents.";
-            }
-            for (var i=0; i<parents.length; ++i) {
+            var i = parents.length;
+            while (i--) {
                 topological_sort_internal(parents[i]);
             }
+            // for (var i=0; i<l; ++i) {
+            // }
             so_far.push(exp);
+            visited_guids[guid] = true;
         };
         topological_sort_internal(this);
         return so_far;
-    },
+    }),
 
     //////////////////////////////////////////////////////////////////////////
     // constant checking, will be useful for folding and for enforcement
@@ -92,11 +111,14 @@ Shade.Exp = {
     div: function(op) {
         return Shade.div(this, op);
     },
+    mod: function(op) {
+        return Shade.mod(this, op);
+    },
     sub: function(op) {
         return Shade.sub(this, op);
     },
-    length: function() {
-        return Shade.length(this);
+    norm: function() {
+        return Shade.norm(this);
     },
     distance: function(other) {
         return Shade.distance(this, other);
@@ -135,6 +157,12 @@ Shade.Exp = {
     discard_if: function(condition) {
         return Shade.discard_if(this, condition);
     },
+
+    // overload this to overload exp(foo)
+    call_operator: function() {
+        return this.mul.apply(this, arguments);
+    },
+
     // all sugar for funcs_1op is defined later on in the source
 
     //////////////////////////////////////////////////////////////////////////
@@ -146,7 +174,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.int_t,
-            value: function() { return "int(" + this.parents[0].eval() + ")"; },
+            value: function() { return "int(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -162,7 +190,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.bool_t,
-            value: function() { return "bool(" + this.parents[0].eval() + ")"; },
+            value: function() { return "bool(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -178,7 +206,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.float_t,
-            value: function() { return "float(" + this.parents[0].eval() + ")"; },
+            value: function() { return "float(" + this.parents[0].evaluate() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -203,9 +231,9 @@ Shade.Exp = {
                 case 't': return 1;
                 case 'p': return 2;
                 case 'q': return 3;
-                default: throw "Invalid swizzle pattern";
+                default: throw "invalid swizzle pattern";
                 }
-            };
+            }
             var result = [];
             for (var i=0; i<pattern.length; ++i) {
                 result.push(to_index(pattern[i]));
@@ -218,8 +246,13 @@ Shade.Exp = {
         return Shade._create_concrete_exp( {
             parents: [parent],
             type: parent.type.swizzle(pattern),
-            expression_type: "swizzle",
-            eval: function() { return this.parents[0].eval() + "." + pattern; },
+            expression_type: "swizzle{" + pattern + "}",
+            evaluate: function() {
+                if (this._must_be_function_call)
+                    return this.glsl_name + "()";
+                else
+                    return this.parents[0].evaluate() + "." + pattern; 
+            },
             is_constant: Shade.memoize_on_field("_is_constant", function () {
                 var that = this;
                 return _.all(indices, function(i) {
@@ -253,7 +286,15 @@ Shade.Exp = {
             element_constant_value: Shade.memoize_on_field("_element_constant_value", function(i) {
                 return this.parents[0].element_constant_value(indices[i]);
             }),
-            compile: function() {}
+            compile: function(ctx) {
+                if (this._must_be_function_call) {
+                    this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
+                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                    ctx.add_initialization(this.precomputed_value_glsl_name + " = " + 
+                                           this.parents[0].evaluate() + "." + pattern);
+                    ctx.value_function(this, this.precomputed_value_glsl_name);
+                }
+            }
         });
     },
     at: function(index) {
@@ -262,49 +303,62 @@ Shade.Exp = {
         // this "works around" current constant index restrictions in webgl
         // look for it to get broken in the future as this hole is plugged.
         index._must_be_function_call = true;
-        // FIXME: enforce that at only takes floats or ints;
+        if (!index.type.equals(Shade.Types.float_t) &&
+            !index.type.equals(Shade.Types.int_t)) {
+            throw "at expects int or float, got '" + 
+                index.type.repr() + "' instead";
+        }
         return Shade._create_concrete_exp( {
             parents: [parent, index],
             type: parent.type.array_base(),
             expression_type: "index",
-            eval: function() { 
+            evaluate: function() {
                 if (this.parents[1].type.is_integral()) {
-                    return this.parents[0].eval() + 
-                        "[" + this.parents[1].eval() + "]"; 
+                    return this.parents[0].evaluate() + 
+                        "[" + this.parents[1].evaluate() + "]"; 
                 } else {
-                    return this.parents[0].eval() + 
-                        "[int(" + this.parents[1].eval() + ")]"; 
+                    return this.parents[0].evaluate() + 
+                        "[int(" + this.parents[1].evaluate() + ")]"; 
                 }
             },
             is_constant: function() {
-                return (this.parents[0].is_constant() && 
-                        this.parents[1].is_constant());
+                if (!this.parents[1].is_constant())
+                    return false;
+                var ix = Math.floor(this.parents[1].constant_value());
+                return (this.parents[1].is_constant() &&
+                        this.parents[0].element_is_constant(ix));
             },
             constant_value: Shade.memoize_on_field("_constant_value", function() {
-                var a = this.parents[0].constant_value();
-                if (typeOf(a) === 'array') // this was a GLSL array of stuff
-                    return a[this.parents[1].constant_value()];
-                else { // this was a vec.
-                    if (a._type === 'vector') {
-                        return a[this.parents[1].constant_value()];
-                    } else {
-                        // FIXME: at constant_value for mats is broken.
-                        //  Lift and use matrix_row from constant.js
-                        throw "at constant_value currently broken";
-                    }
-                }
+                var ix = Math.floor(this.parents[1].constant_value());
+                return this.parents[0].element_constant_value(ix);
             }),
-            // the reason for the (if x === this) checks here is that sometimes
-            // the only appropriate description of an element() of an
-            // opaque object (uniforms and attributes, notably) is an at() call.
-            // This means that (this.parents[0].element(ix) === this) happens
-            // sometimes, and we're stuck in an infinite loop.
+
             element: Shade.memoize_on_field("_element", function(i) {
-                if (!this.parents[1].is_constant()) {
-                    throw "at().element cannot be called with non-constant index";
+                // FIXME I suspect that a bug here might still arise
+                // out of some interaction between the two conditions
+                // described below. The right fix will require rewriting the whole
+                // constant-folding system :) so it will be a while.
+
+                var array = this.parents[0], 
+                    index = this.parents[1];
+
+                if (!index.is_constant()) {
+                    // If index is not constant, then we use the following equation:
+                    // element(Array(a_1 .. a_n).at(ix), i) ==
+                    // Array(element(a_1, i) .. element(a_n, i)).at(ix)
+                    var elts = _.map(array.parents, function(parent) {
+                        return parent.element(i);
+                    });
+                    return Shade.array(elts).at(index);
                 }
-                var ix = this.parents[1].constant_value();
-                var x = this.parents[0].element(ix);
+                var index_value = this.parents[1].constant_value();
+                var x = this.parents[0].element(index_value);
+
+                // the reason for the (if x === this) checks here is that sometimes
+                // the only appropriate description of an element() of an
+                // opaque object (uniforms and attributes, notably) is an at() call.
+                // This means that (this.parents[0].element(ix) === this) is
+                // sometimes true, and we're stuck in an infinite loop.
                 if (x === this) {
                     return x.at(i);
                 } else
@@ -325,13 +379,14 @@ Shade.Exp = {
                 var ix = this.parents[1].constant_value();
                 var x = this.parents[0].element(ix);
                 if (x === this) {
-                    throw "Would have gone into an infinite loop here: internal error.";
+                    throw "internal error: would have gone into an infinite loop here.";
                 }
                 return x.element_constant_value(i);
             }),
             compile: function() {}
         });
     },
+    _facet_expression: true, // used by facet_typeOf
     expression_type: "other",
     _type: "shade_expression",
     _attribute_buffers: [],
@@ -355,42 +410,49 @@ Shade.Exp = {
     // around, such as the things we move around when attributes are 
     // referenced in fragment programs
     // 
-    // FIXME: it's currently easy to create bad expressions with these.
+    // NB: it's easy to create bad expressions with these.
+    //
+    // The general rule is that types should be preserved (although
+    // that might not *always* be the case)
     find_if: function(check) {
         return _.select(this.sorted_sub_expressions(), check);
     },
+
     replace_if: function(check, replacement) {
+        // this code is not particularly clear, but this is a compiler
+        // hot-path, bear with me.
         var subexprs = this.sorted_sub_expressions();
-        var replaced_pairs = [];
-        function has_been_replaced(x) {
-            return _.some(replaced_pairs, function(v) {
-                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid);
-            });
-        }
+        var replaced_pairs = {};
         function parent_replacement(x) {
-            var r = _.select(replaced_pairs, function(v) {
-                return (x.guid === v[0].guid) && (v[0].guid !== v[1].guid);
-            });
-            if (r.length === 0)
+            if (!(x.guid in replaced_pairs)) {
                 return x;
-            else
-                return r[0][1];
+            } else
+                return replaced_pairs[x.guid];
         }
+        var latest_replacement, replaced;
         for (var i=0; i<subexprs.length; ++i) {
             var exp = subexprs[i];
             if (check(exp)) {
-                replaced_pairs.push([exp, replacement(exp)]);
-            } else if (_.some(exp.parents, has_been_replaced)) {
-                var x = [exp, Shade._create(exp, {
-                    parents: _.map(exp.parents, parent_replacement)
-                })];
-                replaced_pairs.push(x);
+                latest_replacement = replacement(exp);
+                replaced_pairs[exp.guid] = latest_replacement;
             } else {
-                replaced_pairs.push([exp, exp]);
+                replaced = false;
+                for (var j=0; j<exp.parents.length; ++j) {
+                    if (exp.parents[j].guid in replaced_pairs) {
+                        latest_replacement = Shade._create(exp, {
+                            parents: _.map(exp.parents, parent_replacement)
+                        });
+                        replaced_pairs[exp.guid] = latest_replacement;
+                        replaced = true;
+                        break;
+                    }
+                }
+                if (!replaced) {
+                    latest_replacement = exp;
+                }
             }
         }
-        var result = replaced_pairs[replaced_pairs.length-1][1];
-        return result;
+        return latest_replacement;
     },
 
     //////////////////////////////////////////////////////////////////////////
@@ -402,6 +464,14 @@ Shade.Exp = {
     // is has_scope is true, then the expression has its own scope
     // (like for-loops)
     has_scope: false
-
 };
+
+_.each(["r", "g", "b", "a",
+        "x", "y", "z", "w",
+        "s", "t", "p", "q"], function(v) {
+            Shade.Exp[v] = function() {
+                return this.swizzle(v);
+            };
+        });
+
 Shade._create_concrete_exp = Shade._create_concrete(Shade.Exp, ["parents", "compile", "type"]);

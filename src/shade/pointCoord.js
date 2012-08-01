@@ -3,7 +3,7 @@ Shade.pointCoord = function() {
         expression_type: "builtin_input{gl_PointCoord}",
         parents: [],
         type: Shade.Types.vec2,
-        eval: function() { return "gl_PointCoord"; },
+        evaluate: function() { return "gl_PointCoord"; },
         compile: function(ctx) {
         }
     });

@@ -6,7 +6,7 @@
 // 
 // In the case of incorrect behavior (that is, when contents are not
 // rendered back-to-front), it is not clear which of the two incorrect 
-// behaviors are preferable:
+// behaviors is preferable:
 // 
 // 1. that depth buffer writing be enabled, and some things which should
 // be rendered "behind" alpha-blended simply disappear (this gets
@@ -36,6 +36,13 @@ Facet.DrawingMode.over = {
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
     }
 };
 
@@ -47,12 +54,18 @@ Facet.DrawingMode.over_with_depth = {
         ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
                               ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
         ctx.enable(ctx.DEPTH_TEST);
-        ctx.depthFunc(ctx.LESS);
+        ctx.depthFunc(ctx.LEQUAL);
     },
     set_pick_caps: function()
     {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
-        ctx.depthFunc(ctx.LESS);
+        ctx.depthFunc(ctx.LEQUAL);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LEQUAL);
     }
 };
