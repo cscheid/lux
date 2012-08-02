@@ -35,7 +35,6 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
     evaluate: function() {
         var unconditional = true; // see comment on top
         if (this._must_be_function_call) {
-            console.log(this.scope.show());
             return this.glsl_name + "(" + ")";
         }
         if (this.children_count <= 1)

@@ -1,11 +1,18 @@
 /*
- A range expression represents a finite stream of values. It is meant
- to be an abstraction over looping, and provides a few ways to combine values,
- such as a 
+ A range expression represents a finite stream of values. 
 
- NB: NESTED LOOPS WILL REQUIRE DEEP CHANGES TO THE INFRASTRUCTURE, AND
- WON'T BE SUPPORTED FOR A WHILE.
+ It is meant
+ to be an abstraction over looping, and provides a few ways to combine values.
 
+ Currently the only operations supported are plain stream
+ transformations (like "map") and fold (like "reduce").
+
+ It should be possible to add, at the very least, "filter", "scan", and "firstWhich".
+
+ nb: nested loops will require deep changes to the infrastructure, and
+ won't be supported for a while.
+
+ In general, looping in general is pretty unstable.
 */
 
 (function() {
@@ -76,8 +83,6 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                     return dep.glsl_name === index_variable.glsl_name ||
                         dep.glsl_name === accumulator_value.glsl_name;
                 })) {
-                    console.log("Patching ", node, node.guid, node.glsl_name);
-                    node.debug_print();
                     node.scope = that.scope;
                 };
             });
@@ -106,8 +111,6 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             var element_value = this.parents[4];
             var starting_value = this.parents[5];
             var operation_value = this.parents[6];
-            console.log("ELEMENT VALUE", element_value.glsl_name);
-            element_value.debug_print();
 
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
             ctx.strings.push("    ",accumulator_value.type.repr(), accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
@@ -139,6 +142,12 @@ BasicRange.prototype.sum = function()
 {
     var this_begin_v = this.value(this.begin);
     return this.fold(Shade.add, this_begin_v.type.zero);
+};
+
+BasicRange.prototype.max = function()
+{
+    var this_begin_v = this.value(this.begin);
+    return this.fold(Shade.max, this_begin_v.type.minus_infinity);
 };
 
 BasicRange.prototype.average = function()

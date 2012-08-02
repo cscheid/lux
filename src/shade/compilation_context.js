@@ -97,7 +97,6 @@ Shade.CompilationContext = function(compile_type)
                 n.children_count = 0;
                 n.is_unconditional = false;
                 n.glsl_name = that.request_fresh_glsl_name();
-                console.log("named ", n.guid, n.glsl_name);
                 n.set_requirements(this);
                 for (var j=0; j<n.parents.length; ++j) {
                     n.parents[j].children_count++;
