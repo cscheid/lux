@@ -106,8 +106,8 @@ BasicRange.prototype.fold = function(operation, starting_value)
 
 BasicRange.prototype.sum = function()
 {
-    console.log(this.value(this.begin).type.repr());
-    return this.fold(Shade.add, this.value(this.begin).type.zero);
+    var this_begin_v = this.value(this.begin);
+    return this.fold(Shade.add, this_begin_v.type.zero);
 };
 
 BasicRange.prototype.average = function()

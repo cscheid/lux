@@ -9,7 +9,7 @@ Shade.seq = function(parents)
         evaluate: function(glsl_name) {
             return this.parents.map(function (n) { return n.evaluate(); }).join("; ");
         },
-        type: Shade.basic('void'),
+        type: Shade.Types.void_t,
         compile: function (ctx) {}
     });
 };

@@ -23,7 +23,7 @@ Shade.mat = function()
         throw "mat constructor requires resulting dimension to be between "
             + "2 and 4";
     }
-    var type = Shade.basic("mat" + rows);
+    var type = Shade.Types["mat" + rows];
     return Shade._create_concrete_value_exp( {
         parents: parents,
         type: type,

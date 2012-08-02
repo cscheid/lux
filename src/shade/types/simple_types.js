@@ -7,11 +7,19 @@
          "bvec2", "bvec3", "bvec4"];
 
     for (var i=0; i<simple_types.length; ++i) {
-        Shade.Types[simple_types[i]] = Shade.basic(simple_types[i]);
+        Shade.Types[simple_types[i]] = Shade.Types._create_basic(simple_types[i]);
     }
 
-    Shade.Types.float_t   = Shade.basic('float');
-    Shade.Types.bool_t    = Shade.basic('bool');
-    Shade.Types.int_t     = Shade.basic('int');
-    Shade.Types.sampler2D = Shade.basic('sampler2D');
+    Shade.Types.float_t   = Shade.Types._create_basic('float');
+    Shade.Types.bool_t    = Shade.Types._create_basic('bool');
+    Shade.Types.int_t     = Shade.Types._create_basic('int');
+
+    Shade.Types.sampler2D = Shade.Types._create_basic('sampler2D');
+    Shade.Types.void_t    = Shade.Types._create_basic('void');
+
+    // create aliases so that x === y.repr() implies Shade.Types[x] === y
+    Shade.Types["float"] = Shade.Types.float_t;
+    Shade.Types["bool"]  = Shade.Types.bool_t;
+    Shade.Types["int"]   = Shade.Types.int_t;
+    Shade.Types["void"]  = Shade.Types.void_t;
 })();

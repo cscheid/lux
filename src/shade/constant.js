@@ -119,7 +119,7 @@ Shade.constant = function(v, type)
             throw "not all constant params have the same types";
         }
         if (el_ts[0] === "number") {
-            computed_t = Shade.basic('vec' + d);
+            computed_t = Shade.Types['vec' + d];
             if (type && !computed_t.equals(type)) {
                 throw "passed constant must have type " + computed_t.repr()
                     + ", but was request to have incompatible type " 
@@ -131,7 +131,7 @@ Shade.constant = function(v, type)
             throw "bad datatype for constant: " + el_ts[0];
     } else if (t === 'matrix') {
         d = mat_length_to_dimension[v.length];
-        computed_t = Shade.basic('mat' + d);
+        computed_t = Shade.Types['mat' + d];
         if (type && !computed_t.equals(type)) {
             throw "passed constant must have type " + computed_t.repr()
                 + ", but was request to have incompatible type " 

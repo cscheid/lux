@@ -5495,8 +5495,8 @@ BasicRange.prototype.fold = function(operation, starting_value)
 
 BasicRange.prototype.sum = function()
 {
-    console.log(this.value(this.begin).type.repr());
-    return this.fold(Shade.add, this.value(this.begin).type.zero);
+    var this_begin_v = this.value(this.begin);
+    return this.fold(Shade.add, this_begin_v.type.zero);
 };
 
 BasicRange.prototype.average = function()
@@ -5615,33 +5615,38 @@ Shade.Types.base_t = {
     //   by the constant_value() method of an object with the given type,
     //   and tests their equality.
 };
-Shade.basic = function(repr) { 
-    function is_valid_basic_type(repr) {
-        if (repr === 'float') return true;
-        if (repr === 'int') return true;
-        if (repr === 'bool') return true;
-        if (repr === 'void') return true;
-        if (repr === 'sampler2D') return true;
-        if (repr.substring(0, 3) === 'mat' &&
-            (Number(repr[3]) > 1 && 
-             Number(repr[3]) < 5)) return true;
-        if (repr.substring(0, 3) === 'vec' &&
-            (Number(repr[3]) > 1 && 
-             Number(repr[3]) < 5)) return true;
-        if (repr.substring(0, 4) === 'bvec' &&
-            (Number(repr[4]) > 1 && 
-             Number(repr[4]) < 5)) return true;
-        if (repr.substring(0, 4) === 'ivec' &&
-            (Number(repr[4]) > 1 && 
-             Number(repr[4]) < 5)) return true;
-        // if (repr === '__auto__') return true;
-        return false;
-    }
+(function() {
 
+function is_valid_basic_type(repr) {
+    if (repr === 'float') return true;
+    if (repr === 'int') return true;
+    if (repr === 'bool') return true;
+    if (repr === 'void') return true;
+    if (repr === 'sampler2D') return true;
+    if (repr.substring(0, 3) === 'mat' &&
+        (Number(repr[3]) > 1 && 
+         Number(repr[3]) < 5)) return true;
+    if (repr.substring(0, 3) === 'vec' &&
+        (Number(repr[3]) > 1 && 
+         Number(repr[3]) < 5)) return true;
+    if (repr.substring(0, 4) === 'bvec' &&
+        (Number(repr[4]) > 1 && 
+         Number(repr[4]) < 5)) return true;
+    if (repr.substring(0, 4) === 'ivec' &&
+        (Number(repr[4]) > 1 && 
+         Number(repr[4]) < 5)) return true;
+    // if (repr === '__auto__') return true;
+    return false;
+}
+
+Shade.Types.basic = function(repr) {
     if (!is_valid_basic_type(repr)) {
         throw "invalid basic type '" + repr + "'";
     }
-    
+    return Shade.Types[repr];
+};
+
+Shade.Types._create_basic = function(repr) { 
     return Shade._create(Shade.Types.base_t, {
         declare: function(glsl_name) { return repr + " " + glsl_name; },
         repr: function() { return repr; },
@@ -5682,9 +5687,10 @@ Shade.basic = function(repr) {
             }
             if (pattern.length === 1) {
                 return this.array_base();
-            } else
-                return Shade.basic(base_repr.substring(0, base_repr.length-1) +
-                                 pattern.length);
+            } else {
+                var type_str = base_repr.substring(0, base_repr.length-1) + pattern.length;
+                return Shade.Types[type_str];
+            }
         },
         is_pod: function() {
             var repr = this.repr();
@@ -5741,15 +5747,15 @@ Shade.basic = function(repr) {
         array_base: function() {
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")
-                return Shade.basic("vec" + repr[3]);
+                return Shade.Types["vec" + repr[3]];
             if (repr.substring(0, 3) === "vec")
-                return Shade.basic("float");
+                return Shade.Types.float_t;
             if (repr.substring(0, 4) === "bvec")
-                return Shade.basic("bool");
+                return Shade.Types.bool_t;
             if (repr.substring(0, 4) === "ivec")
-                return Shade.basic("int");
-            if (repr == "float")
-                return Shade.basic("float");
+                return Shade.Types.int_t;
+            if (repr === "float")
+                return Shade.Types.float_t;
             throw "datatype not array";
         },
         size_for_vec_constructor: function() {
@@ -5829,6 +5835,8 @@ Shade.basic = function(repr) {
         }
     });
 };
+
+})();
 Shade.Types.array = function(base_type, size) {
     return Shade._create(Shade.Types.base_t, {
         is_array: function() { return true; },
@@ -5877,13 +5885,21 @@ Shade.Types.function_t = function(return_type, param_types) {
          "bvec2", "bvec3", "bvec4"];
 
     for (var i=0; i<simple_types.length; ++i) {
-        Shade.Types[simple_types[i]] = Shade.basic(simple_types[i]);
+        Shade.Types[simple_types[i]] = Shade.Types._create_basic(simple_types[i]);
     }
 
-    Shade.Types.float_t   = Shade.basic('float');
-    Shade.Types.bool_t    = Shade.basic('bool');
-    Shade.Types.int_t     = Shade.basic('int');
-    Shade.Types.sampler2D = Shade.basic('sampler2D');
+    Shade.Types.float_t   = Shade.Types._create_basic('float');
+    Shade.Types.bool_t    = Shade.Types._create_basic('bool');
+    Shade.Types.int_t     = Shade.Types._create_basic('int');
+
+    Shade.Types.sampler2D = Shade.Types._create_basic('sampler2D');
+    Shade.Types.void_t    = Shade.Types._create_basic('void');
+
+    // create aliases so that x === y.repr() implies Shade.Types[x] === y
+    Shade.Types["float"] = Shade.Types.float_t;
+    Shade.Types["bool"]  = Shade.Types.bool_t;
+    Shade.Types["int"]   = Shade.Types.int_t;
+    Shade.Types["void"]  = Shade.Types.void_t;
 })();
 Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
@@ -6742,7 +6758,7 @@ Shade.constant = function(v, type)
             throw "not all constant params have the same types";
         }
         if (el_ts[0] === "number") {
-            computed_t = Shade.basic('vec' + d);
+            computed_t = Shade.Types['vec' + d];
             if (type && !computed_t.equals(type)) {
                 throw "passed constant must have type " + computed_t.repr()
                     + ", but was request to have incompatible type " 
@@ -6754,7 +6770,7 @@ Shade.constant = function(v, type)
             throw "bad datatype for constant: " + el_ts[0];
     } else if (t === 'matrix') {
         d = mat_length_to_dimension[v.length];
-        computed_t = Shade.basic('mat' + d);
+        computed_t = Shade.Types['mat' + d];
         if (type && !computed_t.equals(type)) {
             throw "passed constant must have type " + computed_t.repr()
                 + ", but was request to have incompatible type " 
@@ -6867,7 +6883,7 @@ Shade.set = function(exp, name)
             }
             ctx.void_function(this, "(", name, "=", this.parents[0].evaluate(), ")");
         },
-        type: Shade.basic('void'),
+        type: Shade.Types.void_t,
         parents: [exp]
     });
 };
@@ -6888,7 +6904,8 @@ Shade.parameter = function(type, v)
 
     var uniform_name = Shade.unique_name();
     if (_.isUndefined(type)) throw "parameter requires type";
-    if (typeof type === 'string') type = Shade.basic(type);
+    if (typeof type === 'string') type = Shade.Types[type]; // basic(type);
+    if (_.isUndefined(type)) throw "parameter requires valid type";
     var value;
     var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
     if (!_.isUndefined(call)) {
@@ -6980,7 +6997,9 @@ Shade.attribute_from_buffer = function(buffer)
 Shade.attribute = function(name, type)
 {
     if (_.isUndefined(type)) throw "attribute requires type";
-    if (typeof type === 'string') type = Shade.basic(type);
+    if (typeof type === 'string') type = Shade.Types[type];
+    if (_.isUndefined(type)) throw "attribute requires valid type";
+
     return Shade._create_concrete_exp( {
         parents: [],
         type: type,
@@ -7014,7 +7033,8 @@ Shade.attribute = function(name, type)
 Shade.varying = function(name, type)
 {
     if (_.isUndefined(type)) throw "varying requires type";
-    if (facet_typeOf(type) === 'string') type = Shade.basic(type);
+    if (facet_typeOf(type) === 'string') type = Shade.Types[type];
+    if (_.isUndefined(type)) throw "varying requires valid type";
     var allowed_types = [
         Shade.Types.float_t,
         Shade.Types.vec2,
@@ -7607,11 +7627,11 @@ Shade.vec = function()
     }
     var type;
     if (vec_type.equals(Shade.Types.float_t)) {
-        type = Shade.basic("vec" + total_size);
+        type = Shade.Types["vec" + total_size];
     } else if (vec_type.equals(Shade.Types.int_t)) {
-        type = Shade.basic("ivec" + total_size);
+        type = Shade.Types["ivec" + total_size];
     } else if (vec_type.equals(Shade.Types.bool_t)) {
-        type = Shade.basic("bvec" + total_size);
+        type = Shade.Types["bvec" + total_size];
     } else {
         throw "vec type must be bool, int, or float";
     }
@@ -7700,7 +7720,7 @@ Shade.mat = function()
         throw "mat constructor requires resulting dimension to be between "
             + "2 and 4";
     }
-    var type = Shade.basic("mat" + rows);
+    var type = Shade.Types["mat" + rows];
     return Shade._create_concrete_value_exp( {
         parents: parents,
         type: type,
@@ -8528,7 +8548,7 @@ Shade.seq = function(parents)
         evaluate: function(glsl_name) {
             return this.parents.map(function (n) { return n.evaluate(); }).join("; ");
         },
-        type: Shade.basic('void'),
+        type: Shade.Types.void_t,
         compile: function (ctx) {}
     });
 };

@@ -1,7 +1,8 @@
 Shade.varying = function(name, type)
 {
     if (_.isUndefined(type)) throw "varying requires type";
-    if (facet_typeOf(type) === 'string') type = Shade.basic(type);
+    if (facet_typeOf(type) === 'string') type = Shade.Types[type];
+    if (_.isUndefined(type)) throw "varying requires valid type";
     var allowed_types = [
         Shade.Types.float_t,
         Shade.Types.vec2,

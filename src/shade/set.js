@@ -35,7 +35,7 @@ Shade.set = function(exp, name)
             }
             ctx.void_function(this, "(", name, "=", this.parents[0].evaluate(), ")");
         },
-        type: Shade.basic('void'),
+        type: Shade.Types.void_t,
         parents: [exp]
     });
 };

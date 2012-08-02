@@ -15,37 +15,37 @@ function almost_equal(expected, got, msg, eps) {
 }
 
 test("Shade types", function() {
-    var x = Shade.basic('float');
+    var x = Shade.Types.basic('float');
     expect(21);
     raises(function() {
-        Shade.basic('askldjasdf');
+        Shade.Types.basic('askldjasdf');
     }, function(e) {
         return e === "invalid basic type 'askldjasdf'";
     }, "bad basic objects should fail");
     raises(function() {
-        Shade.basic('vec2').swizzle('rx');
+        Shade.Types.basic('vec2').swizzle('rx');
     }, function(e) {
         return e === "swizzle pattern 'rx' belongs to more than one group";
     }, "bad swizzle pattern");
-    ok(Shade.basic('vec2').swizzle('rg'), "basic swizzle pattern #1");
-    ok(Shade.basic('vec2').equals(Shade.Types.vec2), "type equality");
-    equal(Shade.basic('vec2').swizzle('rrr').repr(),
+    ok(Shade.Types.basic('vec2').swizzle('rg'), "basic swizzle pattern #1");
+    ok(Shade.Types.basic('vec2').equals(Shade.Types.vec2), "type equality");
+    equal(Shade.Types.basic('vec2').swizzle('rrr').repr(),
           'vec3', "basic swizzle pattern type");
-    equal(Shade.basic('ivec4').swizzle('a').repr(),
+    equal(Shade.Types.basic('ivec4').swizzle('a').repr(),
           'int', "basic swizzle to scalar");
-    equal(Shade.basic('bvec2').swizzle('t').repr(),
+    equal(Shade.Types.basic('bvec2').swizzle('t').repr(),
           'bool', "basic swizzle to scalar");
-    equal(Shade.basic('vec4').swizzle('q').repr(),
+    equal(Shade.Types.basic('vec4').swizzle('q').repr(),
           'float', "basic swizzle to scalar");
     raises(function() {
         Shade.varying("model_pos");
     }, function(e) { return e === "varying requires type"; });
 
-    equal(Shade.basic('vec4').is_vec(),  true,  "type check methods");
-    equal(Shade.basic('float').is_vec(), false, "type check methods");
-    equal(Shade.basic('mat4').is_vec(),  false, "type check methods");
-    equal(Shade.basic('mat4').is_pod(),  false, "type check methods");
-    equal(Shade.basic('float').is_pod(), true,  "type check methods");
+    equal(Shade.Types.basic('vec4').is_vec(),  true,  "type check methods");
+    equal(Shade.Types.basic('float').is_vec(), false, "type check methods");
+    equal(Shade.Types.basic('mat4').is_vec(),  false, "type check methods");
+    equal(Shade.Types.basic('mat4').is_pod(),  false, "type check methods");
+    equal(Shade.Types.basic('float').is_pod(), true,  "type check methods");
     raises(function() {
         var v = [];
         Shade.array(v);
@@ -59,7 +59,7 @@ test("Shade types", function() {
         return e === "array elements must have identical types";
     });
 
-    ok(Shade.basic('vec4').element_type(0).equals(Shade.Types.float_t), "element_type");
+    ok(Shade.Types.basic('vec4').element_type(0).equals(Shade.Types.float_t), "element_type");
     ok(Shade.vec(Shade.vec(3, 4), 0).type.element_type(2).equals(Shade.Types.float_t), "element_type");
     raises(function() {
         Shade.vec(Shade.vec(3, 4), true);
