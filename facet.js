@@ -8928,7 +8928,6 @@ Shade.program = function(program_obj)
     var vp_exp = Shade.seq(vp_exprs);
     var fp_exp = Shade.seq(fp_exprs);
 
-    vp_exp.debug_print();
     vp_compile.compile(vp_exp);
     fp_compile.compile(fp_exp);
     var vp_source = vp_compile.source(),
