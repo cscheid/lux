@@ -5388,13 +5388,20 @@ Shade.color = function(spec, alpha)
 };
 }());
 /*
- A range expression represents a finite stream of values. It is meant
- to be an abstraction over looping, and provides a few ways to combine values,
- such as a 
+ A range expression represents a finite stream of values. 
 
- NB: NESTED LOOPS WILL REQUIRE DEEP CHANGES TO THE INFRASTRUCTURE, AND
- WON'T BE SUPPORTED FOR A WHILE.
+ It is meant
+ to be an abstraction over looping, and provides a few ways to combine values.
 
+ Currently the only operations supported are plain stream
+ transformations (like "map") and fold (like "reduce").
+
+ It should be possible to add, at the very least, "filter", "scan", and "firstWhich".
+
+ nb: nested loops will require deep changes to the infrastructure, and
+ won't be supported for a while.
+
+ In general, looping in general is pretty unstable.
 */
 
 (function() {
@@ -5465,8 +5472,6 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                     return dep.glsl_name === index_variable.glsl_name ||
                         dep.glsl_name === accumulator_value.glsl_name;
                 })) {
-                    console.log("Patching ", node, node.guid, node.glsl_name);
-                    node.debug_print();
                     node.scope = that.scope;
                 };
             });
@@ -5495,8 +5500,6 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             var element_value = this.parents[4];
             var starting_value = this.parents[5];
             var operation_value = this.parents[6];
-            console.log("ELEMENT VALUE", element_value.glsl_name);
-            element_value.debug_print();
 
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
             ctx.strings.push("    ",accumulator_value.type.repr(), accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
@@ -5528,6 +5531,12 @@ BasicRange.prototype.sum = function()
 {
     var this_begin_v = this.value(this.begin);
     return this.fold(Shade.add, this_begin_v.type.zero);
+};
+
+BasicRange.prototype.max = function()
+{
+    var this_begin_v = this.value(this.begin);
+    return this.fold(Shade.max, this_begin_v.type.minus_infinity);
 };
 
 BasicRange.prototype.average = function()
@@ -6031,7 +6040,6 @@ Shade.CompilationContext = function(compile_type)
                 n.children_count = 0;
                 n.is_unconditional = false;
                 n.glsl_name = that.request_fresh_glsl_name();
-                console.log("named ", n.guid, n.glsl_name);
                 n.set_requirements(this);
                 for (var j=0; j<n.parents.length; ++j) {
                     n.parents[j].children_count++;
@@ -6612,7 +6620,6 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
     evaluate: function() {
         var unconditional = true; // see comment on top
         if (this._must_be_function_call) {
-            console.log(this.scope.show());
             return this.glsl_name + "(" + ")";
         }
         if (this.children_count <= 1)
@@ -6846,15 +6853,6 @@ Shade.constant = function(v, type)
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };
 Shade.as_bool = function(v) { return Shade.make(v).as_bool(); };
 Shade.as_float = function(v) { return Shade.make(v).as_float(); };
-
-Shade.Types.int_t.zero   = Shade.constant(0, Shade.Types.int_t);
-Shade.Types.float_t.zero = Shade.constant(0);
-Shade.Types.vec2.zero    = Shade.constant(vec2.make([0,0]));
-Shade.Types.vec3.zero    = Shade.constant(vec3.make([0,0,0]));
-Shade.Types.vec4.zero    = Shade.constant(vec4.make([0,0,0,0]));
-Shade.Types.mat2.zero    = Shade.constant(mat2.make([0,0,0,0]));
-Shade.Types.mat3.zero    = Shade.constant(mat3.make([0,0,0,0,0,0,0,0,0]));
-Shade.Types.mat4.zero    = Shade.constant(mat4.make([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]));
 
 // Shade.array denotes an array of Facet values of the same type:
 //    Shade.array([2, 3, 4, 5, 6]);
@@ -8594,6 +8592,35 @@ Shade.matrixCompMult = builtin_glsl_function({
 Shade.Exp.matrixCompMult = function(other) {
     return Shade.matrixCompMult(this, other);
 };
+
+Shade.Types.int_t.zero   = Shade.constant(0, Shade.Types.int_t);
+Shade.Types.float_t.zero = Shade.constant(0);
+Shade.Types.vec2.zero    = Shade.constant(vec2.make([0,0]));
+Shade.Types.vec3.zero    = Shade.constant(vec3.make([0,0,0]));
+Shade.Types.vec4.zero    = Shade.constant(vec4.make([0,0,0,0]));
+Shade.Types.mat2.zero    = Shade.constant(mat2.make([0,0,0,0]));
+Shade.Types.mat3.zero    = Shade.constant(mat3.make([0,0,0,0,0,0,0,0,0]));
+Shade.Types.mat4.zero    = Shade.constant(mat4.make([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]));
+
+// /o\
+Shade.Types.int_t.infinity   = Shade.constant(65535, Shade.Types.int_t);
+Shade.Types.float_t.infinity = Shade.constant(1e18);
+Shade.Types.vec2.infinity    = Shade.constant(vec2.make([1e18,1e18]));
+Shade.Types.vec3.infinity    = Shade.constant(vec3.make([1e18,1e18,1e18]));
+Shade.Types.vec4.infinity    = Shade.constant(vec4.make([1e18,1e18,1e18,1e18]));
+Shade.Types.mat2.infinity    = Shade.constant(mat2.make([1e18,1e18,1e18,1e18]));
+Shade.Types.mat3.infinity    = Shade.constant(mat3.make([1e18,1e18,1e18,1e18,1e18,1e18,1e18,1e18,1e18]));
+Shade.Types.mat4.infinity    = Shade.constant(mat4.make([1e18,1e18,1e18,1e18,1e18,1e18,1e18,1e18,1e18,1e18,1e18,1e18,1e18,1e18,1e18,1e18]));
+
+// according to the GLSL ES spec, for highp numbers the limit for ints is 2^16, and for floats, 2^52 ~= 10^18
+Shade.Types.int_t.minus_infinity   = Shade.constant(-65535, Shade.Types.int_t);
+Shade.Types.float_t.minus_infinity = Shade.constant(-1e18);
+Shade.Types.vec2.minus_infinity    = Shade.constant(vec2.make([-1e18,-1e18]));
+Shade.Types.vec3.minus_infinity    = Shade.constant(vec3.make([-1e18,-1e18,-1e18]));
+Shade.Types.vec4.minus_infinity    = Shade.constant(vec4.make([-1e18,-1e18,-1e18,-1e18]));
+Shade.Types.mat2.minus_infinity    = Shade.constant(mat2.make([-1e18,-1e18,-1e18,-1e18]));
+Shade.Types.mat3.minus_infinity    = Shade.constant(mat3.make([-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18]));
+Shade.Types.mat4.minus_infinity    = Shade.constant(mat4.make([-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18,-1e18]));
 
 })();
 Shade.seq = function(parents)
