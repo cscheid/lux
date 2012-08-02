@@ -77,7 +77,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             var accumulator_value = this.parents[3];
             var element_value = this.parents[4];
             var that = this;
-            
+
             _.each(element_value.sorted_sub_expressions(), function(node) {
                 if (_.any(node.loop_variable_dependencies(), function(dep) {
                     return dep.glsl_name === index_variable.glsl_name ||

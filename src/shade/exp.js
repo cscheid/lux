@@ -465,9 +465,25 @@ Shade.Exp = {
     // (like for-loops)
     has_scope: false,
     patch_scope: function () {},
-    loop_variable_dependencies: function () {
-        return [];
-    }
+    loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
+        var parent_deps = _.map(this.parents, function(v) {
+            return v.loop_variable_dependencies();
+        });
+        if (parent_deps.length === 0)
+            return [];
+        else {
+            var result_with_duplicates = parent_deps[0].concat.apply(parent_deps[0], parent_deps.slice(1));
+            var guids = [];
+            var result = [];
+            _.each(result_with_duplicates, function(n) {
+                if (!guids[n.guid]) {
+                    guids[n.guid] = true;
+                    result.push(n);
+                }
+            });
+            return result;
+        }
+    })
 };
 
 _.each(["r", "g", "b", "a",
