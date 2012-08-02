@@ -22,11 +22,22 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
     element_constant_value: Shade.memoize_on_field("_element_constant_value", function (i) {
         return this.element(i).constant_value();
     }),
+    loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
+        var parent_deps = _.map(this.parents, function(v) {
+            return v.loop_variable_dependencies();
+        });
+        if (parent_deps.length === 0)
+            return [];
+        else
+            return parent_deps[0].concat.apply(parent_deps[0], parent_deps.slice(1));
+    }),
     _must_be_function_call: false,
     evaluate: function() {
         var unconditional = true; // see comment on top
-        if (this._must_be_function_call)
-            return this.glsl_name + "()";
+        if (this._must_be_function_call) {
+            console.log(this.scope.show());
+            return this.glsl_name + "(" + ")";
+        }
         if (this.children_count <= 1)
             return this.value();
         if (unconditional)

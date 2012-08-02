@@ -5399,15 +5399,22 @@ Shade.color = function(spec, alpha)
 
 (function() {
 
-Shade.variable = function(type)
+Shade.loop_variable = function(type, force_no_declare)
 {
     return Shade._create_concrete_exp({
         parents: [],
         type: type,
+        expression_type: "loop_variable",
         evaluate: function() {
             return this.glsl_name;
         },
-        compile: function() {}
+        compile: function() {
+            if (_.isUndefined(force_no_declare))
+                this.scope.add_declaration(type.declare(this.glsl_name));
+        },
+        loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
+            return [this];
+        })
     });
 };
 
@@ -5436,20 +5443,36 @@ BasicRange.prototype.transform = function(xform)
         });
 };
 
-BasicRange.prototype.fold = function(operation, starting_value)
+BasicRange.prototype.fold = Shade(function(operation, starting_value)
 {
-    operation = Shade.make(operation);
-    starting_value = Shade.make(starting_value);
-    var index_variable = Shade.variable(Shade.Types.int_t);
+    var index_variable = Shade.loop_variable(Shade.Types.int_t, true);
+    var accumulator_value = Shade.loop_variable(starting_value.type, true);
+
     var element_value = this.value(index_variable);
-    var accumulator_value = Shade.variable(starting_value.type);
     var result_type = accumulator_value.type;
     var operation_value = operation(accumulator_value, element_value);
 
-    return Shade._create_concrete_exp({
+    var result = Shade._create_concrete_exp({
         has_scope: true,
+        patch_scope: function() {
+            var index_variable = this.parents[2];
+            var accumulator_value = this.parents[3];
+            var element_value = this.parents[4];
+            var that = this;
+            
+            _.each(element_value.sorted_sub_expressions(), function(node) {
+                if (_.any(node.loop_variable_dependencies(), function(dep) {
+                    return dep.glsl_name === index_variable.glsl_name ||
+                        dep.glsl_name === accumulator_value.glsl_name;
+                })) {
+                    console.log("Patching ", node, node.guid, node.glsl_name);
+                    node.debug_print();
+                    node.scope = that.scope;
+                };
+            });
+        },
         parents: [this.begin, this.end, 
-                  index_variable, //  accumulator_value, element_value,
+                  index_variable, accumulator_value, element_value,
                   starting_value, operation_value],
         type: result_type,
         element: Shade.memoize_on_field("_element", function(i) {
@@ -5461,17 +5484,23 @@ BasicRange.prototype.fold = function(operation, starting_value)
             } else
                 return this.at(i);
         }),
+        loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
+            return [];
+        }),
         compile: function(ctx) {
             var beg = this.parents[0];
             var end = this.parents[1];
             var index_variable = this.parents[2];
-            // var accumulator_value = this.parents[3];
-            // var element_value = this.parents[4];
-            var starting_value = this.parents[3];
-            var operation_value = this.parents[4];
+            var accumulator_value = this.parents[3];
+            var element_value = this.parents[4];
+            var starting_value = this.parents[5];
+            var operation_value = this.parents[6];
+            console.log("ELEMENT VALUE", element_value.glsl_name);
+            element_value.debug_print();
+
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
-            ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
-                             starting_value.evaluate(), ";\n");
+            ctx.strings.push("    ",accumulator_value.type.repr(), accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
+
             ctx.strings.push("    for (int",
                              index_variable.evaluate(),"=",beg.evaluate(),";",
                              index_variable.evaluate(),"<",end.evaluate(),";",
@@ -5491,7 +5520,9 @@ BasicRange.prototype.fold = function(operation, starting_value)
             ctx.strings.push("}\n");
         }
     });
-};
+
+    return result;
+});
 
 BasicRange.prototype.sum = function()
 {
@@ -5910,11 +5941,25 @@ function new_scope()
     return {
         declarations: [],
         initializations: [],
+        enclosing_scope: undefined,
+        
+        // make all declarations 
+        // global since names are unique anyway
         add_declaration: function(exp) {
-            this.declarations.push(exp);
+            // this.declarations.push(exp);
+            this.enclosing_scope.add_declaration(exp);
         },
         add_initialization: function(exp) {
             this.initializations.push(exp);
+        },
+        show: function() {
+            return "(Scope decls " 
+                + String(this.declarations)
+                + " inits "
+                + String(this.initializations)
+                + " enclosing "
+                + this.enclosing_scope.show()
+                + " )";
         }
     };
 };
@@ -5938,9 +5983,6 @@ Shade.CompilationContext = function(compile_type)
             var int_name = this.freshest_glsl_name++;
             return "glsl_name_" + int_name;
         },
-        // require_version: function(version) {
-        //     this.min_version = Math.max(this.min_version, version);
-        // },
         declare: function(decltype, glsl_name, type, declmap) {
             if (_.isUndefined(type)) {
                 throw "must define type";                
@@ -5968,9 +6010,6 @@ Shade.CompilationContext = function(compile_type)
             this.declare("attribute", glsl_name, type, this.declarations.attribute);
         },
         compile: function(fun) {
-            // for now, add_declaration works differently on global scope. When
-            // we finish the inevitable route of creating a real GLSL AST, then this
-            // will again change. 
             var that = this;
 
             this.global_scope = {
@@ -5980,6 +6019,9 @@ Shade.CompilationContext = function(compile_type)
                 },
                 add_initialization: function(exp) {
                     this.initializations.push(exp);
+                },
+                show: function() {
+                    return "(Global scope)";
                 }
             };
 
@@ -5989,14 +6031,15 @@ Shade.CompilationContext = function(compile_type)
                 n.children_count = 0;
                 n.is_unconditional = false;
                 n.glsl_name = that.request_fresh_glsl_name();
+                console.log("named ", n.guid, n.glsl_name);
                 n.set_requirements(this);
                 for (var j=0; j<n.parents.length; ++j) {
                     n.parents[j].children_count++;
                     // adds base scope to objects which have them.
-                    n.scope = n.has_scope ? new_scope() : undefined;
+                    // FIXME currently all scope objects point directly to global scope
+                    n.scope = n.has_scope ? new_scope() : that.global_scope;
                 }
             });
-
             // top-level node is always unconditional.
             topo_sort[topo_sort.length-1].is_unconditional = true;
             // top-level node has global scope.
@@ -6006,10 +6049,10 @@ Shade.CompilationContext = function(compile_type)
                 var n = topo_sort[i];
                 n.propagate_conditions();
                 for (var j=0; j<n.parents.length; ++j) {
-                    if (!n.parents[j].scope) {
-                        n.parents[j].scope = n.scope;
-                    }
+                    if (n.parents[j].has_scope)
+                        n.parents[j].scope.enclosing_scope = n.scope;
                 }
+                n.patch_scope();
             }
             var p = this.strings.push;
             this.strings.push("precision",this.float_precision,"float;\n");
@@ -6031,7 +6074,8 @@ Shade.CompilationContext = function(compile_type)
         value_function: function() {
             this.strings.push(arguments[0].type.repr(),
                               arguments[0].glsl_name,
-                              "(void) {\n",
+                              "(");
+            this.strings.push(") {\n",
                               "    return ");
             for (var i=1; i<arguments.length; ++i) {
                 this.strings.push(arguments[i]);
@@ -6041,7 +6085,7 @@ Shade.CompilationContext = function(compile_type)
         void_function: function() {
             this.strings.push("void",
                               arguments[0].glsl_name,
-                              "(void) {\n",
+                              "() {\n",
                               "    ");
             for (var i=1; i<arguments.length; ++i) {
                 this.strings.push(arguments[i]);
@@ -6513,9 +6557,13 @@ Shade.Exp = {
     // if stage is "vertex" then this expression will be hoisted to the vertex shader
     stage: null,
 
-    // is has_scope is true, then the expression has its own scope
+    // if has_scope is true, then the expression has its own scope
     // (like for-loops)
-    has_scope: false
+    has_scope: false,
+    patch_scope: function () {},
+    loop_variable_dependencies: function () {
+        return [];
+    }
 };
 
 _.each(["r", "g", "b", "a",
@@ -6551,11 +6599,22 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
     element_constant_value: Shade.memoize_on_field("_element_constant_value", function (i) {
         return this.element(i).constant_value();
     }),
+    loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
+        var parent_deps = _.map(this.parents, function(v) {
+            return v.loop_variable_dependencies();
+        });
+        if (parent_deps.length === 0)
+            return [];
+        else
+            return parent_deps[0].concat.apply(parent_deps[0], parent_deps.slice(1));
+    }),
     _must_be_function_call: false,
     evaluate: function() {
         var unconditional = true; // see comment on top
-        if (this._must_be_function_call)
-            return this.glsl_name + "()";
+        if (this._must_be_function_call) {
+            console.log(this.scope.show());
+            return this.glsl_name + "(" + ")";
+        }
         if (this.children_count <= 1)
             return this.value();
         if (unconditional)

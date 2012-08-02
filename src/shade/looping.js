@@ -10,15 +10,22 @@
 
 (function() {
 
-Shade.variable = function(type)
+Shade.loop_variable = function(type, force_no_declare)
 {
     return Shade._create_concrete_exp({
         parents: [],
         type: type,
+        expression_type: "loop_variable",
         evaluate: function() {
             return this.glsl_name;
         },
-        compile: function() {}
+        compile: function() {
+            if (_.isUndefined(force_no_declare))
+                this.scope.add_declaration(type.declare(this.glsl_name));
+        },
+        loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
+            return [this];
+        })
     });
 };
 
@@ -47,20 +54,36 @@ BasicRange.prototype.transform = function(xform)
         });
 };
 
-BasicRange.prototype.fold = function(operation, starting_value)
+BasicRange.prototype.fold = Shade(function(operation, starting_value)
 {
-    operation = Shade.make(operation);
-    starting_value = Shade.make(starting_value);
-    var index_variable = Shade.variable(Shade.Types.int_t);
+    var index_variable = Shade.loop_variable(Shade.Types.int_t, true);
+    var accumulator_value = Shade.loop_variable(starting_value.type, true);
+
     var element_value = this.value(index_variable);
-    var accumulator_value = Shade.variable(starting_value.type);
     var result_type = accumulator_value.type;
     var operation_value = operation(accumulator_value, element_value);
 
-    return Shade._create_concrete_exp({
+    var result = Shade._create_concrete_exp({
         has_scope: true,
+        patch_scope: function() {
+            var index_variable = this.parents[2];
+            var accumulator_value = this.parents[3];
+            var element_value = this.parents[4];
+            var that = this;
+            
+            _.each(element_value.sorted_sub_expressions(), function(node) {
+                if (_.any(node.loop_variable_dependencies(), function(dep) {
+                    return dep.glsl_name === index_variable.glsl_name ||
+                        dep.glsl_name === accumulator_value.glsl_name;
+                })) {
+                    console.log("Patching ", node, node.guid, node.glsl_name);
+                    node.debug_print();
+                    node.scope = that.scope;
+                };
+            });
+        },
         parents: [this.begin, this.end, 
-                  index_variable, //  accumulator_value, element_value,
+                  index_variable, accumulator_value, element_value,
                   starting_value, operation_value],
         type: result_type,
         element: Shade.memoize_on_field("_element", function(i) {
@@ -72,17 +95,23 @@ BasicRange.prototype.fold = function(operation, starting_value)
             } else
                 return this.at(i);
         }),
+        loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
+            return [];
+        }),
         compile: function(ctx) {
             var beg = this.parents[0];
             var end = this.parents[1];
             var index_variable = this.parents[2];
-            // var accumulator_value = this.parents[3];
-            // var element_value = this.parents[4];
-            var starting_value = this.parents[3];
-            var operation_value = this.parents[4];
+            var accumulator_value = this.parents[3];
+            var element_value = this.parents[4];
+            var starting_value = this.parents[5];
+            var operation_value = this.parents[6];
+            console.log("ELEMENT VALUE", element_value.glsl_name);
+            element_value.debug_print();
+
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
-            ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
-                             starting_value.evaluate(), ";\n");
+            ctx.strings.push("    ",accumulator_value.type.repr(), accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
+
             ctx.strings.push("    for (int",
                              index_variable.evaluate(),"=",beg.evaluate(),";",
                              index_variable.evaluate(),"<",end.evaluate(),";",
@@ -102,7 +131,9 @@ BasicRange.prototype.fold = function(operation, starting_value)
             ctx.strings.push("}\n");
         }
     });
-};
+
+    return result;
+});
 
 BasicRange.prototype.sum = function()
 {

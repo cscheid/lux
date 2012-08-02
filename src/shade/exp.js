@@ -461,9 +461,13 @@ Shade.Exp = {
     // if stage is "vertex" then this expression will be hoisted to the vertex shader
     stage: null,
 
-    // is has_scope is true, then the expression has its own scope
+    // if has_scope is true, then the expression has its own scope
     // (like for-loops)
-    has_scope: false
+    has_scope: false,
+    patch_scope: function () {},
+    loop_variable_dependencies: function () {
+        return [];
+    }
 };
 
 _.each(["r", "g", "b", "a",
