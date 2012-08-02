@@ -5466,7 +5466,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             var accumulator_value = this.parents[3];
             var element_value = this.parents[4];
             var that = this;
-            
+
             _.each(element_value.sorted_sub_expressions(), function(node) {
                 if (_.any(node.loop_variable_dependencies(), function(dep) {
                     return dep.glsl_name === index_variable.glsl_name ||
@@ -6569,9 +6569,25 @@ Shade.Exp = {
     // (like for-loops)
     has_scope: false,
     patch_scope: function () {},
-    loop_variable_dependencies: function () {
-        return [];
-    }
+    loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
+        var parent_deps = _.map(this.parents, function(v) {
+            return v.loop_variable_dependencies();
+        });
+        if (parent_deps.length === 0)
+            return [];
+        else {
+            var result_with_duplicates = parent_deps[0].concat.apply(parent_deps[0], parent_deps.slice(1));
+            var guids = [];
+            var result = [];
+            _.each(result_with_duplicates, function(n) {
+                if (!guids[n.guid]) {
+                    guids[n.guid] = true;
+                    result.push(n);
+                }
+            });
+            return result;
+        }
+    })
 };
 
 _.each(["r", "g", "b", "a",
@@ -6606,15 +6622,6 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
     }),
     element_constant_value: Shade.memoize_on_field("_element_constant_value", function (i) {
         return this.element(i).constant_value();
-    }),
-    loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
-        var parent_deps = _.map(this.parents, function(v) {
-            return v.loop_variable_dependencies();
-        });
-        if (parent_deps.length === 0)
-            return [];
-        else
-            return parent_deps[0].concat.apply(parent_deps[0], parent_deps.slice(1));
     }),
     _must_be_function_call: false,
     evaluate: function() {
@@ -9045,6 +9052,7 @@ Shade.program = function(program_obj)
         }
         console.log("Vertex program source:");
         console.log(vp_source);
+        // vp_exp.debug_print();
         
         if (Shade.debug && Shade.Optimizer._debug_passes) {
             console.log("Fragment program final AST:");
@@ -9052,6 +9060,7 @@ Shade.program = function(program_obj)
         }
         console.log("Fragment program source:");
         console.log(fp_source);
+        // fp_exp.debug_print();
     }
     var result = Facet.program(vp_source, fp_source);
     result.attribute_buffers = vp_exp.attribute_buffers();
