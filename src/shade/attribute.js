@@ -20,7 +20,9 @@ Shade.attribute_from_buffer = function(buffer)
 Shade.attribute = function(name, type)
 {
     if (_.isUndefined(type)) throw "attribute requires type";
-    if (typeof type === 'string') type = Shade.basic(type);
+    if (typeof type === 'string') type = Shade.Types[type];
+    if (_.isUndefined(type)) throw "attribute requires valid type";
+
     return Shade._create_concrete_exp( {
         parents: [],
         type: type,

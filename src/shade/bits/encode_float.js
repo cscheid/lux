@@ -1,6 +1,6 @@
 /* Shade.Bits.encode_float encodes a single 32-bit IEEE 754
    floating-point number as a 32-bit RGBA value, so that when rendered
-   to a non-floating-point render uffer and read with readPixels, the
+   to a non-floating-point render buffer and read with readPixels, the
    resulting ArrayBufferView can be cast directly as a Float32Array,
    which will encode the correct value.
 

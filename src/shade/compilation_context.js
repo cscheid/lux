@@ -2,13 +2,41 @@ Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
 
-Shade.CompilationContext = function(compile_type) {
+function new_scope()
+{
+    return {
+        declarations: [],
+        initializations: [],
+        enclosing_scope: undefined,
+        
+        // make all declarations 
+        // global since names are unique anyway
+        add_declaration: function(exp) {
+            // this.declarations.push(exp);
+            this.enclosing_scope.add_declaration(exp);
+        },
+        add_initialization: function(exp) {
+            this.initializations.push(exp);
+        },
+        show: function() {
+            return "(Scope decls " 
+                + String(this.declarations)
+                + " inits "
+                + String(this.initializations)
+                + " enclosing "
+                + this.enclosing_scope.show()
+                + " )";
+        }
+    };
+};
+
+Shade.CompilationContext = function(compile_type)
+{
     return {
         freshest_glsl_name: 0,
         compile_type: compile_type || Shade.UNSET_PROGRAM_COMPILE,
         float_precision: "highp",
         strings: [],
-        initialization_exprs: [],
         declarations: { uniform: {},
                         attribute: {},
                         varying: {}
@@ -21,9 +49,6 @@ Shade.CompilationContext = function(compile_type) {
             var int_name = this.freshest_glsl_name++;
             return "glsl_name_" + int_name;
         },
-        // require_version: function(version) {
-        //     this.min_version = Math.max(this.min_version, version);
-        // },
         declare: function(decltype, glsl_name, type, declmap) {
             if (_.isUndefined(type)) {
                 throw "must define type";                
@@ -51,42 +76,71 @@ Shade.CompilationContext = function(compile_type) {
             this.declare("attribute", glsl_name, type, this.declarations.attribute);
         },
         compile: function(fun) {
+            var that = this;
+
+            this.global_scope = {
+                initializations: [],
+                add_declaration: function(exp) {
+                    that.strings.push(exp, ";\n");
+                },
+                add_initialization: function(exp) {
+                    this.initializations.push(exp);
+                },
+                show: function() {
+                    return "(Global scope)";
+                }
+            };
+
             var topo_sort = fun.sorted_sub_expressions();
             var i;
-            var that = this;
             _.each(topo_sort, function(n) {
                 n.children_count = 0;
                 n.is_unconditional = false;
                 n.glsl_name = that.request_fresh_glsl_name();
                 n.set_requirements(this);
-                for (var j=0; j<n.parents.length; ++j)
+                for (var j=0; j<n.parents.length; ++j) {
                     n.parents[j].children_count++;
+                    // adds base scope to objects which have them.
+                    // FIXME currently all scope objects point directly to global scope
+                    n.scope = n.has_scope ? new_scope() : that.global_scope;
+                }
             });
-
             // top-level node is always unconditional.
             topo_sort[topo_sort.length-1].is_unconditional = true;
+            // top-level node has global scope.
+            topo_sort[topo_sort.length-1].scope = this.global_scope;
             i = topo_sort.length;
             while (i--) {
                 var n = topo_sort[i];
                 n.propagate_conditions();
+                for (var j=0; j<n.parents.length; ++j) {
+                    if (n.parents[j].has_scope)
+                        n.parents[j].scope.enclosing_scope = n.scope;
+                }
+                n.patch_scope();
             }
-
+            var p = this.strings.push;
             this.strings.push("precision",this.float_precision,"float;\n");
             for (i=0; i<topo_sort.length; ++i) {
                 topo_sort[i].compile(this);
             }
             this.strings.push("void main() {\n");
-            for (i=0; i<this.initialization_exprs.length; ++i)
-                this.strings.push("    ", this.initialization_exprs[i], ";\n");
+            _.each(this.global_scope.initializations, function(exp) {
+                that.strings.push("    ", exp, ";\n");
+            });
             this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
+            // for (i=0; i<this.initialization_exprs.length; ++i)
+            //     this.strings.push("    ", this.initialization_exprs[i], ";\n");
+            // this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
         },
         add_initialization: function(expr) {
-            this.initialization_exprs.push(expr);
+            this.global_scope.initializations.push(expr);
         },
         value_function: function() {
             this.strings.push(arguments[0].type.repr(),
                               arguments[0].glsl_name,
-                              "(void) {\n",
+                              "(");
+            this.strings.push(") {\n",
                               "    return ");
             for (var i=1; i<arguments.length; ++i) {
                 this.strings.push(arguments[i]);
@@ -96,7 +150,7 @@ Shade.CompilationContext = function(compile_type) {
         void_function: function() {
             this.strings.push("void",
                               arguments[0].glsl_name,
-                              "(void) {\n",
+                              "() {\n",
                               "    ");
             for (var i=1; i<arguments.length; ++i) {
                 this.strings.push(arguments[i]);

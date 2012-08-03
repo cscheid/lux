@@ -405,6 +405,7 @@ Shade.program = function(program_obj)
         }
         console.log("Vertex program source:");
         console.log(vp_source);
+        // vp_exp.debug_print();
         
         if (Shade.debug && Shade.Optimizer._debug_passes) {
             console.log("Fragment program final AST:");
@@ -412,6 +413,7 @@ Shade.program = function(program_obj)
         }
         console.log("Fragment program source:");
         console.log(fp_source);
+        // fp_exp.debug_print();
     }
     var result = Facet.program(vp_source, fp_source);
     result.attribute_buffers = vp_exp.attribute_buffers();

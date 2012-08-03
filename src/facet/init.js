@@ -32,8 +32,7 @@ Facet.init = function(canvas, opts)
                                         depth: true
                                     }
                                   });
-    // FIXME This should be a "is Shade expression" check
-    if (opts.clearColor.expression_type) {
+    if (Facet.is_shade_expression(opts.clearColor)) {
         if (!opts.clearColor.is_constant())
             throw "clearColor must be constant expression";
         if (!opts.clearColor.type.equals(Shade.Types.vec4))
@@ -43,7 +42,7 @@ Facet.init = function(canvas, opts)
         clearColor = opts.clearColor;
 
     // FIXME This should be a "is Shade expression" check
-    if (opts.clearDepth.expression_type) {
+    if (Facet.is_shade_expression(opts.clearDepth)) {
         if (!opts.clearDepth.is_constant())
             throw "clearDepth must be constant expression";
         if (!opts.clearDepth.type.equals(Shade.Types.float_t))
@@ -67,6 +66,11 @@ Facet.init = function(canvas, opts)
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
             throw "failed context creation";
+        if ("interactor" in opts) {
+            for (var key in opts.interactor.events) {
+                opts[key] = opts.interactor.events[key];
+            }
+        }
         
         if (opts.debugging) {
             var throwOnGLError = function(err, funcName, args) {
@@ -77,10 +81,9 @@ Facet.init = function(canvas, opts)
         }
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
-        var names = ["mouseover", "mousemove", "mousedown", 
-                     "mouseout", "mouseup"];
-        for (var i=0; i<names.length; ++i) {
-            var ename = names[i];
+        var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", "mouseup"];
+        for (var i=0; i<canvas_events.length; ++i) {
+            var ename = canvas_events[i];
             var listener = opts[ename];
             if (!_.isUndefined(listener)) {
                 (function(listener) {
@@ -93,6 +96,10 @@ Facet.init = function(canvas, opts)
                 })(listener);
             }
         }
+        if (!_.isUndefined(opts.mousewheel)) {
+            $(canvas).bind('mousewheel', opts.mousewheel);
+        };
+
         var ext;
         var exts = _.map(gl.getSupportedExtensions(), function (x) { 
             return x.toLowerCase();

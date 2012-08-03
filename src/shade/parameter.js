@@ -15,7 +15,8 @@ Shade.parameter = function(type, v)
 
     var uniform_name = Shade.unique_name();
     if (_.isUndefined(type)) throw "parameter requires type";
-    if (typeof type === 'string') type = Shade.basic(type);
+    if (typeof type === 'string') type = Shade.Types[type]; // basic(type);
+    if (_.isUndefined(type)) throw "parameter requires valid type";
     var value;
     var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
     if (!_.isUndefined(call)) {
@@ -26,7 +27,7 @@ Shade.parameter = function(type, v)
     var result = Shade._create_concrete_exp({
         parents: [],
         type: type,
-        expression_type: 'uniform',
+        expression_type: 'parameter',
         evaluate: function() {
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";

@@ -1,5 +1,8 @@
 The Big List of Facet TODOs
 
+* Looping TODOs
+** The wedge demo flickers
+** The fractal flame demo simply doesn't work.
 * BUGS
 ** Documentation fixes
 * Optimizer
@@ -18,6 +21,15 @@ float(x) => x, if x is known to be float
 
 ** TODO Initialization optimization for conditional expressions.
 * Types
+** TODO GLSL disallows swizzling from a float, but I could allow it
+The idea would be to make Shade.Types.float_t.is_vec() true, and then
+special-case a swizzle from a float to simple return a Shade.vec()
+with the right dimension. This would make the language slightly
+incompatible with GLSL ES, but it might be harmless. And having
+is_vec() true for float, vec2, vec3 and vec4 would be very convenient,
+since is_vec() could become a proxy for "can use .add, .sub and
+.mul".
+
 ** TODO Function types
 These will be useful when we have user-defined GLSL.
 
@@ -94,7 +106,6 @@ throughout the API.
 The way to do this is to *add* underscore_equivalents of the GLSL ugly
 camelCase functions. This way, people familiar with GLSL can use them,
 while people coming directly to Facet will use underscore
-** TODO Shade.Utils is terrible. Move that stuff to Shade.Scale or something like that.
 ** Shade.model vs Shade.bake is getting annoying. Find a way out.
 ** TODO Shade.Colors is the mother of all messes. Do I even need the JS api?
 ** TODO Contact TypedArray spec authors about new entry point.

@@ -1,30 +1,35 @@
-Shade.basic = function(repr) { 
-    function is_valid_basic_type(repr) {
-        if (repr === 'float') return true;
-        if (repr === 'int') return true;
-        if (repr === 'bool') return true;
-        if (repr === 'void') return true;
-        if (repr === 'sampler2D') return true;
-        if (repr.substring(0, 3) === 'mat' &&
-            (Number(repr[3]) > 1 && 
-             Number(repr[3]) < 5)) return true;
-        if (repr.substring(0, 3) === 'vec' &&
-            (Number(repr[3]) > 1 && 
-             Number(repr[3]) < 5)) return true;
-        if (repr.substring(0, 4) === 'bvec' &&
-            (Number(repr[4]) > 1 && 
-             Number(repr[4]) < 5)) return true;
-        if (repr.substring(0, 4) === 'ivec' &&
-            (Number(repr[4]) > 1 && 
-             Number(repr[4]) < 5)) return true;
-        // if (repr === '__auto__') return true;
-        return false;
-    }
+(function() {
 
+function is_valid_basic_type(repr) {
+    if (repr === 'float') return true;
+    if (repr === 'int') return true;
+    if (repr === 'bool') return true;
+    if (repr === 'void') return true;
+    if (repr === 'sampler2D') return true;
+    if (repr.substring(0, 3) === 'mat' &&
+        (Number(repr[3]) > 1 && 
+         Number(repr[3]) < 5)) return true;
+    if (repr.substring(0, 3) === 'vec' &&
+        (Number(repr[3]) > 1 && 
+         Number(repr[3]) < 5)) return true;
+    if (repr.substring(0, 4) === 'bvec' &&
+        (Number(repr[4]) > 1 && 
+         Number(repr[4]) < 5)) return true;
+    if (repr.substring(0, 4) === 'ivec' &&
+        (Number(repr[4]) > 1 && 
+         Number(repr[4]) < 5)) return true;
+    // if (repr === '__auto__') return true;
+    return false;
+}
+
+Shade.Types.basic = function(repr) {
     if (!is_valid_basic_type(repr)) {
         throw "invalid basic type '" + repr + "'";
     }
-    
+    return Shade.Types[repr];
+};
+
+Shade.Types._create_basic = function(repr) { 
     return Shade._create(Shade.Types.base_t, {
         declare: function(glsl_name) { return repr + " " + glsl_name; },
         repr: function() { return repr; },
@@ -65,9 +70,10 @@ Shade.basic = function(repr) {
             }
             if (pattern.length === 1) {
                 return this.array_base();
-            } else
-                return Shade.basic(base_repr.substring(0, base_repr.length-1) +
-                                 pattern.length);
+            } else {
+                var type_str = base_repr.substring(0, base_repr.length-1) + pattern.length;
+                return Shade.Types[type_str];
+            }
         },
         is_pod: function() {
             var repr = this.repr();
@@ -124,15 +130,15 @@ Shade.basic = function(repr) {
         array_base: function() {
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")
-                return Shade.basic("vec" + repr[3]);
+                return Shade.Types["vec" + repr[3]];
             if (repr.substring(0, 3) === "vec")
-                return Shade.basic("float");
+                return Shade.Types.float_t;
             if (repr.substring(0, 4) === "bvec")
-                return Shade.basic("bool");
+                return Shade.Types.bool_t;
             if (repr.substring(0, 4) === "ivec")
-                return Shade.basic("int");
-            if (repr == "float")
-                return Shade.basic("float");
+                return Shade.Types.int_t;
+            if (repr === "float")
+                return Shade.Types.float_t;
             throw "datatype not array";
         },
         size_for_vec_constructor: function() {
@@ -212,3 +218,5 @@ Shade.basic = function(repr) {
         }
     });
 };
+
+})();

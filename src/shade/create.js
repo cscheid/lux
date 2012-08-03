@@ -28,7 +28,7 @@ Shade._create = (function() {
         for (var key in new_obj) {
             result[key] = new_obj[key];
         }
-        result.guid = "GUID_" + guid;
+        result.guid = guid;
 
         // this is where memoize_on_field stashes results. putting
         // them all in a single member variable makes it easy to
