@@ -3141,12 +3141,8 @@ Facet.attribute_buffer = function(opts)
         item_size: 3,
         item_type: 'float',
         usage: ctx.STATIC_DRAW,
-<<<<<<< HEAD
         normalized: false,
         keep_array: false
-=======
-        normalized: false
->>>>>>> e458998e1919b582eccd75ac9db5aa980673f7f9
     });
 
     var vertex_array = opts.vertex_array;
@@ -3186,7 +3182,6 @@ Facet.attribute_buffer = function(opts)
     result.itemSize = itemSize;
     result.usage = usage;
     result.normalized = normalized;
-<<<<<<< HEAD
     result._webgl_type = itemType.webgl_enum;
     result._typed_array_ctor = itemType.typed_array_ctor;
     result._word_length = itemType.size;
@@ -3195,17 +3190,10 @@ Facet.attribute_buffer = function(opts)
         if (vertex_array.length % itemSize !== 0) {
             throw "length of array must be multiple of item_size";
         }
-=======
-    result._webgl_type = itemType[0];
-    result._typed_array_ctor = itemType[1];
-
-    result.set = function(vertex_array) {
->>>>>>> e458998e1919b582eccd75ac9db5aa980673f7f9
         var ctx = Facet._globals.ctx;
         var typedArray = new this._typed_array_ctor(vertex_array);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
-<<<<<<< HEAD
         if (opts.keep_array) {
             this.array = typedArray;
         }
@@ -3226,13 +3214,6 @@ Facet.attribute_buffer = function(opts)
             }
         }
     };
-=======
-        result.array = typedArray;
-        result.numItems = vertex_array.length/itemSize;
-    };
-
-    result.set(vertex_array);
->>>>>>> e458998e1919b582eccd75ac9db5aa980673f7f9
 
     result.bind = function(attribute) {
         var ctx = Facet._globals.ctx;
@@ -5963,7 +5944,6 @@ Shade.Types.function_t = function(return_type, param_types) {
 Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
-<<<<<<< HEAD
 
 function new_scope()
 {
@@ -5995,9 +5975,6 @@ function new_scope()
 
 Shade.CompilationContext = function(compile_type)
 {
-=======
-Shade.CompilationContext = function(compile_type) {
->>>>>>> e458998e1919b582eccd75ac9db5aa980673f7f9
     return {
         freshest_glsl_name: 0,
         compile_type: compile_type || Shade.UNSET_PROGRAM_COMPILE,
@@ -6581,7 +6558,6 @@ Shade.Exp = {
         }
         return latest_replacement;
     },
-<<<<<<< HEAD
 
     //////////////////////////////////////////////////////////////////////////
     // fields
@@ -6612,8 +6588,6 @@ Shade.Exp = {
             return result;
         }
     })
-=======
->>>>>>> e458998e1919b582eccd75ac9db5aa980673f7f9
 };
 
 _.each(["r", "g", "b", "a",
