@@ -7,8 +7,9 @@ Facet.texture = function(opts)
     var ctx = Facet._globals.ctx;
     var texture = ctx.createTexture();
     texture._shade_type = 'texture';
+    texture._ctx = ctx;
 
-    texture.init = function(opts) {
+    texture.init = Facet.on_context(ctx, function(opts) {
         var ctx = Facet._globals.ctx;
         opts = _.defaults(opts, {
             onload: function() {},
@@ -25,7 +26,7 @@ Facet.texture = function(opts)
 
         var that = this;
         function handler() {
-            var ctx = Facet._globals.ctx;
+            Facet.set_context(ctx);
             ctx.bindTexture(ctx.TEXTURE_2D, that);
             ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
             if (that.image) {
@@ -85,7 +86,7 @@ Facet.texture = function(opts)
             this.buffer = opts.buffer || null;
             handler();        
         }
-    };
+    });
     texture.init(opts);
 
     return texture;

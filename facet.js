@@ -3684,7 +3684,7 @@ Facet.init = function(canvas, opts)
                         event.facetY = gl.viewportHeight - event.offsetY;
                         return listener(event);
                     }
-                    canvas.addEventListener(ename, internal_listener, false);
+                    canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
                 })(listener);
             }
         }
@@ -3752,7 +3752,8 @@ Facet.load_image_into_texture = function(opts)
     var y_offset = opts.y_offset;
 
     function image_handler(image) {
-        var ctx = Facet._globals.ctx;
+        var ctx = texture._ctx;
+        Facet.set_context(texture._ctx);
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
         ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
         ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset,
@@ -3763,7 +3764,8 @@ Facet.load_image_into_texture = function(opts)
 
     function buffer_handler()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = texture._ctx;
+        Facet.set_context(texture._ctx);
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
         ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
         ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset,
@@ -4148,6 +4150,20 @@ Facet.set_context = function(the_ctx)
     Facet._globals.ctx = the_ctx;
     // Shade.set_context(the_ctx);
 };
+/*
+ * Facet.on_context returns a wrapped callback that guarantees that the passed
+ * callback will be invoked with the given current context. 
+ * 
+ * This is primarily used to safeguard pieces of code that need to work under
+ * multiple active WebGL contexts.
+ */
+Facet.on_context = function(the_ctx, f)
+{
+    return function() {
+        Facet.set_context(the_ctx);
+        f.apply(this, arguments);
+    };
+};
 //////////////////////////////////////////////////////////////////////////////
 // load texture from DOM element or URL. 
 // BEWARE SAME-DOMAIN POLICY!
@@ -4157,8 +4173,9 @@ Facet.texture = function(opts)
     var ctx = Facet._globals.ctx;
     var texture = ctx.createTexture();
     texture._shade_type = 'texture';
+    texture._ctx = ctx;
 
-    texture.init = function(opts) {
+    texture.init = Facet.on_context(ctx, function(opts) {
         var ctx = Facet._globals.ctx;
         opts = _.defaults(opts, {
             onload: function() {},
@@ -4175,7 +4192,7 @@ Facet.texture = function(opts)
 
         var that = this;
         function handler() {
-            var ctx = Facet._globals.ctx;
+            Facet.set_context(ctx);
             ctx.bindTexture(ctx.TEXTURE_2D, that);
             ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
             if (that.image) {
@@ -4235,7 +4252,7 @@ Facet.texture = function(opts)
             this.buffer = opts.buffer || null;
             handler();        
         }
-    };
+    });
     texture.init(opts);
 
     return texture;

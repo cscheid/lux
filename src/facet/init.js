@@ -92,7 +92,7 @@ Facet.init = function(canvas, opts)
                         event.facetY = gl.viewportHeight - event.offsetY;
                         return listener(event);
                     }
-                    canvas.addEventListener(ename, internal_listener, false);
+                    canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
                 })(listener);
             }
         }
