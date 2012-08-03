@@ -11,7 +11,7 @@ function get_buffers(urls, alldone)
     var done = _.after(urls.length, alldone);
 
     function handler(buffer, url) {
-        obj[url] = Facet.attribute_buffer(new Float32Array(buffer), 1);
+        obj[url] = Facet.attribute_buffer({ vertex_array: new Float32Array(buffer), item_size: 1 });
         done(obj);
     };
     _.each(urls, function(url) {

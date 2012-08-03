@@ -19,7 +19,7 @@ function data_buffers()
 {
     var d = Data.flowers();
     var tt = Facet.Data.texture_table(d);
-    var point_index = Facet.attribute_buffer(_.range(tt.n_rows), 1);
+    var point_index = Facet.attribute_buffer({ vertex_array: _.range(tt.n_rows), item_size: 1 });
     
     return {
         sepalLength: tt.at(point_index, 0),
@@ -70,7 +70,8 @@ function init_webgl()
     var dot_pick_id  = Shade.add(first_pick_id, data.index);
 
     var inside_interval = Shade(function(i, v1, v2) {
-        var m = S.Utils.linear(min_range.at(i), max_range.at(i), 2*padding, 1-2*padding);
+        var m = S.Scale.linear({ domain: [min_range.at(i), max_range.at(i)], 
+                                 range: [2*padding, 1-2*padding] });
         var d = m(data.at(data.index, i));
         return d.ge(v1.min(v2)).and(d.le(v1.max(v2)));
     });
@@ -86,8 +87,10 @@ function init_webgl()
         elements: data.n_rows,
         x: data.at(data.index, splom_col),
         y: data.at(data.index, splom_row),
-        x_scale: S.Utils.linear(min_range.at(splom_col), max_range.at(splom_col), min_x, max_x),
-        y_scale: S.Utils.linear(min_range.at(splom_row), max_range.at(splom_row), min_y, max_y),
+        x_scale: S.Scale.linear({ domain: [ min_range.at(splom_col), max_range.at(splom_col) ], 
+                                  range: [ min_x, max_x ]}),
+        y_scale: S.Scale.linear({ domain: [ min_range.at(splom_row), max_range.at(splom_row) ], 
+                                  range: [ min_y, max_y ]}),
         fill_color: dot_color,
         stroke_color: dot_color,
         point_diameter: 10,
@@ -95,7 +98,7 @@ function init_webgl()
         pick_id: Shade.shade_id(dot_pick_id)
     });
 
-    var scale = S.Utils.linear(0, 1, -1, 1);
+    var scale = S.Scale.linear({ range: [-1, 1] });
     var el_row = function(index) { return index.mod(4); };
     var el_col = function(index) { return index.div(4).floor(); };
     var aligned_rects = Facet.Marks.aligned_rects({

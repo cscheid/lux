@@ -19,7 +19,10 @@ function data_buffers()
 {
     var d = Data.flowers();
     var tt = Facet.Data.texture_table(d);
-    var point_index = Facet.attribute_buffer(_.range(tt.n_rows), 1);
+    var point_index = Facet.attribute_buffer({ 
+        vertex_array: _.range(tt.n_rows), 
+        item_size: 1
+    });
     
     return {
         sepalLength: tt.at(point_index, 0),
@@ -52,8 +55,8 @@ function init_webgl()
         elements: data.n_rows,
         x: data.sepalLength,
         y: data.petalLength,
-        x_scale: S.Utils.linear(4, 8, 0, 1),
-        y_scale: S.Utils.linear(1, 7, 0, 1),
+        x_scale: S.Scale.linear({ domain: [4, 8], range: [0, 1] }),
+        y_scale: S.Scale.linear({ domain: [1, 7], range: [0, 1] }),
         fill_color: species_color,
         stroke_width: stroke_width,
         stroke_color: S.mix(species_color, S.color("black", point_alpha), 0.5),

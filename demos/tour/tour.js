@@ -23,14 +23,17 @@ function display()
 function data_buffers()
 {
     var d = Data.flowers();
-    return {
-        sepalLength: Facet.attribute_buffer(d.data.map(function(v) { return v.sepalLength; }), 1),
-        sepalWidth:  Facet.attribute_buffer(d.data.map(function(v) { return v.sepalWidth; }), 1),
-        petalLength: Facet.attribute_buffer(d.data.map(function(v) { return v.petalLength; }), 1),
-        petalWidth:  Facet.attribute_buffer(d.data.map(function(v) { return v.petalWidth; }), 1),
-        species:     Facet.attribute_buffer(d.data.map(function(v) { return v.species; }), 1, 'ubyte'),
-        columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species']
-    };
+    var result = {};
+    var fields = ["sepalLength", "sepalWidth", "petalLength", "petalWidth", "species"];
+    _.each(fields, function(field) {
+        result[field] = Facet.attribute_buffer({
+            vertex_array: d.data.map(function(v) { return v[field]; }),
+            item_size: 1,
+            keep_array: true
+        });
+    });
+    result.columns = fields;
+    return result;
 }
 
 function random_2d_frame(dimension)
@@ -106,10 +109,10 @@ function init_webgl()
     tour_batch = Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
         xy: xy_expression,
-        xy_scale: S.Utils.linear(xy_center.sub(xy_distance),
-                                 xy_center.add(xy_distance),
-                                 S.vec(0,0), 
-                                 S.vec(1,1)),
+        xy_scale: S.Scale.linear({ domain: [xy_center.sub(xy_distance),
+                                            xy_center.add(xy_distance)],
+                                   range: [S.vec(0,0), 
+                                           S.vec(1,1)] }),
         fill_color: species_color,
         stroke_color: S.mix(Shade.color("black"), species_color, 0.5),
         stroke_width: stroke_width,
