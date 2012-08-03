@@ -8573,25 +8573,45 @@ Shade.program = function(program_obj)
     // otherwise we might end up reading from a varying in the vertex program,
     // which is undefined behavior
 
-    var common_sequence = [
-        [Shade.Optimizer.is_times_zero, Shade.Optimizer.replace_with_zero, 
-         "v * 0", true],
-        [Shade.Optimizer.is_times_one, Shade.Optimizer.replace_with_notone, 
-         "v * 1", true],
-        [Shade.Optimizer.is_plus_zero, Shade.Optimizer.replace_with_nonzero,
-         "v + 0", true],
-        [Shade.Optimizer.is_never_discarding,
-         Shade.Optimizer.remove_discard, "discard_if(false)"],
-        [Shade.Optimizer.is_known_branch,
-         Shade.Optimizer.prune_ifelse_branch, "constant?a:b", true],
-        [Shade.Optimizer.vec_at_constant_index, 
-         Shade.Optimizer.replace_vec_at_constant_with_swizzle, "vec[constant_ix]"],
-        [Shade.Optimizer.is_constant,
-         Shade.Optimizer.replace_with_constant, "constant folding"],
-        [Shade.Optimizer.is_logical_or_with_constant,
-         Shade.Optimizer.replace_logical_or_with_constant, "constant||v", true],
-        [Shade.Optimizer.is_logical_and_with_constant,
-         Shade.Optimizer.replace_logical_and_with_constant, "constant&&v", true]];
+    // var common_sequence = [
+    //     [Shade.Optimizer.is_times_zero, Shade.Optimizer.replace_with_zero, 
+    //      "v * 0", true],
+    //     [Shade.Optimizer.is_times_one, Shade.Optimizer.replace_with_notone, 
+    //      "v * 1", true],
+    //     [Shade.Optimizer.is_plus_zero, Shade.Optimizer.replace_with_nonzero,
+    //      "v + 0", true],
+    //     [Shade.Optimizer.is_never_discarding,
+    //      Shade.Optimizer.remove_discard, "discard_if(false)"],
+    //     [Shade.Optimizer.is_known_branch,
+    //      Shade.Optimizer.prune_ifelse_branch, "constant?a:b", true],
+    //     [Shade.Optimizer.vec_at_constant_index, 
+    //      Shade.Optimizer.replace_vec_at_constant_with_swizzle, "vec[constant_ix]"],
+    //     [Shade.Optimizer.is_constant,
+    //      Shade.Optimizer.replace_with_constant, "constant folding"],
+    //     [Shade.Optimizer.is_logical_or_with_constant,
+    //      Shade.Optimizer.replace_logical_or_with_constant, "constant||v", true],
+    //     [Shade.Optimizer.is_logical_and_with_constant,
+    //      Shade.Optimizer.replace_logical_and_with_constant, "constant&&v", true]];
+
+    var common_sequence = [];
+        // [Shade.Optimizer.is_times_zero, Shade.Optimizer.replace_with_zero, 
+        //  "v * 0", true],
+        // [Shade.Optimizer.is_times_one, Shade.Optimizer.replace_with_notone, 
+        //  "v * 1", true],
+        // [Shade.Optimizer.is_plus_zero, Shade.Optimizer.replace_with_nonzero,
+        //  "v + 0", true],
+        // [Shade.Optimizer.is_never_discarding,
+        //  Shade.Optimizer.remove_discard, "discard_if(false)"],
+        // [Shade.Optimizer.is_known_branch,
+        //  Shade.Optimizer.prune_ifelse_branch, "constant?a:b", true],
+        // [Shade.Optimizer.vec_at_constant_index, 
+        //  Shade.Optimizer.replace_vec_at_constant_with_swizzle, "vec[constant_ix]"],
+        // [Shade.Optimizer.is_constant,
+        //  Shade.Optimizer.replace_with_constant, "constant folding"],
+        // [Shade.Optimizer.is_logical_or_with_constant,
+        //  Shade.Optimizer.replace_logical_or_with_constant, "constant||v", true],
+        // [Shade.Optimizer.is_logical_and_with_constant,
+        //  Shade.Optimizer.replace_logical_and_with_constant, "constant&&v", true]];
 
     var fp_sequence = [
         [is_per_vertex, hoist_to_varying, "per-vertex hoisting"],
@@ -10554,6 +10574,9 @@ Facet.Marks.globe = function(opts)
         zoom: opts.zoom,
         model_matrix: model,
         mvp: mvp,
+        lat_lon_position: function(lat, lon) {
+            return mvp(Facet.Scale.Geo.latlong_to_spherical(lat, lon));
+        },
         resolution_bias: opts.resolution_bias,
         update_model_matrix: function() {
             while (this.longitude_center < 0)
