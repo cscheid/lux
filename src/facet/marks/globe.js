@@ -154,6 +154,9 @@ Facet.Marks.globe = function(opts)
         zoom: opts.zoom,
         model_matrix: model,
         mvp: mvp,
+        lat_lon_position: function(lat, lon) {
+            return mvp(Facet.Scale.Geo.latlong_to_spherical(lat, lon));
+        },
         resolution_bias: opts.resolution_bias,
         update_model_matrix: function() {
             while (this.longitude_center < 0)
