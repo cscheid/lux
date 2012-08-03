@@ -173,7 +173,6 @@ Facet.Marks.globe = function(opts)
             Facet.Scene.invalidate();
         },
         mousemove: function(event) {
-            var ctx = Facet._globals.ctx;
             var w = ctx.viewportWidth;
             var h = ctx.viewportHeight;
             var w_divider = 218.18;
@@ -204,7 +203,6 @@ Facet.Marks.globe = function(opts)
             prev[1] = event.offsetY;
         },
         mouseup: function(event) {
-            var ctx = Facet._globals.ctx;
             var w = ctx.viewportWidth;
             var h = ctx.viewportHeight;
             var w_divider = 218.18;
@@ -217,7 +215,6 @@ Facet.Marks.globe = function(opts)
             panning = zooming = false;
         },
         new_center: function(center_lat, center_lon, center_zoom) {
-            var ctx = Facet._globals.ctx;
             var w = ctx.viewportWidth;
             var zoom_divider = 63.6396;
             var base_zoom = Math.log(w / zoom_divider) / Math.log(2);
@@ -345,7 +342,6 @@ Facet.Marks.globe = function(opts)
             });
         },
         draw: function() {
-            var ctx = Facet._globals.ctx;
             var lst = _.range(cache_size);
             var that = this;
             lst.sort(function(id1, id2) { 

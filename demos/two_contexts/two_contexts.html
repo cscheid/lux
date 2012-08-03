@@ -14,7 +14,7 @@
 <h1>Two active Facet contexts</h1>
 <div style="position: relative;">
   <canvas id="webgl1" width="720" height="480"></canvas>
-  <canvas id="webgl2" width="720" height="480"></canvas>
+  <canvas id="webgl2" width="640" height="400"></canvas>
   <div style="position: absolute; top: 5px; right: 5px;">Cartography OpenStreetMap CC-by-sa</div></div>
 <div style="text-align: right">View the <a href="two_contexts.js">full source</a>.</div>
 
@@ -31,6 +31,12 @@
 </p>
 
 <p>TODO: enumerate these shade expressions.</p>
+
+<p>In addition, if you issue an asynchronous call (typically an AJAX
+  request), there is generally no guarantee that the invoked callback will have
+  the same current active context. Facet.Net.* calls set the right
+  context on callback, but if you use asynchronous routines
+  (requestAnimFrame, for example), you'll have to be careful about it.</p>
 
 <p>Back to the <a href="index.html">index</a>.</p>
 <script>

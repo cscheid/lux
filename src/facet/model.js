@@ -84,5 +84,6 @@ Facet.model = function(input)
             result.elements = n_elements;
         }
     }
+    result._ctx = Facet._globals.ctx;
     return result;
 };

@@ -19,12 +19,15 @@
 // based on http://calumnymmo.wordpress.com/2010/12/22/so-i-decided-to-wait/
 Facet.Net.binary = function(url, handler)
 {
+    var current_context = Facet._globals.ctx;
+
     if (facet_typeOf(url) === "array")
         return handle_many(url, handler, Facet.Net.binary);
 
     var xhr = new window.XMLHttpRequest();
     var ready = false;
     xhr.onreadystatechange = function() {
+        Facet.set_context(current_context);
         if (xhr.readyState === 4 && xhr.status === 200
             && ready !== true) {
             if (xhr.responseType === "arraybuffer") {

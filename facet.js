@@ -3178,6 +3178,7 @@ Facet.attribute_buffer = function(opts)
     }
 
     var result = ctx.createBuffer();
+    result._ctx = ctx;
     result._shade_type = 'attribute_buffer';
     result.itemSize = itemSize;
     result.usage = usage;
@@ -3187,10 +3188,10 @@ Facet.attribute_buffer = function(opts)
     result._word_length = itemType.size;
 
     result.set = function(vertex_array) {
+        Facet.set_context(ctx);
         if (vertex_array.length % itemSize !== 0) {
             throw "length of array must be multiple of item_size";
         }
-        var ctx = Facet._globals.ctx;
         var typedArray = new this._typed_array_ctor(vertex_array);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
@@ -3202,9 +3203,9 @@ Facet.attribute_buffer = function(opts)
     result.set(vertex_array);
 
     result.set_region = function(index, array) {
+        Facet.set_context(ctx);
         if ((index + array.length) > (this.numItems * this.itemSize) || (index < 0))
             throw "set_region index out of bounds";
-        var ctx = Facet._globals.ctx;
         var typedArray = new this._typed_array_ctor(array);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.bufferSubData(ctx.ARRAY_BUFFER, index * this._word_length, typedArray);
@@ -3216,18 +3217,21 @@ Facet.attribute_buffer = function(opts)
     };
 
     result.bind = function(attribute) {
-        var ctx = Facet._globals.ctx;
+        Facet.set_context(ctx);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, 0, 0);
     };
 
     result.draw = function(primitive) {
-        var ctx = Facet._globals.ctx;
+        Facet.set_context(ctx);
         ctx.drawArrays(primitive, 0, this.numItems);
     };
     result.bind_and_draw = function(attribute, primitive) {
-        this.bind(attribute);
-        this.draw(primitive);
+        // inline the calls to bind and draw to shave a redundant set_context.
+        Facet.set_context(ctx);
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+        ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, 0, 0);
+        ctx.drawArrays(primitive, 0, this.numItems);
     };
     return result;
 };
@@ -3237,7 +3241,9 @@ var previous_batch = {};
 
 Facet.unload_batch = function()
 {
-    var ctx = Facet._globals.ctx;
+    if (!previous_batch._ctx)
+        return;
+    var ctx = previous_batch._ctx;
     if (previous_batch.attributes) {
         for (var key in previous_batch.attributes) {
             ctx.disableVertexAttribArray(previous_batch.program[key]);
@@ -3260,7 +3266,6 @@ function draw_it(batch)
     if (_.isUndefined(batch))
         throw "drawing mode undefined";
 
-    var ctx = Facet._globals.ctx;
     if (batch.batch_id !== previous_batch.batch_id) {
         var attributes = batch.attributes || {};
         var uniforms = batch.uniforms || {};
@@ -3272,6 +3277,7 @@ function draw_it(batch)
         previous_batch = batch;
         batch.set_caps();
 
+        var ctx = batch._ctx;
         ctx.useProgram(program);
 
         for (key in attributes) {
@@ -3353,7 +3359,7 @@ Facet.bake = function(model, appearance, opts)
         throw "position appearance attribute must be vec2, vec3 or vec4";
     }
 
-    var ctx = Facet._globals.ctx;
+    var ctx = model._ctx || Facet._globals.ctx;
 
     var batch_id = Facet.fresh_pick_id();
 
@@ -3484,6 +3490,7 @@ Facet.bake = function(model, appearance, opts)
 
     function create_batch_opts(program, caps_name) {
         return {
+            _ctx: ctx,
             program: program,
             attributes: build_attribute_arrays_obj(program),
             set_caps: ((appearance.mode && appearance.mode[caps_name]) ||
@@ -3494,7 +3501,6 @@ Facet.bake = function(model, appearance, opts)
     }
 
     var draw_opts, pick_opts, unproject_opts;
-
 
     if (!opts.force_no_draw)
         draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
@@ -3510,7 +3516,7 @@ Facet.bake = function(model, appearance, opts)
     var result = {
         batch_id: batch_id,
         draw: function() {
-            draw_it(which_opts[Facet._globals.ctx._facet_globals.batch_render_mode]);
+            draw_it(which_opts[ctx._facet_globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.
@@ -3716,7 +3722,7 @@ Facet.init = function(canvas, opts)
     Facet.set_context(gl);
 
     if (opts.display) {
-        Facet._globals.ctx._facet_globals.display_callback = opts.display;
+        gl._facet_globals.display_callback = opts.display;
     }
 
     gl.display = function() {
@@ -3724,7 +3730,7 @@ Facet.init = function(canvas, opts)
         this.clearDepth(clearDepth);
         this.clearColor.apply(gl, clearColor);
         this.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        Facet._globals.ctx._facet_globals.display_callback();
+        this._facet_globals.display_callback();
     };
     gl.resize = function(width, height) {
         this.viewportWidth = width;
@@ -3952,6 +3958,7 @@ Facet.model = function(input)
             result.elements = n_elements;
         }
     }
+    result._ctx = Facet._globals.ctx;
     return result;
 };
 (function() {
@@ -4084,7 +4091,7 @@ Facet.render_buffer = function(opts)
     var rttTexture = Facet.texture(opts);
 
     frame_buffer.init = function(width, height) {
-        var ctx = Facet._globals.ctx;
+        Facet.set_context(ctx);
         this.width  = opts.width;
         this.height = opts.height;
         ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
@@ -4127,7 +4134,6 @@ Facet.render_buffer = function(opts)
         this.init(width, height);
     };
     frame_buffer.with_bound_buffer = function(what) {
-        var ctx = Facet._globals.ctx;
         try {
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
             ctx.viewport(0, 0, this.width, this.height);
@@ -4370,6 +4376,8 @@ var handle_many = function(url, handler, self_call) {
 
 Facet.Net.ajax = function(url, handler)
 {
+    var current_context = Facet._globals.ctx;
+
     if (facet_typeOf(url) === "array")
         return handle_many(url, handler, Facet.Net.ajax);
 
@@ -4380,6 +4388,7 @@ Facet.Net.ajax = function(url, handler)
     var ready = false;
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200 && !ready) {
+            Facet.set_context(current_context);
             handler(xhr.response, url);
             ready = true;
         }
@@ -4441,12 +4450,15 @@ Facet.Net.json = function(url, handler)
 // based on http://calumnymmo.wordpress.com/2010/12/22/so-i-decided-to-wait/
 Facet.Net.binary = function(url, handler)
 {
+    var current_context = Facet._globals.ctx;
+
     if (facet_typeOf(url) === "array")
         return handle_many(url, handler, Facet.Net.binary);
 
     var xhr = new window.XMLHttpRequest();
     var ready = false;
     xhr.onreadystatechange = function() {
+        Facet.set_context(current_context);
         if (xhr.readyState === 4 && xhr.status === 200
             && ready !== true) {
             if (xhr.responseType === "arraybuffer") {
@@ -4666,8 +4678,6 @@ Facet.Data.table = function(obj) {
 };
 Facet.Data.texture_table = function(table)
 {
-    var ctx = Facet._globals.ctx;
-
     var elements = [];
     for (var row_ix = 0; row_ix < table.data.length; ++row_ix) {
         var row = table.data[row_ix];
@@ -11067,7 +11077,6 @@ Facet.Marks.globe = function(opts)
             Facet.Scene.invalidate();
         },
         mousemove: function(event) {
-            var ctx = Facet._globals.ctx;
             var w = ctx.viewportWidth;
             var h = ctx.viewportHeight;
             var w_divider = 218.18;
@@ -11098,7 +11107,6 @@ Facet.Marks.globe = function(opts)
             prev[1] = event.offsetY;
         },
         mouseup: function(event) {
-            var ctx = Facet._globals.ctx;
             var w = ctx.viewportWidth;
             var h = ctx.viewportHeight;
             var w_divider = 218.18;
@@ -11111,7 +11119,6 @@ Facet.Marks.globe = function(opts)
             panning = zooming = false;
         },
         new_center: function(center_lat, center_lon, center_zoom) {
-            var ctx = Facet._globals.ctx;
             var w = ctx.viewportWidth;
             var zoom_divider = 63.6396;
             var base_zoom = Math.log(w / zoom_divider) / Math.log(2);
@@ -11239,7 +11246,6 @@ Facet.Marks.globe = function(opts)
             });
         },
         draw: function() {
-            var ctx = Facet._globals.ctx;
             var lst = _.range(cache_size);
             var that = this;
             lst.sort(function(id1, id2) { 

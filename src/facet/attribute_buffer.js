@@ -42,6 +42,7 @@ Facet.attribute_buffer = function(opts)
     }
 
     var result = ctx.createBuffer();
+    result._ctx = ctx;
     result._shade_type = 'attribute_buffer';
     result.itemSize = itemSize;
     result.usage = usage;
@@ -51,10 +52,10 @@ Facet.attribute_buffer = function(opts)
     result._word_length = itemType.size;
 
     result.set = function(vertex_array) {
+        Facet.set_context(ctx);
         if (vertex_array.length % itemSize !== 0) {
             throw "length of array must be multiple of item_size";
         }
-        var ctx = Facet._globals.ctx;
         var typedArray = new this._typed_array_ctor(vertex_array);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
@@ -66,9 +67,9 @@ Facet.attribute_buffer = function(opts)
     result.set(vertex_array);
 
     result.set_region = function(index, array) {
+        Facet.set_context(ctx);
         if ((index + array.length) > (this.numItems * this.itemSize) || (index < 0))
             throw "set_region index out of bounds";
-        var ctx = Facet._globals.ctx;
         var typedArray = new this._typed_array_ctor(array);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.bufferSubData(ctx.ARRAY_BUFFER, index * this._word_length, typedArray);
@@ -80,18 +81,21 @@ Facet.attribute_buffer = function(opts)
     };
 
     result.bind = function(attribute) {
-        var ctx = Facet._globals.ctx;
+        Facet.set_context(ctx);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, 0, 0);
     };
 
     result.draw = function(primitive) {
-        var ctx = Facet._globals.ctx;
+        Facet.set_context(ctx);
         ctx.drawArrays(primitive, 0, this.numItems);
     };
     result.bind_and_draw = function(attribute, primitive) {
-        this.bind(attribute);
-        this.draw(primitive);
+        // inline the calls to bind and draw to shave a redundant set_context.
+        Facet.set_context(ctx);
+        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+        ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, 0, 0);
+        ctx.drawArrays(primitive, 0, this.numItems);
     };
     return result;
 };

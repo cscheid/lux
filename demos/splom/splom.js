@@ -37,7 +37,6 @@ function data_buffers()
 
 function init_webgl()
 {
-    Facet.set_context(gl);
     data = data_buffers();
 
     var species_color = Shade.vec(Shade.Utils.choose(
