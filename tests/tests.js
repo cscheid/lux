@@ -141,7 +141,7 @@ test("Shade compilation", function() {
               " uniform vec4 _unique_name_1;\n" +
               " vec4 glsl_name_8 ;\n" +
               " uniform float _unique_name_2;\n" +
-              " vec4 glsl_name_7 (void) {\n" +
+              " vec4 glsl_name_7 ( ) {\n" +
               "     return  ((_unique_name_2 > float(0.0))?cos ( glsl_name_8 ):sin ( glsl_name_8 )) ;\n" +
               "}\n" +
               " void main() {\n" +
@@ -460,6 +460,43 @@ test("Shade constant folding", function() {
         var exp = Shade.array([Shade.vec(1,1), Shade.vec(1,1)]).at(nonconst).sub(Shade.vec(2,3));
         ok(exp.element(0));
     })();
+
+    //////////////////////////////////////////////////////////////////////////
+    // semantics of Shade.add(v1,v2,v3,...)
+
+    for (var i=0; i<10; ++i) {
+        (function() {
+            var lst = [];
+            var n = (~~(Math.exp(-Math.random()) * 5)) + 1;
+            for (var i=0; i<n; ++i) {
+                lst.push(~~(Math.random() * 10 - 5));
+            }
+            var exp = Shade.add.apply(this, lst);
+            ok(Math.abs(exp.constant_value() -
+                        _.reduce(lst, function(a, b) { return a + b; })) < 1e-4,
+               "Shade.add");
+        })();
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    // semantics of Shade.sub(v1,v2,v3,...)
+
+    for (i=0; i<10; ++i) {
+        (function() {
+            var lst = [];
+            var n = (~~(Math.exp(-Math.random()) * 5)) + 1;
+            for (var i=0; i<n; ++i) {
+                lst.push(~~(Math.random() * 10 - 5));
+            }
+            console.log(lst);
+            var exp = Shade.sub.apply(this, lst);
+            console.log(exp);
+            exp.debug_print();
+            ok(Math.abs(exp.constant_value() -
+                        _.reduce(lst, function(a, b) { return a - b; })) < 1e-4,
+               "Shade.sub");
+        })();
+    }
 });
 
 test("Shade optimizer", function() {
