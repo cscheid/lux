@@ -4,7 +4,7 @@ var _structs = {};
 
 function _register_struct(type) {
     var t = type._struct_key;
-    var v = Shade.Types._structs[t];
+    var v = _structs[t];
     if (v !== undefined) {
         throw "type " + t + " already registered as " + v.internal_type_name;
     }
@@ -28,7 +28,7 @@ var struct_key = function(obj) {
 
 Shade.Types.struct = function(fields) {
     var key = struct_key(fields);
-    var t = Shade.Types._structs[key];
+    var t = _structs[key];
     if (t) return t;
 
     var result = Shade._create(Shade.Types.struct_t, {

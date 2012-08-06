@@ -11,16 +11,30 @@ Shade.struct = function(obj)
         t[k] = types[i];
     });
     var struct_type = Shade.Types.struct(t);
- 
+    
     var result = Shade._create_concrete_exp({
         parents: vs,
         fields: ks,
         type: struct_type,
         expression_type: "struct",
         evaluate: function() { return this.glsl_name; },
-        compile: function (ctx) {
-            this.
+        compile: function (ctx) {},
+        value: function() {
+            return [this.type.internal_type_name, "(",
+                    this.parents.map(function(t) {
+                        return t.evaluate();
+                    }).join(", "),
+                    ")"].join(" ");
         },
+        constant_value: Shade.memoize_on_field("_constant_value", function() {
+            var result = {};
+            var that = this;
+            _.each(this.parents, function(v, i) {
+                result[that.fields[i]] = v.constant_value();
+            });
+            return result;
+        })
     });
+    return result;
 };
 

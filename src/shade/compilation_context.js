@@ -52,7 +52,7 @@ Shade.CompilationContext = function(compile_type)
         },
         declare: function(decltype, glsl_name, type, declmap) {
             if (_.isUndefined(type)) {
-                throw "must define type";                
+                throw "must define type";
             }
             if (!(glsl_name in declmap)) {
                 declmap[glsl_name] = type;

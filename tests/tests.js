@@ -168,6 +168,15 @@ test("Shade compilation", function() {
     })();
 });
 
+test("Shade structs", function() {
+    ok(Shade.struct({foo: Shade.vec(1,0,0,1), bar: true }));
+    var v1 = Shade.make({foo: Shade.vec(1,0,0,1), bar: true }),
+        v2 = Shade.struct({foo: Shade.vec(1,0,0,1), bar: true }),
+        v3 = {foo: vec.make([1, 0, 0, 1]), bar: true};
+    ok(_.isEqual(v1.constant_value(), v2.constant_value()));
+    ok(_.isEqual(v2.constant_value(), v3));
+});
+
 test("Shade constant folding", function() {
     equal(Shade.unknown("float").guid, Shade.unknown("float").guid);
     notEqual(Shade.unknown("float").guid, Shade.unknown("mat2").guid);

@@ -50,9 +50,10 @@ Shade.make = function(exp)
         return Shade.sampler2D_from_texture(exp.texture);
     } else if (exp._shade_type === 'texture') {
         return Shade.sampler2D_from_texture(exp);
-    } else if (exp._shade_type === 'other') {
+    } else if (t === 'other') {
         return Shade.struct(exp);
     }
+
     return exp;
 };
 
