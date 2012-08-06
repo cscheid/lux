@@ -77,8 +77,6 @@ test("Shade types", function() {
     }, function(e) {
         return e === "type error on equal: could not find appropriate type match for (float, int)";
     }, "comparison type check");
-
-    
 });
 
 test("Shade expressions", function() {
@@ -172,9 +170,37 @@ test("Shade structs", function() {
     ok(Shade.struct({foo: Shade.vec(1,0,0,1), bar: true }));
     var v1 = Shade.make({foo: Shade.vec(1,0,0,1), bar: true }),
         v2 = Shade.struct({foo: Shade.vec(1,0,0,1), bar: true }),
-        v3 = {foo: vec.make([1, 0, 0, 1]), bar: true};
+        v3 = {foo: vec.make([1, 0, 0, 1]), bar: true},
+        v4 = v2.field("foo"),
+        v5 = v2("foo"),
+        v6 = v2.foo;
+    // this syntax only works for some fields. Check your Javascritp console for warnings
+    // if things appear not to be working
+
     ok(_.isEqual(v1.constant_value(), v2.constant_value()));
-    ok(_.isEqual(v2.constant_value(), v3));
+    ok(_.isEqual(v2.constant_value(), v3));    
+    ok(_.isEqual(v4.constant_value(), v3.foo));
+    ok(_.isEqual(v4.constant_value(), v5.constant_value()));
+    ok(_.isEqual(v4.constant_value(), v6.constant_value()));
+
+    var p1 = Shade.parameter("float", 1.0);
+    var p2 = Shade.vec(1,0,0,1);
+    var s = Shade.struct({ f: p1, v: p2 });
+    
+    var cc = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE);
+    cc.compile(s("f").mul(s("v")));
+    equal(cc.source(),
+          "struct type_235 {\n" +
+          "      float f ;\n" +
+          "      vec4 v ;\n" +
+          " };\n" +
+          " precision highp float;\n" +
+          " uniform float _unique_name_3;\n" +
+          " type_235 glsl_name_10 ;\n" +
+          " void main() {\n" +
+          "      glsl_name_10 = type_235 ( _unique_name_3, vec4(float(1.0), float(0.0), float(0.0), float(1.0)) ) ;\n" +
+          "      ((glsl_name_10.f) * (glsl_name_10.v)) ;\n" +
+          " }\n");
 });
 
 test("Shade constant folding", function() {
@@ -497,10 +523,7 @@ test("Shade constant folding", function() {
             for (var i=0; i<n; ++i) {
                 lst.push(~~(Math.random() * 10 - 5));
             }
-            console.log(lst);
             var exp = Shade.sub.apply(this, lst);
-            console.log(exp);
-            exp.debug_print();
             ok(Math.abs(exp.constant_value() -
                         _.reduce(lst, function(a, b) { return a - b; })) < 1e-4,
                "Shade.sub");

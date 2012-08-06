@@ -98,6 +98,7 @@ facet.js:					\
 	src/shade/swizzle.js			\
 	src/shade/constant.js			\
 	src/shade/array.js			\
+	src/shade/struct.js			\
 	src/shade/set.js			\
 	src/shade/parameter.js			\
 	src/shade/sampler2D_from_texture.js	\

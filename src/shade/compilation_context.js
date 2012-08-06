@@ -76,24 +76,22 @@ Shade.CompilationContext = function(compile_type)
         declare_attribute: function(glsl_name, type) {
             this.declare("attribute", glsl_name, type, this.declarations.attribute);
         },
-        declare_struct: function(glsl_name, type) {
-            function ensure_declared(type) {
-                if (!_.isUndefined(this.declared_struct_types[type.internal_type_name]))
-                    return;
-                _.each(type.fields, function(v) {
-                    if (v.is_struct()) {
-                        ensure_declared(v);
-                    }
-                });
-                this.strings.push("struct", type.internal_type_name, "{\n");
-                _.each(type.fields, function(v, k) {
-                    this.strings.push("    ",v.declare(k));
-                });
-                this.strings.push("};\n");
-                this.declared_struct_types[type.internal_type_name] = true;
-            }
-            ensure_declared(type);
-            this.strings.push(type.declare(glsl_name) + ";\n");
+        declare_struct: function(type) {
+            var that = this;
+            if (!_.isUndefined(this.declared_struct_types[type.internal_type_name]))
+                return;
+            _.each(type.fields, function(v) {
+                if (v.is_struct() && 
+                    _.isUndefined(this.declared_struct_types[type.internal_type_name])) {
+                    throw "internal error; declare_struct found undeclared internal struct";
+                }
+            });
+            this.strings.push("struct", type.internal_type_name, "{\n");
+            _.each(type.fields, function(v, k) {
+                that.strings.push("    ",v.declare(k), ";\n");
+            });
+            this.strings.push("};\n");
+            this.declared_struct_types[type.internal_type_name] = true;
         },
         compile: function(fun) {
             var that = this;
@@ -118,6 +116,9 @@ Shade.CompilationContext = function(compile_type)
                 n.is_unconditional = false;
                 n.glsl_name = that.request_fresh_glsl_name();
                 n.set_requirements(this);
+                if (n.type.is_struct()) {
+                    that.declare_struct(n.type);
+                }
                 for (var j=0; j<n.parents.length; ++j) {
                     n.parents[j].children_count++;
                     // adds base scope to objects which have them.
