@@ -18,13 +18,12 @@ Facet.model = function(input)
                 // example: 'type: "triangles"'
                 result.type = v;
             else if (k === 'elements') {
-                // FIXME: why are these element buffers Shade objects??
                 if (v._shade_type === 'element_buffer')
                     // example: 'elements: Facet.element_buffer(...)'
-                    result.elements = Shade(v);
+                    result.elements = v;
                 else if (facet_typeOf(v) === 'array')
                     // example: 'elements: [0, 1, 2, 3]'
-                    result.elements = Shade(Facet.element_buffer(v));
+                    result.elements = Facet.element_buffer(v);
                 else
                     // example: 'elements: 4'
                     result.elements = v;
