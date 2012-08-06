@@ -2,6 +2,7 @@
 // make converts objects which can be meaningfully interpreted as
 // Exp values to the appropriate Exp values, giving us some poor-man
 // static polymorphism
+
 Shade.make = function(exp)
 {
     if (_.isUndefined(exp)) {
@@ -49,6 +50,8 @@ Shade.make = function(exp)
         return Shade.sampler2D_from_texture(exp.texture);
     } else if (exp._shade_type === 'texture') {
         return Shade.sampler2D_from_texture(exp);
+    } else if (exp._shade_type === 'other') {
+        return Shade.struct(exp);
     }
     return exp;
 };

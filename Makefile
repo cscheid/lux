@@ -91,6 +91,7 @@ facet.js:					\
 	src/shade/types/array.js		\
 	src/shade/types/function_t.js		\
 	src/shade/types/simple_types.js		\
+	src/shade/types/struct_t.js		\
 	src/shade/compilation_context.js	\
 	src/shade/exp.js			\
 	src/shade/value_exp.js			\

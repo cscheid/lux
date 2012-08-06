@@ -41,6 +41,7 @@ Shade.CompilationContext = function(compile_type)
                         attribute: {},
                         varying: {}
                       },
+        declared_struct_types: {},
         // min_version: -1,
         source: function() {
             return this.strings.join(" ");
@@ -74,6 +75,25 @@ Shade.CompilationContext = function(compile_type)
         },
         declare_attribute: function(glsl_name, type) {
             this.declare("attribute", glsl_name, type, this.declarations.attribute);
+        },
+        declare_struct: function(glsl_name, type) {
+            function ensure_declared(type) {
+                if (!_.isUndefined(this.declared_struct_types[type.internal_type_name]))
+                    return;
+                _.each(type.fields, function(v) {
+                    if (v.is_struct()) {
+                        ensure_declared(v);
+                    }
+                });
+                this.strings.push("struct", type.internal_type_name, "{\n");
+                _.each(type.fields, function(v, k) {
+                    this.strings.push("    ",v.declare(k));
+                });
+                this.strings.push("};\n");
+                this.declared_struct_types[type.internal_type_name] = true;
+            }
+            ensure_declared(type);
+            this.strings.push(type.declare(glsl_name) + ";\n");
         },
         compile: function(fun) {
             var that = this;

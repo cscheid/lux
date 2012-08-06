@@ -5028,6 +5028,7 @@ Shade.debug = false;
 // make converts objects which can be meaningfully interpreted as
 // Exp values to the appropriate Exp values, giving us some poor-man
 // static polymorphism
+
 Shade.make = function(exp)
 {
     if (_.isUndefined(exp)) {
@@ -5075,6 +5076,8 @@ Shade.make = function(exp)
         return Shade.sampler2D_from_texture(exp.texture);
     } else if (exp._shade_type === 'texture') {
         return Shade.sampler2D_from_texture(exp);
+    } else if (exp._shade_type === 'other') {
+        return Shade.struct(exp);
     }
     return exp;
 };
@@ -5643,6 +5646,7 @@ Shade._create_concrete = function(base, requirements)
     return create_it;
 };
 Shade.Types = {};
+// <rant> How I wish I had algebraic data types. </rant>
 Shade.Types.base_t = {
     is_floating: function() { return false; },
     is_integral: function() { return false; },
@@ -5655,6 +5659,7 @@ Shade.Types.base_t = {
         throw "is_vec() === false, cannot call vec_dimension";
     },
     is_function: function() { return false; },
+    is_struct:   function() { return false; },
     is_sampler:  function() { return false; },
     equals: function(other) {
         if (_.isUndefined(other))
@@ -5671,11 +5676,18 @@ Shade.Types.base_t = {
         return this.repr() + " " + glsl_name;
     }
     // repr
-    // array_base
-    // array_size
-    // function_return_type
-    // function_parameter
-    // function_parameter_count
+    // 
+    // for arrays:
+    //   array_base
+    //   array_size
+    // 
+    // for function types:
+    //   function_return_type
+    //   function_parameter
+    //   function_parameter_count
+    // 
+    // for structs:
+    //   fields
 
     // constant_equal
     //   constant_equal is a function that takes two parameters as produced
@@ -5968,6 +5980,54 @@ Shade.Types.function_t = function(return_type, param_types) {
     Shade.Types["int"]   = Shade.Types.int_t;
     Shade.Types["void"]  = Shade.Types.void_t;
 })();
+(function () {
+
+var _structs = {};
+
+function _register_struct(type) {
+    var t = type._struct_key;
+    var v = Shade.Types._structs[t];
+    if (v !== undefined) {
+        throw "type " + t + " already registered as " + v.internal_type_name;
+    }
+    _structs[t] = type;
+};
+
+var struct_key = function(obj) {
+    return _.map(obj, function(value, key) {
+        if (value.is_function()) {
+            throw "function types not allowed inside struct";
+        }
+        if (value.is_sampler()) {
+            throw "function types not allowed inside struct";
+        }
+        if (value.is_struct()) {
+            return "[" + key + ":" + value.internal_type_name + "]";
+        }
+        return "[" + key + ":" + value.repr() + "]";
+    }).join("");
+};
+
+Shade.Types.struct = function(fields) {
+    var key = struct_key(fields);
+    var t = Shade.Types._structs[key];
+    if (t) return t;
+
+    var result = Shade._create(Shade.Types.struct_t, {
+        fields: fields,
+        _struct_key: key
+    });
+    result.internal_type_name = 'type_' + result.guid;
+    _register_struct(result);
+    return result;
+};
+
+Shade.Types.struct_t = Shade._create(Shade.Types.base_t, {
+    is_struct: function() { return true; },
+    repr: function() { return this.internal_type_name; }
+});
+
+})();
 Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
@@ -6011,6 +6071,7 @@ Shade.CompilationContext = function(compile_type)
                         attribute: {},
                         varying: {}
                       },
+        declared_struct_types: {},
         // min_version: -1,
         source: function() {
             return this.strings.join(" ");
@@ -6044,6 +6105,25 @@ Shade.CompilationContext = function(compile_type)
         },
         declare_attribute: function(glsl_name, type) {
             this.declare("attribute", glsl_name, type, this.declarations.attribute);
+        },
+        declare_struct: function(glsl_name, type) {
+            function ensure_declared(type) {
+                if (!_.isUndefined(this.declared_struct_types[type.internal_type_name]))
+                    return;
+                _.each(type.fields, function(v) {
+                    if (v.is_struct()) {
+                        ensure_declared(v);
+                    }
+                });
+                this.strings.push("struct", type.internal_type_name, "{\n");
+                _.each(type.fields, function(v, k) {
+                    this.strings.push("    ",v.declare(k));
+                });
+                this.strings.push("};\n");
+                this.declared_struct_types[type.internal_type_name] = true;
+            }
+            ensure_declared(type);
+            this.strings.push(type.declare(glsl_name) + ";\n");
         },
         compile: function(fun) {
             var that = this;
