@@ -37,6 +37,22 @@ Shade.struct = function(obj)
             if (index === -1) {
                 throw "field " + field_name + " not existent";
             };
+
+            /* Since field_name is always an immediate string, 
+             it will never need to be "computed" on a shader.            
+             This means its value can always be resolved in compile time and 
+             val(constructor(foo=bar).foo) is always val(bar).
+
+             Of course, if the above is true, then it means that most of the time
+             we should not need to see a GLSL struct in a Facet shader, and so
+             Shade structs appear to be mostly unnecessary.
+
+             But there is one specific case in which it helps, namely in ensuring
+             that assignment of structs values in looping variables is atomic.
+            }); */
+
+            /*
+
             return Shade._create_concrete_value_exp({
                 parents: [this],
                 type: this.parents[index].type,
@@ -50,7 +66,9 @@ Shade.struct = function(obj)
                 is_constant: Shade.memoize_on_field("_is_constant", function() {
                     return this.parents[0].parents[index].is_constant();
                 })
-            });
+             
+             */
+            return this.parents[index];
         },
         call_operator: function(v) {
             return this.field(v);

@@ -111,6 +111,8 @@ Shade.CompilationContext = function(compile_type)
 
             var topo_sort = fun.sorted_sub_expressions();
             var i;
+            var p = this.strings.push;
+            this.strings.push("precision",this.float_precision,"float;\n");
             _.each(topo_sort, function(n) {
                 n.children_count = 0;
                 n.is_unconditional = false;
@@ -140,8 +142,6 @@ Shade.CompilationContext = function(compile_type)
                 }
                 n.patch_scope();
             }
-            var p = this.strings.push;
-            this.strings.push("precision",this.float_precision,"float;\n");
             for (i=0; i<topo_sort.length; ++i) {
                 topo_sort[i].compile(this);
             }
