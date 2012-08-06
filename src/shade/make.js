@@ -38,7 +38,7 @@ Shade.make = function(exp)
             for (var i=0; i<arguments.length; ++i) {
                 wrapped_arguments.push(Shade.make(arguments[i]));
             }
-            return exp.apply(this, wrapped_arguments);
+            return Shade.make(exp.apply(this, wrapped_arguments));
         };
     }
     t = facet_constant_type(exp);
