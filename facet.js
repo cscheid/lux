@@ -3892,13 +3892,12 @@ Facet.model = function(input)
                 // example: 'type: "triangles"'
                 result.type = v;
             else if (k === 'elements') {
-                // FIXME: why are these element buffers Shade objects??
                 if (v._shade_type === 'element_buffer')
                     // example: 'elements: Facet.element_buffer(...)'
-                    result.elements = Shade(v);
+                    result.elements = v;
                 else if (facet_typeOf(v) === 'array')
                     // example: 'elements: [0, 1, 2, 3]'
-                    result.elements = Shade(Facet.element_buffer(v));
+                    result.elements = Facet.element_buffer(v);
                 else
                     // example: 'elements: 4'
                     result.elements = v;
@@ -5064,7 +5063,7 @@ Shade.make = function(exp)
             for (var i=0; i<arguments.length; ++i) {
                 wrapped_arguments.push(Shade.make(arguments[i]));
             }
-            return exp.apply(this, wrapped_arguments);
+            return Shade.make(exp.apply(this, wrapped_arguments));
         };
     }
     t = facet_constant_type(exp);
@@ -5076,9 +5075,10 @@ Shade.make = function(exp)
         return Shade.sampler2D_from_texture(exp.texture);
     } else if (exp._shade_type === 'texture') {
         return Shade.sampler2D_from_texture(exp);
-    } else if (exp._shade_type === 'other') {
+    } else if (t === 'other') {
         return Shade.struct(exp);
     }
+
     return exp;
 };
 
@@ -5459,124 +5459,132 @@ function BasicRange(range_begin, range_end, value)
 {
     this.begin = Shade.make(range_begin).as_int();
     this.end = Shade.make(range_end).as_int();
-    this.value = value || function(index) { return index; };
+    this.loop_variable = Shade.loop_variable(Shade.Types.int_t, true);
+    this.condition = Shade.make(true);
+    this.break_condition = Shade.make(false);
+    this.environment = []; // value = value || function(index) { return index; };
 };
 
-Shade.range = function(range_begin, range_end, value)
-{
-    return new BasicRange(range_begin, range_end, value);
-};
+// Shade.range = function(range_begin, range_end, value)
+// {
+//     return new BasicRange(range_begin, range_end, value);
+// };
 
-BasicRange.prototype.transform = function(xform)
-{
-    var that = this;
-    return Shade.range(
-        this.begin,
-        this.end, 
-        function (i) {
-            var input = that.value(i);
-            var result = xform(input);
-            return result;
-        });
-};
+// BasicRange.prototype.transform = function(xform)
+// {
+//     var that = this;
+//     return Shade.range(
+//         this.begin,
+//         this.end, 
+//         function (i) {
+//             var input = that.value(i);
+//             var result = Shade(xform)(input);
+//             return result;
+//         });
+// };
 
-BasicRange.prototype.fold = Shade(function(operation, starting_value)
-{
-    var index_variable = Shade.loop_variable(Shade.Types.int_t, true);
-    var accumulator_value = Shade.loop_variable(starting_value.type, true);
+// BasicRange.prototype.first_which = Shade(function(predicate) 
+// {
+    
+// });
 
-    var element_value = this.value(index_variable);
-    var result_type = accumulator_value.type;
-    var operation_value = operation(accumulator_value, element_value);
+// BasicRange.prototype.fold = Shade(function(operation, starting_value)
+// {
+//     var index_variable = Shade.loop_variable(Shade.Types.int_t, true);
+//     var accumulator_value = Shade.loop_variable(starting_value.type, true);
 
-    var result = Shade._create_concrete_exp({
-        has_scope: true,
-        patch_scope: function() {
-            var index_variable = this.parents[2];
-            var accumulator_value = this.parents[3];
-            var element_value = this.parents[4];
-            var that = this;
+//     var element_value = this.value(index_variable);
+//     var result_type = accumulator_value.type;
+//     var operation_value = operation(accumulator_value, element_value);
 
-            _.each(element_value.sorted_sub_expressions(), function(node) {
-                if (_.any(node.loop_variable_dependencies(), function(dep) {
-                    return dep.glsl_name === index_variable.glsl_name ||
-                        dep.glsl_name === accumulator_value.glsl_name;
-                })) {
-                    node.scope = that.scope;
-                };
-            });
-        },
-        parents: [this.begin, this.end, 
-                  index_variable, accumulator_value, element_value,
-                  starting_value, operation_value],
-        type: result_type,
-        element: Shade.memoize_on_field("_element", function(i) {
-            if (this.type.is_pod()) {
-                if (i === 0)
-                    return this;
-                else
-                    throw this.type.repr() + " is an atomic type";
-            } else
-                return this.at(i);
-        }),
-        loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
-            return [];
-        }),
-        compile: function(ctx) {
-            var beg = this.parents[0];
-            var end = this.parents[1];
-            var index_variable = this.parents[2];
-            var accumulator_value = this.parents[3];
-            var element_value = this.parents[4];
-            var starting_value = this.parents[5];
-            var operation_value = this.parents[6];
+//     var result = Shade._create_concrete_exp({
+//         has_scope: true,
+//         patch_scope: function() {
+//             var index_variable = this.parents[2];
+//             var accumulator_value = this.parents[3];
+//             var element_value = this.parents[4];
+//             var that = this;
 
-            ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
-            ctx.strings.push("    ",accumulator_value.type.repr(), accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
+//             _.each(element_value.sorted_sub_expressions(), function(node) {
+//                 if (_.any(node.loop_variable_dependencies(), function(dep) {
+//                     return dep.glsl_name === index_variable.glsl_name ||
+//                         dep.glsl_name === accumulator_value.glsl_name;
+//                 })) {
+//                     node.scope = that.scope;
+//                 };
+//             });
+//         },
+//         parents: [this.begin, this.end, 
+//                   index_variable, accumulator_value, element_value,
+//                   starting_value, operation_value],
+//         type: result_type,
+//         element: Shade.memoize_on_field("_element", function(i) {
+//             if (this.type.is_pod()) {
+//                 if (i === 0)
+//                     return this;
+//                 else
+//                     throw this.type.repr() + " is an atomic type";
+//             } else
+//                 return this.at(i);
+//         }),
+//         loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
+//             return [];
+//         }),
+//         compile: function(ctx) {
+//             var beg = this.parents[0];
+//             var end = this.parents[1];
+//             var index_variable = this.parents[2];
+//             var accumulator_value = this.parents[3];
+//             var element_value = this.parents[4];
+//             var starting_value = this.parents[5];
+//             var operation_value = this.parents[6];
 
-            ctx.strings.push("    for (int",
-                             index_variable.evaluate(),"=",beg.evaluate(),";",
-                             index_variable.evaluate(),"<",end.evaluate(),";",
-                             "++",index_variable.evaluate(),") {\n");
-            _.each(this.scope.declarations, function(exp) {
-                ctx.strings.push("        ", exp, ";\n");
-            });
-            _.each(this.scope.initializations, function(exp) {
-                ctx.strings.push("        ", exp, ";\n");
-            });
-            ctx.strings.push("        ",
-                             accumulator_value.evaluate(),"=",
-                             operation_value.evaluate() + ";\n");
-            ctx.strings.push("    }\n");
-            ctx.strings.push("    return", 
-                             this.type.repr(), "(", accumulator_value.evaluate(), ");\n");
-            ctx.strings.push("}\n");
-        }
-    });
+//             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
+//             ctx.strings.push("    ",accumulator_value.type.repr(), accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
 
-    return result;
-});
+//             ctx.strings.push("    for (int",
+//                              index_variable.evaluate(),"=",beg.evaluate(),";",
+//                              index_variable.evaluate(),"<",end.evaluate(),";",
+//                              "++",index_variable.evaluate(),") {\n");
+//             _.each(this.scope.declarations, function(exp) {
+//                 ctx.strings.push("        ", exp, ";\n");
+//             });
+//             _.each(this.scope.initializations, function(exp) {
+//                 ctx.strings.push("        ", exp, ";\n");
+//             });
+//             ctx.strings.push("        ",
+//                              accumulator_value.evaluate(),"=",
+//                              operation_value.evaluate() + ";\n");
+//             ctx.strings.push("    }\n");
+//             ctx.strings.push("    return", 
+//                              this.type.repr(), "(", accumulator_value.evaluate(), ");\n");
+//             ctx.strings.push("}\n");
+//         }
+//     });
 
-BasicRange.prototype.sum = function()
-{
-    var this_begin_v = this.value(this.begin);
-    return this.fold(Shade.add, this_begin_v.type.zero);
-};
+//     return result;
+// });
 
-BasicRange.prototype.max = function()
-{
-    var this_begin_v = this.value(this.begin);
-    return this.fold(Shade.max, this_begin_v.type.minus_infinity);
-};
+// BasicRange.prototype.sum = function()
+// {
+//     var this_begin_v = this.value(this.begin);
+//     return this.fold(Shade.add, this_begin_v.type.zero);
+// };
 
-BasicRange.prototype.average = function()
-{
-    var s = this.sum();
-    if (s.type.equals(Shade.Types.int_t)) {
-        s = s.as_float();
-    }
-    return s.div(this.end.sub(this.begin).as_float());
-};
+// BasicRange.prototype.max = function()
+// {
+//     var this_begin_v = this.value(this.begin);
+//     return this.fold(Shade.max, this_begin_v.type.minus_infinity);
+// };
+
+// BasicRange.prototype.average = function()
+// {
+//     var s = this.sum();
+//     if (s.type.equals(Shade.Types.int_t)) {
+//         s = s.as_float();
+//     }
+//     return s.div(this.end.sub(this.begin).as_float());
+// };
 
 })();
 Shade.unique_name = function() {
@@ -5986,7 +5994,7 @@ var _structs = {};
 
 function _register_struct(type) {
     var t = type._struct_key;
-    var v = Shade.Types._structs[t];
+    var v = _structs[t];
     if (v !== undefined) {
         throw "type " + t + " already registered as " + v.internal_type_name;
     }
@@ -6010,7 +6018,7 @@ var struct_key = function(obj) {
 
 Shade.Types.struct = function(fields) {
     var key = struct_key(fields);
-    var t = Shade.Types._structs[key];
+    var t = _structs[key];
     if (t) return t;
 
     var result = Shade._create(Shade.Types.struct_t, {
@@ -6082,7 +6090,7 @@ Shade.CompilationContext = function(compile_type)
         },
         declare: function(decltype, glsl_name, type, declmap) {
             if (_.isUndefined(type)) {
-                throw "must define type";                
+                throw "must define type";
             }
             if (!(glsl_name in declmap)) {
                 declmap[glsl_name] = type;
@@ -6106,24 +6114,22 @@ Shade.CompilationContext = function(compile_type)
         declare_attribute: function(glsl_name, type) {
             this.declare("attribute", glsl_name, type, this.declarations.attribute);
         },
-        declare_struct: function(glsl_name, type) {
-            function ensure_declared(type) {
-                if (!_.isUndefined(this.declared_struct_types[type.internal_type_name]))
-                    return;
-                _.each(type.fields, function(v) {
-                    if (v.is_struct()) {
-                        ensure_declared(v);
-                    }
-                });
-                this.strings.push("struct", type.internal_type_name, "{\n");
-                _.each(type.fields, function(v, k) {
-                    this.strings.push("    ",v.declare(k));
-                });
-                this.strings.push("};\n");
-                this.declared_struct_types[type.internal_type_name] = true;
-            }
-            ensure_declared(type);
-            this.strings.push(type.declare(glsl_name) + ";\n");
+        declare_struct: function(type) {
+            var that = this;
+            if (!_.isUndefined(this.declared_struct_types[type.internal_type_name]))
+                return;
+            _.each(type.fields, function(v) {
+                if (v.is_struct() && 
+                    _.isUndefined(this.declared_struct_types[type.internal_type_name])) {
+                    throw "internal error; declare_struct found undeclared internal struct";
+                }
+            });
+            this.strings.push("struct", type.internal_type_name, "{\n");
+            _.each(type.fields, function(v, k) {
+                that.strings.push("    ",v.declare(k), ";\n");
+            });
+            this.strings.push("};\n");
+            this.declared_struct_types[type.internal_type_name] = true;
         },
         compile: function(fun) {
             var that = this;
@@ -6143,11 +6149,16 @@ Shade.CompilationContext = function(compile_type)
 
             var topo_sort = fun.sorted_sub_expressions();
             var i;
+            var p = this.strings.push;
+            this.strings.push("precision",this.float_precision,"float;\n");
             _.each(topo_sort, function(n) {
                 n.children_count = 0;
                 n.is_unconditional = false;
                 n.glsl_name = that.request_fresh_glsl_name();
                 n.set_requirements(this);
+                if (n.type.is_struct()) {
+                    that.declare_struct(n.type);
+                }
                 for (var j=0; j<n.parents.length; ++j) {
                     n.parents[j].children_count++;
                     // adds base scope to objects which have them.
@@ -6169,8 +6180,6 @@ Shade.CompilationContext = function(compile_type)
                 }
                 n.patch_scope();
             }
-            var p = this.strings.push;
-            this.strings.push("precision",this.float_precision,"float;\n");
             for (i=0; i<topo_sort.length; ++i) {
                 topo_sort[i].compile(this);
             }
@@ -7017,6 +7026,93 @@ Shade.array = function(v)
         throw "type error: need array";
     }
 };
+// Shade.struct denotes a heterogeneous structure of Facet values:
+//   Shade.struct({foo: Shade.vec(1,2,3), bar: Shade.struct({baz: 1, bah: false})});
+
+Shade.struct = function(obj)
+{
+    var vs = _.map(obj, function(v) { return Shade.make(v); });
+    var ks = _.keys(obj);
+    var types = _.map(vs, function(v) { return v.type; });
+    var t = {};
+    _.each(ks, function(k, i) {
+        t[k] = types[i];
+    });
+    var struct_type = Shade.Types.struct(t);
+    
+    var result = Shade._create_concrete_value_exp({
+        parents: vs,
+        fields: ks,
+        type: struct_type,
+        expression_type: "struct",
+        value: function() {
+            return [this.type.internal_type_name, "(",
+                    this.parents.map(function(t) {
+                        return t.evaluate();
+                    }).join(", "),
+                    ")"].join(" ");
+        },
+        constant_value: Shade.memoize_on_field("_constant_value", function() {
+            var result = {};
+            var that = this;
+            _.each(this.parents, function(v, i) {
+                result[that.fields[i]] = v.constant_value();
+            });
+            return result;
+        }),
+        field: function(field_name) {
+            var index = this.fields.indexOf(field_name);
+            if (index === -1) {
+                throw "field " + field_name + " not existent";
+            };
+
+            /* Since field_name is always an immediate string, 
+             it will never need to be "computed" on a shader.            
+             This means its value can always be resolved in compile time and 
+             val(constructor(foo=bar).foo) is always val(bar).
+
+             Of course, if the above is true, then it means that most of the time
+             we should not need to see a GLSL struct in a Facet shader, and so
+             Shade structs appear to be mostly unnecessary.
+
+             But there is one specific case in which it helps, namely in ensuring
+             that assignment of structs values in looping variables is atomic.
+            }); */
+
+            /*
+
+            return Shade._create_concrete_value_exp({
+                parents: [this],
+                type: this.parents[index].type,
+                expression_type: "struct-accessor",
+                value: function() {
+                    return "(" + this.parents[0].evaluate() + "." + field_name + ")";
+                },
+                constant_value: Shade.memoize_on_field("_constant_value", function() {
+                    return this.parents[0].parents[index].constant_value();
+                }),
+                is_constant: Shade.memoize_on_field("_is_constant", function() {
+                    return this.parents[0].parents[index].is_constant();
+                })
+             
+             */
+            return this.parents[index];
+        },
+        call_operator: function(v) {
+            return this.field(v);
+        }
+    });
+
+    _.each(ks, function(k) {
+        // I can't use _.has because result is actually a javascript function..
+        if (!_.isUndefined(result[k])) {
+            console.log("Warning: Field",k,"is reserved. JS struct notation (a.b) will not be usable");
+        } else
+            result[k] = result.field(k);
+    });
+    return result;
+};
+
 /* Shade.set is essentially an internal method for Shade. Don't use it
    unless you know exactly what you're doing.
  */
