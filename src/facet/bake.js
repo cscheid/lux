@@ -4,7 +4,9 @@ var previous_batch_opts = {};
 
 Facet.unload_batch = function()
 {
-    var ctx = Facet._globals.ctx;
+    if (!previous_batch_opts._ctx)
+        return;
+    var ctx = previous_batch_opts._ctx;
     if (previous_batch_opts.attributes) {
         for (var key in previous_batch_opts.attributes) {
             ctx.disableVertexAttribArray(previous_batch_opts.program[key]);
@@ -29,10 +31,9 @@ Facet.unload_batch = function()
 
 function draw_it(batch_opts)
 {
-    if (_.isUndefined(batch))
+    if (_.isUndefined(batch_opts))
         throw "drawing mode undefined";
 
-    var ctx = Facet._globals.ctx;
     if (batch_opts.batch_id !== previous_batch_opts.batch_id) {
         var attributes = batch_opts.attributes || {};
         var uniforms = batch_opts.uniforms || {};
@@ -44,6 +45,7 @@ function draw_it(batch_opts)
         previous_batch_opts = batch_opts;
         batch_opts.set_caps();
 
+        var ctx = batch_opts._ctx;
         ctx.useProgram(program);
 
         for (key in attributes) {
@@ -125,7 +127,7 @@ Facet.bake = function(model, appearance, opts)
         throw "position appearance attribute must be vec2, vec3 or vec4";
     }
 
-    var ctx = Facet._globals.ctx;
+    var ctx = model._ctx || Facet._globals.ctx;
 
     var batch_id = Facet.fresh_pick_id();
 
@@ -256,6 +258,7 @@ Facet.bake = function(model, appearance, opts)
 
     function create_batch_opts(program, caps_name) {
         var result = {
+            _ctx: ctx,
             program: program,
             attributes: build_attribute_arrays_obj(program),
             set_caps: function() {
@@ -277,7 +280,6 @@ Facet.bake = function(model, appearance, opts)
 
     var draw_opts, pick_opts, unproject_opts;
 
-
     if (!opts.force_no_draw)
         draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
 
@@ -292,7 +294,7 @@ Facet.bake = function(model, appearance, opts)
     var result = {
         batch_id: batch_id,
         draw: function() {
-            draw_it(which_opts[Facet._globals.ctx._facet_globals.batch_render_mode]);
+            draw_it(which_opts[ctx._facet_globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.

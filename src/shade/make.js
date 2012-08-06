@@ -2,6 +2,7 @@
 // make converts objects which can be meaningfully interpreted as
 // Exp values to the appropriate Exp values, giving us some poor-man
 // static polymorphism
+
 Shade.make = function(exp)
 {
     if (_.isUndefined(exp)) {
@@ -37,7 +38,7 @@ Shade.make = function(exp)
             for (var i=0; i<arguments.length; ++i) {
                 wrapped_arguments.push(Shade.make(arguments[i]));
             }
-            return exp.apply(this, wrapped_arguments);
+            return Shade.make(exp.apply(this, wrapped_arguments));
         };
     }
     t = facet_constant_type(exp);
@@ -49,7 +50,10 @@ Shade.make = function(exp)
         return Shade.sampler2D_from_texture(exp.texture);
     } else if (exp._shade_type === 'texture') {
         return Shade.sampler2D_from_texture(exp);
+    } else if (t === 'other') {
+        return Shade.struct(exp);
     }
+
     return exp;
 };
 

@@ -1,3 +1,4 @@
+// <rant> How I wish I had algebraic data types. </rant>
 Shade.Types.base_t = {
     is_floating: function() { return false; },
     is_integral: function() { return false; },
@@ -10,6 +11,7 @@ Shade.Types.base_t = {
         throw "is_vec() === false, cannot call vec_dimension";
     },
     is_function: function() { return false; },
+    is_struct:   function() { return false; },
     is_sampler:  function() { return false; },
     equals: function(other) {
         if (_.isUndefined(other))
@@ -26,11 +28,18 @@ Shade.Types.base_t = {
         return this.repr() + " " + glsl_name;
     }
     // repr
-    // array_base
-    // array_size
-    // function_return_type
-    // function_parameter
-    // function_parameter_count
+    // 
+    // for arrays:
+    //   array_base
+    //   array_size
+    // 
+    // for function types:
+    //   function_return_type
+    //   function_parameter
+    //   function_parameter_count
+    // 
+    // for structs:
+    //   fields
 
     // constant_equal
     //   constant_equal is a function that takes two parameters as produced

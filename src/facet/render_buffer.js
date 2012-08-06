@@ -24,7 +24,7 @@ Facet.render_buffer = function(opts)
     var rttTexture = Facet.texture(opts);
 
     frame_buffer.init = function(width, height) {
-        var ctx = Facet._globals.ctx;
+        Facet.set_context(ctx);
         this.width  = opts.width;
         this.height = opts.height;
         ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
@@ -67,7 +67,6 @@ Facet.render_buffer = function(opts)
         this.init(width, height);
     };
     frame_buffer.with_bound_buffer = function(what) {
-        var ctx = Facet._globals.ctx;
         try {
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
             ctx.viewport(0, 0, this.width, this.height);

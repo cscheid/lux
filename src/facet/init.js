@@ -92,7 +92,7 @@ Facet.init = function(canvas, opts)
                         event.facetY = gl.viewportHeight - event.offsetY;
                         return listener(event);
                     }
-                    canvas.addEventListener(ename, internal_listener, false);
+                    canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
                 })(listener);
             }
         }
@@ -124,7 +124,7 @@ Facet.init = function(canvas, opts)
     Facet.set_context(gl);
 
     if (opts.display) {
-        Facet._globals.ctx._facet_globals.display_callback = opts.display;
+        gl._facet_globals.display_callback = opts.display;
     }
 
     gl.display = function() {
@@ -132,7 +132,7 @@ Facet.init = function(canvas, opts)
         this.clearDepth(clearDepth);
         this.clearColor.apply(gl, clearColor);
         this.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        Facet._globals.ctx._facet_globals.display_callback();
+        this._facet_globals.display_callback();
     };
     gl.resize = function(width, height) {
         this.viewportWidth = width;

@@ -21,11 +21,11 @@ Shade.vec = function()
     }
     var type;
     if (vec_type.equals(Shade.Types.float_t)) {
-        type = Shade.basic("vec" + total_size);
+        type = Shade.Types["vec" + total_size];
     } else if (vec_type.equals(Shade.Types.int_t)) {
-        type = Shade.basic("ivec" + total_size);
+        type = Shade.Types["ivec" + total_size];
     } else if (vec_type.equals(Shade.Types.bool_t)) {
-        type = Shade.basic("bvec" + total_size);
+        type = Shade.Types["bvec" + total_size];
     } else {
         throw "vec type must be bool, int, or float";
     }

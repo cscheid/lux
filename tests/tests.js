@@ -15,37 +15,37 @@ function almost_equal(expected, got, msg, eps) {
 }
 
 test("Shade types", function() {
-    var x = Shade.basic('float');
+    var x = Shade.Types.basic('float');
     expect(21);
     raises(function() {
-        Shade.basic('askldjasdf');
+        Shade.Types.basic('askldjasdf');
     }, function(e) {
         return e === "invalid basic type 'askldjasdf'";
     }, "bad basic objects should fail");
     raises(function() {
-        Shade.basic('vec2').swizzle('rx');
+        Shade.Types.basic('vec2').swizzle('rx');
     }, function(e) {
         return e === "swizzle pattern 'rx' belongs to more than one group";
     }, "bad swizzle pattern");
-    ok(Shade.basic('vec2').swizzle('rg'), "basic swizzle pattern #1");
-    ok(Shade.basic('vec2').equals(Shade.Types.vec2), "type equality");
-    equal(Shade.basic('vec2').swizzle('rrr').repr(),
+    ok(Shade.Types.basic('vec2').swizzle('rg'), "basic swizzle pattern #1");
+    ok(Shade.Types.basic('vec2').equals(Shade.Types.vec2), "type equality");
+    equal(Shade.Types.basic('vec2').swizzle('rrr').repr(),
           'vec3', "basic swizzle pattern type");
-    equal(Shade.basic('ivec4').swizzle('a').repr(),
+    equal(Shade.Types.basic('ivec4').swizzle('a').repr(),
           'int', "basic swizzle to scalar");
-    equal(Shade.basic('bvec2').swizzle('t').repr(),
+    equal(Shade.Types.basic('bvec2').swizzle('t').repr(),
           'bool', "basic swizzle to scalar");
-    equal(Shade.basic('vec4').swizzle('q').repr(),
+    equal(Shade.Types.basic('vec4').swizzle('q').repr(),
           'float', "basic swizzle to scalar");
     raises(function() {
         Shade.varying("model_pos");
     }, function(e) { return e === "varying requires type"; });
 
-    equal(Shade.basic('vec4').is_vec(),  true,  "type check methods");
-    equal(Shade.basic('float').is_vec(), false, "type check methods");
-    equal(Shade.basic('mat4').is_vec(),  false, "type check methods");
-    equal(Shade.basic('mat4').is_pod(),  false, "type check methods");
-    equal(Shade.basic('float').is_pod(), true,  "type check methods");
+    equal(Shade.Types.basic('vec4').is_vec(),  true,  "type check methods");
+    equal(Shade.Types.basic('float').is_vec(), false, "type check methods");
+    equal(Shade.Types.basic('mat4').is_vec(),  false, "type check methods");
+    equal(Shade.Types.basic('mat4').is_pod(),  false, "type check methods");
+    equal(Shade.Types.basic('float').is_pod(), true,  "type check methods");
     raises(function() {
         var v = [];
         Shade.array(v);
@@ -59,7 +59,7 @@ test("Shade types", function() {
         return e === "array elements must have identical types";
     });
 
-    ok(Shade.basic('vec4').element_type(0).equals(Shade.Types.float_t), "element_type");
+    ok(Shade.Types.basic('vec4').element_type(0).equals(Shade.Types.float_t), "element_type");
     ok(Shade.vec(Shade.vec(3, 4), 0).type.element_type(2).equals(Shade.Types.float_t), "element_type");
     raises(function() {
         Shade.vec(Shade.vec(3, 4), true);
@@ -77,8 +77,6 @@ test("Shade types", function() {
     }, function(e) {
         return e === "type error on equal: could not find appropriate type match for (float, int)";
     }, "comparison type check");
-
-    
 });
 
 test("Shade expressions", function() {
@@ -141,7 +139,7 @@ test("Shade compilation", function() {
               " uniform vec4 _unique_name_1;\n" +
               " vec4 glsl_name_8 ;\n" +
               " uniform float _unique_name_2;\n" +
-              " vec4 glsl_name_7 (void) {\n" +
+              " vec4 glsl_name_7 ( ) {\n" +
               "     return  ((_unique_name_2 > float(0.0))?cos ( glsl_name_8 ):sin ( glsl_name_8 )) ;\n" +
               "}\n" +
               " void main() {\n" +
@@ -166,6 +164,43 @@ test("Shade compilation", function() {
             gl_FragColor: Shade.vec(1,1,1,1)
         });
     })();
+});
+
+test("Shade structs", function() {
+    ok(Shade.struct({foo: Shade.vec(1,0,0,1), bar: true }));
+    var v1 = Shade.make({foo: Shade.vec(1,0,0,1), bar: true }),
+        v2 = Shade.struct({foo: Shade.vec(1,0,0,1), bar: true }),
+        v3 = {foo: vec.make([1, 0, 0, 1]), bar: true},
+        v4 = v2.field("foo"),
+        v5 = v2("foo"),
+        v6 = v2.foo;
+    // this syntax only works for some fields. Check your Javascritp console for warnings
+    // if things appear not to be working
+
+    ok(_.isEqual(v1.constant_value(), v2.constant_value()));
+    ok(_.isEqual(v2.constant_value(), v3));    
+    ok(_.isEqual(v4.constant_value(), v3.foo));
+    ok(_.isEqual(v4.constant_value(), v5.constant_value()));
+    ok(_.isEqual(v4.constant_value(), v6.constant_value()));
+
+    var p1 = Shade.parameter("float", 1.0);
+    var p2 = Shade.vec(1,0,0,1);
+    var s = Shade.struct({ f: p1, v: p2 });
+    
+    var cc = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE);
+    cc.compile(s("f").mul(s("v")));
+    equal(cc.source(),
+          "struct type_235 {\n" +
+          "      float f ;\n" +
+          "      vec4 v ;\n" +
+          " };\n" +
+          " precision highp float;\n" +
+          " uniform float _unique_name_3;\n" +
+          " type_235 glsl_name_10 ;\n" +
+          " void main() {\n" +
+          "      glsl_name_10 = type_235 ( _unique_name_3, vec4(float(1.0), float(0.0), float(0.0), float(1.0)) ) ;\n" +
+          "      ((glsl_name_10.f) * (glsl_name_10.v)) ;\n" +
+          " }\n");
 });
 
 test("Shade constant folding", function() {
@@ -341,6 +376,14 @@ test("Shade constant folding", function() {
                  vec.make([1,1,1,1])),
        "ifelse folding");
 
+    equal(Shade.sub(Shade.constant(1, Shade.Types.int_t),
+                    Shade.constant(2, Shade.Types.int_t)).constant_value(), -1,
+          "int constant folding");
+
+    equal(Shade.add(Shade.constant(1, Shade.Types.int_t),
+                    Shade.constant(2, Shade.Types.int_t)).constant_value(), 3,
+          "int constant folding");
+
     equal(Shade.or(true).constant_value(), true, "single logical value");
     equal(Shade(true).discard_if(false).is_constant(), true, "discard constant folding");
     equal(Shade(false).discard_if(false).constant_value(), false, "discard constant folding");
@@ -452,6 +495,40 @@ test("Shade constant folding", function() {
         var exp = Shade.array([Shade.vec(1,1), Shade.vec(1,1)]).at(nonconst).sub(Shade.vec(2,3));
         ok(exp.element(0));
     })();
+
+    //////////////////////////////////////////////////////////////////////////
+    // semantics of Shade.add(v1,v2,v3,...)
+
+    for (var i=0; i<10; ++i) {
+        (function() {
+            var lst = [];
+            var n = (~~(Math.exp(-Math.random()) * 5)) + 1;
+            for (var i=0; i<n; ++i) {
+                lst.push(~~(Math.random() * 10 - 5));
+            }
+            var exp = Shade.add.apply(this, lst);
+            ok(Math.abs(exp.constant_value() -
+                        _.reduce(lst, function(a, b) { return a + b; })) < 1e-4,
+               "Shade.add");
+        })();
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    // semantics of Shade.sub(v1,v2,v3,...)
+
+    for (i=0; i<10; ++i) {
+        (function() {
+            var lst = [];
+            var n = (~~(Math.exp(-Math.random()) * 5)) + 1;
+            for (var i=0; i<n; ++i) {
+                lst.push(~~(Math.random() * 10 - 5));
+            }
+            var exp = Shade.sub.apply(this, lst);
+            ok(Math.abs(exp.constant_value() -
+                        _.reduce(lst, function(a, b) { return a - b; })) < 1e-4,
+               "Shade.sub");
+        })();
+    }
 });
 
 test("Shade optimizer", function() {
@@ -546,12 +623,34 @@ test("Shade programs", function() {
 
 test("Shade loops", function() {
     var from = Shade.as_int(0), to = Shade.as_int(10);
-    var avg = Shade.range(from, to).average();
-//     Shade.debug = true;
+    var range = Shade.range(from, to);
+
+    Shade.debug = true;
+
+    ok(Shade.program({
+        color: Shade.vec(1,1,1,1),
+        position: Shade.vec(1,1,1,1),
+        point_size: range.sum().as_float()
+    }), "program with sum");
+    ok(Shade.program({
+        color: Shade.vec(1,1,1,1),
+        position: Shade.vec(1,1,1,1),
+        point_size: range.average()
+    }), "program with average");
+
+    ok(Shade.program({
+        color: Shade.vec(1,1,1,1),
+        position: Shade.vec(1,1,1,1),
+        point_size: range
+            .transform(function (x) { return x.as_float(); })
+            .fold(function(i, j) { return Shade.min(i, j); }, 1000)
+                  // Shade.constant(1000).as_int())
+    }), "program with fold");
+
     var p = Shade.program({
         color: Shade.vec(1,1,1,1),
         position: Shade.vec(1,1,1,1),
-        point_size: avg
+        point_size: Shade.range(from, to).average()
     });
     ok(p, "Basic looping program");
 });

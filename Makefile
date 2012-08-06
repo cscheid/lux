@@ -49,6 +49,7 @@ facet.js:					\
 	src/facet/program.js			\
 	src/facet/render_buffer.js		\
 	src/facet/set_context.js		\
+	src/facet/on_context.js			\
 	src/facet/texture.js			\
 	src/facet/unprojector.js		\
 	src/facet/net/_begin.js			\
@@ -90,12 +91,14 @@ facet.js:					\
 	src/shade/types/array.js		\
 	src/shade/types/function_t.js		\
 	src/shade/types/simple_types.js		\
+	src/shade/types/struct_t.js		\
 	src/shade/compilation_context.js	\
 	src/shade/exp.js			\
 	src/shade/value_exp.js			\
 	src/shade/swizzle.js			\
 	src/shade/constant.js			\
 	src/shade/array.js			\
+	src/shade/struct.js			\
 	src/shade/set.js			\
 	src/shade/parameter.js			\
 	src/shade/sampler2D_from_texture.js	\

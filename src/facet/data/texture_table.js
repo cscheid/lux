@@ -1,7 +1,5 @@
 Facet.Data.texture_table = function(table)
 {
-    var ctx = Facet._globals.ctx;
-
     var elements = [];
     for (var row_ix = 0; row_ix < table.data.length; ++row_ix) {
         var row = table.data[row_ix];

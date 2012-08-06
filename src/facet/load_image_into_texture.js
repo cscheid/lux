@@ -12,7 +12,8 @@ Facet.load_image_into_texture = function(opts)
     var y_offset = opts.y_offset;
 
     function image_handler(image) {
-        var ctx = Facet._globals.ctx;
+        var ctx = texture._ctx;
+        Facet.set_context(texture._ctx);
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
         ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
         ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset,
@@ -23,7 +24,8 @@ Facet.load_image_into_texture = function(opts)
 
     function buffer_handler()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = texture._ctx;
+        Facet.set_context(texture._ctx);
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
         ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
         ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset,

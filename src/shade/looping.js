@@ -1,107 +1,162 @@
 /*
- A range expression represents a finite stream of values.
+ A range expression represents a finite stream of values. 
 
- It is meant to be an abstraction over looping.
+ It is meant
+ to be an abstraction over looping, and provides a few ways to combine values.
 
- a range object should have the following fields:
- 
- - begin, the first value of the stream, which must be of type int.
- 
- - end, the first value past the end of the stream, which also must be of type int.
- 
- - value, a function which takes an Shade expression of type integer
-   and returns the value of the stream at that particular index.
-   **This function must not have side effects!** Most importantly, it
-   must not leak the reference to the passed parameter. Bad things
-   will happen if it does.
+ Currently the only operations supported are plain stream
+ transformations (like "map") and fold (like "reduce").
 
- With range expressions, we can build safe equivalents of loops
+ It should be possible to add, at the very least, "filter", "scan", and "firstWhich".
+
+ nb: nested loops will require deep changes to the infrastructure, and
+ won't be supported for a while.
+
+ In general, looping in general is pretty unstable.
 */
 
-Shade.variable = function(type)
+(function() {
+
+Shade.loop_variable = function(type, force_no_declare)
 {
-    return Shade._create_concrete_exp( {
+    return Shade._create_concrete_exp({
         parents: [],
         type: type,
+        expression_type: "loop_variable",
         evaluate: function() {
             return this.glsl_name;
         },
-        compile: function() {}
+        compile: function() {
+            if (_.isUndefined(force_no_declare))
+                this.scope.add_declaration(type.declare(this.glsl_name));
+        },
+        loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
+            return [this];
+        })
     });
 };
 
-Shade.range = function(range_begin, range_end)
+function BasicRange(range_begin, range_end, value)
 {
-    var beg = Shade.make(range_begin).as_int(),
-        end = Shade.make(range_end).as_int();
-//     console.log(beg, beg.type.repr());
-//     console.log(end, end.type.repr());
-    return {
-        begin: beg,
-        end: end,
-        value: function(index) {
-            return index;
-        },
-
-        // this returns a shade expression which, when evaluated, returns
-        // the average of the values in the range.
-        average: function() {
-            var index_variable = Shade.variable(Shade.Types.int_t);
-            var stream_value = this.value(index_variable);
-            var stream_type = stream_value.type;
-            var average_type;
-            var accumulator_value = Shade.variable(stream_type);
-            if (stream_value.type.equals(Shade.Types.int_t)) {
-                average_type = Shade.Types.float_t;
-            } else if (_.any([Shade.Types.float_t,
-                              Shade.Types.vec2, Shade.Types.vec3, Shade.Types.vec4, 
-                              Shade.Types.mat2, Shade.Types.mat3, Shade.Types.mat4],
-                             function(t) { return t.equals(stream_type); })) {
-                average_type = stream_type;
-            } else
-                throw ("Type error, average can't support range of type " +
-                       stream_type.repr());
-
-            return Shade._create_concrete_exp({
-                parents: [this.begin, this.end, 
-                          index_variable, accumulator_value, stream_value],
-                type: average_type,
-                evaluate: function() {
-                    return this.glsl_name + "()";
-                },
-                element: Shade.memoize_on_field("_element", function(i) {
-                    if (this.type.is_pod()) {
-                        if (i === 0)
-                            return this;
-                        else
-                            throw this.type.repr() + " is an atomic type";
-                    } else
-                        return this.at(i);
-                }),
-                compile: function(ctx) {
-                    var beg = this.parents[0];
-                    var end = this.parents[1];
-                    var index_variable = this.parents[2];
-                    var accumulator_value = this.parents[3];
-                    var stream_value = this.parents[4];
-                    ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
-                    ctx.strings.push("    ", accumulator_value.type.declare(accumulator_value.glsl_name), "=", 
-                      accumulator_value.type.zero, ";\n");
-                    ctx.strings.push("    for (int",
-                      index_variable.evaluate(),"=",beg.evaluate(),";",
-                      index_variable.evaluate(),"<",end.evaluate(),";",
-                      "++",index_variable.evaluate(),") {\n");
-                    ctx.strings.push("        ",
-                      accumulator_value.evaluate(),"=",
-                      accumulator_value.evaluate(),"+",
-                      stream_value.evaluate(),";\n");
-                    ctx.strings.push("    }\n");
-                    ctx.strings.push("    return", 
-                                     this.type.repr(), "(", accumulator_value.evaluate(), ")/float(",
-                      end.evaluate(), "-", beg.evaluate(), ");\n");
-                    ctx.strings.push("}\n");
-                }
-            });
-        }
-    };
+    this.begin = Shade.make(range_begin).as_int();
+    this.end = Shade.make(range_end).as_int();
+    this.value = value || function(index) { return index; };
 };
+
+Shade.range = function(range_begin, range_end, value)
+{
+    return new BasicRange(range_begin, range_end, value);
+};
+
+BasicRange.prototype.transform = function(xform)
+{
+    var that = this;
+    return Shade.range(
+        this.begin,
+        this.end, 
+        function (i) {
+            var input = that.value(i);
+            var result = xform(input);
+            return result;
+        });
+};
+
+BasicRange.prototype.fold = Shade(function(operation, starting_value)
+{
+    var index_variable = Shade.loop_variable(Shade.Types.int_t, true);
+    var accumulator_value = Shade.loop_variable(starting_value.type, true);
+
+    var element_value = this.value(index_variable);
+    var result_type = accumulator_value.type;
+    var operation_value = operation(accumulator_value, element_value);
+
+    var result = Shade._create_concrete_exp({
+        has_scope: true,
+        patch_scope: function() {
+            var index_variable = this.parents[2];
+            var accumulator_value = this.parents[3];
+            var element_value = this.parents[4];
+            var that = this;
+
+            _.each(element_value.sorted_sub_expressions(), function(node) {
+                if (_.any(node.loop_variable_dependencies(), function(dep) {
+                    return dep.glsl_name === index_variable.glsl_name ||
+                        dep.glsl_name === accumulator_value.glsl_name;
+                })) {
+                    node.scope = that.scope;
+                };
+            });
+        },
+        parents: [this.begin, this.end, 
+                  index_variable, accumulator_value, element_value,
+                  starting_value, operation_value],
+        type: result_type,
+        element: Shade.memoize_on_field("_element", function(i) {
+            if (this.type.is_pod()) {
+                if (i === 0)
+                    return this;
+                else
+                    throw this.type.repr() + " is an atomic type";
+            } else
+                return this.at(i);
+        }),
+        loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
+            return [];
+        }),
+        compile: function(ctx) {
+            var beg = this.parents[0];
+            var end = this.parents[1];
+            var index_variable = this.parents[2];
+            var accumulator_value = this.parents[3];
+            var element_value = this.parents[4];
+            var starting_value = this.parents[5];
+            var operation_value = this.parents[6];
+
+            ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
+            ctx.strings.push("    ",accumulator_value.type.repr(), accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
+
+            ctx.strings.push("    for (int",
+                             index_variable.evaluate(),"=",beg.evaluate(),";",
+                             index_variable.evaluate(),"<",end.evaluate(),";",
+                             "++",index_variable.evaluate(),") {\n");
+            _.each(this.scope.declarations, function(exp) {
+                ctx.strings.push("        ", exp, ";\n");
+            });
+            _.each(this.scope.initializations, function(exp) {
+                ctx.strings.push("        ", exp, ";\n");
+            });
+            ctx.strings.push("        ",
+                             accumulator_value.evaluate(),"=",
+                             operation_value.evaluate() + ";\n");
+            ctx.strings.push("    }\n");
+            ctx.strings.push("    return", 
+                             this.type.repr(), "(", accumulator_value.evaluate(), ");\n");
+            ctx.strings.push("}\n");
+        }
+    });
+
+    return result;
+});
+
+BasicRange.prototype.sum = function()
+{
+    var this_begin_v = this.value(this.begin);
+    return this.fold(Shade.add, this_begin_v.type.zero);
+};
+
+BasicRange.prototype.max = function()
+{
+    var this_begin_v = this.value(this.begin);
+    return this.fold(Shade.max, this_begin_v.type.minus_infinity);
+};
+
+BasicRange.prototype.average = function()
+{
+    var s = this.sum();
+    if (s.type.equals(Shade.Types.int_t)) {
+        s = s.as_float();
+    }
+    return s.div(this.end.sub(this.begin).as_float());
+};
+
+})();

@@ -16,6 +16,8 @@
 
 Facet.Net.ajax = function(url, handler)
 {
+    var current_context = Facet._globals.ctx;
+
     if (facet_typeOf(url) === "array")
         return handle_many(url, handler, Facet.Net.ajax);
 
@@ -26,6 +28,7 @@ Facet.Net.ajax = function(url, handler)
     var ready = false;
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200 && !ready) {
+            Facet.set_context(current_context);
             handler(xhr.response, url);
             ready = true;
         }

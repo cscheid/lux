@@ -7,3 +7,5 @@ node_modules
 *.aux
 *.log
 *.blg
+demos/beauty_of_roots/data/*_large*
+demos/beauty_of_roots/data/*_small*
