@@ -37,6 +37,17 @@ Shade.Types.struct = function(fields) {
     });
     result.internal_type_name = 'type_' + result.guid;
     _register_struct(result);
+
+    _.each(["zero", "infinity", "minus_infinity"], function(value) {
+        if (_.all(fields, function(v, k) { return !_.isUndefined(v[value]); })) {
+            var c = {};
+            _.each(fields, function(v, k) {
+                c[k] = v[value];
+            });
+            result[value] = Shade.struct(c);
+        }
+    });
+
     return result;
 };
 
