@@ -24,12 +24,17 @@ Facet.Marks.lines = function(opts)
         : Shade.vec(opts.x(primitive_index, vertex_in_primitive),
                     opts.y(primitive_index, vertex_in_primitive),
                     opts.z(primitive_index, vertex_in_primitive));
-    return Facet.bake({
-        type: "lines",
-        elements: vertex_index,
-        mode: opts.mode
-    }, {
+
+    var appearance = {
+        mode: opts.mode,
         position: position,
         color: opts.color(primitive_index, vertex_in_primitive)
-    });
+    };
+    if (opts.line_width) {
+        appearance.line_width = opts.line_width;
+    }
+    return Facet.bake({
+        type: "lines",
+        elements: vertex_index
+    }, appearance);
 };

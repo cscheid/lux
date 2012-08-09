@@ -49,13 +49,13 @@ function create_parallel_coords_batch()
     return Facet.Marks.lines({
         position: position,
         elements: table.n_rows * (table.n_cols - 1),
-        color: color_from_index
+        color: color_from_index,
+        line_width: 3
     });
 }
 
 function draw_it()
 {
-    gl.lineWidth(2);
     pc_batch.draw();
 }
 
@@ -66,7 +66,7 @@ $().ready(function () {
         attributes: { alpha: true,
                       depth: true
                     },
-        clearColor: [0, 0, 0, 0.2]
+        clearColor: [1, 1, 1, 1]
     });
     pc_batch = create_parallel_coords_batch();
     var start = new Date().getTime();

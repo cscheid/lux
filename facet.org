@@ -5,6 +5,7 @@ The Big List of Facet TODOs
 ** The fractal flame demo simply doesn't work.
 * BUGS
 ** Documentation fixes
+** FIXME inconsistency translation facet shade
 * Optimizer
 ** TODO Common subexpression elimination
     
