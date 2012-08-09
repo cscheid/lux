@@ -36,16 +36,18 @@ Shade.loop_variable = function(type, force_no_declare)
     });
 };
 
-function BasicRange(range_begin, range_end, value)
+function BasicRange(range_begin, range_end, value, condition, termination)
 {
     this.begin = Shade.make(range_begin).as_int();
     this.end = Shade.make(range_end).as_int();
     this.value = value || function(index) { return index; };
+    this.condition = condition || function() { return Shade.make(true); };
+    this.termination = termination || function() { return Shade.make(false); };
 };
 
-Shade.range = function(range_begin, range_end, value)
+Shade.range = function(range_begin, range_end, value, condition, termination)
 {
-    return new BasicRange(range_begin, range_end, value);
+    return new BasicRange(range_begin, range_end, value, condition, termination);
 };
 
 BasicRange.prototype.transform = function(xform)
@@ -56,17 +58,55 @@ BasicRange.prototype.transform = function(xform)
         this.end, 
         function (i) {
             var input = that.value(i);
-            var result = xform(input);
+            var result = xform(input, i);
             return result;
-        });
+        },
+        this.condition,
+        this.termination
+    );
+};
+
+BasicRange.prototype.filter = function(new_condition)
+{
+    var that = this;
+    return Shade.range(
+        this.begin,
+        this.end,
+        this.value,
+        function (i) {
+            var old_condition = that.condition(i);
+            var input = that.value(i);
+            var result = Shade.and(old_condition, new_condition(input, i));
+            return result;
+        },
+        this.termination
+    );
+};
+
+BasicRange.prototype.break_if = function(new_termination)
+{
+    var that = this;
+    return Shade.range(
+        this.begin,
+        this.end,
+        this.value,
+        this.condition,
+        function (i) {
+            var old_termination = that.termination(i);
+            var input = that.value(i);
+            var result = Shade.or(old_termination, new_termination(input, i));
+            return result;
+        }
+    );
 };
 
 BasicRange.prototype.fold = Shade(function(operation, starting_value)
 {
     var index_variable = Shade.loop_variable(Shade.Types.int_t, true);
     var accumulator_value = Shade.loop_variable(starting_value.type, true);
-
     var element_value = this.value(index_variable);
+    var condition_value = this.condition(index_variable);
+    var termination_value = this.termination(index_variable);
     var result_type = accumulator_value.type;
     var operation_value = operation(accumulator_value, element_value);
 
@@ -76,6 +116,8 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             var index_variable = this.parents[2];
             var accumulator_value = this.parents[3];
             var element_value = this.parents[4];
+            var condition_value = this.parents[7];
+            var termination_value = this.parents[8];
             var that = this;
 
             _.each(element_value.sorted_sub_expressions(), function(node) {
@@ -86,10 +128,28 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                     node.scope = that.scope;
                 };
             });
+            _.each(condition_value.sorted_sub_expressions(), function(node) {
+                if (_.any(node.loop_variable_dependencies(), function(dep) {
+                    return dep.glsl_name === index_variable.glsl_name ||
+                        dep.glsl_name === accumulator_value.glsl_name;
+                })) {
+                    node.scope = that.scope;
+                };
+            });
+            _.each(termination_value.sorted_sub_expressions(), function(node) {
+                if (_.any(node.loop_variable_dependencies(), function(dep) {
+                    return dep.glsl_name === index_variable.glsl_name ||
+                        dep.glsl_name === accumulator_value.glsl_name;
+                })) {
+                    node.scope = that.scope;
+                };
+            });
         },
         parents: [this.begin, this.end, 
                   index_variable, accumulator_value, element_value,
-                  starting_value, operation_value],
+                  starting_value, operation_value,
+                  condition_value, termination_value
+                 ],
         type: result_type,
         element: Shade.memoize_on_field("_element", function(i) {
             if (this.type.is_pod()) {
@@ -111,6 +171,10 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             var element_value = this.parents[4];
             var starting_value = this.parents[5];
             var operation_value = this.parents[6];
+            var condition = this.parents[7];
+            var termination = this.parents[8];
+            var must_evaluate_condition = !(condition.is_constant() && (condition.constant_value() === true));
+            var must_evaluate_termination = !(termination.is_constant() && (termination.constant_value() === false));
 
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
             ctx.strings.push("    ",accumulator_value.type.repr(), accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
@@ -119,24 +183,36 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                              index_variable.evaluate(),"=",beg.evaluate(),";",
                              index_variable.evaluate(),"<",end.evaluate(),";",
                              "++",index_variable.evaluate(),") {\n");
+
             _.each(this.scope.declarations, function(exp) {
                 ctx.strings.push("        ", exp, ";\n");
             });
+            if (must_evaluate_condition) {
+                ctx.strings.push("      if (", condition.evaluate(), ") {\n");
+            }
             _.each(this.scope.initializations, function(exp) {
                 ctx.strings.push("        ", exp, ";\n");
             });
             ctx.strings.push("        ",
                              accumulator_value.evaluate(),"=",
                              operation_value.evaluate() + ";\n");
+            if (must_evaluate_termination) {
+                termination.debug_print();
+                ctx.strings.push("        if (", termination.evaluate(), ") break;\n");
+            }
+            if (must_evaluate_condition) {
+                ctx.strings.push("      }\n");
+            }
             ctx.strings.push("    }\n");
-            ctx.strings.push("    return", 
-                             this.type.repr(), "(", accumulator_value.evaluate(), ");\n");
+            ctx.strings.push("    return", this.type.repr(), "(", accumulator_value.evaluate(), ");\n");
             ctx.strings.push("}\n");
         }
     });
 
     return result;
 });
+
+//////////////////////////////////////////////////////////////////////////////
 
 BasicRange.prototype.sum = function()
 {
