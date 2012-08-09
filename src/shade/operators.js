@@ -11,8 +11,17 @@ var operator = function(exp1, exp2,
         type: resulting_type,
         expression_type: "operator" + operator_name,
         value: function () {
-            return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
-                this.parents[1].evaluate() + ")";
+            var p1 = this.parents[0], p2 = this.parents[1];
+            if (this.type.is_struct()) {
+                return "(" + this.type.repr() + "(" +
+                    _.map(this.type.fields, function (v,k) {
+                        return p1.field(k).evaluate() + " " + operator_name + " " +
+                            p2.field(k).evaluate();
+                    }).join(", ") + "))";
+            } else {
+                return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
+                    this.parents[1].evaluate() + ")";
+            }
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return constant_evaluator(this);
@@ -64,6 +73,20 @@ Shade.add = function() {
             if (t1.equals(type_list[i][0]) &&
                 t2.equals(type_list[i][1]))
                 return type_list[i][2];
+
+        // if t1 and t2 are the same struct and all fields admit
+        // addition, then a+b is field-wise a+b
+        if (t1.is_struct() && t2.is_struct() && t1.equals(t2) &&
+            _.all(t1.fields, function(v, k) {
+                try {
+                    add_type_resolver(v, v);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            })) {
+            return t1;
+        }
         throw ("type mismatch on add: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
@@ -90,8 +113,18 @@ Shade.add = function() {
             return vt.map(v2, function(x) {
                 return v1 + x;
             });
-        return vt.plus(v1, v2);
-    }
+        if (vt) {
+            return vt.plus(v1, v2);
+        } else {
+            if (!exp1.type.is_struct())
+                throw "internal error, was expecting a struct here";
+            var s = {};
+            _.each(v1, function(v, k) {
+                s[k] = evaluator(Shade.add(exp1.field(k), exp2.field(k)));
+            });
+            return s;
+        }
+    };
     function element_evaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
         var v1, v2;
@@ -155,6 +188,19 @@ Shade.sub = function() {
             if (t1.equals(type_list[i][0]) &&
                 t2.equals(type_list[i][1]))
                 return type_list[i][2];
+        // if t1 and t2 are the same struct and all fields admit
+        // subtraction, then a-b is field-wise a-b
+        if (t1.is_struct() && t2.is_struct() && t1.equals(t2) &&
+            _.all(t1.fields, function(v, k) {
+                try {
+                    sub_type_resolver(v, v);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            })) {
+            return t1;
+        }
         throw ("type mismatch on sub: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
