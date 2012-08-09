@@ -201,6 +201,20 @@ test("Shade structs", function() {
           "      glsl_name_10 = type_235 ( _unique_name_3, vec4(float(1.0), float(0.0), float(0.0), float(1.0)) ) ;\n" +
           "      ((glsl_name_10.f) * (glsl_name_10.v)) ;\n" +
           " }\n");
+
+    ok(_.isEqual(Shade.Types.struct({foo: Shade.Types.vec4, bar: Shade.Types.vec4}).zero.constant_value(),
+                 {foo: vec.make([0,0,0,0]), bar: vec.make([0,0,0,0])}));
+
+    ok(_.isEqual(Shade.add(Shade.struct({foo: Shade.vec(1,2,3,4), bar: Shade.vec(4,3,2,1)}),
+                           Shade.struct({bar: Shade.vec(1,2,3,4), foo: Shade.vec(4,3,2,1)})).constant_value(),
+                 Shade.struct({foo: Shade.vec(5,5,5,5), bar: Shade.vec(5,5,5,5)}).constant_value()));
+
+    var cc2 = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE);
+    cc2.compile(s.add(s));
+    console.log("BEFORE!!");
+    console.log(cc2.source());
+    console.log("AFTER!!");
+
 });
 
 test("Shade constant folding", function() {
