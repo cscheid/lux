@@ -23,7 +23,7 @@ var struct_key = function(obj) {
             return "[" + key + ":" + value.internal_type_name + "]";
         }
         return "[" + key + ":" + value.repr() + "]";
-    }).join("");
+    }).sort().join("");
 };
 
 Shade.Types.struct = function(fields) {
