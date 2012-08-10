@@ -12,6 +12,8 @@
 //    Shade.constant(2, vec.make([1, 2]));
 // - a GLSL matrix of dimensions 2x2, 3x3, 4x4 (Facet currently does not support GLSL rectangular matrices):
 //    Shade.constant(2, mat.make([1, 0, 0, 1]));
+// - an array
+// - a struct
 
 Shade.constant = function(v, type)
 {
@@ -138,8 +140,10 @@ Shade.constant = function(v, type)
                 + type.repr();
         }
         return constant_tuple_fun(computed_t, v);
+    } else if (type.is_struct()) {
+        return Shade.struct(v);
     } else {
-        throw "type error: constant should be bool, number, vector, matrix or array. got " + t
+        throw "type error: constant should be bool, number, vector, matrix, array or struct. got " + t
             + " instead";
     }
     throw "internal error: facet_constant_type returned bogus value";

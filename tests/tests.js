@@ -172,16 +172,12 @@ test("Shade structs", function() {
         v2 = Shade.struct({foo: Shade.vec(1,0,0,1), bar: true }),
         v3 = {foo: vec.make([1, 0, 0, 1]), bar: true},
         v4 = v2.field("foo"),
-        v5 = v2("foo"),
-        v6 = v2.foo;
-    // this syntax only works for some fields. Check your Javascritp console for warnings
-    // if things appear not to be working
+        v5 = v2("foo");
 
     ok(_.isEqual(v1.constant_value(), v2.constant_value()));
     ok(_.isEqual(v2.constant_value(), v3));    
     ok(_.isEqual(v4.constant_value(), v3.foo));
     ok(_.isEqual(v4.constant_value(), v5.constant_value()));
-    ok(_.isEqual(v4.constant_value(), v6.constant_value()));
 
     var p1 = Shade.parameter("float", 1.0);
     var p2 = Shade.vec(1,0,0,1);
@@ -209,12 +205,24 @@ test("Shade structs", function() {
                            Shade.struct({bar: Shade.vec(1,2,3,4), foo: Shade.vec(4,3,2,1)})).constant_value(),
                  Shade.struct({foo: Shade.vec(5,5,5,5), bar: Shade.vec(5,5,5,5)}).constant_value()));
 
-    var cc2 = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE);
-    cc2.compile(s.add(s));
-    console.log("BEFORE!!");
-    console.log(cc2.source());
-    console.log("AFTER!!");
+    // var cc2 = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE);
+    // cc2.compile(s.add(s));
+    // console.log("BEFORE!!");
+    // console.log(cc2.source());
+    // console.log("AFTER!!");
 
+    // test structs created with different field order in javascript objects:
+
+    var s1 = Shade.struct({foo: Shade.vec(1,2,3,4), bar: Shade.vec(1,2)});
+    var s2 = Shade.struct({bar: Shade.vec(1,2), foo: Shade.vec(1,2,3,4)});
+
+    equal(s1.type.repr(), s2.type.repr());
+    ok(_.isEqual(s1.parents[0].constant_value(), s2.parents[0].constant_value()));
+
+    var s3 = Shade.struct({foo: Shade(0).as_int(),
+                           bar: Shade(0)});
+    var s4 = Shade.constant(s3.constant_value(), s3.type);
+    equal(s3.type.repr(), s4.type.repr(), "constant_value() for structs keeps type information");
 });
 
 test("Shade constant folding", function() {

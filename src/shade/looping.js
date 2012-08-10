@@ -217,6 +217,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
 BasicRange.prototype.sum = function()
 {
     var this_begin_v = this.value(this.begin);
+
     return this.fold(Shade.add, this_begin_v.type.zero);
 };
 
@@ -228,11 +229,18 @@ BasicRange.prototype.max = function()
 
 BasicRange.prototype.average = function()
 {
-    var s = this.sum();
-    if (s.type.equals(Shade.Types.int_t)) {
-        s = s.as_float();
+    var xf = this.transform(function(v) {
+        return Shade({
+            s1: 1,
+            sx: v
+        });
+    });
+    var sum_result = xf.sum();
+    var sx = sum_result("sx");
+    if (sx.type.equals(Shade.Types.int_t)) {
+        sx = sx.as_float();
     }
-    return s.div(this.end.sub(this.begin).as_float());
+    return sx.div(sum_result("s1"));
 };
 
 })();

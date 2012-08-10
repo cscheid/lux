@@ -17,7 +17,7 @@ var struct_key = function(obj) {
             throw "function types not allowed inside struct";
         }
         if (value.is_sampler()) {
-            throw "function types not allowed inside struct";
+            throw "sampler types not allowed inside struct";
         }
         if (value.is_struct()) {
             return "[" + key + ":" + value.internal_type_name + "]";
@@ -26,13 +26,30 @@ var struct_key = function(obj) {
     }).sort().join("");
 };
 
+function field_indices(obj) {
+    var lst = _.map(obj, function(value, key) {
+        return [key, value.repr()];
+    });
+    return lst.sort(function(v1, v2) {
+        if (v1[0] < v2[0]) return -1;
+        if (v1[0] > v2[0]) return 1;
+        if (v1[1] < v2[1]) return -1;
+        if (v1[1] > v2[1]) return 1;
+        return 0;
+    });
+};
+
 Shade.Types.struct = function(fields) {
     var key = struct_key(fields);
     var t = _structs[key];
     if (t) return t;
-
+    var field_index = {};
+    _.each(field_indices(fields), function(v, i) {
+        field_index[v[0]] = i;
+    });
     var result = Shade._create(Shade.Types.struct_t, {
         fields: fields,
+        field_index: field_index,
         _struct_key: key
     });
     result.internal_type_name = 'type_' + result.guid;

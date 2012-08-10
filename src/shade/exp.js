@@ -160,6 +160,9 @@ Shade.Exp = {
 
     // overload this to overload exp(foo)
     call_operator: function() {
+        if (this.type.is_struct()) {
+            return this.field(arguments[0]);
+        }
         return this.mul.apply(this, arguments);
     },
 
@@ -384,6 +387,32 @@ Shade.Exp = {
                 return x.element_constant_value(i);
             }),
             compile: function() {}
+        });
+    },
+    field: function(field_name) {
+        if (!this.type.is_struct()) {
+            throw "field() only valid on struct types";
+        }
+        var index = this.type.field_index[field_name];
+        if (_.isUndefined(index)) {
+            throw "field " + field_name + " not existent";
+        }
+
+        return Shade._create_concrete_value_exp({
+            parents: [this],
+            type: this.type.fields[field_name],
+            expression_type: "struct-accessor",
+            value: function() {
+                return "(" + this.parents[0].evaluate() + "." + field_name + ")";
+            },
+            constant_value: Shade.memoize_on_field("_constant_value", function() {
+                var struct_value = this.parents[0].constant_value();
+                return struct_value[field_name];
+            }),
+            is_constant: Shade.memoize_on_field("_is_constant", function() {
+                // this is conservative for many situations, but hey.
+                return this.parents[0].is_constant();
+            })
         });
     },
     _facet_expression: true, // used by facet_typeOf

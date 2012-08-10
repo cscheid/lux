@@ -10,7 +10,17 @@ Shade.struct = function(obj)
     _.each(ks, function(k, i) {
         t[k] = types[i];
     });
-    var struct_type = Shade.Types.struct(t);
+    var struct_type = Shade.Types.struct(t), new_vs = [], new_ks = [];
+
+    // javascript object order is arbitrary;
+    // make sure structs follow the type field order, which is unique
+    _.each(struct_type.field_index, function(index, key) {
+        var old_index = ks.indexOf(key);
+        new_vs[index] = vs[old_index];
+        new_ks[index] = key;
+    });
+    vs = new_vs;
+    ks = new_ks;
     
     var result = Shade._create_concrete_value_exp({
         parents: vs,
@@ -33,41 +43,18 @@ Shade.struct = function(obj)
             return result;
         }),
         field: function(field_name) {
-            var index = this.fields.indexOf(field_name);
-            if (index === -1) {
+            var index = this.type.field_index[field_name];
+            if (_.isUndefined(index)) {
                 throw "field " + field_name + " not existent";
-            };
+            }
 
             /* Since field_name is always an immediate string, 
              it will never need to be "computed" on a shader.            
-             This means its value can always be resolved in compile time and 
+             This means that in this case, its value can always
+             be resolved in compile time and 
              val(constructor(foo=bar).foo) is always val(bar).
-
-             Of course, if the above is true, then it means that most of the time
-             we should not need to see a GLSL struct in a Facet shader, and so
-             Shade structs appear to be mostly unnecessary.
-
-             But there is one specific case in which it helps, namely in ensuring
-             that assignment of structs values in looping variables is atomic.
-            }); */
-
-            /*
-
-            return Shade._create_concrete_value_exp({
-                parents: [this],
-                type: this.parents[index].type,
-                expression_type: "struct-accessor",
-                value: function() {
-                    return "(" + this.parents[0].evaluate() + "." + field_name + ")";
-                },
-                constant_value: Shade.memoize_on_field("_constant_value", function() {
-                    return this.parents[0].parents[index].constant_value();
-                }),
-                is_constant: Shade.memoize_on_field("_is_constant", function() {
-                    return this.parents[0].parents[index].is_constant();
-                })
-             
              */
+
             return this.parents[index];
         },
         call_operator: function(v) {
@@ -75,13 +62,13 @@ Shade.struct = function(obj)
         }
     });
 
-    _.each(ks, function(k) {
-        // I can't use _.has because result is actually a javascript function..
-        if (!_.isUndefined(result[k])) {
-            console.log("Warning: Field",k,"is reserved. JS struct notation (a.b) will not be usable");
-        } else
-            result[k] = result.field(k);
-    });
+    // _.each(ks, function(k) {
+    //     // I can't use _.has because result is actually a javascript function..
+    //     if (!_.isUndefined(result[k])) {
+    //         console.log("Warning: Field",k,"is reserved. JS struct notation (a.b) will not be usable");
+    //     } else
+    //         result[k] = result.field(k);
+    // });
     return result;
 };
 
