@@ -4042,7 +4042,7 @@ Facet.program = function(vs_src, fs_src)
             console.log(ctx.getShaderInfoLog(shader));
             console.log("Failing shader: ");
             console.log(str);
-            return null;
+            throw "failed compilation";
         }
         return shader;
     }
@@ -5638,8 +5638,21 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                 ctx.strings.push("      }\n");
             }
             ctx.strings.push("    }\n");
-            ctx.strings.push("    return", this.type.repr(), "(", accumulator_value.evaluate(), ");\n");
+            ctx.strings.push("    return", accumulator_value.evaluate(), ";\n");
             ctx.strings.push("}\n");
+
+            if (this.children_count > 1) {
+                this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
+                ctx.global_scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
+                ctx.global_scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.glsl_name + "()");
+            }
+        },
+        evaluate: function() {
+            if (this.children_count > 1) {
+                return this.precomputed_value_glsl_name;
+            } else {
+                return this.glsl_name + "()";
+            }
         }
     });
 
@@ -5651,6 +5664,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
 BasicRange.prototype.sum = function()
 {
     var this_begin_v = this.value(this.begin);
+
     return this.fold(Shade.add, this_begin_v.type.zero);
 };
 
@@ -5662,11 +5676,18 @@ BasicRange.prototype.max = function()
 
 BasicRange.prototype.average = function()
 {
-    var s = this.sum();
-    if (s.type.equals(Shade.Types.int_t)) {
-        s = s.as_float();
+    var xf = this.transform(function(v) {
+        return Shade({
+            s1: 1,
+            sx: v
+        });
+    });
+    var sum_result = xf.sum();
+    var sx = sum_result("sx");
+    if (sx.type.equals(Shade.Types.int_t)) {
+        sx = sx.as_float();
     }
-    return s.div(this.end.sub(this.begin).as_float());
+    return sx.div(sum_result("s1"));
 };
 
 })();
@@ -6090,7 +6111,7 @@ var struct_key = function(obj) {
             throw "function types not allowed inside struct";
         }
         if (value.is_sampler()) {
-            throw "function types not allowed inside struct";
+            throw "sampler types not allowed inside struct";
         }
         if (value.is_struct()) {
             return "[" + key + ":" + value.internal_type_name + "]";
@@ -6099,13 +6120,30 @@ var struct_key = function(obj) {
     }).sort().join("");
 };
 
+function field_indices(obj) {
+    var lst = _.map(obj, function(value, key) {
+        return [key, value.repr()];
+    });
+    return lst.sort(function(v1, v2) {
+        if (v1[0] < v2[0]) return -1;
+        if (v1[0] > v2[0]) return 1;
+        if (v1[1] < v2[1]) return -1;
+        if (v1[1] > v2[1]) return 1;
+        return 0;
+    });
+};
+
 Shade.Types.struct = function(fields) {
     var key = struct_key(fields);
     var t = _structs[key];
     if (t) return t;
-
+    var field_index = {};
+    _.each(field_indices(fields), function(v, i) {
+        field_index[v[0]] = i;
+    });
     var result = Shade._create(Shade.Types.struct_t, {
         fields: fields,
+        field_index: field_index,
         _struct_key: key
     });
     result.internal_type_name = 'type_' + result.guid;
@@ -6474,6 +6512,9 @@ Shade.Exp = {
 
     // overload this to overload exp(foo)
     call_operator: function() {
+        if (this.type.is_struct()) {
+            return this.field(arguments[0]);
+        }
         return this.mul.apply(this, arguments);
     },
 
@@ -6700,6 +6741,32 @@ Shade.Exp = {
             compile: function() {}
         });
     },
+    field: function(field_name) {
+        if (!this.type.is_struct()) {
+            throw "field() only valid on struct types";
+        }
+        var index = this.type.field_index[field_name];
+        if (_.isUndefined(index)) {
+            throw "field " + field_name + " not existent";
+        }
+
+        return Shade._create_concrete_value_exp({
+            parents: [this],
+            type: this.type.fields[field_name],
+            expression_type: "struct-accessor",
+            value: function() {
+                return "(" + this.parents[0].evaluate() + "." + field_name + ")";
+            },
+            constant_value: Shade.memoize_on_field("_constant_value", function() {
+                var struct_value = this.parents[0].constant_value();
+                return struct_value[field_name];
+            }),
+            is_constant: Shade.memoize_on_field("_is_constant", function() {
+                // this is conservative for many situations, but hey.
+                return this.parents[0].is_constant();
+            })
+        });
+    },
     _facet_expression: true, // used by facet_typeOf
     expression_type: "other",
     _type: "shade_expression",
@@ -6839,7 +6906,9 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         if (this._must_be_function_call) {
             return this.glsl_name + "(" + ")";
         }
-        if (this.children_count <= 1)
+        // this.children_count will be undefined if object was built
+        // during compilation (lifted operators for structs will do that, for example)
+        if (_.isUndefined(this.children_count) || this.children_count <= 1)
             return this.value();
         if (unconditional)
             return this.precomputed_value_glsl_name;
@@ -6934,6 +7003,8 @@ Shade.swizzle = function(exp, pattern)
 //    Shade.constant(2, vec.make([1, 2]));
 // - a GLSL matrix of dimensions 2x2, 3x3, 4x4 (Facet currently does not support GLSL rectangular matrices):
 //    Shade.constant(2, mat.make([1, 0, 0, 1]));
+// - an array
+// - a struct
 
 Shade.constant = function(v, type)
 {
@@ -7060,8 +7131,14 @@ Shade.constant = function(v, type)
                 + type.repr();
         }
         return constant_tuple_fun(computed_t, v);
+    } else if (type.is_struct()) {
+        var obj = {};
+        _.each(v, function(val, k) {
+            obj[k] = Shade.constant(val, type.fields[k]);
+        });
+        return Shade.struct(obj);
     } else {
-        throw "type error: constant should be bool, number, vector, matrix or array. got " + t
+        throw "type error: constant should be bool, number, vector, matrix, array or struct. got " + t
             + " instead";
     }
     throw "internal error: facet_constant_type returned bogus value";
@@ -7132,7 +7209,17 @@ Shade.struct = function(obj)
     _.each(ks, function(k, i) {
         t[k] = types[i];
     });
-    var struct_type = Shade.Types.struct(t);
+    var struct_type = Shade.Types.struct(t), new_vs = [], new_ks = [];
+
+    // javascript object order is arbitrary;
+    // make sure structs follow the type field order, which is unique
+    _.each(struct_type.field_index, function(index, key) {
+        var old_index = ks.indexOf(key);
+        new_vs[index] = vs[old_index];
+        new_ks[index] = key;
+    });
+    vs = new_vs;
+    ks = new_ks;
     
     var result = Shade._create_concrete_value_exp({
         parents: vs,
@@ -7155,41 +7242,18 @@ Shade.struct = function(obj)
             return result;
         }),
         field: function(field_name) {
-            var index = this.fields.indexOf(field_name);
-            if (index === -1) {
+            var index = this.type.field_index[field_name];
+            if (_.isUndefined(index)) {
                 throw "field " + field_name + " not existent";
-            };
+            }
 
             /* Since field_name is always an immediate string, 
              it will never need to be "computed" on a shader.            
-             This means its value can always be resolved in compile time and 
+             This means that in this case, its value can always
+             be resolved in compile time and 
              val(constructor(foo=bar).foo) is always val(bar).
-
-             Of course, if the above is true, then it means that most of the time
-             we should not need to see a GLSL struct in a Facet shader, and so
-             Shade structs appear to be mostly unnecessary.
-
-             But there is one specific case in which it helps, namely in ensuring
-             that assignment of structs values in looping variables is atomic.
-            }); */
-
-            /*
-
-            return Shade._create_concrete_value_exp({
-                parents: [this],
-                type: this.parents[index].type,
-                expression_type: "struct-accessor",
-                value: function() {
-                    return "(" + this.parents[0].evaluate() + "." + field_name + ")";
-                },
-                constant_value: Shade.memoize_on_field("_constant_value", function() {
-                    return this.parents[0].parents[index].constant_value();
-                }),
-                is_constant: Shade.memoize_on_field("_is_constant", function() {
-                    return this.parents[0].parents[index].is_constant();
-                })
-             
              */
+
             return this.parents[index];
         },
         call_operator: function(v) {
@@ -7197,13 +7261,13 @@ Shade.struct = function(obj)
         }
     });
 
-    _.each(ks, function(k) {
-        // I can't use _.has because result is actually a javascript function..
-        if (!_.isUndefined(result[k])) {
-            console.log("Warning: Field",k,"is reserved. JS struct notation (a.b) will not be usable");
-        } else
-            result[k] = result.field(k);
-    });
+    // _.each(ks, function(k) {
+    //     // I can't use _.has because result is actually a javascript function..
+    //     if (!_.isUndefined(result[k])) {
+    //         console.log("Warning: Field",k,"is reserved. JS struct notation (a.b) will not be usable");
+    //     } else
+    //         result[k] = result.field(k);
+    // });
     return result;
 };
 
@@ -9036,6 +9100,9 @@ Shade.Optimizer.replace_with_constant = function(exp)
 {
     var v = exp.constant_value();
     var result = Shade.constant(v, exp.type);
+    if (!exp.type.equals(result.type)) {
+        throw "Shade.constant internal error: type was not preserved";
+    }
     return result;
 };
 
