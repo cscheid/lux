@@ -47,6 +47,9 @@ Shade.Optimizer.replace_with_constant = function(exp)
 {
     var v = exp.constant_value();
     var result = Shade.constant(v, exp.type);
+    if (!exp.type.equals(result.type)) {
+        throw "Shade.constant internal error: type was not preserved";
+    }
     return result;
 };
 
