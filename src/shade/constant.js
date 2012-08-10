@@ -141,7 +141,11 @@ Shade.constant = function(v, type)
         }
         return constant_tuple_fun(computed_t, v);
     } else if (type.is_struct()) {
-        return Shade.struct(v);
+        var obj = {};
+        _.each(v, function(val, k) {
+            obj[k] = Shade.constant(val, type.fields[k]);
+        });
+        return Shade.struct(obj);
     } else {
         throw "type error: constant should be bool, number, vector, matrix, array or struct. got " + t
             + " instead";
