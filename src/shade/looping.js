@@ -242,18 +242,30 @@ BasicRange.prototype.max = function()
 
 BasicRange.prototype.average = function()
 {
-    var xf = this.transform(function(v) {
-        return Shade({
-            s1: 1,
-            sx: v
+    // special-case average when we know the total number of samples in advance
+    // 
+    // this is ugly, but how could I make it better?
+    var s = this.sum();
+    if ((s.parents[7].is_constant() &&
+         s.parents[7].constant_value() === true) &&
+        (s.parents[8].is_constant() &&
+         s.parents[8].constant_value() === false)) {
+        if (s.type.equals(Shade.Types.int_t)) s = s.as_float();
+        return s.div(this.end.sub(this.begin).as_float());
+    } else {
+        var xf = this.transform(function(v) {
+            return Shade({
+                s1: 1,
+                sx: v
+            });
         });
-    });
-    var sum_result = xf.sum();
-    var sx = sum_result("sx");
-    if (sx.type.equals(Shade.Types.int_t)) {
-        sx = sx.as_float();
+        var sum_result = xf.sum();
+        var sx = sum_result("sx");
+        if (sx.type.equals(Shade.Types.int_t)) {
+            sx = sx.as_float();
+        }
+        return sx.div(sum_result("s1"));
     }
-    return sx.div(sum_result("s1"));
 };
 
 })();
