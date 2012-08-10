@@ -204,8 +204,21 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                 ctx.strings.push("      }\n");
             }
             ctx.strings.push("    }\n");
-            ctx.strings.push("    return", this.type.repr(), "(", accumulator_value.evaluate(), ");\n");
+            ctx.strings.push("    return", accumulator_value.evaluate(), ";\n");
             ctx.strings.push("}\n");
+
+            if (this.children_count > 1) {
+                this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
+                ctx.global_scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
+                ctx.global_scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.glsl_name + "()");
+            }
+        },
+        evaluate: function() {
+            if (this.children_count > 1) {
+                return this.precomputed_value_glsl_name;
+            } else {
+                return this.glsl_name + "()";
+            }
         }
     });
 
