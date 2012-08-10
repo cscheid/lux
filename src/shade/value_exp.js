@@ -28,7 +28,9 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         if (this._must_be_function_call) {
             return this.glsl_name + "(" + ")";
         }
-        if (this.children_count <= 1)
+        // this.children_count will be undefined if object was built
+        // during compilation (lifted operators for structs will do that, for example)
+        if (_.isUndefined(this.children_count) || this.children_count <= 1)
             return this.value();
         if (unconditional)
             return this.precomputed_value_glsl_name;
