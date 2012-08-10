@@ -55,7 +55,7 @@ BasicRange.prototype.transform = function(xform)
     var that = this;
     return Shade.range(
         this.begin,
-        this.end, 
+        this.end,
         function (i) {
             var input = that.value(i);
             var result = xform(input, i);
@@ -73,10 +73,9 @@ BasicRange.prototype.filter = function(new_condition)
         this.begin,
         this.end,
         this.value,
-        function (i) {
-            var old_condition = that.condition(i);
-            var input = that.value(i);
-            var result = Shade.and(old_condition, new_condition(input, i));
+        function (value, i) {
+            var old_condition = that.condition(value, i);
+            var result = Shade.and(old_condition, new_condition(value, i));
             return result;
         },
         this.termination
@@ -91,10 +90,9 @@ BasicRange.prototype.break_if = function(new_termination)
         this.end,
         this.value,
         this.condition,
-        function (i) {
-            var old_termination = that.termination(i);
-            var input = that.value(i);
-            var result = Shade.or(old_termination, new_termination(input, i));
+        function (value, i) {
+            var old_termination = that.termination(value, i);
+            var result = Shade.or(old_termination, new_termination(value, i));
             return result;
         }
     );
@@ -105,8 +103,8 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
     var index_variable = Shade.loop_variable(Shade.Types.int_t, true);
     var accumulator_value = Shade.loop_variable(starting_value.type, true);
     var element_value = this.value(index_variable);
-    var condition_value = this.condition(index_variable);
-    var termination_value = this.termination(index_variable);
+    var condition_value = this.condition(element_value, index_variable);
+    var termination_value = this.termination(element_value, index_variable);
     var result_type = accumulator_value.type;
     var operation_value = operation(accumulator_value, element_value);
 
@@ -267,5 +265,35 @@ BasicRange.prototype.average = function()
         return sx.div(sum_result("s1"));
     }
 };
+
+Shade.locate = Shade(function(accessor, target, left, right, nsteps)
+{
+    function halfway(a, b) { return a.add(b).div(2).as_int(); };
+
+    nsteps = nsteps || right.sub(left).log2().ceil();
+    var base = Shade.range(0, nsteps);
+    var mid = halfway(left, right);
+    var initial_state = Shade({
+        l: left,
+        r: right,
+        m: mid,
+        vl: accessor(left),
+        vr: accessor(right),
+        vm: accessor(mid)
+    });
+    base.fold(function(state, i) {
+        var right_nm = halfway(state("m"), state("r"));
+        var left_nm = halfway(state("l"), state("m"));
+        return state("vm").lt(target).ifelse(Shade({
+            l: state("mid"),   vl: state("vm"),
+            m: right_nm,       vm: accessor(right_nm),
+            r: state("right"), vr: state("vr")
+        }), Shade({
+            l: state("left"),  vl: state("vl"),
+            m: right_nm,       vm: accessor(left_nm),
+            r: state("mid"),   vr: state("vm")
+        }));
+    }, initial_state);
+});
 
 })();

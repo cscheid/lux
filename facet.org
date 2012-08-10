@@ -1,8 +1,12 @@
 The Big List of Facet TODOs
 
 * Looping TODOs
-** The wedge demo flickers
-** The fractal flame demo simply doesn't work.
+** The wedge demo now flickers
+** The fractal flame demo simply doesn't work anymore.
+** is_constant() and constant_value() on looping fold
+The painful part here is that we will possibly have to redesign
+constant_value() to depend on bound variables, which will interact
+with the memoization infrastructure unless I am careful.
 * BUGS
 ** Documentation fixes
 ** FIXME inconsistency translation facet shade
