@@ -12,7 +12,7 @@ Facet.program = function(vs_src, fs_src)
             console.log(ctx.getShaderInfoLog(shader));
             console.log("Failing shader: ");
             console.log(str);
-            return null;
+            throw "failed compilation";
         }
         return shader;
     }
