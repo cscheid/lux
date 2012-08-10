@@ -6883,9 +6883,6 @@ Shade._create_concrete_exp = Shade._create_concrete(Shade.Exp, ["parents", "comp
  * is that the shader always evaluates potentially unused sides of a
  * conditional expression if they're is used in two or more places in
  * the shader.
- 
-   Currently this will not be a big issue, but when I have loops, I
-   won't want a loop to be evaluated unconditionally.
  */
 
 Shade.ValueExp = Shade._create(Shade.Exp, {
