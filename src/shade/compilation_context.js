@@ -88,8 +88,12 @@ Shade.CompilationContext = function(compile_type)
                 }
             });
             this.global_decls.push("struct", type.internal_type_name, "{\n");
-            _.each(type.fields, function(v, k) {
-                that.global_decls.push("    ",v.declare(k), ";\n");
+            var internal_decls = [];
+            _.each(type.field_index, function(i, k) {
+                internal_decls[i] = type.fields[k].declare(k);
+            });
+            _.each(internal_decls, function(v) {
+                that.global_decls.push("    ",v, ";\n");
             });
             this.global_decls.push("};\n");
             this.declared_struct_types[type.internal_type_name] = true;
