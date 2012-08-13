@@ -42,7 +42,10 @@ Facet.Marks.globe = function(opts)
         latitude_center: 38,
         zoom: 3,
         resolution_bias: 0,
-        patch_size: 10
+        patch_size: 10,
+        tile_pattern: function(zoom, x, y) {
+            return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
+        }
     });
     var model = Shade.parameter("mat4");
     var patch = spherical_mercator_patch(opts.patch_size);
@@ -334,7 +337,7 @@ Facet.Marks.globe = function(opts)
             };
             Facet.load_image_into_texture({
                 texture: tiles[id].texture,
-                src: "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png",
+                src: opts.tile_pattern(zoom, x, y),
                 crossOrigin: "anonymous",
                 x_offset: tiles[id].offset_x * tile_size,
                 y_offset: tiles[id].offset_y * tile_size,
