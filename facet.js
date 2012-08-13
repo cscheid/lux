@@ -5460,9 +5460,9 @@ Shade.loop_variable = function(type, force_no_declare)
         evaluate: function() {
             return this.glsl_name;
         },
-        compile: function() {
+        compile: function(ctx) {
             if (_.isUndefined(force_no_declare))
-                this.scope.add_declaration(type.declare(this.glsl_name));
+                ctx.global_scope.add_declaration(type.declare(this.glsl_name));
         },
         loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
             return [this];
@@ -5548,34 +5548,23 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             var index_variable = this.parents[2];
             var accumulator_value = this.parents[3];
             var element_value = this.parents[4];
+            var operation_value = this.parents[6];
             var condition_value = this.parents[7];
             var termination_value = this.parents[8];
             var that = this;
 
-            _.each(element_value.sorted_sub_expressions(), function(node) {
-                if (_.any(node.loop_variable_dependencies(), function(dep) {
-                    return dep.glsl_name === index_variable.glsl_name ||
-                        dep.glsl_name === accumulator_value.glsl_name;
-                })) {
-                    node.scope = that.scope;
-                };
-            });
-            _.each(condition_value.sorted_sub_expressions(), function(node) {
-                if (_.any(node.loop_variable_dependencies(), function(dep) {
-                    return dep.glsl_name === index_variable.glsl_name ||
-                        dep.glsl_name === accumulator_value.glsl_name;
-                })) {
-                    node.scope = that.scope;
-                };
-            });
-            _.each(termination_value.sorted_sub_expressions(), function(node) {
-                if (_.any(node.loop_variable_dependencies(), function(dep) {
-                    return dep.glsl_name === index_variable.glsl_name ||
-                        dep.glsl_name === accumulator_value.glsl_name;
-                })) {
-                    node.scope = that.scope;
-                };
-            });
+            function patch_internal(exp) {
+                _.each(exp.sorted_sub_expressions(), function(node) {
+                    if (_.any(node.loop_variable_dependencies(), function(dep) {
+                        return dep.glsl_name === index_variable.glsl_name ||
+                            dep.glsl_name === accumulator_value.glsl_name;
+                    })) {
+                        node.scope = that.scope;
+                    };
+                });
+            }
+
+            _.each([element_value, operation_value, condition_value, termination_value], patch_internal);
         },
         parents: [this.begin, this.end, 
                   index_variable, accumulator_value, element_value,
@@ -5608,8 +5597,9 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             var must_evaluate_condition = !(condition.is_constant() && (condition.constant_value() === true));
             var must_evaluate_termination = !(termination.is_constant() && (termination.constant_value() === false));
 
+            ctx.global_scope.add_declaration(accumulator_value.type.declare(accumulator_value.glsl_name));
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
-            ctx.strings.push("    ",accumulator_value.type.repr(), accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
+            ctx.strings.push("    ",accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
 
             ctx.strings.push("    for (int",
                              index_variable.evaluate(),"=",beg.evaluate(),";",
@@ -5702,30 +5692,30 @@ BasicRange.prototype.average = function()
 
 Shade.locate = Shade(function(accessor, target, left, right, nsteps)
 {
-    function halfway(a, b) { return a.add(b).div(2).as_int(); };
+    function halfway(a, b) { return a.as_float().add(b.as_float()).div(2).as_int(); };
 
     nsteps = nsteps || right.sub(left).log2().ceil();
     var base = Shade.range(0, nsteps);
     var mid = halfway(left, right);
     var initial_state = Shade({
-        l: left,
-        r: right,
-        m: mid,
+        l: left.as_int(),
+        r: right.as_int(),
+        m: mid.as_int(),
         vl: accessor(left),
         vr: accessor(right),
         vm: accessor(mid)
     });
-    base.fold(function(state, i) {
+    return base.fold(function(state, i) {
         var right_nm = halfway(state("m"), state("r"));
         var left_nm = halfway(state("l"), state("m"));
         return state("vm").lt(target).ifelse(Shade({
-            l: state("mid"),   vl: state("vm"),
-            m: right_nm,       vm: accessor(right_nm),
-            r: state("right"), vr: state("vr")
+            l: state("m"), vl: state("vm"),
+            m: right_nm,   vm: accessor(right_nm),
+            r: state("r"), vr: state("vr")
         }), Shade({
-            l: state("left"),  vl: state("vl"),
-            m: right_nm,       vm: accessor(left_nm),
-            r: state("mid"),   vr: state("vm")
+            l: state("l"), vl: state("vl"),
+            m: left_nm,    vm: accessor(left_nm),
+            r: state("m"), vr: state("vm")
         }));
     }, initial_state);
 });
@@ -6247,6 +6237,7 @@ Shade.CompilationContext = function(compile_type)
         compile_type: compile_type || Shade.UNSET_PROGRAM_COMPILE,
         float_precision: "highp",
         strings: [],
+        global_decls: [],
         declarations: { uniform: {},
                         attribute: {},
                         varying: {}
@@ -6296,20 +6287,25 @@ Shade.CompilationContext = function(compile_type)
                     throw "internal error; declare_struct found undeclared internal struct";
                 }
             });
-            this.strings.push("struct", type.internal_type_name, "{\n");
-            _.each(type.fields, function(v, k) {
-                that.strings.push("    ",v.declare(k), ";\n");
+            this.global_decls.push("struct", type.internal_type_name, "{\n");
+            var internal_decls = [];
+            _.each(type.field_index, function(i, k) {
+                internal_decls[i] = type.fields[k].declare(k);
             });
-            this.strings.push("};\n");
+            _.each(internal_decls, function(v) {
+                that.global_decls.push("    ",v, ";\n");
+            });
+            this.global_decls.push("};\n");
             this.declared_struct_types[type.internal_type_name] = true;
         },
         compile: function(fun) {
             var that = this;
+            this.global_decls = [];
 
             this.global_scope = {
                 initializations: [],
                 add_declaration: function(exp) {
-                    that.strings.push(exp, ";\n");
+                    that.global_decls.push(exp, ";\n");
                 },
                 add_initialization: function(exp) {
                     this.initializations.push(exp);
@@ -6322,7 +6318,6 @@ Shade.CompilationContext = function(compile_type)
             var topo_sort = fun.sorted_sub_expressions();
             var i;
             var p = this.strings.push;
-            this.strings.push("precision",this.float_precision,"float;\n");
             _.each(topo_sort, function(n) {
                 n.children_count = 0;
                 n.is_unconditional = false;
@@ -6355,6 +6350,11 @@ Shade.CompilationContext = function(compile_type)
             for (i=0; i<topo_sort.length; ++i) {
                 topo_sort[i].compile(this);
             }
+
+            var args = [0, 0];
+            args.push.apply(args, this.global_decls);
+            this.strings.splice.apply(this.strings, args);
+            this.strings.splice(0, 0, "precision",this.float_precision,"float;\n");
             this.strings.push("void main() {\n");
             _.each(this.global_scope.initializations, function(exp) {
                 that.strings.push("    ", exp, ";\n");
@@ -7228,6 +7228,10 @@ Shade.array = function(v)
             },
             element_constant_value: function(i) {
                 return this.parents[i].constant_value();
+            },
+            locate: function(target) {
+                var that = this;
+                return Shade.locate(function(i) { return that.at(i.as_int()); }, target, 0, array_size-1);
             }
         });
     } else {
@@ -11117,7 +11121,15 @@ Shade.Scale.linear = function(opts)
             return x.sub(f1).mul(dt.div(df)).add(t1);
         });
     } else {
-        throw "Shade.Scale.linear unimplemented polylinear, sorry!";
+        var domain_array = Shade.array(opts.domain);
+        var range_array = Shade.array(opts.range);
+        
+        return Shade(function(v) {
+            var bs = domain_array.locate(v);
+            var u = v.sub(bs("vl")).div(bs("vr").sub(bs("vl")));
+            var color = Shade.mix(range_array.at(bs("l")), range_array.at(bs("r")), u);
+            return color;
+        });
     }
 };
 Facet.Marks = {};
@@ -11370,7 +11382,10 @@ Facet.Marks.globe = function(opts)
         latitude_center: 38,
         zoom: 3,
         resolution_bias: 0,
-        patch_size: 10
+        patch_size: 10,
+        tile_pattern: function(zoom, x, y) {
+            return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
+        }
     });
     var model = Shade.parameter("mat4");
     var patch = spherical_mercator_patch(opts.patch_size);
@@ -11662,7 +11677,7 @@ Facet.Marks.globe = function(opts)
             };
             Facet.load_image_into_texture({
                 texture: tiles[id].texture,
-                src: "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png",
+                src: opts.tile_pattern(zoom, x, y),
                 crossOrigin: "anonymous",
                 x_offset: tiles[id].offset_x * tile_size,
                 y_offset: tiles[id].offset_y * tile_size,
