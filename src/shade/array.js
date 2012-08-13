@@ -42,6 +42,10 @@ Shade.array = function(v)
             },
             element_constant_value: function(i) {
                 return this.parents[i].constant_value();
+            },
+            locate: function(target) {
+                var that = this;
+                return Shade.locate(function(i) { return that.at(i.as_int()); }, target, 0, array_size-1);
             }
         });
     } else {
