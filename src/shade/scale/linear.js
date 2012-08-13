@@ -52,6 +52,14 @@ Shade.Scale.linear = function(opts)
             return x.sub(f1).mul(dt.div(df)).add(t1);
         });
     } else {
-        throw "Shade.Scale.linear unimplemented polylinear, sorry!";
+        var domain_array = Shade.array(opts.domain);
+        var range_array = Shade.array(opts.range);
+        
+        return Shade(function(v) {
+            var bs = domain_array.locate(v);
+            var u = v.sub(bs("vl")).div(bs("vr").sub(bs("vl")));
+            var color = Shade.mix(range_array.at(bs("l")), range_array.at(bs("r")), u);
+            return color;
+        });
     }
 };
