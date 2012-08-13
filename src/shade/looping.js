@@ -198,7 +198,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             if (this.children_count > 1) {
                 this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
                 ctx.global_scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
-                this.scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.glsl_name + "()");
+                ctx.global_scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.glsl_name + "()");
             }
         },
         evaluate: function() {
