@@ -37,6 +37,7 @@ Shade.CompilationContext = function(compile_type)
         compile_type: compile_type || Shade.UNSET_PROGRAM_COMPILE,
         float_precision: "highp",
         strings: [],
+        global_decls: [],
         declarations: { uniform: {},
                         attribute: {},
                         varying: {}
@@ -86,20 +87,21 @@ Shade.CompilationContext = function(compile_type)
                     throw "internal error; declare_struct found undeclared internal struct";
                 }
             });
-            this.strings.push("struct", type.internal_type_name, "{\n");
+            this.global_decls.push("struct", type.internal_type_name, "{\n");
             _.each(type.fields, function(v, k) {
-                that.strings.push("    ",v.declare(k), ";\n");
+                that.global_decls.push("    ",v.declare(k), ";\n");
             });
-            this.strings.push("};\n");
+            this.global_decls.push("};\n");
             this.declared_struct_types[type.internal_type_name] = true;
         },
         compile: function(fun) {
             var that = this;
+            this.global_decls = [];
 
             this.global_scope = {
                 initializations: [],
                 add_declaration: function(exp) {
-                    that.strings.push(exp, ";\n");
+                    that.global_decls.push(exp, ";\n");
                 },
                 add_initialization: function(exp) {
                     this.initializations.push(exp);
@@ -112,7 +114,6 @@ Shade.CompilationContext = function(compile_type)
             var topo_sort = fun.sorted_sub_expressions();
             var i;
             var p = this.strings.push;
-            this.strings.push("precision",this.float_precision,"float;\n");
             _.each(topo_sort, function(n) {
                 n.children_count = 0;
                 n.is_unconditional = false;
@@ -145,6 +146,11 @@ Shade.CompilationContext = function(compile_type)
             for (i=0; i<topo_sort.length; ++i) {
                 topo_sort[i].compile(this);
             }
+
+            var args = [0, 0];
+            args.push.apply(args, this.global_decls);
+            this.strings.splice.apply(this.strings, args);
+            this.strings.splice(0, 0, "precision",this.float_precision,"float;\n");
             this.strings.push("void main() {\n");
             _.each(this.global_scope.initializations, function(exp) {
                 that.strings.push("    ", exp, ";\n");

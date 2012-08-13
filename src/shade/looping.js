@@ -26,9 +26,9 @@ Shade.loop_variable = function(type, force_no_declare)
         evaluate: function() {
             return this.glsl_name;
         },
-        compile: function() {
+        compile: function(ctx) {
             if (_.isUndefined(force_no_declare))
-                this.scope.add_declaration(type.declare(this.glsl_name));
+                ctx.global_scope.add_declaration(type.declare(this.glsl_name));
         },
         loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
             return [this];
@@ -114,34 +114,23 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             var index_variable = this.parents[2];
             var accumulator_value = this.parents[3];
             var element_value = this.parents[4];
+            var operation_value = this.parents[6];
             var condition_value = this.parents[7];
             var termination_value = this.parents[8];
             var that = this;
 
-            _.each(element_value.sorted_sub_expressions(), function(node) {
-                if (_.any(node.loop_variable_dependencies(), function(dep) {
-                    return dep.glsl_name === index_variable.glsl_name ||
-                        dep.glsl_name === accumulator_value.glsl_name;
-                })) {
-                    node.scope = that.scope;
-                };
-            });
-            _.each(condition_value.sorted_sub_expressions(), function(node) {
-                if (_.any(node.loop_variable_dependencies(), function(dep) {
-                    return dep.glsl_name === index_variable.glsl_name ||
-                        dep.glsl_name === accumulator_value.glsl_name;
-                })) {
-                    node.scope = that.scope;
-                };
-            });
-            _.each(termination_value.sorted_sub_expressions(), function(node) {
-                if (_.any(node.loop_variable_dependencies(), function(dep) {
-                    return dep.glsl_name === index_variable.glsl_name ||
-                        dep.glsl_name === accumulator_value.glsl_name;
-                })) {
-                    node.scope = that.scope;
-                };
-            });
+            function patch_internal(exp) {
+                _.each(exp.sorted_sub_expressions(), function(node) {
+                    if (_.any(node.loop_variable_dependencies(), function(dep) {
+                        return dep.glsl_name === index_variable.glsl_name ||
+                            dep.glsl_name === accumulator_value.glsl_name;
+                    })) {
+                        node.scope = that.scope;
+                    };
+                });
+            }
+
+            _.each([element_value, operation_value, condition_value, termination_value], patch_internal);
         },
         parents: [this.begin, this.end, 
                   index_variable, accumulator_value, element_value,
@@ -174,8 +163,9 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             var must_evaluate_condition = !(condition.is_constant() && (condition.constant_value() === true));
             var must_evaluate_termination = !(termination.is_constant() && (termination.constant_value() === false));
 
+            ctx.global_scope.add_declaration(accumulator_value.type.declare(accumulator_value.glsl_name));
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
-            ctx.strings.push("    ",accumulator_value.type.repr(), accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
+            ctx.strings.push("    ",accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
 
             ctx.strings.push("    for (int",
                              index_variable.evaluate(),"=",beg.evaluate(),";",
@@ -208,7 +198,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             if (this.children_count > 1) {
                 this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
                 ctx.global_scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
-                ctx.global_scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.glsl_name + "()");
+                this.scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.glsl_name + "()");
             }
         },
         evaluate: function() {
@@ -268,30 +258,30 @@ BasicRange.prototype.average = function()
 
 Shade.locate = Shade(function(accessor, target, left, right, nsteps)
 {
-    function halfway(a, b) { return a.add(b).div(2).as_int(); };
+    function halfway(a, b) { return a.as_float().add(b.as_float()).div(2).as_int(); };
 
     nsteps = nsteps || right.sub(left).log2().ceil();
     var base = Shade.range(0, nsteps);
     var mid = halfway(left, right);
     var initial_state = Shade({
-        l: left,
-        r: right,
-        m: mid,
+        l: left.as_int(),
+        r: right.as_int(),
+        m: mid.as_int(),
         vl: accessor(left),
         vr: accessor(right),
         vm: accessor(mid)
     });
-    base.fold(function(state, i) {
+    return base.fold(function(state, i) {
         var right_nm = halfway(state("m"), state("r"));
         var left_nm = halfway(state("l"), state("m"));
         return state("vm").lt(target).ifelse(Shade({
-            l: state("mid"),   vl: state("vm"),
-            m: right_nm,       vm: accessor(right_nm),
-            r: state("right"), vr: state("vr")
+            l: state("m"), vl: state("vm"),
+            m: right_nm,   vm: accessor(right_nm),
+            r: state("r"), vr: state("vr")
         }), Shade({
-            l: state("left"),  vl: state("vl"),
-            m: right_nm,       vm: accessor(left_nm),
-            r: state("mid"),   vr: state("vm")
+            l: state("l"), vl: state("vl"),
+            m: left_nm,    vm: accessor(left_nm),
+            r: state("m"), vr: state("vm")
         }));
     }, initial_state);
 });
