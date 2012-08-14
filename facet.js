@@ -7206,7 +7206,8 @@ Shade.array = function(v)
         return Shade._create_concrete_exp( {
             parents: new_v,
             type: array_type,
-            expression_type: "constant",
+            array_element_type: new_types[0],
+            expression_type: "constant", // FIXME: is there a reason this is not "array"?
             evaluate: function() { return this.glsl_name; },
             compile: function (ctx) {
                 this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
@@ -7229,9 +7230,10 @@ Shade.array = function(v)
             element_constant_value: function(i) {
                 return this.parents[i].constant_value();
             },
-            locate: function(target) {
+            locate: function(target, xform) {
                 var that = this;
-                return Shade.locate(function(i) { return that.at(i.as_int()); }, target, 0, array_size-1);
+                xform = xform || function(x) { return x; };
+                return Shade.locate(function(i) { return xform(that.at(i.as_int())); }, target, 0, array_size-1);
             }
         });
     } else {
@@ -11097,16 +11099,30 @@ Shade.Scale.linear = function(opts)
         Shade.Types.vec3,
         Shade.Types.vec4
     ];
-    // if (!(domain_types[0].equals(Shade.Types.float_t)))
-    //     throw "Shade.Scale.linear requires domain type to be float";
-    if (!(_.any(allowable_types, function(v) { return v.equals(domain_types[0]); })))
+    var vec_types = [
+        Shade.Types.vec2,
+        Shade.Types.vec3,
+        Shade.Types.vec4
+    ];
+    function is_any(set) {
+        return function(t) {
+            return _.any(allowable_types, function(v) { return v.equals(t); });
+        };
+    }
+    function all_same(set) {
+        return _.all(set, function(v) { return v.equals(set[0]); });
+    }
+    
+    if (!is_any(allowable_types)(domain_types[0]))
         throw "Shade.Scale.linear requires domain type to be one of {float, vec2, vec3, vec4}";
-    if (!(_.all(domain_types, function(v) { return v.equals(domain_types[0]); })))
+    if (!all_same(domain_types))
         throw "Shade.Scale.linear requires domain elements to have the same type";
-    if (!(_.any(allowable_types, function(v) { return v.equals(range_types[0]); })))
+    if (!is_any(allowable_types)(range_types[0]))
         throw "Shade.Scale.linear requires range type to be one of {float, vec2, vec3, vec4}";
-    if (!(_.all(range_types, function(v) { return v.equals(range_types[0]); })))
+    if (!all_same(range_types))
         throw "Shade.Scale.linear requires range elements to have the same type";
+    if (is_any(vec_types)(domain_types[0]) && (!domain_types[0].equals(range_types[0])))
+        throw "Shade.Scale.linear for vec types require equal domain and range types";
 
     // Special-case the two-element scale for performance
     if (opts.domain.length === 2) {
@@ -11123,13 +11139,35 @@ Shade.Scale.linear = function(opts)
     } else {
         var domain_array = Shade.array(opts.domain);
         var range_array = Shade.array(opts.range);
-        
-        return Shade(function(v) {
-            var bs = domain_array.locate(v);
-            var u = v.sub(bs("vl")).div(bs("vr").sub(bs("vl")));
-            var color = Shade.mix(range_array.at(bs("l")), range_array.at(bs("r")), u);
-            return color;
-        });
+        var dt = domain_array.array_element_type;
+        var result;
+
+        if (dt.equals(Shade.Types.float_t))
+            result = Shade(function(v) {
+                var bs = domain_array.locate(v);
+                var u = v.sub(bs("vl")).div(bs("vr").sub(bs("vl")));
+                var output = Shade.mix(range_array.at(bs("l")), range_array.at(bs("r")), u);
+                return output;
+            });
+        else if (_.any(["vec2", "vec3", "vec4"], function(t) 
+                       {
+                           return dt.equals(Shade.Types[t]);
+                       })) {
+            result = Shade(function(v) {
+                var result = _.range(dt.vec_dimension()).map(function(i) {
+                    var bs = domain_array.locate(v.at(i), function(array_value) {
+                        return array_value.at(i);
+                    });
+                    var u = v.sub(bs("vl")).div(bs("vr").sub(bs("vl")));
+                    var output = Shade.mix(range_array.at(bs("l")).at(i), 
+                                           range_array.at(bs("r")).at(i), u);
+                    return output;
+                });
+                return Shade.vec.apply(this, result);
+            });
+        } else {
+            throw "internal error on Shade.Scale.linear";
+        }
     }
 };
 Facet.Marks = {};
