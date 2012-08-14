@@ -20,7 +20,8 @@ Shade.array = function(v)
         return Shade._create_concrete_exp( {
             parents: new_v,
             type: array_type,
-            expression_type: "constant",
+            array_element_type: new_types[0],
+            expression_type: "constant", // FIXME: is there a reason this is not "array"?
             evaluate: function() { return this.glsl_name; },
             compile: function (ctx) {
                 this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
@@ -43,9 +44,10 @@ Shade.array = function(v)
             element_constant_value: function(i) {
                 return this.parents[i].constant_value();
             },
-            locate: function(target) {
+            locate: function(target, xform) {
                 var that = this;
-                return Shade.locate(function(i) { return that.at(i.as_int()); }, target, 0, array_size-1);
+                xform = xform || function(x) { return x; };
+                return Shade.locate(function(i) { return xform(that.at(i.as_int())); }, target, 0, array_size-1);
             }
         });
     } else {
