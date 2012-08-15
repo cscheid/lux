@@ -4509,23 +4509,6 @@ Facet.Net.binary = function(url, handler)
     xhr.send();
 };
 })();
-Shade.Scale.Geo = {};
-Shade.Scale.Geo.mercator_to_spherical = function(x, y)
-{
-    var lat = y.sinh().atan();
-    var lon = x;
-    return Shade.Scale.Geo.latlong_to_spherical(lat, lon);
-};
-// FIXME can't be Shade(function()...) because Shade() hasn't been defined yet.
-Shade.Scale.Geo.latlong_to_spherical = function(lat, lon)
-{
-    lat = Shade(lat);
-    lon = Shade(lon);
-    var stretch = lat.cos();
-    return Shade.vec(lon.sin().mul(stretch),
-                     lat.sin(),
-                     lon.cos().mul(stretch), 1);
-};
 // drawing mode objects can be part of the parameters passed to 
 // Facet.bake, in order for the batch to automatically set the capabilities.
 // This lets us specify blending, depth-testing, etc. at bake time.
@@ -11202,6 +11185,25 @@ Shade.Scale.linear = function(opts)
         return result;
     }
 };
+Shade.Scale.Geo = {};
+Shade.Scale.Geo.mercator_to_spherical = Shade(function(x, y)
+{
+    var lat = y.sinh().atan();
+    var lon = x;
+    return Shade.Scale.Geo.latlong_to_spherical(lat, lon);
+});
+Shade.Scale.Geo.latlong_to_spherical = Shade(function(lat, lon)
+{
+    var stretch = lat.cos();
+    return Shade.vec(lon.sin().mul(stretch),
+                     lat.sin(),
+                     lon.cos().mul(stretch), 1);
+});
+Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
+{
+    lat = lat.div(2).add(Math.PI/4).tan().log();
+    return Shade.vec(lat, lon);
+});
 Facet.Marks = {};
 //////////////////////////////////////////////////////////////////////////
 // This is like a poor man's instancing/geometry shader. I need a
