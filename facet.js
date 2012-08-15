@@ -4509,18 +4509,15 @@ Facet.Net.binary = function(url, handler)
     xhr.send();
 };
 })();
-Facet.Scale = {};
-Facet.Scale.Geo = {};
-Facet.Scale.Geo.mercator_to_spherical = function(x, y)
+Shade.Scale.Geo = {};
+Shade.Scale.Geo.mercator_to_spherical = function(x, y)
 {
     var lat = y.sinh().atan();
     var lon = x;
-    return Facet.Scale.Geo.latlong_to_spherical(lat, lon);
+    return Shade.Scale.Geo.latlong_to_spherical(lat, lon);
 };
 // FIXME can't be Shade(function()...) because Shade() hasn't been defined yet.
-//
-// FIXME this means that Facet.Scale should, unsurprisingly, be Shade.Scale.
-Facet.Scale.Geo.latlong_to_spherical = function(lat, lon)
+Shade.Scale.Geo.latlong_to_spherical = function(lat, lon)
 {
     lat = Shade(lat);
     lon = Shade(lon);
@@ -4983,12 +4980,20 @@ Facet.UI.center_zoom_interactor = function(opts)
         opts.mousedown(event);
     }
 
+    var c = vec.make([0, 0]);
+
     function mousemove(event) {
         if ((event.which & 1) && !event.shiftKey) {
             var deltaX =  (event.offsetX - prev_mouse_pos[0]) / (height * zoom.get() / 2);
             var deltaY = -(event.offsetY - prev_mouse_pos[1]) / (height * zoom.get() / 2);
-            var delta = vec.make([deltaX, deltaY]);
-            center.set(vec.minus(center.get(), delta));
+            var negdelta = vec.make([-deltaX, -deltaY]);
+            // we use a kahan compensated sum here:
+            // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+            // to accumulate minute changes in the center that come from deep zooms.
+            var y = vec.minus(negdelta, c);
+            var t = vec.plus(center.get(), y);
+            c = vec.minus(vec.minus(t, center.get()), y);
+            center.set(t); // vec.plus(center.get(), negdelta));
         } else if ((event.which & 1) && event.shiftKey) {
             zoom.set(zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
         }
@@ -9458,14 +9463,10 @@ Shade.program = function(program_obj)
         var varying_name = Shade.unique_name();
         vp_obj[varying_name] = exp;
         varying_names.push(varying_name);
-        // return Shade.varying(varying_name, exp.type);
         var result = Shade.varying(varying_name, exp.type);
-        // _must_be_function_call must be preserved across hoisting
-        console.log(exp._must_be_function_call, result._must_be_function_call);
         if (exp._must_be_function_call) {
             result._must_be_function_call = true;
         }
-        console.log(exp._must_be_function_call, result._must_be_function_call);
         return result;
     }
 
@@ -9513,9 +9514,6 @@ Shade.program = function(program_obj)
         fp_exprs.push(Shade.set(v, k));
     });
 
-    console.log("vp_obj", vp_obj);
-    console.log("varying_names", varying_names);
-    console.log("used_varying_names", used_varying_names);
     _.each(vp_obj, function(v, k) {
         if ((varying_names.indexOf(k) === -1) ||
             (used_varying_names.indexOf(k) !== -1))
@@ -11432,7 +11430,7 @@ function spherical_mercator_patch(tess)
         elements: elements,
         vertex: function(min, max) {
             var xf = this.uv.mul(max.sub(min)).add(min);
-            return Facet.Scale.Geo.mercator_to_spherical(xf.at(0), xf.at(1));
+            return Shade.Scale.Geo.mercator_to_spherical(xf.at(0), xf.at(1));
         },
         transformed_uv: function(min, max) {
             return Shade.mix(min, max, this.uv).div(Math.PI * 2).add(Shade.vec(0, 0.5));
@@ -11569,7 +11567,7 @@ Facet.Marks.globe = function(opts)
         model_matrix: model,
         mvp: mvp,
         lat_lon_position: function(lat, lon) {
-            return mvp(Facet.Scale.Geo.latlong_to_spherical(lat, lon));
+            return mvp(Shade.Scale.Geo.latlong_to_spherical(lat, lon));
         },
         resolution_bias: opts.resolution_bias,
         update_model_matrix: function() {

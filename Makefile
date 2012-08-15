@@ -57,10 +57,9 @@ facet.js:					\
 	src/facet/net/json.js			\
 	src/facet/net/binary.js			\
 	src/facet/net/_end.js			\
-	src/facet/scale/_begin.js		\
-	src/facet/scale/geo/_begin.js		\
-	src/facet/scale/geo/mercator_to_spherical.js	\
-	src/facet/scale/geo/latlong_to_spherical.js	\
+	src/shade/scale/geo/_begin.js		\
+	src/shade/scale/geo/mercator_to_spherical.js	\
+	src/shade/scale/geo/latlong_to_spherical.js	\
 	src/facet/drawing_mode/_begin.js	\
 	src/facet/drawing_mode/additive.js	\
 	src/facet/drawing_mode/over.js		\
