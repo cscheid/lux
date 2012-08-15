@@ -33,12 +33,20 @@ Facet.UI.center_zoom_interactor = function(opts)
         opts.mousedown(event);
     }
 
+    var c = vec.make([0, 0]);
+
     function mousemove(event) {
         if ((event.which & 1) && !event.shiftKey) {
             var deltaX =  (event.offsetX - prev_mouse_pos[0]) / (height * zoom.get() / 2);
             var deltaY = -(event.offsetY - prev_mouse_pos[1]) / (height * zoom.get() / 2);
-            var delta = vec.make([deltaX, deltaY]);
-            center.set(vec.minus(center.get(), delta));
+            var negdelta = vec.make([-deltaX, -deltaY]);
+            // we use a kahan compensated sum here:
+            // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+            // to accumulate minute changes in the center that come from deep zooms.
+            var y = vec.minus(negdelta, c);
+            var t = vec.plus(center.get(), y);
+            c = vec.minus(vec.minus(t, center.get()), y);
+            center.set(t); // vec.plus(center.get(), negdelta));
         } else if ((event.which & 1) && event.shiftKey) {
             zoom.set(zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
         }
