@@ -35,7 +35,7 @@ Shade.Scale.linear = function(opts)
     ];
     function is_any(set) {
         return function(t) {
-            return _.any(allowable_types, function(v) { return v.equals(t); });
+            return _.any(set, function(v) { return v.equals(t); });
         };
     }
     function all_same(set) {
@@ -50,8 +50,9 @@ Shade.Scale.linear = function(opts)
         throw "Shade.Scale.linear requires range type to be one of {float, vec2, vec3, vec4}";
     if (!all_same(range_types))
         throw "Shade.Scale.linear requires range elements to have the same type";
-    if (is_any(vec_types)(domain_types[0]) && (!domain_types[0].equals(range_types[0])))
+    if (is_any(vec_types)(domain_types[0]) && (!domain_types[0].equals(range_types[0]))) {
         throw "Shade.Scale.linear for vec types require equal domain and range types";
+    }
 
     // Special-case the two-element scale for performance
     if (opts.domain.length === 2) {
@@ -97,5 +98,6 @@ Shade.Scale.linear = function(opts)
         } else {
             throw "internal error on Shade.Scale.linear";
         }
+        return result;
     }
 };
