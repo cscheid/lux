@@ -341,7 +341,11 @@ Shade.program = function(program_obj)
         var varying_name = Shade.unique_name();
         vp_obj[varying_name] = exp;
         varying_names.push(varying_name);
-        return Shade.varying(varying_name, exp.type);
+        var result = Shade.varying(varying_name, exp.type);
+        if (exp._must_be_function_call) {
+            result._must_be_function_call = true;
+        }
+        return result;
     }
 
     // explicit per-vertex hoisting must happen before is_attribute hoisting,
@@ -383,7 +387,7 @@ Shade.program = function(program_obj)
         used_varying_names.push.apply(used_varying_names,
                                       _.map(v.find_if(is_varying),
                                             function (v) { 
-                                                return v.evaluate();
+                                                return v._varying_name;
                                             }));
         fp_exprs.push(Shade.set(v, k));
     });
