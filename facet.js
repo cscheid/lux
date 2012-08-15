@@ -4056,8 +4056,15 @@ Facet.program = function(vs_src, fs_src)
     ctx.linkProgram(shaderProgram);
     
     if (!ctx.getProgramParameter(shaderProgram, ctx.LINK_STATUS)) {
-        alert("Could not initialise shaders");
-        return null;
+        alert("Could not link program");
+        console.log("Error message: ");
+        console.log(ctx.getProgramInfoLog(shaderProgram));
+        console.log("Failing shader pair:");
+        console.log("Vertex shader");
+        console.log(vs_src);
+        console.log("Fragment shader");
+        console.log(fs_src);
+        throw "failed link";
     }
 
     var active_parameters = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
@@ -4156,11 +4163,13 @@ Facet.render_buffer = function(opts)
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
-    frame_buffer.make_screen_batch = function(with_texel_at_uv) {
+    frame_buffer.make_screen_batch = function(with_texel_at_uv, mode) {
+        mode = mode || Facet.DrawingMode.standard;
         var sq = Facet.Models.square();
         return Facet.bake(sq, {
             position: sq.vertex.mul(2).sub(1),
-            color: with_texel_at_uv(Shade.texture2D(this.texture, sq.tex_coord), sq.tex_coord)
+            color: with_texel_at_uv(Shade.texture2D(this.texture, sq.tex_coord), sq.tex_coord),
+            mode: mode
         });
     };
     return frame_buffer;
@@ -7519,6 +7528,7 @@ Shade.varying = function(name, type)
         parents: [],
         type: type,
         expression_type: 'varying',
+        _varying_name: name,
         element: Shade.memoize_on_field("_element", function(i) {
             if (this.type.is_pod()) {
                 if (i === 0)
@@ -7528,9 +7538,20 @@ Shade.varying = function(name, type)
             } else
                 return this.at(i);
         }),
-        evaluate: function() { return name; },
+        evaluate: function() { 
+            if (this._must_be_function_call) {
+                return this.glsl_name + "()";
+            } else
+                return name; 
+        },
         compile: function(ctx) {
             ctx.declare_varying(name, this.type);
+            if (this._must_be_function_call) {
+                this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
+                ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                ctx.add_initialization(this.precomputed_value_glsl_name + " = " + name);
+                ctx.value_function(this, this.precomputed_value_glsl_name);
+            }
         }
     });
 };
@@ -9437,7 +9458,15 @@ Shade.program = function(program_obj)
         var varying_name = Shade.unique_name();
         vp_obj[varying_name] = exp;
         varying_names.push(varying_name);
-        return Shade.varying(varying_name, exp.type);
+        // return Shade.varying(varying_name, exp.type);
+        var result = Shade.varying(varying_name, exp.type);
+        // _must_be_function_call must be preserved across hoisting
+        console.log(exp._must_be_function_call, result._must_be_function_call);
+        if (exp._must_be_function_call) {
+            result._must_be_function_call = true;
+        }
+        console.log(exp._must_be_function_call, result._must_be_function_call);
+        return result;
     }
 
     // explicit per-vertex hoisting must happen before is_attribute hoisting,
@@ -9479,11 +9508,14 @@ Shade.program = function(program_obj)
         used_varying_names.push.apply(used_varying_names,
                                       _.map(v.find_if(is_varying),
                                             function (v) { 
-                                                return v.evaluate();
+                                                return v._varying_name;
                                             }));
         fp_exprs.push(Shade.set(v, k));
     });
 
+    console.log("vp_obj", vp_obj);
+    console.log("varying_names", varying_names);
+    console.log("used_varying_names", used_varying_names);
     _.each(vp_obj, function(v, k) {
         if ((varying_names.indexOf(k) === -1) ||
             (used_varying_names.indexOf(k) !== -1))
@@ -11106,7 +11138,7 @@ Shade.Scale.linear = function(opts)
     ];
     function is_any(set) {
         return function(t) {
-            return _.any(allowable_types, function(v) { return v.equals(t); });
+            return _.any(set, function(v) { return v.equals(t); });
         };
     }
     function all_same(set) {
@@ -11121,8 +11153,9 @@ Shade.Scale.linear = function(opts)
         throw "Shade.Scale.linear requires range type to be one of {float, vec2, vec3, vec4}";
     if (!all_same(range_types))
         throw "Shade.Scale.linear requires range elements to have the same type";
-    if (is_any(vec_types)(domain_types[0]) && (!domain_types[0].equals(range_types[0])))
+    if (is_any(vec_types)(domain_types[0]) && (!domain_types[0].equals(range_types[0]))) {
         throw "Shade.Scale.linear for vec types require equal domain and range types";
+    }
 
     // Special-case the two-element scale for performance
     if (opts.domain.length === 2) {
@@ -11168,6 +11201,7 @@ Shade.Scale.linear = function(opts)
         } else {
             throw "internal error on Shade.Scale.linear";
         }
+        return result;
     }
 };
 Facet.Marks = {};
