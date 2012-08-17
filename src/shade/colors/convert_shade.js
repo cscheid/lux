@@ -357,4 +357,12 @@ var white_point_uv = xyz_to_uv(white_point);
 
 Shade.Colors.shadetable = table;
 
+Shade.Colors.desaturate = Shade(function(amount) {
+    return function(color) {
+        var rgb = table.rgb.create(color.r(), color.g(), color.b());
+        var hsv = table.rgb.hsv(rgb);
+        return table.hsv.create(hsv.h, hsv.s.mul(Shade(1).sub(amount)), hsv.v).as_shade(color.a());
+    };
+});
+
 })();
