@@ -149,12 +149,16 @@ facet.js:					\
 	src/shade/scale/geo/mercator_to_spherical.js	\
 	src/shade/scale/geo/latlong_to_spherical.js	\
 	src/shade/scale/geo/latlong_to_mercator.js	\
+	src/facet/debug/_begin.js		\
+	src/facet/debug/init.js			\
+	src/facet/debug/post.js			\
 	src/facet/marks/_begin.js		\
 	src/facet/marks/aligned_rects.js	\
 	src/facet/marks/lines.js		\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\
 	src/facet/marks/globe.js		\
+	src/facet/marks/globe_2d.js		\
 	src/facet/marks/polygon.js		\
 	src/facet/models/_begin.js		\
 	src/facet/models/flat_cube.js		\
