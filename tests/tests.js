@@ -227,7 +227,8 @@ test("Shade structs", function() {
 
 test("Shade constant folding", function() {
     equal(Shade.unknown("float").guid, Shade.unknown("float").guid);
-    notEqual(Shade.unknown("float").guid, Shade.unknown("mat2").guid);
+    ok(Shade.unknown("float").guid !== Shade.unknown("mat2").guid);
+    // notEqual();
 
     var x = Shade.parameter("float");
     equal(Shade.mul(2, Shade.vec(2, 2)).element(1).constant_value(), 4, 
@@ -551,6 +552,8 @@ test("Shade constant folding", function() {
                "Shade.sub");
         })();
     }
+
+    equal(Shade.div(Shade(3).as_int(), Shade(2).as_int()).constant_value(), 1);
 });
 
 test("Shade optimizer", function() {
