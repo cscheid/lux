@@ -47,12 +47,13 @@ Facet.UI.center_zoom_interactor = function(opts)
             var t = vec.plus(center.get(), y);
             c = vec.minus(vec.minus(t, center.get()), y);
             center.set(t); // vec.plus(center.get(), negdelta));
+            Facet.Scene.invalidate();
         } else if ((event.which & 1) && event.shiftKey) {
             zoom.set(zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
+            Facet.Scene.invalidate();
         }
         prev_mouse_pos = [ event.offsetX, event.offsetY ];
         opts.mousemove(event);
-        Facet.Scene.invalidate();
     }
 
     function mousewheel(event, delta, deltaX, deltaY) {
