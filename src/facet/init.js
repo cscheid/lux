@@ -137,10 +137,15 @@ Facet.init = function(canvas, opts)
     gl.resize = function(width, height) {
         this.viewportWidth = width;
         this.viewportHeight = height;
+        gl.parameters.width.set(width);
+        gl.parameters.height.set(height);
         this.canvas.width = width;
         this.canvas.height = height;
         this.display();
     };
+    gl.parameters = {};
+    gl.parameters.width = Shade.parameter("float", gl.viewportWidth);
+    gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
 
     return gl;
 };
