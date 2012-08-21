@@ -287,7 +287,9 @@ Shade.div = function() {
             [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
             [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2]
+            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -311,7 +313,12 @@ Shade.div = function() {
         }
         var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
         var dispatch = {
-            number: { number: function (x, y) { return x / y; },
+            number: { number: function (x, y) { 
+                                  if (exp1.type.equals(Shade.Types.int_t))
+                                      return ~~(x / y);
+                                  else
+                                      return x / y;
+                              },
                       vector: function (x, y) { 
                           return vt.map(y, function(v) {
                               return x/v;
