@@ -260,7 +260,6 @@ _.each({
     var result = builtin_glsl_function({
         name: k, 
         type_resolving_list: [
-            [Shade.Types.int_t,    Shade.Types.int_t,   Shade.Types.int_t],
             [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
             [Shade.Types.vec2,     Shade.Types.vec2,    Shade.Types.vec2],
             [Shade.Types.vec3,     Shade.Types.vec3,    Shade.Types.vec3],
