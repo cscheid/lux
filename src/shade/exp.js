@@ -412,7 +412,10 @@ Shade.Exp = {
             is_constant: Shade.memoize_on_field("_is_constant", function() {
                 // this is conservative for many situations, but hey.
                 return this.parents[0].is_constant();
-            })
+            }),
+            element: function(i) {
+                return this.at(i);
+            }
         });
     },
     _facet_expression: true, // used by facet_typeOf
