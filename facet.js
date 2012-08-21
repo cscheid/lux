@@ -3750,10 +3750,15 @@ Facet.init = function(canvas, opts)
     gl.resize = function(width, height) {
         this.viewportWidth = width;
         this.viewportHeight = height;
+        gl.parameters.width.set(width);
+        gl.parameters.height.set(height);
         this.canvas.width = width;
         this.canvas.height = height;
         this.display();
     };
+    gl.parameters = {};
+    gl.parameters.width = Shade.parameter("float", gl.viewportWidth);
+    gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
 
     return gl;
 };
@@ -4619,18 +4624,21 @@ Facet.DrawingMode.standard = {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
+        ctx.disable(ctx.BLEND);
     },
     set_pick_caps: function()
     { 
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
+        ctx.disable(ctx.BLEND);
    },
     set_unproject_caps: function()
     {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
+        ctx.disable(ctx.BLEND);
     }
 };
 Facet.DrawingMode.pass = {
@@ -4639,18 +4647,21 @@ Facet.DrawingMode.pass = {
         var ctx = Facet._globals.ctx;
         ctx.disable(ctx.DEPTH_TEST);
         ctx.depthMask(false);
+        ctx.disable(ctx.BLEND);
     },
     set_pick_caps: function()
     { 
         var ctx = Facet._globals.ctx;
         ctx.disable(ctx.DEPTH_TEST);
         ctx.depthMask(false);
+        ctx.disable(ctx.BLEND);
     },
     set_unproject_caps: function()
     {
         var ctx = Facet._globals.ctx;
         ctx.disable(ctx.DEPTH_TEST);
         ctx.depthMask(false);
+        ctx.disable(ctx.BLEND);
     }
 };
 Facet.Data = {};
@@ -4977,12 +4988,13 @@ Facet.UI.center_zoom_interactor = function(opts)
             var t = vec.plus(center.get(), y);
             c = vec.minus(vec.minus(t, center.get()), y);
             center.set(t); // vec.plus(center.get(), negdelta));
+            Facet.Scene.invalidate();
         } else if ((event.which & 1) && event.shiftKey) {
             zoom.set(zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
+            Facet.Scene.invalidate();
         }
         prev_mouse_pos = [ event.offsetX, event.offsetY ];
         opts.mousemove(event);
-        Facet.Scene.invalidate();
     }
 
     function mousewheel(event, delta, deltaX, deltaY) {
@@ -5538,6 +5550,13 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
     var termination_value = this.termination(element_value, index_variable);
     var result_type = accumulator_value.type;
     var operation_value = operation(accumulator_value, element_value);
+    // FIXME: instead of refusing to compile, we should transform
+    // violating expressions to a transformed index variable loop 
+    // with a termination condition
+    if (!this.begin.is_constant())
+        throw "WebGL restricts loop index variable initialization to be constant";
+    if (!this.end.is_constant())
+        throw "WebGL restricts loop index termination check to be constant";
 
     var result = Shade._create_concrete_exp({
         has_scope: true,
@@ -5616,7 +5635,6 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                              accumulator_value.evaluate(),"=",
                              operation_value.evaluate() + ";\n");
             if (must_evaluate_termination) {
-                termination.debug_print();
                 ctx.strings.push("        if (", termination.evaluate(), ") break;\n");
             }
             if (must_evaluate_condition) {
@@ -6365,9 +6383,15 @@ Shade.CompilationContext = function(compile_type)
             this.global_scope.initializations.push(expr);
         },
         value_function: function() {
+            var that = this;
             this.strings.push(arguments[0].type.repr(),
                               arguments[0].glsl_name,
                               "(");
+            _.each(arguments[0].loop_variable_dependencies(), function(exp, i) {
+                if (i > 0)
+                    that.strings.push(',');
+                that.strings.push('int', exp.glsl_name);
+            });
             this.strings.push(") {\n",
                               "    return ");
             for (var i=1; i<arguments.length; ++i) {
@@ -6418,7 +6442,6 @@ Shade.Exp = {
         _debug_print(this, 0);
         do_what = do_what || function(l) {
             var s = l.join("\n");
-            console.log(s);
         };
         do_what(lst);
     },
@@ -6801,7 +6824,10 @@ Shade.Exp = {
             is_constant: Shade.memoize_on_field("_is_constant", function() {
                 // this is conservative for many situations, but hey.
                 return this.parents[0].is_constant();
-            })
+            }),
+            element: function(i) {
+                return this.at(i);
+            }
         });
     },
     _facet_expression: true, // used by facet_typeOf
@@ -6918,7 +6944,7 @@ Shade._create_concrete_exp = Shade._create_concrete(Shade.Exp, ["parents", "comp
  * conditional expressions in longer shaders.  Temporarily, then, I
  * will replace all "unconditional" checks with "true". The end effect
  * is that the shader always evaluates potentially unused sides of a
- * conditional expression if they're is used in two or more places in
+ * conditional expression if they're used in two or more places in
  * the shader.
  */
 
@@ -6938,7 +6964,9 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
     evaluate: function() {
         var unconditional = true; // see comment on top
         if (this._must_be_function_call) {
-            return this.glsl_name + "(" + ")";
+            return this.glsl_name + "(" + _.map(this.loop_variable_dependencies(), function(exp) {
+                return exp.glsl_name;
+            }).join(",") + ")";
         }
         // this.children_count will be undefined if object was built
         // during compilation (lifted operators for structs will do that, for example)
@@ -6949,6 +6977,10 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         else
             return this.glsl_name + "()";
     },
+    // For types which are not POD, element(i) returns a Shade expression
+    // whose value is equivalent to evaluating the i-th element of the
+    // expression itself. for example:
+    // Shade.add(vec1, vec2).element(0) -> Shade.add(vec1.element(0), vec2.element(0));
     element: function(i) {
         if (this.type.is_pod()) {
             if (i === 0)
@@ -7857,7 +7889,9 @@ Shade.div = function() {
             [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
             [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2]
+            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -7881,7 +7915,12 @@ Shade.div = function() {
         }
         var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
         var dispatch = {
-            number: { number: function (x, y) { return x / y; },
+            number: { number: function (x, y) { 
+                                  if (exp1.type.equals(Shade.Types.int_t))
+                                      return ~~(x / y);
+                                  else
+                                      return x / y;
+                              },
                       vector: function (x, y) { 
                           return vt.map(y, function(v) {
                               return x/v;
@@ -8570,7 +8609,6 @@ _.each({
     var result = builtin_glsl_function({
         name: k, 
         type_resolving_list: [
-            [Shade.Types.int_t,    Shade.Types.int_t,   Shade.Types.int_t],
             [Shade.Types.float_t,  Shade.Types.float_t, Shade.Types.float_t],
             [Shade.Types.vec2,     Shade.Types.vec2,    Shade.Types.vec2],
             [Shade.Types.vec3,     Shade.Types.vec3,    Shade.Types.vec3],
