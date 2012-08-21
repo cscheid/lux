@@ -107,6 +107,13 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
     var termination_value = this.termination(element_value, index_variable);
     var result_type = accumulator_value.type;
     var operation_value = operation(accumulator_value, element_value);
+    // FIXME: instead of refusing to compile, we should transform
+    // violating expressions to a transformed index variable loop 
+    // with a termination condition
+    if (!this.begin.is_constant())
+        throw "WebGL restricts loop index variable initialization to be constant";
+    if (!this.end.is_constant())
+        throw "WebGL restricts loop index termination check to be constant";
 
     var result = Shade._create_concrete_exp({
         has_scope: true,
