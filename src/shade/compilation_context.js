@@ -168,9 +168,15 @@ Shade.CompilationContext = function(compile_type)
             this.global_scope.initializations.push(expr);
         },
         value_function: function() {
+            var that = this;
             this.strings.push(arguments[0].type.repr(),
                               arguments[0].glsl_name,
                               "(");
+            _.each(arguments[0].loop_variable_dependencies(), function(exp, i) {
+                if (i > 0)
+                    that.strings.push(',');
+                that.strings.push('int', exp.glsl_name);
+            });
             this.strings.push(") {\n",
                               "    return ");
             for (var i=1; i<arguments.length; ++i) {

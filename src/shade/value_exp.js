@@ -3,7 +3,7 @@
  * conditional expressions in longer shaders.  Temporarily, then, I
  * will replace all "unconditional" checks with "true". The end effect
  * is that the shader always evaluates potentially unused sides of a
- * conditional expression if they're is used in two or more places in
+ * conditional expression if they're used in two or more places in
  * the shader.
  */
 
@@ -23,7 +23,9 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
     evaluate: function() {
         var unconditional = true; // see comment on top
         if (this._must_be_function_call) {
-            return this.glsl_name + "(" + ")";
+            return this.glsl_name + "(" + _.map(this.loop_variable_dependencies(), function(exp) {
+                return exp.glsl_name;
+            }).join(",") + ")";
         }
         // this.children_count will be undefined if object was built
         // during compilation (lifted operators for structs will do that, for example)
