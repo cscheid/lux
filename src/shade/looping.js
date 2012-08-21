@@ -192,7 +192,6 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                              accumulator_value.evaluate(),"=",
                              operation_value.evaluate() + ";\n");
             if (must_evaluate_termination) {
-                termination.debug_print();
                 ctx.strings.push("        if (", termination.evaluate(), ") break;\n");
             }
             if (must_evaluate_condition) {

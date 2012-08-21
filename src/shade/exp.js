@@ -29,7 +29,6 @@ Shade.Exp = {
         _debug_print(this, 0);
         do_what = do_what || function(l) {
             var s = l.join("\n");
-            console.log(s);
         };
         do_what(lst);
     },
