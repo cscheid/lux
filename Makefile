@@ -36,6 +36,7 @@ facet.js:					\
 	src/typeinfo.js				\
 	src/facet/attribute_buffer.js		\
 	src/facet/bake.js			\
+	src/facet/conditional_batch.js		\
 	src/facet/draw.js			\
 	src/facet/element_buffer.js		\
 	src/facet/fresh_pick_id.js		\
