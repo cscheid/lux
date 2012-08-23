@@ -3630,6 +3630,18 @@ function initialize_context_globals(gl)
     // these are indices into an array defined inside Facet.bake
     // For legibility, they should be strings, but for speed, they'll be integers.
     gl._facet_globals.batch_render_mode = 0;
+
+    // epoch is the initial time being tracked by the context.
+    // It's updated every time the scene draws.
+    gl._facet_globals.epoch = new Date().getTime() / 1000;
+
+    // pre and post_display_list are callback lists managed by Facet.Scene.invalidate
+    // to avoid multiple invocations of requestAnimFrame in the same frame (which will
+    // guarantee that multiple invocations of Facet.Scene.invalidate will be triggered
+    // on the very next requestAnimFrame issued)
+
+    gl._facet_globals.pre_display_list = [];
+    gl._facet_globals.post_display_list = [];
 }
 
 Facet.init = function(canvas, opts)
@@ -3743,15 +3755,20 @@ Facet.init = function(canvas, opts)
     gl.display = function() {
         this.viewport(0, 0, this.viewportWidth, this.viewportHeight);
         this.clearDepth(clearDepth);
-        this.clearColor.apply(gl, clearColor);
+        this.clearColor.apply(this, clearColor);
         this.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        var raw_t = new Date().getTime() / 1000;
+        var new_t = raw_t - this._facet_globals.epoch;
+        var old_t = this.parameters.now.get();
+        this.parameters.frame_duration.set(new_t - old_t);
+        this.parameters.now.set(new_t);
         this._facet_globals.display_callback();
     };
     gl.resize = function(width, height) {
         this.viewportWidth = width;
         this.viewportHeight = height;
-        gl.parameters.width.set(width);
-        gl.parameters.height.set(height);
+        this.parameters.width.set(width);
+        this.parameters.height.set(height);
         this.canvas.width = width;
         this.canvas.height = height;
         this.display();
@@ -3759,6 +3776,8 @@ Facet.init = function(canvas, opts)
     gl.parameters = {};
     gl.parameters.width = Shade.parameter("float", gl.viewportWidth);
     gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
+    gl.parameters.now = Shade.parameter("float", gl._facet_globals.epoch);
+    gl.parameters.frame_duration = Shade.parameter("float", 0);
 
     return gl;
 };
@@ -14364,16 +14383,22 @@ Facet.Mesh.indexed = function(vertices, elements)
     };
 };
 Facet.Scene = {};
-Facet.Scene.add = function(obj)
+Facet.Scene.add = function(obj, ctx)
 {
-    var scene = Facet._globals.ctx._facet_globals.scene;
+    if (_.isUndefined(ctx)) {
+        ctx = Facet._globals.ctx;
+    }
+    var scene = ctx._facet_globals.scene;
 
     scene.push(obj);
-    Facet.Scene.invalidate();
+    Facet.Scene.invalidate(undefined, undefined, ctx);
 };
-Facet.Scene.remove = function(obj)
+Facet.Scene.remove = function(obj, ctx)
 {
-    var scene = Facet._globals.ctx._facet_globals.scene;
+    if (_.isUndefined(ctx)) {
+        ctx = Facet._globals.ctx;
+    }
+    var scene = ctx._facet_globals.scene;
 
     var i = scene.indexOf(obj);
 
@@ -14382,7 +14407,7 @@ Facet.Scene.remove = function(obj)
     } else {
         return scene.splice(i, 1)[0];
     }
-    Facet.Scene.invalidate();
+    Facet.Scene.invalidate(undefined, undefined, ctx);
 };
 Facet.Scene.render = function()
 {
@@ -14391,16 +14416,104 @@ Facet.Scene.render = function()
         scene[i].draw();
     }
 };
-Facet.Scene.invalidate = function()
+/*
+ * Facet.Scene.animate starts a continuous stream of animation refresh
+ * triggers. It returns an object with a single field "stop", which is
+ * a function that when called will stop the refresh triggers.
+ */
+
+Facet.Scene.animate = function(tick_function, ctx)
 {
-    if (!Facet._globals.ctx._facet_globals.dirty) {
-        Facet._globals.ctx._facet_globals.dirty = true;
-        var this_ctx = Facet._globals.ctx;
-        function draw_it() {
-            Facet.set_context(this_ctx);
-            this_ctx.display();
-            this_ctx._facet_globals.dirty = false;
+    if (_.isUndefined(ctx)) {
+        ctx = Facet._globals.ctx;
+    }
+    if (_.isUndefined(tick_function)) {
+        tick_function = _.identity;
+    }
+    var done = false;
+    function f() {
+        Facet.Scene.invalidate(
+            function() {
+                tick_function();
+            }, function() { 
+                if (!done) f();
+            }, ctx);
+    };
+    f();
+
+    return {
+        stop: function() {
+            done = true;
         }
-        window.requestAnimFrame(draw_it, this_ctx);
+    };
+};
+/*
+ * Facet.Scene.invalidate triggers a scene redraw using
+ * requestAnimFrame.  It takes two callbacks to be called respectively
+ * before the scene is drawn and after. 
+ * 
+ * The function allows many different callbacks to be
+ * invoked by a single requestAnimFrame handler. This guarantees that
+ * every callback passed to Facet.Scene.invalidate during the rendering
+ * of a single frame will be called before the invocation of the next scene 
+ * redraw.
+ * 
+ * If every call to invalidate issues a new requestAnimFrame, the following situation might happen:
+ * 
+ * - during scene.render:
+ * 
+ *    - object 1 calls Scene.invalidate(f1, f2) (requestAnimFrame #1)
+ * 
+ *    - object 2 calls Scene.invalidate(f3, f4) (requestAnimFrame #2)
+ * 
+ *    - scene.render ends
+ * 
+ * - requestAnimFrame #1 is triggered:
+ * 
+ *    - f1 is called
+ * 
+ *    - scene.render is called
+ * 
+ *    ...
+ * 
+ * So scene.render is being called again before f3 has a chance to run.
+ * 
+ */
+
+(function() {
+
+function draw_it(ctx) {
+    Facet.set_context(ctx);
+
+    // Pluck out all callbacks first to avoid infinite loops.
+    var pre = ctx._facet_globals.pre_display_list;
+    ctx._facet_globals.pre_display_list = [];
+    var post = ctx._facet_globals.post_display_list;
+    ctx._facet_globals.post_display_list = [];
+
+    for (var i=0; i<pre.length; ++i)
+        pre[i]();
+    ctx.display();
+    ctx._facet_globals.dirty = false;
+    for (i=0; i<post.length; ++i)
+        post[i]();
+}
+
+Facet.Scene.invalidate = function(pre_display, post_display, ctx)
+{
+    if (_.isUndefined(ctx)) {
+        ctx = Facet._globals.ctx;
+    }
+    if (!ctx._facet_globals.dirty) {
+        ctx._facet_globals.dirty = true;
+        window.requestAnimFrame(function() { return draw_it(ctx); });
+    }
+    if (pre_display) {
+        ctx._facet_globals.pre_display_list.push(pre_display);
+    }
+    if (post_display) {
+        ctx._facet_globals.post_display_list.push(post_display);
     }
 };
+
+})();
