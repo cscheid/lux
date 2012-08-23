@@ -24,6 +24,7 @@ Facet.texture = function(opts)
         this.width = opts.width;
         this.height = opts.height;
 
+        this.ready = false;
         var that = this;
         function handler() {
             Facet.set_context(ctx);
@@ -50,6 +51,7 @@ Facet.texture = function(opts)
                 ctx.generateMipmap(ctx.TEXTURE_2D);
             ctx.bindTexture(ctx.TEXTURE_2D, null);
             opts.onload(that);
+            that.ready = true;
             // to ensure that all textures are bound correctly,
             // we unload the current batch, forcing all uniforms to be re-evaluated.
             Facet.unload_batch();
