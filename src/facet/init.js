@@ -17,6 +17,18 @@ function initialize_context_globals(gl)
     // these are indices into an array defined inside Facet.bake
     // For legibility, they should be strings, but for speed, they'll be integers.
     gl._facet_globals.batch_render_mode = 0;
+
+    // epoch is the initial time being tracked by the context.
+    // It's updated every time the scene draws.
+    gl._facet_globals.epoch = new Date().getTime() / 1000;
+
+    // pre and post_display_list are callback lists managed by Facet.Scene.invalidate
+    // to avoid multiple invocations of requestAnimFrame in the same frame (which will
+    // guarantee that multiple invocations of Facet.Scene.invalidate will be triggered
+    // on the very next requestAnimFrame issued)
+
+    gl._facet_globals.pre_display_list = [];
+    gl._facet_globals.post_display_list = [];
 }
 
 Facet.init = function(canvas, opts)
@@ -130,15 +142,20 @@ Facet.init = function(canvas, opts)
     gl.display = function() {
         this.viewport(0, 0, this.viewportWidth, this.viewportHeight);
         this.clearDepth(clearDepth);
-        this.clearColor.apply(gl, clearColor);
+        this.clearColor.apply(this, clearColor);
         this.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        var raw_t = new Date().getTime() / 1000;
+        var new_t = raw_t - this._facet_globals.epoch;
+        var old_t = this.parameters.now.get();
+        this.parameters.frame_duration.set(new_t - old_t);
+        this.parameters.now.set(new_t);
         this._facet_globals.display_callback();
     };
     gl.resize = function(width, height) {
         this.viewportWidth = width;
         this.viewportHeight = height;
-        gl.parameters.width.set(width);
-        gl.parameters.height.set(height);
+        this.parameters.width.set(width);
+        this.parameters.height.set(height);
         this.canvas.width = width;
         this.canvas.height = height;
         this.display();
@@ -146,6 +163,8 @@ Facet.init = function(canvas, opts)
     gl.parameters = {};
     gl.parameters.width = Shade.parameter("float", gl.viewportWidth);
     gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
+    gl.parameters.now = Shade.parameter("float", gl._facet_globals.epoch);
+    gl.parameters.frame_duration = Shade.parameter("float", 0);
 
     return gl;
 };

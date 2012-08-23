@@ -173,6 +173,7 @@ facet.js:					\
 	src/facet/scene/add.js			\
 	src/facet/scene/remove.js		\
 	src/facet/scene/render.js		\
+	src/facet/scene/animate.js		\
 	src/facet/scene/invalidate.js
 
 # If the chmods below don't make sense to you right now, wait until
