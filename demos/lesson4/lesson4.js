@@ -18,7 +18,8 @@ $().ready(function () {
     });
 
     var camera = Shade.Camera.perspective();
-    var angle = Shade.parameter("float");
+    // rotate the objects at 50 degrees/second.
+    var angle = gl.parameters.now.mul(50).radians();
 
     Facet.Scene.add(Facet.bake(square, {
         position: camera(Shade.translation( 1.5, 0, -6))
@@ -33,12 +34,5 @@ $().ready(function () {
         color: triangle.color
     }));
 
-    var start = new Date().getTime();
-    var f = function() {
-        window.requestAnimFrame(f);
-        var elapsed = new Date().getTime() - start;
-        angle.set((elapsed / 20) * (Math.PI/180));
-        gl.display();
-    };
-    f();
+    Facet.Scene.animate();
 });

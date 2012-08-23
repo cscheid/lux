@@ -6,22 +6,17 @@ $().ready(function () {
     var camera = Shade.Camera.perspective({
         look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
     });
-    var angle = Shade.parameter("float");
+    var angle = gl.parameters.now.mul(50).radians();
 
     var cube = Facet.Models.flat_cube();
-    Facet.Scene.add(Facet.bake(cube, {
-        position: camera(Shade.rotation(angle, Shade.vec(1,1,1))
-                         (cube.vertex)),
-        color: Shade.texture2D(Facet.texture({ src: "../img/nehe.jpg" }),
-                               cube.tex_coord)
-    }));
-
-    var start = new Date().getTime();
-    var f = function() {
-        window.requestAnimFrame(f);
-        var elapsed = new Date().getTime() - start;
-        angle.set((elapsed / 20) * (Math.PI/180));
-        gl.display();
-    };
-    f();
+    var texture = Facet.texture({ src: "../img/nehe.jpg" });
+    Facet.Scene.add(Facet.conditional_batch(
+        Facet.bake(cube, {
+            position: camera(Shade.rotation(angle, Shade.vec(1,1,1))
+                             (cube.vertex)),
+            color: Shade.texture2D(texture, cube.tex_coord)
+        }), function() {
+            return texture.ready;
+        }));
+    Facet.Scene.animate();
 });
