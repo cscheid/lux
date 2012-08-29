@@ -3701,7 +3701,16 @@ Facet.init = function(canvas, opts)
             throw "failed context creation";
         if ("interactor" in opts) {
             for (var key in opts.interactor.events) {
-                opts[key] = opts.interactor.events[key];
+                if (opts[key]) {
+                    opts[key] = (function(handler, interactor_handler) {
+                        return function(event) {
+                            var v = handler(event);
+                            return v && interactor_handler(event);
+                        };
+                    })(opts[key], opts.interactor.events[key]);
+                } else {
+                    opts[key] = opts.interactor.events[key];
+                }
             }
         }
         
@@ -5057,7 +5066,7 @@ Facet.UI.center_zoom_interactor = function(opts)
             mousewheel: mousewheel
         }
     };
-}
+};
 /*
  * Shade is the javascript DSL for writing GLSL shaders, part of Facet.
  * 
@@ -5285,6 +5294,11 @@ Shade.Camera.ortho = function(opts)
     }
     result.project = function(model_vertex) {
         return m.mul(model_vertex);
+    };
+    result.unproject = function(homogeneous_screen_pos) {
+        var min = Shade.vec(left, bottom);
+        var max = Shade.vec(right, top);
+        return min.add(max.sub(min).mul(homogeneous_screen_pos));
     };
     return result;
 };
