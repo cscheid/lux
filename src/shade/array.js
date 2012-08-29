@@ -22,6 +22,12 @@ Shade.array = function(v)
             type: array_type,
             array_element_type: new_types[0],
             expression_type: "constant", // FIXME: is there a reason this is not "array"?
+
+            evaluate: function() {
+                return _.map(this.parents, function(e) {
+                    return e.evaluate();
+                });
+            },
             
             glsl_expression: function() { return this.glsl_name; },
             compile: function (ctx) {

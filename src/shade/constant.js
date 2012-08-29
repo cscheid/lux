@@ -77,7 +77,7 @@ Shade.constant = function(v, type)
                 }
                 return vec[this.type.array_size()].make(matrix_row(i));
             }),
-            constant_value: Shade.memoize_on_field("_constant_value", function() {
+            evaluate: function() {
                 // FIXME boolean_vector
                 if (this.type.is_pod())
                     return args[0];
@@ -91,7 +91,7 @@ Shade.constant = function(v, type)
                     return mat[mat_length_to_dimension[args.length]].make(args);
                 else
                     throw "internal error: constant of unknown type";
-            }),
+            },
             compile: function(ctx) {},
             parents: [],
             type: type

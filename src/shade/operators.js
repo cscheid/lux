@@ -2,7 +2,7 @@
 
 var operator = function(exp1, exp2, 
                         operator_name, type_resolver,
-                        constant_evaluator,
+                        evaluator,
                         element_evaluator)
 {
     var resulting_type = type_resolver(exp1.type, exp2.type);
@@ -23,9 +23,9 @@ var operator = function(exp1, exp2,
                     this.parents[1].glsl_expression() + ")";
             }
         },
-        constant_value: Shade.memoize_on_field("_constant_value", function() {
-            return constant_evaluator(this);
-        }),
+        evaluate: function() {
+            return evaluator(this);
+        },
         element: Shade.memoize_on_field("_element", function(i) {
             return element_evaluator(this, i);
         }),
@@ -98,7 +98,7 @@ Shade.add = function() {
             vt = vec[exp1.type.vec_dimension()];
         else if (exp2.type.is_vec())
             vt = vec[exp2.type.vec_dimension()];
-        var v1 = exp1.constant_value(), v2 = exp2.constant_value();
+        var v1 = exp1.evaluate(), v2 = exp2.evaluate();
         if (exp1.type.equals(Shade.Types.int_t) && 
             exp2.type.equals(Shade.Types.int_t))
             return v1 + v2;
@@ -211,7 +211,7 @@ Shade.sub = function() {
             vt = vec[exp1.type.vec_dimension()];
         else if (exp2.type.is_vec())
             vt = vec[exp2.type.vec_dimension()];
-        var v1 = exp1.constant_value(), v2 = exp2.constant_value();
+        var v1 = exp1.evaluate(), v2 = exp2.evaluate();
         if (exp1.type.equals(Shade.Types.int_t) && 
             exp2.type.equals(Shade.Types.int_t))
             return v1 - v2;
@@ -301,8 +301,8 @@ Shade.div = function() {
     function evaluator(exp) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];
-        var v1 = exp1.constant_value();
-        var v2 = exp2.constant_value();
+        var v1 = exp1.evaluate();
+        var v2 = exp2.evaluate();
         var vt, mt;
         if (exp1.type.is_array()) {
             vt = vec[exp1.type.array_size()];
@@ -430,8 +430,8 @@ Shade.mul = function() {
     function evaluator(exp) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];
-        var v1 = exp1.constant_value();
-        var v2 = exp2.constant_value();
+        var v1 = exp1.evaluate();
+        var v2 = exp2.evaluate();
         var vt, mt;
         if (exp1.type.is_array()) {
             vt = vec[exp1.type.array_size()];

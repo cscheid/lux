@@ -137,13 +137,13 @@ test("Shade compilation", function() {
 
         equal(cc.source(), "precision highp float;\n" + 
               " vec4 glsl_name_8 ;\n" +
-              " uniform vec4 _unique_name_1;\n" +
-              " uniform float _unique_name_2;\n" +
+              " uniform vec4 _unique_name_5;\n" +
+              " uniform float _unique_name_6;\n" +
               " vec4 glsl_name_7 ( ) {\n" +
-              "     return  ((_unique_name_2 > float(0.0))?cos ( glsl_name_8 ):sin ( glsl_name_8 )) ;\n" +
+              "     return  ((_unique_name_6 > float(0.0))?cos ( glsl_name_8 ):sin ( glsl_name_8 )) ;\n" +
               "}\n" +
               " void main() {\n" +
-              "      glsl_name_8 = exp ( _unique_name_1 ) ;\n" +
+              "      glsl_name_8 = exp ( _unique_name_5 ) ;\n" +
               "      glsl_name_7() ;\n" +
               " }\n");
     })();
@@ -748,6 +748,8 @@ test("color conversion", function() {
         ok(match(shade_source, shade_source2, tol), source+"->"+target+"->"+source+" inverse shade");
         ok(match(js_source, js_source2, tol), source+"->"+target+"->"+source+" inverse js");
     }
+
+    debugger;
 
     var test_count = 10;
 

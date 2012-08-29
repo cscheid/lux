@@ -36,6 +36,9 @@ Shade.attribute = function(name, type)
             } else
                 return this.at(i);
         }),
+        evaluate: function() {
+            throw "client-side evaluation of attributes is currently unsupported";
+        },
         glsl_expression: function() { 
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";

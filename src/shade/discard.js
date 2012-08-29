@@ -93,8 +93,11 @@ Shade.discard_if = function(exp, condition)
                              "    if (",this.parents[0].glsl_expression(),") discard;\n",
                              "    return ", this.parents[1].glsl_expression(), ";\n}\n");
         },
-        constant_value: function() {
-            return exp.constant_value();
+        // FIXME How does evaluate interact with fragment discarding?
+        // I still need to define the value of a discarded fragment. Currently evaluate
+        // on fragment-varying expressions is undefined anyway, so we punt.
+        evaluate: function() {
+            return exp.evaluate();
         }
     });
     return result;

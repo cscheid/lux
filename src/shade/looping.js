@@ -32,7 +32,10 @@ Shade.loop_variable = function(type, force_no_declare)
         },
         loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
             return [this];
-        })
+        }),
+        evaluate: function() {
+            throw "evaluate undefined for loop_variable";
+        }
     });
 };
 
@@ -213,6 +216,9 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             } else {
                 return this.glsl_name + "()";
             }
+        },
+        evaluate: function() {
+            throw "evaluate currently undefined for looping expressions";
         }
     });
 

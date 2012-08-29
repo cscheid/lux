@@ -35,6 +35,9 @@ Shade.varying = function(name, type)
             } else
                 return name; 
         },
+        evaluate: function() {
+            throw "evaluate unsupported for varying expressions";
+        },
         compile: function(ctx) {
             ctx.declare_varying(name, this.type);
             if (this._must_be_function_call) {

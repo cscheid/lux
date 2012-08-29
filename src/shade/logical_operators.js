@@ -1,6 +1,6 @@
 (function() {
 
-var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evaluator,
+var logical_operator_binexp = function(exp1, exp2, operator_name, evaluator,
                                        parent_is_unconditional)
 {
     parent_is_unconditional = parent_is_unconditional ||
@@ -13,9 +13,9 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evalu
             return "(" + this.parents[0].glsl_expression() + " " + operator_name + " " +
                 this.parents[1].glsl_expression() + ")";
         },
-        constant_value: Shade.memoize_on_field("_constant_value", function() {
-            return constant_evaluator(this);
-        }),
+        evaluate: function() {
+            return evaluator(this);
+        },
         parent_is_unconditional: parent_is_unconditional
     });
 };
@@ -23,7 +23,7 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evalu
 var lift_binfun_to_evaluator = function(binfun) {
     return function(exp) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
-        return binfun(exp1.constant_value(), exp2.constant_value());
+        return binfun(exp1.evaluate(), exp2.evaluate());
     };
 };
 
@@ -95,9 +95,9 @@ Shade.not = Shade(function(exp)
         value: function() {
             return "(!" + this.parents[0].glsl_expression() + ")";
         },
-        constant_value: Shade.memoize_on_field("_constant_value", function() {
-            return !this.parents[0].constant_value();
-        })
+        evaluate: function() {
+            return !this.parents[0].evaluate();
+        }
     });
 });
 

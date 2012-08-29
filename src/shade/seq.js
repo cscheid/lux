@@ -10,6 +10,9 @@ Shade.seq = function(parents)
             return this.parents.map(function (n) { return n.glsl_expression(); }).join("; ");
         },
         type: Shade.Types.void_t,
-        compile: function (ctx) {}
+        compile: function (ctx) {},
+        evaluate: function() {
+            return this.parents[this.parents.length-1].evaluate();
+        }
     });
 };

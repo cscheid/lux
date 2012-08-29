@@ -34,14 +34,14 @@ Shade.struct = function(obj)
                     }).join(", "),
                     ")"].join(" ");
         },
-        constant_value: Shade.memoize_on_field("_constant_value", function() {
+        evaluate: function() {
             var result = {};
             var that = this;
             _.each(this.parents, function(v, i) {
-                result[that.fields[i]] = v.constant_value();
+                result[that.fields[i]] = v.evaluate();
             });
             return result;
-        }),
+        },
         field: function(field_name) {
             var index = this.type.field_index[field_name];
             if (_.isUndefined(index)) {

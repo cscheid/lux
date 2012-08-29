@@ -34,6 +34,9 @@ Shade.parameter = function(type, v)
             } else
                 return uniform_name; 
         },
+        evaluate: function() {
+            return value;
+        },
         element: Shade.memoize_on_field("_element", function(i) {
             if (this.type.is_pod()) {
                 if (i === 0)

@@ -36,6 +36,9 @@ Shade.set = function(exp, name)
             ctx.void_function(this, "(", name, "=", this.parents[0].glsl_expression(), ")");
         },
         type: Shade.Types.void_t,
-        parents: [exp]
+        parents: [exp],
+        evaluate: function() {
+            return this.parents[0].evaluate();
+        }
     });
 };

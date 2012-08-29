@@ -18,10 +18,9 @@ function zipWith3(f, v1, v2, v3)
 function builtin_glsl_function(opts)
 {
     var name = opts.name;
+    var evaluator = opts.evaluator;
     var type_resolving_list = opts.type_resolving_list;
-    var constant_evaluator = opts.constant_evaluator;
-    var element_evaluator = opts.element_evaluator;
-    var element_constant_evaluator = opts.element_constant_evaluator;
+    var element_function = opts.element_function;
 
     for (var i=0; i<type_resolving_list.length; ++i)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
@@ -73,6 +72,7 @@ function builtin_glsl_function(opts)
             parents: canon_args,
             expression_type: "builtin_function{" + name + "}",
             type: type,
+            
             value: function() {
                 return [name, "(",
                         this.parents.map(function(t) { 
@@ -82,48 +82,50 @@ function builtin_glsl_function(opts)
             }
         };
 
-        if (constant_evaluator) {
-            obj.constant_value = Shade.memoize_on_field("_constant_value", function() {
-                return constant_evaluator(this);
-            });
+        if (evaluator) {
+            obj.evaluate = function() {
+                return evaluator(this);
+            };
         } else {
-            obj.is_constant = function() { return false; };
-        };
-        if (element_evaluator) {
+            throw "Internal error: Builtin '" + name + "' has no evaluator?!";
+        }
+
+        obj.constant_value = Shade.memoize_on_field("_constant_value", function() {
+            if (!this.is_constant())
+                throw "constant_value called on non-constant expression";
+            return evaluator(this);
+        });
+
+        if (element_function) {
             obj.element = function(i) {
-                return element_evaluator(this, i);
+                return element_function(this, i);
             };
             obj.element_is_constant = function(i) {
                 return this.element(i).is_constant();
-            };
-        }
-        if (element_constant_evaluator) {
-            obj.element_is_constant = function(i) {
-                return element_constant_evaluator(this, i);
             };
         }
         return Shade._create_concrete_value_exp(obj);
     };
 }
 
-function common_fun_1op(fun_name, constant_evaluator) {
+function common_fun_1op(fun_name, evaluator) {
     var result = builtin_glsl_function({
-        name: fun_name, 
+        name: fun_name,
         type_resolving_list: [
             [Shade.Types.float_t, Shade.Types.float_t],
             [Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.vec4, Shade.Types.vec4]
         ], 
-        constant_evaluator: constant_evaluator,
-        element_evaluator: function(exp, i) {
+        evaluator: evaluator,
+        element_function: function(exp, i) {
             return result(exp.parents[0].element(i));
         }
     });
     return result;
 }
 
-function common_fun_2op(fun_name, constant_evaluator) {
+function common_fun_2op(fun_name, evaluator) {
     var result = builtin_glsl_function({
         name: fun_name, 
         type_resolving_list: [
@@ -132,8 +134,8 @@ function common_fun_2op(fun_name, constant_evaluator) {
             [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]
         ], 
-        constant_evaluator: constant_evaluator, 
-        element_evaluator: function(exp, i) {
+        evaluator: evaluator, 
+        element_function: function(exp, i) {
             return result(exp.parents[0].element(i), exp.parents[1].element(i));
         }
     });
@@ -165,16 +167,16 @@ var funcs_1op = {
     "inversesqrt": function(v) { return 1 / Math.sqrt(v); }
 };
 
-_.each(funcs_1op, function (constant_evaluator_1, fun_name) {
-    function constant_evaluator(exp) {
+_.each(funcs_1op, function (evaluator_1, fun_name) {
+    function evaluator(exp) {
         if (exp.type.equals(Shade.Types.float_t))
-            return constant_evaluator_1(exp.parents[0].constant_value());
+            return evaluator_1(exp.parents[0].evaluate());
         else {
-            var c = exp.parents[0].constant_value();
-            return vec.map(c, constant_evaluator_1);
+            var c = exp.parents[0].evaluate();
+            return vec.map(c, evaluator_1);
         }
     }
-    Shade[fun_name] = common_fun_1op(fun_name, constant_evaluator);
+    Shade[fun_name] = common_fun_1op(fun_name, evaluator);
     Shade.Exp[fun_name] = function(fun) {
         return function() {
             return fun(this);
@@ -182,9 +184,9 @@ _.each(funcs_1op, function (constant_evaluator_1, fun_name) {
     }(Shade[fun_name]);
 });
 
-function atan1_constant_evaluator(exp)
+function atan1_evaluator(exp)
 {
-    var v1 = exp.parents[0].constant_value();
+    var v1 = exp.parents[0].evaluate();
     if (exp.type.equals(Shade.Types.float_t))
         return Math.atan(v1);
     else {
@@ -192,11 +194,11 @@ function atan1_constant_evaluator(exp)
     }
 }
 
-function common_fun_2op_constant_evaluator(fun)
+function common_fun_2op_evaluator(fun)
 {
     return function(exp){
-        var v1 = exp.parents[0].constant_value();
-        var v2 = exp.parents[1].constant_value();
+        var v1 = exp.parents[0].evaluate();
+        var v2 = exp.parents[1].evaluate();
         if (exp.type.equals(Shade.Types.float_t))
             return fun(v1, v2);
         else {
@@ -212,9 +214,9 @@ function common_fun_2op_constant_evaluator(fun)
 function atan()
 {
     if (arguments.length == 1) {
-        return common_fun_1op("atan", atan1_constant_evaluator)(arguments[0]);
+        return common_fun_1op("atan", atan1_evaluator)(arguments[0]);
     } else if (arguments.length == 2) {
-        var c = common_fun_2op_constant_evaluator(Math.atan2);
+        var c = common_fun_2op_evaluator(Math.atan2);
         return common_fun_2op("atan", c)(arguments[0], arguments[1]);
     } else {
         throw "atan expects 1 or 2 parameters, got " + arguments.length
@@ -230,13 +232,13 @@ function broadcast_elements(exp, i) {
 
 Shade.atan = atan;
 Shade.Exp.atan = function() { return Shade.atan(this); };
-Shade.pow = common_fun_2op("pow", common_fun_2op_constant_evaluator(Math.pow));
+Shade.pow = common_fun_2op("pow", common_fun_2op_evaluator(Math.pow));
 Shade.Exp.pow = function(other) { return Shade.pow(this, other); };
 
-function mod_min_max_constant_evaluator(op) {
+function mod_min_max_evaluator(op) {
     return function(exp) {
         var values = _.map(exp.parents, function (p) {
-            return p.constant_value();
+            return p.evaluate();
         });
         if (exp.parents[0].type.equals(Shade.Types.float_t))
             return op.apply(op, values);
@@ -269,15 +271,15 @@ _.each({
             [Shade.Types.vec3,     Shade.Types.float_t, Shade.Types.vec3],
             [Shade.Types.vec4,     Shade.Types.float_t, Shade.Types.vec4]
         ], 
-        constant_evaluator: mod_min_max_constant_evaluator(op),
-        element_evaluator: function(exp, i) {
+        evaluator: mod_min_max_evaluator(op),
+        element_function: function(exp, i) {
             return result.apply(this, broadcast_elements(exp, i));
         }
     });
     Shade[k] = result;
 });
 
-function clamp_constant_evaluator(exp)
+function clamp_evaluator(exp)
 {
     function clamp(v, mn, mx) {
         return Math.max(mn, Math.min(mx, v));
@@ -286,9 +288,9 @@ function clamp_constant_evaluator(exp)
     var e1 = exp.parents[0];
     var e2 = exp.parents[1];
     var e3 = exp.parents[2];
-    var v1 = e1.constant_value();
-    var v2 = e2.constant_value();
-    var v3 = e3.constant_value();
+    var v1 = e1.evaluate();
+    var v2 = e2.evaluate();
+    var v3 = e3.evaluate();
 
     if (e1.type.equals(Shade.Types.float_t)) {
         return clamp(v1, v2, v3);
@@ -311,15 +313,15 @@ var clamp = builtin_glsl_function({
         [Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec2],
         [Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec3],
         [Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4]], 
-    constant_evaluator: clamp_constant_evaluator,
-    element_evaluator: function (exp, i) {
+    evaluator: clamp_evaluator,
+    element_function: function (exp, i) {
         return Shade.clamp.apply(this, broadcast_elements(exp, i));
     }
 });
 
 Shade.clamp = clamp;
 
-function mix_constant_evaluator(exp)
+function mix_evaluator(exp)
 {
     function mix(left, right, u) {
         return (1-u) * left + u * right;
@@ -327,9 +329,9 @@ function mix_constant_evaluator(exp)
     var e1 = exp.parents[0];
     var e2 = exp.parents[1];
     var e3 = exp.parents[2];
-    var v1 = e1.constant_value();
-    var v2 = e2.constant_value();
-    var v3 = e3.constant_value();
+    var v1 = e1.evaluate();
+    var v2 = e2.evaluate();
+    var v3 = e3.evaluate();
     if (e1.type.equals(Shade.Types.float_t)) {
         return mix(v1, v2, v3);
     } else if (e2.type.equals(e3.type)) {
@@ -351,8 +353,8 @@ var mix = builtin_glsl_function({
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t, Shade.Types.vec2],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t, Shade.Types.vec3],
         [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t, Shade.Types.vec4]],
-    constant_evaluator: mix_constant_evaluator,
-    element_evaluator: function(exp, i) {
+    evaluator: mix_evaluator,
+    element_function: function(exp, i) {
         return Shade.mix.apply(this, broadcast_elements(exp, i));
     }
 });
@@ -368,14 +370,14 @@ var step = builtin_glsl_function({
         [Shade.Types.float_t, Shade.Types.vec2,    Shade.Types.vec2],
         [Shade.Types.float_t, Shade.Types.vec3,    Shade.Types.vec3],
         [Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]], 
-    constant_evaluator: function(exp) {
+    evaluator: function(exp) {
         function step(edge, x) {
             if (x < edge) return 0.0; else return 1.0;
         }
         var e1 = exp.parents[0];
         var e2 = exp.parents[1];
-        var v1 = e1.constant_value();
-        var v2 = e2.constant_value();
+        var v1 = e1.evaluate();
+        var v2 = e2.evaluate();
         if (e2.type.equals(Shade.Types.float_t)) {
             return step(v1, v2);
         } if (e1.type.equals(e2.type)) {
@@ -386,7 +388,7 @@ var step = builtin_glsl_function({
             });
         }
     },
-    element_evaluator: function(exp, i) {
+    element_function: function(exp, i) {
         return Shade.step.apply(this, broadcast_elements(exp, i));
     }
 });
@@ -402,13 +404,14 @@ var smoothstep = builtin_glsl_function({
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec2,    Shade.Types.vec2],
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec3,    Shade.Types.vec3],
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]], 
-    constant_evaluator: function(exp) {
+    evaluator: function(exp) {
         var edge0 = exp.parents[0];
         var edge1 = exp.parents[1];
         var x = exp.parents[2];
         var t = Shade.clamp(x.sub(edge0).div(edge1.sub(edge0)), 0, 1);
-        return t.mul(t).mul(Shade.sub(3, t.mul(2))).constant_value();
-    }, element_evaluator: function(exp, i) {
+        // FIXME this is cute but will be inefficient
+        return t.mul(t).mul(Shade.sub(3, t.mul(2))).evaluate();
+    }, element_function: function(exp, i) {
         return Shade.smoothstep.apply(this, broadcast_elements(exp, i));
     }
 });
@@ -421,8 +424,8 @@ var norm = builtin_glsl_function({
         [Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.float_t],
         [Shade.Types.vec4,    Shade.Types.float_t]], 
-    constant_evaluator: function(exp) {
-        var v = exp.parents[0].constant_value();
+    evaluator: function(exp) {
+        var v = exp.parents[0].evaluate();
         if (exp.parents[0].type.equals(Shade.Types.float_t))
             return Math.abs(v);
         else
@@ -437,8 +440,8 @@ var distance = builtin_glsl_function({
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t],
         [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]], 
-    constant_evaluator: function(exp) {
-        return exp.parents[0].sub(exp.parents[1]).norm().constant_value();
+    evaluator: function(exp) {
+        return exp.parents[0].sub(exp.parents[1]).norm().evaluate();
     }});
 Shade.distance = distance;
 
@@ -449,9 +452,9 @@ var dot = builtin_glsl_function({
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t],
         [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]],
-    constant_evaluator: function (exp) {
-        var v1 = exp.parents[0].constant_value(),
-            v2 = exp.parents[1].constant_value();
+    evaluator: function (exp) {
+        var v1 = exp.parents[0].evaluate(),
+            v2 = exp.parents[1].evaluate();
         if (exp.parents[0].type.equals(Shade.Types.float_t)) {
             return v1 * v2;
         } else {
@@ -463,10 +466,10 @@ Shade.dot = dot;
 var cross = builtin_glsl_function({
     name: "cross", 
     type_resolving_list: [[Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3]], 
-    constant_evaluator: function(exp) {
-        return vec3.cross(exp.parents[0].constant_value(),
-                          exp.parents[1].constant_value());
-    }, element_evaluator: function (exp, i) {
+    evaluator: function(exp) {
+        return vec3.cross(exp.parents[0].evaluate(),
+                          exp.parents[1].evaluate());
+    }, element_function: function (exp, i) {
         var v1 = exp.parents[0].length;
         var v2 = exp.parents[1].length;
         if        (i === 0) { return v1.at(1).mul(v2.at(2)).sub(v1.at(2).mul(v2.at(1)));
@@ -485,9 +488,9 @@ var normalize = builtin_glsl_function({
         [Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3],
         [Shade.Types.vec4, Shade.Types.vec4]], 
-    constant_evaluator: function(exp) {
-        return exp.parents[0].div(exp.parents[0].norm()).constant_value();
-    }, element_evaluator: function(exp, i) {
+    evaluator: function(exp) {
+        return exp.parents[0].div(exp.parents[0].norm()).evaluate();
+    }, element_function: function(exp, i) {
         return exp.parents[0].div(exp.parents[0].norm()).element(i);
     }
 });
@@ -500,15 +503,15 @@ var faceforward = builtin_glsl_function({
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]], 
-    constant_evaluator: function(exp) {
+    evaluator: function(exp) {
         var N = exp.parents[0];
         var I = exp.parents[1];
         var Nref = exp.parents[2];
-        if (Nref.dot(I).constant_value() < 0)
-            return N.constant_value();
+        if (Nref.dot(I).evaluate() < 0)
+            return N.evaluate();
         else
-            return Shade.sub(0, N).constant_value();
-    }, element_evaluator: function(exp, i) {
+            return Shade.sub(0, N).evaluate();
+    }, element_function: function(exp, i) {
         var N = exp.parents[0];
         var I = exp.parents[1];
         var Nref = exp.parents[2];
@@ -525,14 +528,14 @@ var reflect = builtin_glsl_function({
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]], 
-    constant_evaluator: function(exp) {
+    evaluator: function(exp) {
         var I = exp.parents[0];
         var N = exp.parents[1];
-        return I.sub(Shade.mul(2, N.dot(I), N)).constant_value();
-    }, element_evaluator: function(exp, i) {
+        return I.sub(Shade.mul(2, N.dot(I), N)).evaluate();
+    }, element_function: function(exp, i) {
         var I = exp.parents[0];
         var N = exp.parents[1];
-        return I.sub(Shade.mul(2, N.dot(I), N)).element_constant_value(i);
+        return I.sub(Shade.mul(2, N.dot(I), N)).element(i);
     }
 });
 Shade.reflect = reflect;
@@ -544,18 +547,19 @@ var refract = builtin_glsl_function({
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.float_t, Shade.Types.vec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.float_t, Shade.Types.vec4]],
-    constant_evaluator: function(exp) {
+    evaluator: function(exp) {
         var I = exp.parents[0];
         var N = exp.parents[1];
         var eta = exp.parents[2];
         
         var k = Shade.sub(1.0, Shade.mul(eta, eta, Shade.sub(1.0, N.dot(I).mul(N.dot(I)))));
-        if (k.constant_value() < 0.0) {
+        // FIXME This is cute but inefficient
+        if (k.evaluate() < 0.0) {
             return vec[I.type.array_size()].create();
         } else {
-            return eta.mul(I).sub(eta.mul(N.dot(I)).add(k.sqrt()).mul(N)).constant_value();
+            return eta.mul(I).sub(eta.mul(N.dot(I)).add(k.sqrt()).mul(N)).evaluate();
         }
-    }, element_evaluator: function(exp, i) {
+    }, element_function: function(exp, i) {
         var I = exp.parents[0];
         var N = exp.parents[1];
         var eta = exp.parents[2];
@@ -576,12 +580,17 @@ Shade.refract = refract;
 var texture2D = builtin_glsl_function({
     name: "texture2D", 
     type_resolving_list: [[Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]],
-    element_evaluator: function(exp, i) { return exp.at(i); },
-    element_constant_evaluator: function(exp, i) { return false; }
+    element_function: function(exp, i) { return exp.at(i); },
+
+    // FIXME is this necessary?
+    // element_constant_evaluator: function(exp, i) { return false; },
+
+    evaluator: function(exp) {
+        throw "evaluate unsupported on texture2D expressions";
+    }
 });
 Shade.texture2D = texture2D;
 
-// FIXME BUG?
 Shade.equal = builtin_glsl_function({
     name: "equal", 
     type_resolving_list: [
@@ -594,9 +603,9 @@ Shade.equal = builtin_glsl_function({
         [Shade.Types.bvec2, Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bvec3, Shade.Types.bool_t],
         [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]], 
-    constant_evaluator: function(exp) {
-        var left = exp.parents[0].constant_value();
-        var right = exp.parents[1].constant_value();
+    evaluator: function(exp) {
+        var left = exp.parents[0].evaluate();
+        var right = exp.parents[1].evaluate();
         return (_.all(zipWith(function (x, y) { return x === y; }),
                       left, right));
     }});
@@ -614,9 +623,9 @@ Shade.notEqual = builtin_glsl_function({
         [Shade.Types.bvec2, Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bvec3, Shade.Types.bool_t],
         [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]], 
-    constant_evaluator: function(exp) {
-        var left = exp.parents[0].constant_value();
-        var right = exp.parents[1].constant_value();
+    evaluator: function(exp) {
+        var left = exp.parents[0].evaluate();
+        var right = exp.parents[1].evaluate();
         return !(_.all(zipWith(function (x, y) { return x === y; }),
                        left, right));
     }});
@@ -631,11 +640,11 @@ Shade.lessThan = builtin_glsl_function({
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
-    constant_evaluator: function(exp) {
-        var left = exp.parents[0].constant_value();
-        var right = exp.parents[1].constant_value();
+    evaluator: function(exp) {
+        var left = exp.parents[0].evaluate();
+        var right = exp.parents[1].evaluate();
         return _.map(left, function(x, i) { return x < right[i]; });
-    }, element_evaluator: function(exp, i) {
+    }, element_function: function(exp, i) {
         return Shade.lt.apply(this, broadcast_elements(exp, i));
     }
 });
@@ -650,11 +659,11 @@ Shade.lessThanEqual = builtin_glsl_function({
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
-    constant_evaluator: function(exp) {
-        var left = exp.parents[0].constant_value();
-        var right = exp.parents[1].constant_value();
+    evaluator: function(exp) {
+        var left = exp.parents[0].evaluate();
+        var right = exp.parents[1].evaluate();
         return _.map(left, function(x, i) { return x <= right[i]; });
-    }, element_evaluator: function(exp, i) {
+    }, element_function: function(exp, i) {
         return Shade.le.apply(this, broadcast_elements(exp, i));
     }
 });
@@ -671,11 +680,11 @@ Shade.greaterThan = builtin_glsl_function({
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
-    constant_evaluator: function(exp) {
-        var left = exp.parents[0].constant_value();
-        var right = exp.parents[1].constant_value();
+    evaluator: function(exp) {
+        var left = exp.parents[0].evaluate();
+        var right = exp.parents[1].evaluate();
         return _.map(left, function(x, i) { return x > right[i]; });
-    }, element_evaluator: function(exp, i) {
+    }, element_function: function(exp, i) {
         return Shade.gt.apply(this, broadcast_elements(exp, i));
     }
 });
@@ -692,11 +701,11 @@ Shade.greaterThanEqual = builtin_glsl_function({
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
-    constant_evaluator: function(exp) {
-        var left = exp.parents[0].constant_value();
-        var right = exp.parents[1].constant_value();
+    evaluator: function(exp) {
+        var left = exp.parents[0].evaluate();
+        var right = exp.parents[1].evaluate();
         return _.map(left, function(x, i) { return x >= right[i]; });
-    }, element_evaluator: function(exp, i) {
+    }, element_function: function(exp, i) {
         return Shade.ge.apply(this, broadcast_elements(exp, i));
     }
 });
@@ -710,8 +719,8 @@ Shade.all = builtin_glsl_function({
         [Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bool_t],
         [Shade.Types.bvec4, Shade.Types.bool_t]], 
-    constant_evaluator: function(exp) {
-        var v = exp.parents[0].constant_value();
+    evaluator: function(exp) {
+        var v = exp.parents[0].evaluate();
         return _.all(v, function(x) { return x; });
     }});
 Shade.Exp.all = function() { return Shade.all(this); };
@@ -722,8 +731,8 @@ Shade.any = builtin_glsl_function({
         [Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bool_t],
         [Shade.Types.bvec4, Shade.Types.bool_t]], 
-    constant_evaluator: function(exp) {
-        var v = exp.parents[0].constant_value();
+    evaluator: function(exp) {
+        var v = exp.parents[0].evaluate();
         return _.any(v, function(x) { return x; });
     }});
 Shade.Exp.any = function() { return Shade.any(this); };
@@ -734,11 +743,11 @@ Shade.matrixCompMult = builtin_glsl_function({
         [Shade.Types.mat2, Shade.Types.mat2, Shade.Types.mat2],
         [Shade.Types.mat3, Shade.Types.mat3, Shade.Types.mat3],
         [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4]], 
-    constant_evaluator: function(exp) {
-        var v1 = exp.parents[0].constant_value();
-        var v2 = exp.parents[1].constant_value();
+    evaluator: function(exp) {
+        var v1 = exp.parents[0].evaluate();
+        var v2 = exp.parents[1].evaluate();
         return mat.map(v1, function(x, i) { return x * v2[i]; });
-    }, element_evaluator: function(exp, i) {
+    }, element_function: function(exp, i) {
         var v1 = exp.parents[0];
         var v2 = exp.parents[1];
         return v1.element(i).mul(v2.element(i));

@@ -9,6 +9,7 @@ Shade.per_vertex = function(exp)
         type: exp.type,
         stage: "vertex",
         glsl_expression: function() { return this.parents[0].glsl_expression(); },
+        evaluate: function () { return this.parents[0].evaluate(); },
         compile: function () {}
     });
 };

@@ -75,14 +75,19 @@ Shade.Exp = {
     }),
 
     //////////////////////////////////////////////////////////////////////////
-    // constant checking, will be useful for folding and for enforcement
+    // javascript-side evaluation of Shade expressions
 
+    evaluate: function() {
+        throw "internal error: evaluate undefined for " + this.expression_type;
+    },
     is_constant: function() {
         return false;
     },
-    constant_value: function() {
-        throw "invalid call: this.is_constant() == false";
-    },
+    constant_value: Shade.memoize_on_field("_constant_value", function() {
+        if (!this.is_constant())
+            throw "constant_value called on non-constant expression";
+        return this.evaluate();
+    }),
     element_is_constant: function(i) {
         return false;
     },
@@ -177,9 +182,9 @@ Shade.Exp = {
             parents: [parent],
             type: Shade.Types.int_t,
             value: function() { return "int(" + this.parents[0].glsl_expression() + ")"; },
-            is_constant: function() { return parent.is_constant(); },
-            constant_value: function() {
-                var v = parent.constant_value();
+            is_constant: function() { return this.parents[0].is_constant(); },
+            evaluate: function() {
+                var v = parent.evaluate();
                 return Math.floor(v);
             },
             expression_type: "cast(int)"
@@ -193,9 +198,9 @@ Shade.Exp = {
             parents: [parent],
             type: Shade.Types.bool_t,
             value: function() { return "bool(" + this.parents[0].glsl_expression() + ")"; },
-            is_constant: function() { return parent.is_constant(); },
-            constant_value: function() {
-                var v = parent.constant_value();
+            is_constant: function() { return this.parents[0].is_constant(); },
+            evaluate: function() {
+                var v = this.parents[0].evaluate();
                 return ~~v;
             },
             expression_type: "cast(bool)"
@@ -209,9 +214,9 @@ Shade.Exp = {
             parents: [parent],
             type: Shade.Types.float_t,
             value: function() { return "float(" + this.parents[0].glsl_expression() + ")"; },
-            is_constant: function() { return parent.is_constant(); },
-            constant_value: function() {
-                var v = parent.constant_value();
+            is_constant: function() { return this.parents[0].is_constant(); },
+            evaluate: function() {
+                var v = this.parents[0].evaluate();
                 return Number(v);
             },
             expression_type: "cast(float)"
@@ -261,13 +266,13 @@ Shade.Exp = {
                     return that.parents[0].element_is_constant(i);
                 });
             }),
-            constant_value: Shade.memoize_on_field("_constant_value", function() {
+            evaluate: function() {
                 if (this.type.is_pod()) {
-                    return this.parents[0].element_constant_value(indices[0]);
+                    return this.parents[0].element(indices[0]).evaluate();
                 } else {
                     var that = this;
                     var ar = _.map(indices, function(index) {
-                        return that.parents[0].element_constant_value(index);
+                        return that.parents[0].element(index).evaluate();
                     });
                     var d = this.type.vec_dimension();
                     switch (d) {
@@ -278,7 +283,7 @@ Shade.Exp = {
                         throw "bad vec dimension " + d;
                     }
                 }
-            }),
+            },
             element: function(i) {
                 return this.parents[0].element(indices[i]);
             },
@@ -330,10 +335,10 @@ Shade.Exp = {
                 return (this.parents[1].is_constant() &&
                         this.parents[0].element_is_constant(ix));
             },
-            constant_value: Shade.memoize_on_field("_constant_value", function() {
-                var ix = Math.floor(this.parents[1].constant_value());
-                return this.parents[0].element_constant_value(ix);
-            }),
+            evaluate: function() {
+                var ix = Math.floor(this.parents[1].evaluate());
+                return this.parents[0].element(ix).evaluate();
+            },
 
             element: Shade.memoize_on_field("_element", function(i) {
                 // FIXME I suspect that a bug here might still arise
@@ -404,10 +409,10 @@ Shade.Exp = {
             value: function() {
                 return "(" + this.parents[0].glsl_expression() + "." + field_name + ")";
             },
-            constant_value: Shade.memoize_on_field("_constant_value", function() {
-                var struct_value = this.parents[0].constant_value();
+            evaluate: function() {
+                var struct_value = this.parents[0].evaluate();
                 return struct_value[field_name];
-            }),
+            },
             is_constant: Shade.memoize_on_field("_is_constant", function() {
                 // this is conservative for many situations, but hey.
                 return this.parents[0].is_constant();

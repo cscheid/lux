@@ -9,6 +9,7 @@
         return Shade._create_concrete_value_exp({
             parents: [],
             type: type,
+            evaluate: function() { throw "<unknown> does not support evaluation; "; },
             value: function() { throw "<unknown> should never get to compilation"; }
         });
     }, function(type) { 
