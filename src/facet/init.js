@@ -80,7 +80,16 @@ Facet.init = function(canvas, opts)
             throw "failed context creation";
         if ("interactor" in opts) {
             for (var key in opts.interactor.events) {
-                opts[key] = opts.interactor.events[key];
+                if (opts[key]) {
+                    opts[key] = (function(handler, interactor_handler) {
+                        return function(event) {
+                            var v = handler(event);
+                            return v && interactor_handler(event);
+                        };
+                    })(opts[key], opts.interactor.events[key]);
+                } else {
+                    opts[key] = opts.interactor.events[key];
+                }
             }
         }
         
