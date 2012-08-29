@@ -72,5 +72,10 @@ Shade.Camera.ortho = function(opts)
     result.project = function(model_vertex) {
         return m.mul(model_vertex);
     };
+    result.unproject = function(homogeneous_screen_pos) {
+        var min = Shade.vec(left, bottom);
+        var max = Shade.vec(right, top);
+        return min.add(max.sub(min).mul(homogeneous_screen_pos));
+    };
     return result;
 };
