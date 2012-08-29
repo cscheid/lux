@@ -87,4 +87,4 @@ Facet.UI.center_zoom_interactor = function(opts)
             mousewheel: mousewheel
         }
     };
-}
+};
