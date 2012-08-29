@@ -51,7 +51,7 @@ Shade.mat = function()
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) { 
-                    return t.evaluate(); 
+                    return t.glsl_expression(); 
                 }).join(", ") + ")";
         }
     });

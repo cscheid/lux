@@ -16,9 +16,9 @@ Shade.ifelse = function(condition, if_true, if_false)
         // FIXME: works around Chrome Bug ID 103053
         _must_be_function_call: true,
         value: function() {
-            return "(" + this.parents[0].evaluate() + "?"
-                + this.parents[1].evaluate() + ":"
-                + this.parents[2].evaluate() + ")";
+            return "(" + this.parents[0].glsl_expression() + "?"
+                + this.parents[1].glsl_expression() + ":"
+                + this.parents[2].glsl_expression() + ")";
         },
         constant_value: function() {
             if (!this.parents[0].is_constant()) {

@@ -30,7 +30,7 @@ Shade.struct = function(obj)
         value: function() {
             return [this.type.internal_type_name, "(",
                     this.parents.map(function(t) {
-                        return t.evaluate();
+                        return t.glsl_expression();
                     }).join(", "),
                     ")"].join(" ");
         },

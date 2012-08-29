@@ -10,8 +10,8 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evalu
         type: Shade.Types.bool_t,
         expression_type: "operator" + operator_name,
         value: function() {
-            return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
-                this.parents[1].evaluate() + ")";
+            return "(" + this.parents[0].glsl_expression() + " " + operator_name + " " +
+                this.parents[1].glsl_expression() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return constant_evaluator(this);
@@ -93,7 +93,7 @@ Shade.not = Shade(function(exp)
         type: Shade.Types.bool_t,
         expression_type: "operator!",
         value: function() {
-            return "(!" + this.parents[0].evaluate() + ")";
+            return "(!" + this.parents[0].glsl_expression() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return !this.parents[0].constant_value();

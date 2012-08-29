@@ -28,7 +28,7 @@ Shade.parameter = function(type, v)
         parents: [],
         type: type,
         expression_type: 'parameter',
-        evaluate: function() {
+        glsl_expression: function() {
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
             } else

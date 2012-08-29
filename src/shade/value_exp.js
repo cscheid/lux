@@ -20,7 +20,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         return this.element(i).constant_value();
     }),
     _must_be_function_call: false,
-    evaluate: function() {
+    glsl_expression: function() {
         var unconditional = true; // see comment on top
         if (this._must_be_function_call) {
             return this.glsl_name + "(" + _.map(this.loop_variable_dependencies(), function(exp) {
@@ -86,7 +86,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                     this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
                     this.scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                 } else {
-                    // don't emit anything, all is taken care by evaluate()
+                    // don't emit anything, all is taken care by glsl_expression()
                 }
             } else {
                 if (this.children_count > 1) {
@@ -101,7 +101,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                                        + this.precomputed_value_glsl_name + "="
                                        + this.value() + ")))");
                 } else {
-                    // don't emit anything, all is taken care by evaluate()
+                    // don't emit anything, all is taken care by glsl_expression()
                 }
             }
         }

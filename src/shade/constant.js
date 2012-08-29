@@ -46,7 +46,7 @@ Shade.constant = function(v, type)
         }
 
         return Shade._create_concrete_exp( {
-            evaluate: function(glsl_name) {
+            glsl_expression: function(glsl_name) {
                 return to_glsl(this.type.repr(), args);
             },
             expression_type: "constant{" + args + "}",

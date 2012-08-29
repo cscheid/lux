@@ -5509,7 +5509,7 @@ Shade.loop_variable = function(type, force_no_declare)
         parents: [],
         type: type,
         expression_type: "loop_variable",
-        evaluate: function() {
+        glsl_expression: function() {
             return this.glsl_name;
         },
         compile: function(ctx) {
@@ -5658,33 +5658,33 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
 
             ctx.global_scope.add_declaration(accumulator_value.type.declare(accumulator_value.glsl_name));
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
-            ctx.strings.push("    ",accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
+            ctx.strings.push("    ",accumulator_value.glsl_name, "=", starting_value.glsl_expression(), ";\n");
 
             ctx.strings.push("    for (int",
-                             index_variable.evaluate(),"=",beg.evaluate(),";",
-                             index_variable.evaluate(),"<",end.evaluate(),";",
-                             "++",index_variable.evaluate(),") {\n");
+                             index_variable.glsl_expression(),"=",beg.glsl_expression(),";",
+                             index_variable.glsl_expression(),"<",end.glsl_expression(),";",
+                             "++",index_variable.glsl_expression(),") {\n");
 
             _.each(this.scope.declarations, function(exp) {
                 ctx.strings.push("        ", exp, ";\n");
             });
             if (must_evaluate_condition) {
-                ctx.strings.push("      if (", condition.evaluate(), ") {\n");
+                ctx.strings.push("      if (", condition.glsl_expression(), ") {\n");
             }
             _.each(this.scope.initializations, function(exp) {
                 ctx.strings.push("        ", exp, ";\n");
             });
             ctx.strings.push("        ",
-                             accumulator_value.evaluate(),"=",
-                             operation_value.evaluate() + ";\n");
+                             accumulator_value.glsl_expression(),"=",
+                             operation_value.glsl_expression() + ";\n");
             if (must_evaluate_termination) {
-                ctx.strings.push("        if (", termination.evaluate(), ") break;\n");
+                ctx.strings.push("        if (", termination.glsl_expression(), ") break;\n");
             }
             if (must_evaluate_condition) {
                 ctx.strings.push("      }\n");
             }
             ctx.strings.push("    }\n");
-            ctx.strings.push("    return", accumulator_value.evaluate(), ";\n");
+            ctx.strings.push("    return", accumulator_value.glsl_expression(), ";\n");
             ctx.strings.push("}\n");
 
             if (this.children_count > 1) {
@@ -5693,7 +5693,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                 ctx.global_scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.glsl_name + "()");
             }
         },
-        evaluate: function() {
+        glsl_expression: function() {
             if (this.children_count > 1) {
                 return this.precomputed_value_glsl_name;
             } else {
@@ -6417,10 +6417,10 @@ Shade.CompilationContext = function(compile_type)
             _.each(this.global_scope.initializations, function(exp) {
                 that.strings.push("    ", exp, ";\n");
             });
-            this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
+            this.strings.push("    ", fun.glsl_expression(), ";\n", "}\n");
             // for (i=0; i<this.initialization_exprs.length; ++i)
             //     this.strings.push("    ", this.initialization_exprs[i], ";\n");
-            // this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
+            // this.strings.push("    ", fun.glsl_expression(), ";\n", "}\n");
         },
         add_initialization: function(expr) {
             this.global_scope.initializations.push(expr);
@@ -6488,7 +6488,7 @@ Shade.Exp = {
         };
         do_what(lst);
     },
-    evaluate: function() {
+    glsl_expression: function() {
         return this.glsl_name + "()";
     },
     parent_is_unconditional: function(i) {
@@ -6632,7 +6632,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.int_t,
-            value: function() { return "int(" + this.parents[0].evaluate() + ")"; },
+            value: function() { return "int(" + this.parents[0].glsl_expression() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -6648,7 +6648,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.bool_t,
-            value: function() { return "bool(" + this.parents[0].evaluate() + ")"; },
+            value: function() { return "bool(" + this.parents[0].glsl_expression() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -6664,7 +6664,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.float_t,
-            value: function() { return "float(" + this.parents[0].evaluate() + ")"; },
+            value: function() { return "float(" + this.parents[0].glsl_expression() + ")"; },
             is_constant: function() { return parent.is_constant(); },
             constant_value: function() {
                 var v = parent.constant_value();
@@ -6705,11 +6705,11 @@ Shade.Exp = {
             parents: [parent],
             type: parent.type.swizzle(pattern),
             expression_type: "swizzle{" + pattern + "}",
-            evaluate: function() {
+            glsl_expression: function() {
                 if (this._must_be_function_call)
                     return this.glsl_name + "()";
                 else
-                    return this.parents[0].evaluate() + "." + pattern; 
+                    return this.parents[0].glsl_expression() + "." + pattern; 
             },
             is_constant: Shade.memoize_on_field("_is_constant", function () {
                 var that = this;
@@ -6749,7 +6749,7 @@ Shade.Exp = {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
                     ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
                     ctx.add_initialization(this.precomputed_value_glsl_name + " = " + 
-                                           this.parents[0].evaluate() + "." + pattern);
+                                           this.parents[0].glsl_expression() + "." + pattern);
                     ctx.value_function(this, this.precomputed_value_glsl_name);
                 }
             }
@@ -6770,13 +6770,13 @@ Shade.Exp = {
             parents: [parent, index],
             type: parent.type.array_base(),
             expression_type: "index",
-            evaluate: function() {
+            glsl_expression: function() {
                 if (this.parents[1].type.is_integral()) {
-                    return this.parents[0].evaluate() + 
-                        "[" + this.parents[1].evaluate() + "]"; 
+                    return this.parents[0].glsl_expression() + 
+                        "[" + this.parents[1].glsl_expression() + "]"; 
                 } else {
-                    return this.parents[0].evaluate() + 
-                        "[int(" + this.parents[1].evaluate() + ")]"; 
+                    return this.parents[0].glsl_expression() + 
+                        "[int(" + this.parents[1].glsl_expression() + ")]"; 
                 }
             },
             is_constant: function() {
@@ -6858,7 +6858,7 @@ Shade.Exp = {
             type: this.type.fields[field_name],
             expression_type: "struct-accessor",
             value: function() {
-                return "(" + this.parents[0].evaluate() + "." + field_name + ")";
+                return "(" + this.parents[0].glsl_expression() + "." + field_name + ")";
             },
             constant_value: Shade.memoize_on_field("_constant_value", function() {
                 var struct_value = this.parents[0].constant_value();
@@ -7004,7 +7004,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         return this.element(i).constant_value();
     }),
     _must_be_function_call: false,
-    evaluate: function() {
+    glsl_expression: function() {
         var unconditional = true; // see comment on top
         if (this._must_be_function_call) {
             return this.glsl_name + "(" + _.map(this.loop_variable_dependencies(), function(exp) {
@@ -7070,7 +7070,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                     this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
                     this.scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                 } else {
-                    // don't emit anything, all is taken care by evaluate()
+                    // don't emit anything, all is taken care by glsl_expression()
                 }
             } else {
                 if (this.children_count > 1) {
@@ -7085,7 +7085,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                                        + this.precomputed_value_glsl_name + "="
                                        + this.value() + ")))");
                 } else {
-                    // don't emit anything, all is taken care by evaluate()
+                    // don't emit anything, all is taken care by glsl_expression()
                 }
             }
         }
@@ -7146,7 +7146,7 @@ Shade.constant = function(v, type)
         }
 
         return Shade._create_concrete_exp( {
-            evaluate: function(glsl_name) {
+            glsl_expression: function(glsl_name) {
                 return to_glsl(this.type.repr(), args);
             },
             expression_type: "constant{" + args + "}",
@@ -7280,14 +7280,15 @@ Shade.array = function(v)
             type: array_type,
             array_element_type: new_types[0],
             expression_type: "constant", // FIXME: is there a reason this is not "array"?
-            evaluate: function() { return this.glsl_name; },
+            
+            glsl_expression: function() { return this.glsl_name; },
             compile: function (ctx) {
                 this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
                 ctx.strings.push(this.type.declare(this.glsl_name), ";\n");
                 ctx.strings.push("void", this.array_initializer_glsl_name, "(void) {\n");
                 for (var i=0; i<this.parents.length; ++i) {
                     ctx.strings.push("    ", this.glsl_name, "[", i, "] =",
-                                     this.parents[i].evaluate(), ";\n");
+                                     this.parents[i].glsl_expression(), ";\n");
                 }
                 ctx.strings.push("}\n");
                 ctx.add_initialization(this.array_initializer_glsl_name + "()");
@@ -7344,7 +7345,7 @@ Shade.struct = function(obj)
         value: function() {
             return [this.type.internal_type_name, "(",
                     this.parents.map(function(t) {
-                        return t.evaluate();
+                        return t.glsl_expression();
                     }).join(", "),
                     ")"].join(" ");
         },
@@ -7421,7 +7422,7 @@ Shade.set = function(exp, name)
                 name.substring(0, 11) !== "gl_FragData") {
                 ctx.declare_varying(name, type);
             }
-            ctx.void_function(this, "(", name, "=", this.parents[0].evaluate(), ")");
+            ctx.void_function(this, "(", name, "=", this.parents[0].glsl_expression(), ")");
         },
         type: Shade.Types.void_t,
         parents: [exp]
@@ -7457,7 +7458,7 @@ Shade.parameter = function(type, v)
         parents: [],
         type: type,
         expression_type: 'parameter',
-        evaluate: function() {
+        glsl_expression: function() {
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
             } else
@@ -7553,7 +7554,7 @@ Shade.attribute = function(name, type)
             } else
                 return this.at(i);
         }),
-        evaluate: function() { 
+        glsl_expression: function() { 
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
             } else
@@ -7601,7 +7602,7 @@ Shade.varying = function(name, type)
             } else
                 return this.at(i);
         }),
-        evaluate: function() { 
+        glsl_expression: function() { 
             if (this._must_be_function_call) {
                 return this.glsl_name + "()";
             } else
@@ -7624,7 +7625,7 @@ Shade.fragCoord = function() {
         expression_type: "builtin_input{gl_FragCoord}",
         parents: [],
         type: Shade.Types.vec4,
-        evaluate: function() { return "gl_FragCoord"; },
+        glsl_expression: function() { return "gl_FragCoord"; },
         compile: function(ctx) {
         }
     });
@@ -7634,7 +7635,7 @@ Shade.pointCoord = function() {
         expression_type: "builtin_input{gl_PointCoord}",
         parents: [],
         type: Shade.Types.vec2,
-        evaluate: function() { return "gl_PointCoord"; },
+        glsl_expression: function() { return "gl_PointCoord"; },
         compile: function(ctx) {
         }
     });
@@ -7660,12 +7661,12 @@ var operator = function(exp1, exp2,
             if (this.type.is_struct()) {
                 return "(" + this.type.repr() + "(" +
                     _.map(this.type.fields, function (v,k) {
-                        return p1.field(k).evaluate() + " " + operator_name + " " +
-                            p2.field(k).evaluate();
+                        return p1.field(k).glsl_expression() + " " + operator_name + " " +
+                            p2.field(k).glsl_expression();
                     }).join(", ") + "))";
             } else {
-                return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
-                    this.parents[1].evaluate() + ")";
+                return "(" + this.parents[0].glsl_expression() + " " + operator_name + " " +
+                    this.parents[1].glsl_expression() + ")";
             }
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
@@ -8295,7 +8296,7 @@ Shade.vec = function()
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) {
-                    return t.evaluate();
+                    return t.glsl_expression();
                 }).join(", ") + ")";
         }
     });
@@ -8353,7 +8354,7 @@ Shade.mat = function()
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) { 
-                    return t.evaluate(); 
+                    return t.glsl_expression(); 
                 }).join(", ") + ")";
         }
     });
@@ -8386,7 +8387,7 @@ Shade.per_vertex = function(exp)
         parents: [exp],
         type: exp.type,
         stage: "vertex",
-        evaluate: function() { return this.parents[0].evaluate(); },
+        glsl_expression: function() { return this.parents[0].glsl_expression(); },
         compile: function () {}
     });
 };
@@ -8468,7 +8469,7 @@ function builtin_glsl_function(opts)
             value: function() {
                 return [name, "(",
                         this.parents.map(function(t) { 
-                            return t.evaluate(); 
+                            return t.glsl_expression(); 
                         }).join(", "),
                         ")"].join(" ");
             }
@@ -9177,8 +9178,8 @@ Shade.seq = function(parents)
     return Shade._create_concrete_exp({
         expression_name: "seq",
         parents: parents,
-        evaluate: function(glsl_name) {
-            return this.parents.map(function (n) { return n.evaluate(); }).join("; ");
+        glsl_expression: function(glsl_name) {
+            return this.parents.map(function (n) { return n.glsl_expression(); }).join("; ");
         },
         type: Shade.Types.void_t,
         compile: function (ctx) {}
@@ -9786,8 +9787,8 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evalu
         type: Shade.Types.bool_t,
         expression_type: "operator" + operator_name,
         value: function() {
-            return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
-                this.parents[1].evaluate() + ")";
+            return "(" + this.parents[0].glsl_expression() + " " + operator_name + " " +
+                this.parents[1].glsl_expression() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return constant_evaluator(this);
@@ -9869,7 +9870,7 @@ Shade.not = Shade(function(exp)
         type: Shade.Types.bool_t,
         expression_type: "operator!",
         value: function() {
-            return "(!" + this.parents[0].evaluate() + ")";
+            return "(!" + this.parents[0].glsl_expression() + ")";
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {
             return !this.parents[0].constant_value();
@@ -9986,9 +9987,9 @@ Shade.ifelse = function(condition, if_true, if_false)
         // FIXME: works around Chrome Bug ID 103053
         _must_be_function_call: true,
         value: function() {
-            return "(" + this.parents[0].evaluate() + "?"
-                + this.parents[1].evaluate() + ":"
-                + this.parents[2].evaluate() + ")";
+            return "(" + this.parents[0].glsl_expression() + "?"
+                + this.parents[1].glsl_expression() + ":"
+                + this.parents[2].glsl_expression() + ")";
         },
         constant_value: function() {
             if (!this.parents[0].is_constant()) {
@@ -10262,8 +10263,8 @@ Shade.discard_if = function(exp, condition)
         },
         compile: function(ctx) {
             ctx.strings.push(exp.type.repr(), this.glsl_name, "(void) {\n",
-                             "    if (",this.parents[0].evaluate(),") discard;\n",
-                             "    return ", this.parents[1].evaluate(), ";\n}\n");
+                             "    if (",this.parents[0].glsl_expression(),") discard;\n",
+                             "    return ", this.parents[1].glsl_expression(), ";\n}\n");
         },
         constant_value: function() {
             return exp.constant_value();

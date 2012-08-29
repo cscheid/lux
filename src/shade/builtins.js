@@ -76,7 +76,7 @@ function builtin_glsl_function(opts)
             value: function() {
                 return [name, "(",
                         this.parents.map(function(t) { 
-                            return t.evaluate(); 
+                            return t.glsl_expression(); 
                         }).join(", "),
                         ")"].join(" ");
             }

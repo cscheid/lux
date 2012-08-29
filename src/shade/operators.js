@@ -15,12 +15,12 @@ var operator = function(exp1, exp2,
             if (this.type.is_struct()) {
                 return "(" + this.type.repr() + "(" +
                     _.map(this.type.fields, function (v,k) {
-                        return p1.field(k).evaluate() + " " + operator_name + " " +
-                            p2.field(k).evaluate();
+                        return p1.field(k).glsl_expression() + " " + operator_name + " " +
+                            p2.field(k).glsl_expression();
                     }).join(", ") + "))";
             } else {
-                return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
-                    this.parents[1].evaluate() + ")";
+                return "(" + this.parents[0].glsl_expression() + " " + operator_name + " " +
+                    this.parents[1].glsl_expression() + ")";
             }
         },
         constant_value: Shade.memoize_on_field("_constant_value", function() {

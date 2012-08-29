@@ -3,7 +3,7 @@ Shade.fragCoord = function() {
         expression_type: "builtin_input{gl_FragCoord}",
         parents: [],
         type: Shade.Types.vec4,
-        evaluate: function() { return "gl_FragCoord"; },
+        glsl_expression: function() { return "gl_FragCoord"; },
         compile: function(ctx) {
         }
     });

@@ -159,10 +159,10 @@ Shade.CompilationContext = function(compile_type)
             _.each(this.global_scope.initializations, function(exp) {
                 that.strings.push("    ", exp, ";\n");
             });
-            this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
+            this.strings.push("    ", fun.glsl_expression(), ";\n", "}\n");
             // for (i=0; i<this.initialization_exprs.length; ++i)
             //     this.strings.push("    ", this.initialization_exprs[i], ";\n");
-            // this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
+            // this.strings.push("    ", fun.glsl_expression(), ";\n", "}\n");
         },
         add_initialization: function(expr) {
             this.global_scope.initializations.push(expr);

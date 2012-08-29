@@ -23,7 +23,7 @@ Shade.loop_variable = function(type, force_no_declare)
         parents: [],
         type: type,
         expression_type: "loop_variable",
-        evaluate: function() {
+        glsl_expression: function() {
             return this.glsl_name;
         },
         compile: function(ctx) {
@@ -172,33 +172,33 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
 
             ctx.global_scope.add_declaration(accumulator_value.type.declare(accumulator_value.glsl_name));
             ctx.strings.push(this.type.repr(), this.glsl_name, "() {\n");
-            ctx.strings.push("    ",accumulator_value.glsl_name, "=", starting_value.evaluate(), ";\n");
+            ctx.strings.push("    ",accumulator_value.glsl_name, "=", starting_value.glsl_expression(), ";\n");
 
             ctx.strings.push("    for (int",
-                             index_variable.evaluate(),"=",beg.evaluate(),";",
-                             index_variable.evaluate(),"<",end.evaluate(),";",
-                             "++",index_variable.evaluate(),") {\n");
+                             index_variable.glsl_expression(),"=",beg.glsl_expression(),";",
+                             index_variable.glsl_expression(),"<",end.glsl_expression(),";",
+                             "++",index_variable.glsl_expression(),") {\n");
 
             _.each(this.scope.declarations, function(exp) {
                 ctx.strings.push("        ", exp, ";\n");
             });
             if (must_evaluate_condition) {
-                ctx.strings.push("      if (", condition.evaluate(), ") {\n");
+                ctx.strings.push("      if (", condition.glsl_expression(), ") {\n");
             }
             _.each(this.scope.initializations, function(exp) {
                 ctx.strings.push("        ", exp, ";\n");
             });
             ctx.strings.push("        ",
-                             accumulator_value.evaluate(),"=",
-                             operation_value.evaluate() + ";\n");
+                             accumulator_value.glsl_expression(),"=",
+                             operation_value.glsl_expression() + ";\n");
             if (must_evaluate_termination) {
-                ctx.strings.push("        if (", termination.evaluate(), ") break;\n");
+                ctx.strings.push("        if (", termination.glsl_expression(), ") break;\n");
             }
             if (must_evaluate_condition) {
                 ctx.strings.push("      }\n");
             }
             ctx.strings.push("    }\n");
-            ctx.strings.push("    return", accumulator_value.evaluate(), ";\n");
+            ctx.strings.push("    return", accumulator_value.glsl_expression(), ";\n");
             ctx.strings.push("}\n");
 
             if (this.children_count > 1) {
@@ -207,7 +207,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                 ctx.global_scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.glsl_name + "()");
             }
         },
-        evaluate: function() {
+        glsl_expression: function() {
             if (this.children_count > 1) {
                 return this.precomputed_value_glsl_name;
             } else {
