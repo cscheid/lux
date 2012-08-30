@@ -5270,11 +5270,11 @@ Shade.Camera.ortho = function(opts)
     });
 
     var viewport_ratio;
-
+    var ctx;
     if (opts.aspect_ratio)
         viewport_ratio = opts.aspect_ratio;
     else {
-        var ctx = Facet._globals.ctx;
+        ctx = Facet._globals.ctx;
         if (_.isUndefined(ctx)) {
             throw "aspect_ratio is only optional with an active Facet context";
         }
@@ -5298,33 +5298,47 @@ Shade.Camera.ortho = function(opts)
         top = opts.top;
     }
 
-    function letterbox_projection() {
-        var cy = Shade.add(top, bottom).div(2);
-        var half_width = Shade.sub(right, left).div(2);
-        var half_height = half_width.div(viewport_ratio);
-        var l = left;
-        var r = right;
-        var t = cy.add(half_height);
-        var b = cy.sub(half_height);
-        return Shade.ortho(l, r, b, t, near, far);
-    }
+    // function letterbox_projection() {
+    //     var cy = Shade.add(top, bottom).div(2);
+    //     var half_width = Shade.sub(right, left).div(2);
+    //     var corrected_half_height = half_width.div(viewport_ratio);
+    //     var l = left;
+    //     var r = right;
+    //     var t = cy.add(corrected_half_height);
+    //     var b = cy.sub(corrected_half_height);
+    //     return Shade.ortho(l, r, b, t, near, far);
+    // }
 
-    function pillarbox_projection() {
-        var cx = Shade.add(right, left).div(2);
-        var half_height = Shade.sub(top, bottom).div(2);
-        var half_width = half_height.mul(viewport_ratio);
-        var l = cx.sub(half_width);
-        var r = cx.add(half_width);
-        var t = top;
-        var b = bottom;
-        return Shade.ortho(l, r, b, t, near, far);
-    }
+    // function pillarbox_projection() {
+    //     var cx = Shade.add(right, left).div(2);
+    //     var half_height = Shade.sub(top, bottom).div(2);
+    //     var corrected_half_width = corrected_half_height.mul(viewport_ratio);
+    //     var l = cx.sub(corrected_half_width);
+    //     var r = cx.add(corrected_half_width);
+    //     var t = top;
+    //     var b = bottom;
+    //     return Shade.ortho(l, r, b, t, near, far);
+    // }
 
     var view_ratio = Shade.sub(right, left).div(Shade.sub(top, bottom));
+    var l_or_p = view_ratio.gt(viewport_ratio);
+
+    var cx = Shade.add(right, left).div(2);
+    var cy = Shade.add(top, bottom).div(2);
+    var half_width = Shade.sub(right, left).div(2);
+    var half_height = Shade.sub(top, bottom).div(2);
+    var corrected_half_width = half_height.mul(viewport_ratio);
+    var corrected_half_height = half_width.div(viewport_ratio);
+
+    var l = l_or_p.ifelse(left,  cx.sub(corrected_half_width));
+    var r = l_or_p.ifelse(right, cx.add(corrected_half_width));
+    var b = l_or_p.ifelse(cy.sub(corrected_half_height), bottom);
+    var t = l_or_p.ifelse(cy.add(corrected_half_height), top);
+    var m = Shade.ortho(l, r, b, t, near, far);
     
-    var m = view_ratio.gt(viewport_ratio)
-        .ifelse(letterbox_projection(),
-                pillarbox_projection());
+    // var m = view_ratio.gt(viewport_ratio)
+    //     .ifelse(letterbox_projection(),
+    //             pillarbox_projection());
 
     function result(obj) {
         return result.project(obj);
@@ -5332,10 +5346,12 @@ Shade.Camera.ortho = function(opts)
     result.project = function(model_vertex) {
         return m.mul(model_vertex);
     };
-    result.unproject = function(homogeneous_screen_pos) {
-        var min = Shade.vec(left, bottom);
-        var max = Shade.vec(right, top);
-        return min.add(max.sub(min).mul(homogeneous_screen_pos));
+    result.unproject = function(screen_pos) {
+        var ctx = Facet._globals.ctx;
+        var screen_size = Shade.vec(ctx.parameters.width, ctx.parameters.height);
+        var min = Shade.vec(l, b);
+        var max = Shade.vec(r, t);
+        return min.add(max.sub(min).mul(screen_pos.div(screen_size)));
     };
     return result;
 };
@@ -6836,7 +6852,9 @@ Shade.Exp = {
             },
             evaluate: Shade.memoize_on_guid_dict(function(cache) {
                 var ix = Math.floor(this.parents[1].evaluate(cache));
-                return this.parents[0].element(ix).evaluate(cache);
+                var parent_value = this.parents[0].evaluate();
+                return parent_value[ix];
+                // return this.parents[0].element(ix).evaluate(cache);
             }),
 
             element: Shade.memoize_on_field("_element", function(i) {
@@ -11394,6 +11412,11 @@ Shade.Scale.Geo.mercator_to_spherical = Shade(function(x, y)
     var lat = y.sinh().atan();
     var lon = x;
     return Shade.Scale.Geo.latlong_to_spherical(lat, lon);
+});
+Shade.Scale.Geo.mercator_to_latlong = Shade(function(x, y)
+{
+    // http://stackoverflow.com/a/1166095
+    return Shade.vec(y.sinh().atan(), x);
 });
 Shade.Scale.Geo.latlong_to_spherical = Shade(function(lat, lon)
 {
