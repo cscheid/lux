@@ -337,7 +337,9 @@ Shade.Exp = {
             },
             evaluate: Shade.memoize_on_guid_dict(function(cache) {
                 var ix = Math.floor(this.parents[1].evaluate(cache));
-                return this.parents[0].element(ix).evaluate(cache);
+                var parent_value = this.parents[0].evaluate();
+                return parent_value[ix];
+                // return this.parents[0].element(ix).evaluate(cache);
             }),
 
             element: Shade.memoize_on_field("_element", function(i) {
