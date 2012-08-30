@@ -21,6 +21,7 @@ function builtin_glsl_function(opts)
     var evaluator = opts.evaluator;
     var type_resolving_list = opts.type_resolving_list;
     var element_function = opts.element_function;
+    var element_constant_evaluator = opts.element_constant_evaluator;
 
     for (var i=0; i<type_resolving_list.length; ++i)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
@@ -100,9 +101,18 @@ function builtin_glsl_function(opts)
             obj.element = function(i) {
                 return element_function(this, i);
             };
-            obj.element_is_constant = function(i) {
-                return this.element(i).is_constant();
-            };
+            if (element_constant_evaluator) {
+                obj.element_is_constant = function(i) {
+                    return element_constant_evaluator(this, i);
+                };
+            } else {
+                obj.element_is_constant = function(i) {
+                    if (this.guid === 489) {
+                        debugger;
+                    }
+                    return this.element(i).is_constant();
+                };
+            }
         }
         return Shade._create_concrete_value_exp(obj);
     };
@@ -582,8 +592,9 @@ var texture2D = builtin_glsl_function({
     type_resolving_list: [[Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]],
     element_function: function(exp, i) { return exp.at(i); },
 
-    // FIXME is this necessary?
-    // element_constant_evaluator: function(exp, i) { return false; },
+    // This line below is necessary to prevent an infinite loop
+    // because we're expressing element_function as exp.at();
+    element_constant_evaluator: function(exp, i) { return false; },
 
     evaluator: function(exp) {
         throw "evaluate unsupported on texture2D expressions";
