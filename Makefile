@@ -149,6 +149,7 @@ facet.js:					\
 	src/shade/scale/linear.js		\
 	src/shade/scale/geo/_begin.js		\
 	src/shade/scale/geo/mercator_to_spherical.js	\
+	src/shade/scale/geo/mercator_to_latlong.js	\
 	src/shade/scale/geo/latlong_to_spherical.js	\
 	src/shade/scale/geo/latlong_to_mercator.js	\
 	src/facet/debug/_begin.js		\
