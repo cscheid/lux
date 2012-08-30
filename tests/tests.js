@@ -863,6 +863,15 @@ test("Shade Bits", function() {
     })();
 });
 
+test("Shade.evaluate()", function() {
+    var v1 = Shade.parameter("float", 3);
+    var v2 = Shade.parameter("float", 3);
+    equal(v1.add(v2).evaluate(), 6);
+    equal(Shade(v1).sin().cos().evaluate(), Math.cos(Math.sin(3)));
+    v1.set(6);
+    equal(Shade(v1).sin().cos().evaluate(), Math.cos(Math.sin(6)));
+});
+
 module("Facet tests");
 test("Facet.attribute_buffer", function() {
     ok(Facet.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 1}));
