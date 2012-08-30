@@ -19,11 +19,16 @@ vec3.copy = function(vec)
 
 vec3.make = vec3.copy;
 
-vec3.equal = function(v1, v2)
+vec3.equal_eps = function(v1, v2)
 {
     return Math.abs(v1[0] - v2[0]) < vec.eps &&
            Math.abs(v1[1] - v2[1]) < vec.eps &&
            Math.abs(v1[2] - v2[2]) < vec.eps;
+};
+
+vec3.equal = function(v1, v2)
+{
+    return v1[0] === v2[0] && v1[1] === v2[1] && v1[2] === v2[2];
 };
 
 vec3.random = function()
