@@ -175,7 +175,7 @@ test("Shade structs", function() {
         v5 = v2("foo");
 
     ok(_.isEqual(v1.constant_value(), v2.constant_value()));
-    ok(_.isEqual(v2.constant_value(), v3));    
+    ok(_.isEqual(v2.constant_value(), v3));
     ok(_.isEqual(v4.constant_value(), v3.foo));
     ok(_.isEqual(v4.constant_value(), v5.constant_value()));
 
@@ -748,8 +748,6 @@ test("color conversion", function() {
         ok(match(shade_source, shade_source2, tol), source+"->"+target+"->"+source+" inverse shade");
         ok(match(js_source, js_source2, tol), source+"->"+target+"->"+source+" inverse js");
     }
-
-    debugger;
 
     var test_count = 10;
 

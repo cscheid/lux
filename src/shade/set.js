@@ -37,8 +37,8 @@ Shade.set = function(exp, name)
         },
         type: Shade.Types.void_t,
         parents: [exp],
-        evaluate: function() {
-            return this.parents[0].evaluate();
-        }
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return this.parents[0].evaluate(cache);
+        })
     });
 };

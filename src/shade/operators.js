@@ -23,9 +23,9 @@ var operator = function(exp1, exp2,
                     this.parents[1].glsl_expression() + ")";
             }
         },
-        evaluate: function() {
-            return evaluator(this);
-        },
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return evaluator(this, cache);
+        }),
         element: Shade.memoize_on_field("_element", function(i) {
             return element_evaluator(this, i);
         }),
@@ -91,14 +91,14 @@ Shade.add = function() {
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
     var current_result = Shade.make(arguments[0]);
-    function evaluator(exp) {
+    function evaluator(exp, cache) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
         var vt;
         if (exp1.type.is_vec())
             vt = vec[exp1.type.vec_dimension()];
         else if (exp2.type.is_vec())
             vt = vec[exp2.type.vec_dimension()];
-        var v1 = exp1.evaluate(), v2 = exp2.evaluate();
+        var v1 = exp1.evaluate(cache), v2 = exp2.evaluate(cache);
         if (exp1.type.equals(Shade.Types.int_t) && 
             exp2.type.equals(Shade.Types.int_t))
             return v1 + v2;
@@ -204,14 +204,14 @@ Shade.sub = function() {
         throw ("type mismatch on sub: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
-    function evaluator(exp) {
+    function evaluator(exp, cache) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
         var vt;
         if (exp1.type.is_vec())
             vt = vec[exp1.type.vec_dimension()];
         else if (exp2.type.is_vec())
             vt = vec[exp2.type.vec_dimension()];
-        var v1 = exp1.evaluate(), v2 = exp2.evaluate();
+        var v1 = exp1.evaluate(cache), v2 = exp2.evaluate(cache);
         if (exp1.type.equals(Shade.Types.int_t) && 
             exp2.type.equals(Shade.Types.int_t))
             return v1 - v2;
@@ -298,11 +298,11 @@ Shade.div = function() {
         throw ("type mismatch on div: unexpected types '"
                    + t1.repr() + "' and '" + t2.repr() + "'");
     }
-    function evaluator(exp) {
+    function evaluator(exp, cache) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];
-        var v1 = exp1.evaluate();
-        var v2 = exp2.evaluate();
+        var v1 = exp1.evaluate(cache);
+        var v2 = exp2.evaluate(cache);
         var vt, mt;
         if (exp1.type.is_array()) {
             vt = vec[exp1.type.array_size()];
@@ -427,11 +427,11 @@ Shade.mul = function() {
         throw ("type mismatch on mul: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
-    function evaluator(exp) {
+    function evaluator(exp, cache) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];
-        var v1 = exp1.evaluate();
-        var v2 = exp2.evaluate();
+        var v1 = exp1.evaluate(cache);
+        var v2 = exp2.evaluate(cache);
         var vt, mt;
         if (exp1.type.is_array()) {
             vt = vec[exp1.type.array_size()];

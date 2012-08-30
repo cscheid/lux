@@ -69,10 +69,10 @@ Shade.vec = function()
             throw "element " + old_i + " out of bounds (size=" 
                 + total_size + ")";
         },
-        evaluate: function () {
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
             var result = [];
             var parent_values = _.each(this.parents, function(v) {
-                var c = v.evaluate();
+                var c = v.evaluate(cache);
                 if (facet_typeOf(c) === 'number')
                     result.push(c);
                 else
@@ -80,7 +80,7 @@ Shade.vec = function()
                         result.push(c[i]);
             });
             return vec[result.length].make(result);
-        },
+        }),
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) {

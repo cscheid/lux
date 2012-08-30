@@ -38,16 +38,16 @@ Shade.mat = function()
         element_constant_value: function(i) {
             return this.parents[i].constant_value();
         },
-        evaluate: function() {
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
             var result = [];
             var ll = _.each(this.parents, function(v) {
-                v = v.evaluate();
+                v = v.evaluate(cache);
                 for (var i=0; i<v.length; ++i) {
                     result.push(v[i]);
                 }
             });
             return mat[this.type.array_size()].make(result);
-        },
+        }),
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) { 

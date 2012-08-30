@@ -11,8 +11,8 @@ Shade.seq = function(parents)
         },
         type: Shade.Types.void_t,
         compile: function (ctx) {},
-        evaluate: function() {
-            return this.parents[this.parents.length-1].evaluate();
-        }
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return this.parents[this.parents.length-1].evaluate(cache);
+        })
     });
 };

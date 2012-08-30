@@ -13,17 +13,17 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, evaluator,
             return "(" + this.parents[0].glsl_expression() + " " + operator_name + " " +
                 this.parents[1].glsl_expression() + ")";
         },
-        evaluate: function() {
-            return evaluator(this);
-        },
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return evaluator(this, cache);
+        }),
         parent_is_unconditional: parent_is_unconditional
     });
 };
 
 var lift_binfun_to_evaluator = function(binfun) {
-    return function(exp) {
+    return function(exp, cache) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
-        return binfun(exp1.evaluate(), exp2.evaluate());
+        return binfun(exp1.evaluate(cache), exp2.evaluate(cache));
     };
 };
 
@@ -95,9 +95,9 @@ Shade.not = Shade(function(exp)
         value: function() {
             return "(!" + this.parents[0].glsl_expression() + ")";
         },
-        evaluate: function() {
-            return !this.parents[0].evaluate();
-        }
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return !this.parents[0].evaluate(cache);
+        })
     });
 });
 

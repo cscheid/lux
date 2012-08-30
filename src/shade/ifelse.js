@@ -41,11 +41,11 @@ Shade.ifelse = function(condition, if_true, if_false)
                         this.parents[2].constant_value());
             }
         },
-        evaluate: function() {
-            return this.parents[0].evaluate()?
-                this.parents[1].evaluate():
-                this.parents[2].evaluate();
-        },
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return this.parents[0].evaluate(cache)?
+                this.parents[1].evaluate(cache):
+                this.parents[2].evaluate(cache);
+        }),
         is_constant: function() {
             if (!this.parents[0].is_constant()) {
                 // if condition is not constant, 

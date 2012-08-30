@@ -74,6 +74,7 @@ facet.js:					\
 	src/shade/_begin.js			\
 	src/shade/make.js			\
 	src/shade/memoize_on_field.js		\
+	src/shade/memoize_on_guid_dict.js	\
 	src/shade/unknown.js			\
 	src/shade/camera/_begin.js		\
 	src/shade/camera/perspective.js		\

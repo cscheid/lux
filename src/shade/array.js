@@ -23,11 +23,11 @@ Shade.array = function(v)
             array_element_type: new_types[0],
             expression_type: "constant", // FIXME: is there a reason this is not "array"?
 
-            evaluate: function() {
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
                 return _.map(this.parents, function(e) {
-                    return e.evaluate();
+                    return e.evaluate(cache);
                 });
-            },
+            }),
             
             glsl_expression: function() { return this.glsl_name; },
             compile: function (ctx) {

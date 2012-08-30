@@ -34,14 +34,14 @@ Shade.struct = function(obj)
                     }).join(", "),
                     ")"].join(" ");
         },
-        evaluate: function() {
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
             var result = {};
             var that = this;
             _.each(this.parents, function(v, i) {
-                result[that.fields[i]] = v.evaluate();
+                result[that.fields[i]] = v.evaluate(cache);
             });
             return result;
-        },
+        }),
         field: function(field_name) {
             var index = this.type.field_index[field_name];
             if (_.isUndefined(index)) {

@@ -183,10 +183,10 @@ Shade.Exp = {
             type: Shade.Types.int_t,
             value: function() { return "int(" + this.parents[0].glsl_expression() + ")"; },
             is_constant: function() { return this.parents[0].is_constant(); },
-            evaluate: function() {
-                var v = parent.evaluate();
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var v = parent.evaluate(cache);
                 return Math.floor(v);
-            },
+            }),
             expression_type: "cast(int)"
         });
     },
@@ -199,10 +199,10 @@ Shade.Exp = {
             type: Shade.Types.bool_t,
             value: function() { return "bool(" + this.parents[0].glsl_expression() + ")"; },
             is_constant: function() { return this.parents[0].is_constant(); },
-            evaluate: function() {
-                var v = this.parents[0].evaluate();
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var v = this.parents[0].evaluate(cache);
                 return ~~v;
-            },
+            }),
             expression_type: "cast(bool)"
         });
     },
@@ -215,10 +215,10 @@ Shade.Exp = {
             type: Shade.Types.float_t,
             value: function() { return "float(" + this.parents[0].glsl_expression() + ")"; },
             is_constant: function() { return this.parents[0].is_constant(); },
-            evaluate: function() {
-                var v = this.parents[0].evaluate();
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var v = this.parents[0].evaluate(cache);
                 return Number(v);
-            },
+            }),
             expression_type: "cast(float)"
         });
     },
@@ -266,13 +266,13 @@ Shade.Exp = {
                     return that.parents[0].element_is_constant(i);
                 });
             }),
-            evaluate: function() {
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
                 if (this.type.is_pod()) {
-                    return this.parents[0].element(indices[0]).evaluate();
+                    return this.parents[0].element(indices[0]).evaluate(cache);
                 } else {
                     var that = this;
                     var ar = _.map(indices, function(index) {
-                        return that.parents[0].element(index).evaluate();
+                        return that.parents[0].element(index).evaluate(cache);
                     });
                     var d = this.type.vec_dimension();
                     switch (d) {
@@ -283,7 +283,7 @@ Shade.Exp = {
                         throw "bad vec dimension " + d;
                     }
                 }
-            },
+            }),
             element: function(i) {
                 return this.parents[0].element(indices[i]);
             },
@@ -335,10 +335,10 @@ Shade.Exp = {
                 return (this.parents[1].is_constant() &&
                         this.parents[0].element_is_constant(ix));
             },
-            evaluate: function() {
-                var ix = Math.floor(this.parents[1].evaluate());
-                return this.parents[0].element(ix).evaluate();
-            },
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var ix = Math.floor(this.parents[1].evaluate(cache));
+                return this.parents[0].element(ix).evaluate(cache);
+            }),
 
             element: Shade.memoize_on_field("_element", function(i) {
                 // FIXME I suspect that a bug here might still arise
@@ -409,10 +409,10 @@ Shade.Exp = {
             value: function() {
                 return "(" + this.parents[0].glsl_expression() + "." + field_name + ")";
             },
-            evaluate: function() {
-                var struct_value = this.parents[0].evaluate();
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var struct_value = this.parents[0].evaluate(cache);
                 return struct_value[field_name];
-            },
+            }),
             is_constant: Shade.memoize_on_field("_is_constant", function() {
                 // this is conservative for many situations, but hey.
                 return this.parents[0].is_constant();

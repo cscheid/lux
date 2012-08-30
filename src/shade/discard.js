@@ -96,8 +96,8 @@ Shade.discard_if = function(exp, condition)
         // FIXME How does evaluate interact with fragment discarding?
         // I still need to define the value of a discarded fragment. Currently evaluate
         // on fragment-varying expressions is undefined anyway, so we punt.
-        evaluate: function() {
-            return exp.evaluate();
+        evaluate: function(cache) {
+            return exp.evaluate(cache);
         }
     });
     return result;

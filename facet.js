@@ -5160,6 +5160,19 @@ Shade.memoize_on_field = function(field_name, fun, key_fun)
         return this._caches[field_name][arguments[0]];
     };
 };
+Shade.memoize_on_guid_dict = function(if_not_found) {
+    function evaluate(cache) {
+        if (_.isUndefined(cache))
+            cache = {};
+        var t = cache[this.guid];
+        if (_.isUndefined(t)) {
+            t = if_not_found.call(this, cache);
+            cache[this.guid] = t;
+        }
+        return t;
+    };
+    return evaluate;
+};
 // Shade.unknown encodes a Shade expression whose value
 // is not determinable at compile time.
 //
@@ -6646,10 +6659,10 @@ Shade.Exp = {
             type: Shade.Types.int_t,
             value: function() { return "int(" + this.parents[0].glsl_expression() + ")"; },
             is_constant: function() { return this.parents[0].is_constant(); },
-            evaluate: function() {
-                var v = parent.evaluate();
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var v = parent.evaluate(cache);
                 return Math.floor(v);
-            },
+            }),
             expression_type: "cast(int)"
         });
     },
@@ -6662,10 +6675,10 @@ Shade.Exp = {
             type: Shade.Types.bool_t,
             value: function() { return "bool(" + this.parents[0].glsl_expression() + ")"; },
             is_constant: function() { return this.parents[0].is_constant(); },
-            evaluate: function() {
-                var v = this.parents[0].evaluate();
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var v = this.parents[0].evaluate(cache);
                 return ~~v;
-            },
+            }),
             expression_type: "cast(bool)"
         });
     },
@@ -6678,10 +6691,10 @@ Shade.Exp = {
             type: Shade.Types.float_t,
             value: function() { return "float(" + this.parents[0].glsl_expression() + ")"; },
             is_constant: function() { return this.parents[0].is_constant(); },
-            evaluate: function() {
-                var v = this.parents[0].evaluate();
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var v = this.parents[0].evaluate(cache);
                 return Number(v);
-            },
+            }),
             expression_type: "cast(float)"
         });
     },
@@ -6729,13 +6742,13 @@ Shade.Exp = {
                     return that.parents[0].element_is_constant(i);
                 });
             }),
-            evaluate: function() {
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
                 if (this.type.is_pod()) {
-                    return this.parents[0].element(indices[0]).evaluate();
+                    return this.parents[0].element(indices[0]).evaluate(cache);
                 } else {
                     var that = this;
                     var ar = _.map(indices, function(index) {
-                        return that.parents[0].element(index).evaluate();
+                        return that.parents[0].element(index).evaluate(cache);
                     });
                     var d = this.type.vec_dimension();
                     switch (d) {
@@ -6746,7 +6759,7 @@ Shade.Exp = {
                         throw "bad vec dimension " + d;
                     }
                 }
-            },
+            }),
             element: function(i) {
                 return this.parents[0].element(indices[i]);
             },
@@ -6798,10 +6811,10 @@ Shade.Exp = {
                 return (this.parents[1].is_constant() &&
                         this.parents[0].element_is_constant(ix));
             },
-            evaluate: function() {
-                var ix = Math.floor(this.parents[1].evaluate());
-                return this.parents[0].element(ix).evaluate();
-            },
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var ix = Math.floor(this.parents[1].evaluate(cache));
+                return this.parents[0].element(ix).evaluate(cache);
+            }),
 
             element: Shade.memoize_on_field("_element", function(i) {
                 // FIXME I suspect that a bug here might still arise
@@ -6872,10 +6885,10 @@ Shade.Exp = {
             value: function() {
                 return "(" + this.parents[0].glsl_expression() + "." + field_name + ")";
             },
-            evaluate: function() {
-                var struct_value = this.parents[0].evaluate();
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var struct_value = this.parents[0].evaluate(cache);
                 return struct_value[field_name];
-            },
+            }),
             is_constant: Shade.memoize_on_field("_is_constant", function() {
                 // this is conservative for many situations, but hey.
                 return this.parents[0].is_constant();
@@ -7189,7 +7202,7 @@ Shade.constant = function(v, type)
                 }
                 return vec[this.type.array_size()].make(matrix_row(i));
             }),
-            evaluate: function() {
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
                 // FIXME boolean_vector
                 if (this.type.is_pod())
                     return args[0];
@@ -7203,7 +7216,7 @@ Shade.constant = function(v, type)
                     return mat[mat_length_to_dimension[args.length]].make(args);
                 else
                     throw "internal error: constant of unknown type";
-            },
+            }),
             compile: function(ctx) {},
             parents: [],
             type: type
@@ -7293,11 +7306,11 @@ Shade.array = function(v)
             array_element_type: new_types[0],
             expression_type: "constant", // FIXME: is there a reason this is not "array"?
 
-            evaluate: function() {
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
                 return _.map(this.parents, function(e) {
-                    return e.evaluate();
+                    return e.evaluate(cache);
                 });
-            },
+            }),
             
             glsl_expression: function() { return this.glsl_name; },
             compile: function (ctx) {
@@ -7367,14 +7380,14 @@ Shade.struct = function(obj)
                     }).join(", "),
                     ")"].join(" ");
         },
-        evaluate: function() {
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
             var result = {};
             var that = this;
             _.each(this.parents, function(v, i) {
-                result[that.fields[i]] = v.evaluate();
+                result[that.fields[i]] = v.evaluate(cache);
             });
             return result;
-        },
+        }),
         field: function(field_name) {
             var index = this.type.field_index[field_name];
             if (_.isUndefined(index)) {
@@ -7444,9 +7457,9 @@ Shade.set = function(exp, name)
         },
         type: Shade.Types.void_t,
         parents: [exp],
-        evaluate: function() {
-            return this.parents[0].evaluate();
-        }
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return this.parents[0].evaluate(cache);
+        })
     });
 };
 Shade.parameter = function(type, v)
@@ -7705,9 +7718,9 @@ var operator = function(exp1, exp2,
                     this.parents[1].glsl_expression() + ")";
             }
         },
-        evaluate: function() {
-            return evaluator(this);
-        },
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return evaluator(this, cache);
+        }),
         element: Shade.memoize_on_field("_element", function(i) {
             return element_evaluator(this, i);
         }),
@@ -7773,14 +7786,14 @@ Shade.add = function() {
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
     var current_result = Shade.make(arguments[0]);
-    function evaluator(exp) {
+    function evaluator(exp, cache) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
         var vt;
         if (exp1.type.is_vec())
             vt = vec[exp1.type.vec_dimension()];
         else if (exp2.type.is_vec())
             vt = vec[exp2.type.vec_dimension()];
-        var v1 = exp1.evaluate(), v2 = exp2.evaluate();
+        var v1 = exp1.evaluate(cache), v2 = exp2.evaluate(cache);
         if (exp1.type.equals(Shade.Types.int_t) && 
             exp2.type.equals(Shade.Types.int_t))
             return v1 + v2;
@@ -7886,14 +7899,14 @@ Shade.sub = function() {
         throw ("type mismatch on sub: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
-    function evaluator(exp) {
+    function evaluator(exp, cache) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
         var vt;
         if (exp1.type.is_vec())
             vt = vec[exp1.type.vec_dimension()];
         else if (exp2.type.is_vec())
             vt = vec[exp2.type.vec_dimension()];
-        var v1 = exp1.evaluate(), v2 = exp2.evaluate();
+        var v1 = exp1.evaluate(cache), v2 = exp2.evaluate(cache);
         if (exp1.type.equals(Shade.Types.int_t) && 
             exp2.type.equals(Shade.Types.int_t))
             return v1 - v2;
@@ -7980,11 +7993,11 @@ Shade.div = function() {
         throw ("type mismatch on div: unexpected types '"
                    + t1.repr() + "' and '" + t2.repr() + "'");
     }
-    function evaluator(exp) {
+    function evaluator(exp, cache) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];
-        var v1 = exp1.evaluate();
-        var v2 = exp2.evaluate();
+        var v1 = exp1.evaluate(cache);
+        var v2 = exp2.evaluate(cache);
         var vt, mt;
         if (exp1.type.is_array()) {
             vt = vec[exp1.type.array_size()];
@@ -8109,11 +8122,11 @@ Shade.mul = function() {
         throw ("type mismatch on mul: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
-    function evaluator(exp) {
+    function evaluator(exp, cache) {
         var exp1 = exp.parents[0];
         var exp2 = exp.parents[1];
-        var v1 = exp1.evaluate();
-        var v2 = exp2.evaluate();
+        var v1 = exp1.evaluate(cache);
+        var v2 = exp2.evaluate(cache);
         var vt, mt;
         if (exp1.type.is_array()) {
             vt = vec[exp1.type.array_size()];
@@ -8317,10 +8330,10 @@ Shade.vec = function()
             throw "element " + old_i + " out of bounds (size=" 
                 + total_size + ")";
         },
-        evaluate: function () {
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
             var result = [];
             var parent_values = _.each(this.parents, function(v) {
-                var c = v.evaluate();
+                var c = v.evaluate(cache);
                 if (facet_typeOf(c) === 'number')
                     result.push(c);
                 else
@@ -8328,7 +8341,7 @@ Shade.vec = function()
                         result.push(c[i]);
             });
             return vec[result.length].make(result);
-        },
+        }),
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) {
@@ -8377,16 +8390,16 @@ Shade.mat = function()
         element_constant_value: function(i) {
             return this.parents[i].constant_value();
         },
-        evaluate: function() {
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
             var result = [];
             var ll = _.each(this.parents, function(v) {
-                v = v.evaluate();
+                v = v.evaluate(cache);
                 for (var i=0; i<v.length; ++i) {
                     result.push(v[i]);
                 }
             });
             return mat[this.type.array_size()].make(result);
-        },
+        }),
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) { 
@@ -8513,9 +8526,9 @@ function builtin_glsl_function(opts)
         };
 
         if (evaluator) {
-            obj.evaluate = function() {
-                return evaluator(this);
-            };
+            obj.evaluate = Shade.memoize_on_guid_dict(function(cache) {
+                return evaluator(this, cache);
+            });
         } else {
             throw "Internal error: Builtin '" + name + "' has no evaluator?!";
         }
@@ -8598,11 +8611,11 @@ var funcs_1op = {
 };
 
 _.each(funcs_1op, function (evaluator_1, fun_name) {
-    function evaluator(exp) {
+    function evaluator(exp, cache) {
         if (exp.type.equals(Shade.Types.float_t))
-            return evaluator_1(exp.parents[0].evaluate());
+            return evaluator_1(exp.parents[0].evaluate(cache));
         else {
-            var c = exp.parents[0].evaluate();
+            var c = exp.parents[0].evaluate(cache);
             return vec.map(c, evaluator_1);
         }
     }
@@ -8614,9 +8627,9 @@ _.each(funcs_1op, function (evaluator_1, fun_name) {
     }(Shade[fun_name]);
 });
 
-function atan1_evaluator(exp)
+function atan1_evaluator(exp, cache)
 {
-    var v1 = exp.parents[0].evaluate();
+    var v1 = exp.parents[0].evaluate(cache);
     if (exp.type.equals(Shade.Types.float_t))
         return Math.atan(v1);
     else {
@@ -8626,9 +8639,9 @@ function atan1_evaluator(exp)
 
 function common_fun_2op_evaluator(fun)
 {
-    return function(exp){
-        var v1 = exp.parents[0].evaluate();
-        var v2 = exp.parents[1].evaluate();
+    return function(exp, cache) {
+        var v1 = exp.parents[0].evaluate(cache);
+        var v2 = exp.parents[1].evaluate(cache);
         if (exp.type.equals(Shade.Types.float_t))
             return fun(v1, v2);
         else {
@@ -8666,9 +8679,9 @@ Shade.pow = common_fun_2op("pow", common_fun_2op_evaluator(Math.pow));
 Shade.Exp.pow = function(other) { return Shade.pow(this, other); };
 
 function mod_min_max_evaluator(op) {
-    return function(exp) {
+    return function(exp, cache) {
         var values = _.map(exp.parents, function (p) {
-            return p.evaluate();
+            return p.evaluate(cache);
         });
         if (exp.parents[0].type.equals(Shade.Types.float_t))
             return op.apply(op, values);
@@ -8709,7 +8722,7 @@ _.each({
     Shade[k] = result;
 });
 
-function clamp_evaluator(exp)
+function clamp_evaluator(exp, cache)
 {
     function clamp(v, mn, mx) {
         return Math.max(mn, Math.min(mx, v));
@@ -8718,9 +8731,9 @@ function clamp_evaluator(exp)
     var e1 = exp.parents[0];
     var e2 = exp.parents[1];
     var e3 = exp.parents[2];
-    var v1 = e1.evaluate();
-    var v2 = e2.evaluate();
-    var v3 = e3.evaluate();
+    var v1 = e1.evaluate(cache);
+    var v2 = e2.evaluate(cache);
+    var v3 = e3.evaluate(cache);
 
     if (e1.type.equals(Shade.Types.float_t)) {
         return clamp(v1, v2, v3);
@@ -8751,7 +8764,7 @@ var clamp = builtin_glsl_function({
 
 Shade.clamp = clamp;
 
-function mix_evaluator(exp)
+function mix_evaluator(exp, cache)
 {
     function mix(left, right, u) {
         return (1-u) * left + u * right;
@@ -8759,9 +8772,9 @@ function mix_evaluator(exp)
     var e1 = exp.parents[0];
     var e2 = exp.parents[1];
     var e3 = exp.parents[2];
-    var v1 = e1.evaluate();
-    var v2 = e2.evaluate();
-    var v3 = e3.evaluate();
+    var v1 = e1.evaluate(cache);
+    var v2 = e2.evaluate(cache);
+    var v3 = e3.evaluate(cache);
     if (e1.type.equals(Shade.Types.float_t)) {
         return mix(v1, v2, v3);
     } else if (e2.type.equals(e3.type)) {
@@ -8800,14 +8813,14 @@ var step = builtin_glsl_function({
         [Shade.Types.float_t, Shade.Types.vec2,    Shade.Types.vec2],
         [Shade.Types.float_t, Shade.Types.vec3,    Shade.Types.vec3],
         [Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]], 
-    evaluator: function(exp) {
+    evaluator: function(exp, cache) {
         function step(edge, x) {
             if (x < edge) return 0.0; else return 1.0;
         }
         var e1 = exp.parents[0];
         var e2 = exp.parents[1];
-        var v1 = e1.evaluate();
-        var v2 = e2.evaluate();
+        var v1 = e1.evaluate(cache);
+        var v2 = e2.evaluate(cache);
         if (e2.type.equals(Shade.Types.float_t)) {
             return step(v1, v2);
         } if (e1.type.equals(e2.type)) {
@@ -8834,13 +8847,13 @@ var smoothstep = builtin_glsl_function({
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec2,    Shade.Types.vec2],
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec3,    Shade.Types.vec3],
         [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.vec4,    Shade.Types.vec4]], 
-    evaluator: function(exp) {
+    evaluator: function(exp, cache) {
         var edge0 = exp.parents[0];
         var edge1 = exp.parents[1];
         var x = exp.parents[2];
         var t = Shade.clamp(x.sub(edge0).div(edge1.sub(edge0)), 0, 1);
         // FIXME this is cute but will be inefficient
-        return t.mul(t).mul(Shade.sub(3, t.mul(2))).evaluate();
+        return t.mul(t).mul(Shade.sub(3, t.mul(2))).evaluate(cache);
     }, element_function: function(exp, i) {
         return Shade.smoothstep.apply(this, broadcast_elements(exp, i));
     }
@@ -8854,8 +8867,8 @@ var norm = builtin_glsl_function({
         [Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.float_t],
         [Shade.Types.vec4,    Shade.Types.float_t]], 
-    evaluator: function(exp) {
-        var v = exp.parents[0].evaluate();
+    evaluator: function(exp, cache) {
+        var v = exp.parents[0].evaluate(cache);
         if (exp.parents[0].type.equals(Shade.Types.float_t))
             return Math.abs(v);
         else
@@ -8870,8 +8883,8 @@ var distance = builtin_glsl_function({
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t],
         [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]], 
-    evaluator: function(exp) {
-        return exp.parents[0].sub(exp.parents[1]).norm().evaluate();
+    evaluator: function(exp, cache) {
+        return exp.parents[0].sub(exp.parents[1]).norm().evaluate(cache);
     }});
 Shade.distance = distance;
 
@@ -8882,9 +8895,9 @@ var dot = builtin_glsl_function({
         [Shade.Types.vec2,    Shade.Types.vec2,    Shade.Types.float_t],
         [Shade.Types.vec3,    Shade.Types.vec3,    Shade.Types.float_t],
         [Shade.Types.vec4,    Shade.Types.vec4,    Shade.Types.float_t]],
-    evaluator: function (exp) {
-        var v1 = exp.parents[0].evaluate(),
-            v2 = exp.parents[1].evaluate();
+    evaluator: function (exp, cache) {
+        var v1 = exp.parents[0].evaluate(cache),
+            v2 = exp.parents[1].evaluate(cache);
         if (exp.parents[0].type.equals(Shade.Types.float_t)) {
             return v1 * v2;
         } else {
@@ -8896,9 +8909,9 @@ Shade.dot = dot;
 var cross = builtin_glsl_function({
     name: "cross", 
     type_resolving_list: [[Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3]], 
-    evaluator: function(exp) {
-        return vec3.cross(exp.parents[0].evaluate(),
-                          exp.parents[1].evaluate());
+    evaluator: function(exp, cache) {
+        return vec3.cross(exp.parents[0].evaluate(cache),
+                          exp.parents[1].evaluate(cache));
     }, element_function: function (exp, i) {
         var v1 = exp.parents[0].length;
         var v2 = exp.parents[1].length;
@@ -8918,8 +8931,8 @@ var normalize = builtin_glsl_function({
         [Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3],
         [Shade.Types.vec4, Shade.Types.vec4]], 
-    evaluator: function(exp) {
-        return exp.parents[0].div(exp.parents[0].norm()).evaluate();
+    evaluator: function(exp, cache) {
+        return exp.parents[0].div(exp.parents[0].norm()).evaluate(cache);
     }, element_function: function(exp, i) {
         return exp.parents[0].div(exp.parents[0].norm()).element(i);
     }
@@ -8933,14 +8946,14 @@ var faceforward = builtin_glsl_function({
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]], 
-    evaluator: function(exp) {
+    evaluator: function(exp, cache) {
         var N = exp.parents[0];
         var I = exp.parents[1];
         var Nref = exp.parents[2];
-        if (Nref.dot(I).evaluate() < 0)
-            return N.evaluate();
+        if (Nref.dot(I).evaluate(cache) < 0)
+            return N.evaluate(cache);
         else
-            return Shade.sub(0, N).evaluate();
+            return Shade.sub(0, N).evaluate(cache);
     }, element_function: function(exp, i) {
         var N = exp.parents[0];
         var I = exp.parents[1];
@@ -8958,10 +8971,10 @@ var reflect = builtin_glsl_function({
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4]], 
-    evaluator: function(exp) {
+    evaluator: function(exp, cache) {
         var I = exp.parents[0];
         var N = exp.parents[1];
-        return I.sub(Shade.mul(2, N.dot(I), N)).evaluate();
+        return I.sub(Shade.mul(2, N.dot(I), N)).evaluate(cache);
     }, element_function: function(exp, i) {
         var I = exp.parents[0];
         var N = exp.parents[1];
@@ -8977,17 +8990,17 @@ var refract = builtin_glsl_function({
         [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
         [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.float_t, Shade.Types.vec3],
         [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.float_t, Shade.Types.vec4]],
-    evaluator: function(exp) {
+    evaluator: function(exp, cache) {
         var I = exp.parents[0];
         var N = exp.parents[1];
         var eta = exp.parents[2];
         
         var k = Shade.sub(1.0, Shade.mul(eta, eta, Shade.sub(1.0, N.dot(I).mul(N.dot(I)))));
         // FIXME This is cute but inefficient
-        if (k.evaluate() < 0.0) {
+        if (k.evaluate(cache) < 0.0) {
             return vec[I.type.array_size()].create();
         } else {
-            return eta.mul(I).sub(eta.mul(N.dot(I)).add(k.sqrt()).mul(N)).evaluate();
+            return eta.mul(I).sub(eta.mul(N.dot(I)).add(k.sqrt()).mul(N)).evaluate(cache);
         }
     }, element_function: function(exp, i) {
         var I = exp.parents[0];
@@ -9033,9 +9046,9 @@ Shade.equal = builtin_glsl_function({
         [Shade.Types.bvec2, Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bvec3, Shade.Types.bool_t],
         [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]], 
-    evaluator: function(exp) {
-        var left = exp.parents[0].evaluate();
-        var right = exp.parents[1].evaluate();
+    evaluator: function(exp, cache) {
+        var left = exp.parents[0].evaluate(cache);
+        var right = exp.parents[1].evaluate(cache);
         return (_.all(zipWith(function (x, y) { return x === y; }),
                       left, right));
     }});
@@ -9053,9 +9066,9 @@ Shade.notEqual = builtin_glsl_function({
         [Shade.Types.bvec2, Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bvec3, Shade.Types.bool_t],
         [Shade.Types.bvec4, Shade.Types.bvec4, Shade.Types.bool_t]], 
-    evaluator: function(exp) {
-        var left = exp.parents[0].evaluate();
-        var right = exp.parents[1].evaluate();
+    evaluator: function(exp, cache) {
+        var left = exp.parents[0].evaluate(cache);
+        var right = exp.parents[1].evaluate(cache);
         return !(_.all(zipWith(function (x, y) { return x === y; }),
                        left, right));
     }});
@@ -9070,9 +9083,9 @@ Shade.lessThan = builtin_glsl_function({
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
-    evaluator: function(exp) {
-        var left = exp.parents[0].evaluate();
-        var right = exp.parents[1].evaluate();
+    evaluator: function(exp, cache) {
+        var left = exp.parents[0].evaluate(cache);
+        var right = exp.parents[1].evaluate(cache);
         return _.map(left, function(x, i) { return x < right[i]; });
     }, element_function: function(exp, i) {
         return Shade.lt.apply(this, broadcast_elements(exp, i));
@@ -9089,9 +9102,9 @@ Shade.lessThanEqual = builtin_glsl_function({
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
-    evaluator: function(exp) {
-        var left = exp.parents[0].evaluate();
-        var right = exp.parents[1].evaluate();
+    evaluator: function(exp, cache) {
+        var left = exp.parents[0].evaluate(cache);
+        var right = exp.parents[1].evaluate(cache);
         return _.map(left, function(x, i) { return x <= right[i]; });
     }, element_function: function(exp, i) {
         return Shade.le.apply(this, broadcast_elements(exp, i));
@@ -9110,9 +9123,9 @@ Shade.greaterThan = builtin_glsl_function({
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
-    evaluator: function(exp) {
-        var left = exp.parents[0].evaluate();
-        var right = exp.parents[1].evaluate();
+    evaluator: function(exp, cache) {
+        var left = exp.parents[0].evaluate(cache);
+        var right = exp.parents[1].evaluate(cache);
         return _.map(left, function(x, i) { return x > right[i]; });
     }, element_function: function(exp, i) {
         return Shade.gt.apply(this, broadcast_elements(exp, i));
@@ -9131,9 +9144,9 @@ Shade.greaterThanEqual = builtin_glsl_function({
         [Shade.Types.ivec2, Shade.Types.ivec2, Shade.Types.bvec2],
         [Shade.Types.ivec3, Shade.Types.ivec3, Shade.Types.bvec3],
         [Shade.Types.ivec4, Shade.Types.ivec4, Shade.Types.bvec4]], 
-    evaluator: function(exp) {
-        var left = exp.parents[0].evaluate();
-        var right = exp.parents[1].evaluate();
+    evaluator: function(exp, cache) {
+        var left = exp.parents[0].evaluate(cache);
+        var right = exp.parents[1].evaluate(cache);
         return _.map(left, function(x, i) { return x >= right[i]; });
     }, element_function: function(exp, i) {
         return Shade.ge.apply(this, broadcast_elements(exp, i));
@@ -9149,8 +9162,8 @@ Shade.all = builtin_glsl_function({
         [Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bool_t],
         [Shade.Types.bvec4, Shade.Types.bool_t]], 
-    evaluator: function(exp) {
-        var v = exp.parents[0].evaluate();
+    evaluator: function(exp, cache) {
+        var v = exp.parents[0].evaluate(cache);
         return _.all(v, function(x) { return x; });
     }});
 Shade.Exp.all = function() { return Shade.all(this); };
@@ -9161,8 +9174,8 @@ Shade.any = builtin_glsl_function({
         [Shade.Types.bvec2, Shade.Types.bool_t],
         [Shade.Types.bvec3, Shade.Types.bool_t],
         [Shade.Types.bvec4, Shade.Types.bool_t]], 
-    evaluator: function(exp) {
-        var v = exp.parents[0].evaluate();
+    evaluator: function(exp, cache) {
+        var v = exp.parents[0].evaluate(cache);
         return _.any(v, function(x) { return x; });
     }});
 Shade.Exp.any = function() { return Shade.any(this); };
@@ -9173,9 +9186,9 @@ Shade.matrixCompMult = builtin_glsl_function({
         [Shade.Types.mat2, Shade.Types.mat2, Shade.Types.mat2],
         [Shade.Types.mat3, Shade.Types.mat3, Shade.Types.mat3],
         [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4]], 
-    evaluator: function(exp) {
-        var v1 = exp.parents[0].evaluate();
-        var v2 = exp.parents[1].evaluate();
+    evaluator: function(exp, cache) {
+        var v1 = exp.parents[0].evaluate(cache);
+        var v2 = exp.parents[1].evaluate(cache);
         return mat.map(v1, function(x, i) { return x * v2[i]; });
     }, element_function: function(exp, i) {
         var v1 = exp.parents[0];
@@ -9229,9 +9242,9 @@ Shade.seq = function(parents)
         },
         type: Shade.Types.void_t,
         compile: function (ctx) {},
-        evaluate: function() {
-            return this.parents[this.parents.length-1].evaluate();
-        }
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return this.parents[this.parents.length-1].evaluate(cache);
+        })
     });
 };
 Shade.Optimizer = {};
@@ -9839,17 +9852,17 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, evaluator,
             return "(" + this.parents[0].glsl_expression() + " " + operator_name + " " +
                 this.parents[1].glsl_expression() + ")";
         },
-        evaluate: function() {
-            return evaluator(this);
-        },
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return evaluator(this, cache);
+        }),
         parent_is_unconditional: parent_is_unconditional
     });
 };
 
 var lift_binfun_to_evaluator = function(binfun) {
-    return function(exp) {
+    return function(exp, cache) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
-        return binfun(exp1.evaluate(), exp2.evaluate());
+        return binfun(exp1.evaluate(cache), exp2.evaluate(cache));
     };
 };
 
@@ -9921,9 +9934,9 @@ Shade.not = Shade(function(exp)
         value: function() {
             return "(!" + this.parents[0].glsl_expression() + ")";
         },
-        evaluate: function() {
-            return !this.parents[0].evaluate();
-        }
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return !this.parents[0].evaluate(cache);
+        })
     });
 });
 
@@ -10061,11 +10074,11 @@ Shade.ifelse = function(condition, if_true, if_false)
                         this.parents[2].constant_value());
             }
         },
-        evaluate: function() {
-            return this.parents[0].evaluate()?
-                this.parents[1].evaluate():
-                this.parents[2].evaluate();
-        },
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return this.parents[0].evaluate(cache)?
+                this.parents[1].evaluate(cache):
+                this.parents[2].evaluate(cache);
+        }),
         is_constant: function() {
             if (!this.parents[0].is_constant()) {
                 // if condition is not constant, 
@@ -10332,8 +10345,8 @@ Shade.discard_if = function(exp, condition)
         // FIXME How does evaluate interact with fragment discarding?
         // I still need to define the value of a discarded fragment. Currently evaluate
         // on fragment-varying expressions is undefined anyway, so we punt.
-        evaluate: function() {
-            return exp.evaluate();
+        evaluate: function(cache) {
+            return exp.evaluate(cache);
         }
     });
     return result;
