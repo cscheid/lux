@@ -1009,10 +1009,15 @@ vec2.copy = function(vec)
 
 vec2.make = vec2.copy;
 
-vec2.equal = function(v1, v2)
+vec2.equal_eps = function(v1, v2)
 {
     return Math.abs(v1[0] - v2[0]) < vec.eps &&
         Math.abs(v1[1] - v2[1]) < vec.eps;
+};
+
+vec2.equal = function(v1, v2)
+{
+    return v1[0] === v2[0] && v1[1] === v2[1];
 };
 
 vec2.random = function()
@@ -1176,11 +1181,16 @@ vec3.copy = function(vec)
 
 vec3.make = vec3.copy;
 
-vec3.equal = function(v1, v2)
+vec3.equal_eps = function(v1, v2)
 {
     return Math.abs(v1[0] - v2[0]) < vec.eps &&
            Math.abs(v1[1] - v2[1]) < vec.eps &&
            Math.abs(v1[2] - v2[2]) < vec.eps;
+};
+
+vec3.equal = function(v1, v2)
+{
+    return v1[0] === v2[0] && v1[1] === v2[1] && v1[2] === v2[2];
 };
 
 vec3.random = function()
@@ -1380,12 +1390,17 @@ vec4.random = function() {
     return vec4.make(lst);
 };
 
-vec4.equal = function(v1, v2)
+vec4.equal_eps = function(v1, v2)
 {
     return Math.abs(v1[0] - v2[0]) < vec.eps &&
         Math.abs(v1[1] - v2[1]) < vec.eps &&
         Math.abs(v1[2] - v2[2]) < vec.eps &&
         Math.abs(v1[3] - v2[3]) < vec.eps;
+};
+
+vec4.equal = function(v1, v2)
+{
+    return v1[0] === v2[0] && v1[1] === v2[1] && v1[2] === v2[2] && v1[3] === v2[3];
 };
 
 vec4.set = function(dest, vec)
@@ -2949,6 +2964,14 @@ vec.eps = 1e-6;
 vec.make = function(v)
 {
     return vec[v.length].make(v);
+};
+
+vec.equal_eps = function(v1, v2)
+{
+    if (v1.length != v2.length) {
+        throw "mismatched lengths";
+    }
+    return vec[v1.length].equal_eps(v1, v2);
 };
 
 vec.equal = function(v1, v2)
@@ -8464,6 +8487,7 @@ function builtin_glsl_function(opts)
     var evaluator = opts.evaluator;
     var type_resolving_list = opts.type_resolving_list;
     var element_function = opts.element_function;
+    var element_constant_evaluator = opts.element_constant_evaluator;
 
     for (var i=0; i<type_resolving_list.length; ++i)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
@@ -8543,9 +8567,18 @@ function builtin_glsl_function(opts)
             obj.element = function(i) {
                 return element_function(this, i);
             };
-            obj.element_is_constant = function(i) {
-                return this.element(i).is_constant();
-            };
+            if (element_constant_evaluator) {
+                obj.element_is_constant = function(i) {
+                    return element_constant_evaluator(this, i);
+                };
+            } else {
+                obj.element_is_constant = function(i) {
+                    if (this.guid === 489) {
+                        debugger;
+                    }
+                    return this.element(i).is_constant();
+                };
+            }
         }
         return Shade._create_concrete_value_exp(obj);
     };
@@ -9025,8 +9058,9 @@ var texture2D = builtin_glsl_function({
     type_resolving_list: [[Shade.Types.sampler2D, Shade.Types.vec2, Shade.Types.vec4]],
     element_function: function(exp, i) { return exp.at(i); },
 
-    // FIXME is this necessary?
-    // element_constant_evaluator: function(exp, i) { return false; },
+    // This line below is necessary to prevent an infinite loop
+    // because we're expressing element_function as exp.at();
+    element_constant_evaluator: function(exp, i) { return false; },
 
     evaluator: function(exp) {
         throw "evaluate unsupported on texture2D expressions";
