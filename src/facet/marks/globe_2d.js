@@ -6,6 +6,7 @@ Facet.Marks.globe_2d = function(opts)
         zoom: 3,
         resolution_bias: -1,
         patch_size: 10,
+        cache_size: 3, // 3: 64 images; 4: 256 images.
         tile_pattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         },
@@ -24,7 +25,7 @@ Facet.Marks.globe_2d = function(opts)
             return this.uv.mul(max.sub(min)).add(min);
         }
     });
-    var cache_size = 64; // cache size must be (2^n)^2
+    var cache_size = 1 << (2 * opts.cache_size);
     var tile_size = 256;
     var tiles_per_line  = 1 << (~~Math.round(Math.log(Math.sqrt(cache_size))/Math.log(2)));
     var super_tile_size = tile_size * tiles_per_line;

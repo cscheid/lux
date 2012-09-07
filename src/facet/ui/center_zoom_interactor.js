@@ -56,10 +56,11 @@ Facet.UI.center_zoom_interactor = function(opts)
         opts.mousemove(event);
     }
 
-    function mousewheel(event, delta, deltaX, deltaY) {
-        zoom.set(zoom.get() * (1.0 - deltaY / 15));
-        opts.mousewheel(event, delta, deltaX, deltaY);
+    function mousewheel(event) {
+        zoom.set(zoom.get() * (1.0 + event.wheelDelta / 1200));
+        opts.mousewheel(event);
         Facet.Scene.invalidate();
+        return false;
     }
 
     var aspect_ratio = Shade.parameter("float", width/height);

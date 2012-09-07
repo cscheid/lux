@@ -67,20 +67,28 @@ Facet.render_buffer = function(opts)
         this.init(width, height);
     };
     frame_buffer.with_bound_buffer = function(what) {
+        var v = ctx.getParameter(ctx.VIEWPORT);
         try {
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
             ctx.viewport(0, 0, this.width, this.height);
             return what();
         } finally {
+            ctx.viewport(v[0], v[1], v[2], v[3]);
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
     frame_buffer.make_screen_batch = function(with_texel_at_uv, mode) {
+        var that = this;
         mode = mode || Facet.DrawingMode.standard;
         var sq = Facet.Models.square();
         return Facet.bake(sq, {
             position: sq.vertex.mul(2).sub(1),
-            color: with_texel_at_uv(Shade.texture2D(this.texture, sq.tex_coord), sq.tex_coord),
+            color: with_texel_at_uv(function(offset) { 
+                var texcoord = sq.tex_coord;
+                if (arguments.length > 0)
+                    texcoord = texcoord.add(offset);
+                return Shade.texture2D(that.texture, texcoord);
+            }, sq.tex_coord),
             mode: mode
         });
     };
