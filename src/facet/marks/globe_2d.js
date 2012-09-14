@@ -10,6 +10,7 @@ Facet.Marks.globe_2d = function(opts)
         tile_pattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         },
+        debug: false,
         post_process: function(c) { return c; }
     });
     if (opts.interactor) {
@@ -214,9 +215,24 @@ Facet.Marks.globe_2d = function(opts)
                     Facet.Scene.invalidate();
                 };
             };
+            var xform = opts.debug ? function(image) {
+                var c = document.createElement("canvas");
+                c.setAttribute("width", image.width);
+                c.setAttribute("height", image.width);
+                var ctx = c.getContext('2d');
+                ctx.drawImage(image, 0, 0);
+                ctx.font = "12pt Helvetica Neue";
+                ctx.fillStyle = "black";
+                ctx.fillText(x + " " + y + " " + zoom + " ", 10, 250);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "black";
+                ctx.strokeRect(0, 0, 256, 256);
+                return c;
+            } : function(image) { return image; };
             Facet.load_image_into_texture({
                 texture: tiles[id].texture,
                 src: opts.tile_pattern(zoom, x, y),
+                transform_image: xform,
                 crossOrigin: "anonymous",
                 x_offset: tiles[id].offset_x * tile_size,
                 y_offset: tiles[id].offset_y * tile_size,
