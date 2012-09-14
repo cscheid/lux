@@ -3,7 +3,8 @@ Facet.load_image_into_texture = function(opts)
     opts = _.defaults(opts, {
         onload: function() {},
         x_offset: 0,
-        y_offset: 0
+        y_offset: 0,
+        transform_image: function(i) { return i; }
     });
 
     var texture = opts.texture;
@@ -12,6 +13,7 @@ Facet.load_image_into_texture = function(opts)
     var y_offset = opts.y_offset;
 
     function image_handler(image) {
+        image = opts.transform_image(image);
         var ctx = texture._ctx;
         Facet.set_context(texture._ctx);
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
