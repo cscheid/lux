@@ -3828,7 +3828,8 @@ Facet.load_image_into_texture = function(opts)
     opts = _.defaults(opts, {
         onload: function() {},
         x_offset: 0,
-        y_offset: 0
+        y_offset: 0,
+        transform_image: function(i) { return i; }
     });
 
     var texture = opts.texture;
@@ -3837,6 +3838,7 @@ Facet.load_image_into_texture = function(opts)
     var y_offset = opts.y_offset;
 
     function image_handler(image) {
+        image = opts.transform_image(image);
         var ctx = texture._ctx;
         Facet.set_context(texture._ctx);
         ctx.bindTexture(ctx.TEXTURE_2D, texture);
@@ -4219,20 +4221,28 @@ Facet.render_buffer = function(opts)
         this.init(width, height);
     };
     frame_buffer.with_bound_buffer = function(what) {
+        var v = ctx.getParameter(ctx.VIEWPORT);
         try {
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
             ctx.viewport(0, 0, this.width, this.height);
             return what();
         } finally {
+            ctx.viewport(v[0], v[1], v[2], v[3]);
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
     frame_buffer.make_screen_batch = function(with_texel_at_uv, mode) {
+        var that = this;
         mode = mode || Facet.DrawingMode.standard;
         var sq = Facet.Models.square();
         return Facet.bake(sq, {
             position: sq.vertex.mul(2).sub(1),
-            color: with_texel_at_uv(Shade.texture2D(this.texture, sq.tex_coord), sq.tex_coord),
+            color: with_texel_at_uv(function(offset) { 
+                var texcoord = sq.tex_coord;
+                if (arguments.length > 0)
+                    texcoord = texcoord.add(offset);
+                return Shade.texture2D(that.texture, texcoord);
+            }, sq.tex_coord),
             mode: mode
         });
     };
@@ -5058,10 +5068,11 @@ Facet.UI.center_zoom_interactor = function(opts)
         opts.mousemove(event);
     }
 
-    function mousewheel(event, delta, deltaX, deltaY) {
-        zoom.set(zoom.get() * (1.0 - deltaY / 15));
-        opts.mousewheel(event, delta, deltaX, deltaY);
+    function mousewheel(event) {
+        zoom.set(zoom.get() * (1.0 + event.wheelDelta / 1200));
+        opts.mousewheel(event);
         Facet.Scene.invalidate();
+        return false;
     }
 
     var aspect_ratio = Shade.parameter("float", width/height);
@@ -11428,7 +11439,7 @@ Shade.Scale.Geo.latlong_to_spherical = Shade(function(lat, lon)
 Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
 {
     lat = lat.div(2).add(Math.PI/4).tan().log();
-    return Shade.vec(lat, lon);
+    return Shade.vec(lon, lat);
 });
 Facet.Debug = {};
 Facet.Debug.init = function(div)
@@ -12043,9 +12054,11 @@ Facet.Marks.globe_2d = function(opts)
         zoom: 3,
         resolution_bias: -1,
         patch_size: 10,
+        cache_size: 3, // 3: 64 images; 4: 256 images.
         tile_pattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         },
+        debug: false,
         post_process: function(c) { return c; }
     });
     if (opts.interactor) {
@@ -12061,7 +12074,7 @@ Facet.Marks.globe_2d = function(opts)
             return this.uv.mul(max.sub(min)).add(min);
         }
     });
-    var cache_size = 64; // cache size must be (2^n)^2
+    var cache_size = 1 << (2 * opts.cache_size);
     var tile_size = 256;
     var tiles_per_line  = 1 << (~~Math.round(Math.log(Math.sqrt(cache_size))/Math.log(2)));
     var super_tile_size = tile_size * tiles_per_line;
@@ -12250,9 +12263,24 @@ Facet.Marks.globe_2d = function(opts)
                     Facet.Scene.invalidate();
                 };
             };
+            var xform = opts.debug ? function(image) {
+                var c = document.createElement("canvas");
+                c.setAttribute("width", image.width);
+                c.setAttribute("height", image.width);
+                var ctx = c.getContext('2d');
+                ctx.drawImage(image, 0, 0);
+                ctx.font = "12pt Helvetica Neue";
+                ctx.fillStyle = "black";
+                ctx.fillText(x + " " + y + " " + zoom + " ", 10, 250);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "black";
+                ctx.strokeRect(0, 0, 256, 256);
+                return c;
+            } : function(image) { return image; };
             Facet.load_image_into_texture({
                 texture: tiles[id].texture,
                 src: opts.tile_pattern(zoom, x, y),
+                transform_image: xform,
                 crossOrigin: "anonymous",
                 x_offset: tiles[id].offset_x * tile_size,
                 y_offset: tiles[id].offset_y * tile_size,
