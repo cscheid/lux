@@ -3823,6 +3823,63 @@ Facet.init = function(canvas, opts)
 };
 
 })();
+/*
+ * Facet.load_image_into_texture:
+ * 
+ *   Replaces a rectangle of a Facet texture with a given image.
+ * 
+ *   This is useful to store a large set of rectangular images into a single texture, for example.
+ * 
+ *   Example usage:
+ * 
+ *   * Load an image from a URL:
+ * 
+ *     Facet.load_image_into_texture({ 
+ *       texture: texture,
+ *       src: "http://www.example.com/image.png"
+ *     })
+ * 
+ *   * Invoke a callback when image is successfully loaded:
+ * 
+ *     Facet.load_image_into_texture({ 
+ *       texture: texture,
+ *       src: "http://www.example.com/image.png",
+ *       onload: function() { alert("image has now loaded!") }
+ *     })
+ * 
+ *   * Specify an offset:
+ * 
+ *     Facet.load_image_into_texture({ 
+ *       texture: texture,
+ *       src: "http://www.example.com/image.png",
+ *       x_offset: 64,
+ *       y_offset: 32
+ *     })
+ * 
+ *   * Load an image from an existing element in the DOM:
+ * 
+ *     Facet.load_image_into_texture({
+ *       texture: texture,
+ *       img: document.getElementById("image-element")
+ *     });
+ *
+ *     Facet.load_image_into_texture({
+ *       texture: texture,
+ *       canvas: document.getElementById("canvas-element")
+ *     });
+ * 
+ *   * Load an image from a TypedArray buffer (currently only supports 8-bit RGBA):
+ * 
+ *     Facet.load_image_into_texture({
+ *       texture: texture,
+ *       width: 128,
+ *       height: 128,
+ *       buffer: new Uint8Array(128 * 128 * 4)
+ *     });
+ */
+
+// FIXME: move all of this code so that it's a method in Facet.texture.
+
 Facet.load_image_into_texture = function(opts)
 {
     opts = _.defaults(opts, {
@@ -3871,6 +3928,8 @@ Facet.load_image_into_texture = function(opts)
         if (opts.crossOrigin)
             image.crossOrigin = opts.crossOrigin;
         image.src = opts.src;
+    } else if (opts.canvas) {
+        image_handler(opts.canvas);
     } else if (opts.img) {
         if (opts.img.isComplete) {
             image_handler(opts.img);
@@ -4270,6 +4329,8 @@ Facet.on_context = function(the_ctx, f)
 //////////////////////////////////////////////////////////////////////////////
 // load texture from DOM element or URL. 
 // BEWARE SAME-DOMAIN POLICY!
+
+// FIXME: replace all this with the code from Facet.load_image_into_texture
 
 Facet.texture = function(opts)
 {
@@ -12058,13 +12119,17 @@ Facet.Marks.globe_2d = function(opts)
         tile_pattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         },
-        debug: false,
+        debug: false, // if true, add outline and x-y-zoom marker to every tile
+        no_network: false, // if true, tile is always blank white and does no HTTP requests.
         post_process: function(c) { return c; }
     });
     if (opts.interactor) {
         opts.center = opts.interactor.center;
         opts.zoom   = opts.interactor.zoom;
         opts.camera = opts.interactor.camera;
+    }
+    if (opts.no_network) {
+        opts.debug = true; // no_network implies debug;
     }
 
     var patch = Facet.model({
@@ -12266,7 +12331,7 @@ Facet.Marks.globe_2d = function(opts)
             var xform = opts.debug ? function(image) {
                 var c = document.createElement("canvas");
                 c.setAttribute("width", image.width);
-                c.setAttribute("height", image.width);
+                c.setAttribute("height", image.height);
                 var ctx = c.getContext('2d');
                 ctx.drawImage(image, 0, 0);
                 ctx.font = "12pt Helvetica Neue";
@@ -12277,15 +12342,29 @@ Facet.Marks.globe_2d = function(opts)
                 ctx.strokeRect(0, 0, 256, 256);
                 return c;
             } : function(image) { return image; };
-            Facet.load_image_into_texture({
+            var obj = {
                 texture: tiles[id].texture,
-                src: opts.tile_pattern(zoom, x, y),
                 transform_image: xform,
                 crossOrigin: "anonymous",
                 x_offset: tiles[id].offset_x * tile_size,
                 y_offset: tiles[id].offset_y * tile_size,
                 onload: f(x, y, zoom, id)
-            });
+            };
+            if (opts.no_network) {
+                if (!Facet._globals.blank_globe_2d_image) {
+                    var c = document.createElement("canvas");
+                    c.setAttribute("width", 256);
+                    c.setAttribute("height", 256);
+                    var ctx = c.getContext('2d');
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(0, 0, 256, 256);
+                    Facet._globals.blank_globe_2d_image = c;
+                }
+                obj.canvas = Facet._globals.blank_globe_2d_image;
+            } else {
+                obj.src = opts.tile_pattern(zoom, x, y);
+            }
+            Facet.load_image_into_texture(obj);
         },
         draw: function() {
             this.new_center(opts.center.get()[0],
