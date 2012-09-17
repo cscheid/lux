@@ -2,6 +2,8 @@
 // load texture from DOM element or URL. 
 // BEWARE SAME-DOMAIN POLICY!
 
+// FIXME: replace all this with the code from Facet.load_image_into_texture
+
 Facet.texture = function(opts)
 {
     var ctx = Facet._globals.ctx;
