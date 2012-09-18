@@ -3239,6 +3239,9 @@ Facet.attribute_buffer = function(opts)
         }
     };
 
+    //////////////////////////////////////////////////////////////////////////
+    // These methods are only for internal use within Facet
+
     result.bind = function(attribute) {
         Facet.set_context(ctx);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
@@ -3250,7 +3253,7 @@ Facet.attribute_buffer = function(opts)
         ctx.drawArrays(primitive, 0, this.numItems);
     };
     result.bind_and_draw = function(attribute, primitive) {
-        // inline the calls to bind and draw to shave a redundant set_context.
+        // here we inline the calls to bind and draw to shave a redundant set_context.
         Facet.set_context(ctx);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, 0, 0);
@@ -3261,6 +3264,10 @@ Facet.attribute_buffer = function(opts)
 (function() {
 
 var previous_batch_opts = {};
+Facet.get_current_batch_opts = function()
+{
+    return previous_batch_opts;
+}
 
 Facet.unload_batch = function()
 {
@@ -3294,6 +3301,8 @@ function draw_it(batch_opts)
     if (_.isUndefined(batch_opts))
         throw "drawing mode undefined";
 
+    // When the batch_options object is different from the one previously drawn,
+    // we must set up the appropriate state for drawing.
     if (batch_opts.batch_id !== previous_batch_opts.batch_id) {
         var attributes = batch_opts.attributes || {};
         var uniforms = batch_opts.uniforms || {};
@@ -3312,7 +3321,11 @@ function draw_it(batch_opts)
             var attr = program[key];
             if (!_.isUndefined(attr)) {
                 ctx.enableVertexAttribArray(attr);
-                attributes[key].bind(attr);
+                var buffer = attributes[key].get();
+                if (!buffer) {
+                    throw "Unbound Shade.attribute " + attributes[key]._attribute_name;
+                }
+                buffer.bind(attr);
             }
         }
         
@@ -3393,7 +3406,7 @@ Facet.bake = function(model, appearance, opts)
 
     function build_attribute_arrays_obj(prog) {
         return _.build(_.map(
-            prog.attribute_buffers, function(v) { return [v._shade_name, v]; }
+            prog.attribute_buffers, function(v) { return [v._attribute_name, v]; }
         ));
     }
 
@@ -7014,14 +7027,13 @@ Shade.Exp = {
     _facet_expression: true, // used by facet_typeOf
     expression_type: "other",
     _type: "shade_expression",
-    _attribute_buffers: [],
     _uniforms: [],
 
     //////////////////////////////////////////////////////////////////////////
 
     attribute_buffers: function() {
         return _.flatten(this.sorted_sub_expressions().map(function(v) { 
-            return v._attribute_buffers; 
+            return v.expression_type === 'attribute' ? [v] : [];
         }));
     },
     uniforms: function() {
@@ -7592,9 +7604,13 @@ Shade.parameter = function(type, v)
 
     var uniform_name = Shade.unique_name();
     if (_.isUndefined(type)) throw "parameter requires type";
-    if (typeof type === 'string') type = Shade.Types[type]; // basic(type);
+    if (typeof type === 'string') type = Shade.Types[type];
     if (_.isUndefined(type)) throw "parameter requires valid type";
+
+    // the local variable value stores the actual value of the
+    // parameter to be used by the GLSL uniform when it is set.
     var value;
+
     var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
     if (!_.isUndefined(call)) {
         call = call[1];
@@ -7639,7 +7655,7 @@ Shade.parameter = function(type, v)
             // FIXME check performance
             var t = facet_constant_type(v);
             if (t === "shade_expression")
-                v = v.constant_value();
+                v = v.evaluate();
             value = v;
             if (this._facet_active_uniform) {
                 this._facet_active_uniform(v);
@@ -7671,25 +7687,20 @@ Shade.attribute_from_buffer = function(buffer)
     return buffer._shade_expression || function() {
         var itemTypeMap = [ undefined, Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec3, Shade.Types.vec4 ];
         var itemType = itemTypeMap[buffer.itemSize];
-        var itemName;
-        if (_.isUndefined(buffer._shade_name)) {
-            itemName = Shade.unique_name();
-            buffer._shade_name = itemName;
-        } else {
-            itemName = buffer._shade_name;
-        }
-        var result = Shade.attribute(itemName, itemType);
-        result._attribute_buffers = [buffer];
+        var result = Shade.attribute(itemType);
         buffer._shade_expression = result;
+        result.set(buffer);
         return result;
     }();
 };
 
-Shade.attribute = function(name, type)
+Shade.attribute = function(type)
 {
+    var name = Shade.unique_name();
     if (_.isUndefined(type)) throw "attribute requires type";
     if (typeof type === 'string') type = Shade.Types[type];
     if (_.isUndefined(type)) throw "attribute requires valid type";
+    var bound_buffer;
 
     return Shade._create_concrete_exp( {
         parents: [],
@@ -7721,7 +7732,20 @@ Shade.attribute = function(name, type)
                 ctx.add_initialization(this.precomputed_value_glsl_name + " = " + name);
                 ctx.value_function(this, this.precomputed_value_glsl_name);
             }
-        }
+        },
+        get: function() {
+            return bound_buffer;
+        },
+        set: function(buffer) {
+            // FIXME buffer typechecking
+            var batch_opts = Facet.get_current_batch_opts();
+            if (batch_opts.program && batch_opts.program[name]) {
+                var ctx = batch_opts._ctx;
+                buffer.bind(batch_opts.program[name]);
+            }
+            bound_buffer = buffer;
+        },
+        _attribute_name: name
     });
 };
 Shade.varying = function(name, type)
