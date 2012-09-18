@@ -15,9 +15,13 @@ Shade.parameter = function(type, v)
 
     var uniform_name = Shade.unique_name();
     if (_.isUndefined(type)) throw "parameter requires type";
-    if (typeof type === 'string') type = Shade.Types[type]; // basic(type);
+    if (typeof type === 'string') type = Shade.Types[type];
     if (_.isUndefined(type)) throw "parameter requires valid type";
+
+    // the local variable value stores the actual value of the
+    // parameter to be used by the GLSL uniform when it is set.
     var value;
+
     var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
     if (!_.isUndefined(call)) {
         call = call[1];
@@ -62,7 +66,7 @@ Shade.parameter = function(type, v)
             // FIXME check performance
             var t = facet_constant_type(v);
             if (t === "shade_expression")
-                v = v.constant_value();
+                v = v.evaluate();
             value = v;
             if (this._facet_active_uniform) {
                 this._facet_active_uniform(v);

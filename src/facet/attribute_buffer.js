@@ -80,6 +80,9 @@ Facet.attribute_buffer = function(opts)
         }
     };
 
+    //////////////////////////////////////////////////////////////////////////
+    // These methods are only for internal use within Facet
+
     result.bind = function(attribute) {
         Facet.set_context(ctx);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
@@ -91,7 +94,7 @@ Facet.attribute_buffer = function(opts)
         ctx.drawArrays(primitive, 0, this.numItems);
     };
     result.bind_and_draw = function(attribute, primitive) {
-        // inline the calls to bind and draw to shave a redundant set_context.
+        // here we inline the calls to bind and draw to shave a redundant set_context.
         Facet.set_context(ctx);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, 0, 0);

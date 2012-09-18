@@ -1,6 +1,10 @@
 (function() {
 
 var previous_batch_opts = {};
+Facet.get_current_batch_opts = function()
+{
+    return previous_batch_opts;
+}
 
 Facet.unload_batch = function()
 {
@@ -34,6 +38,8 @@ function draw_it(batch_opts)
     if (_.isUndefined(batch_opts))
         throw "drawing mode undefined";
 
+    // When the batch_options object is different from the one previously drawn,
+    // we must set up the appropriate state for drawing.
     if (batch_opts.batch_id !== previous_batch_opts.batch_id) {
         var attributes = batch_opts.attributes || {};
         var uniforms = batch_opts.uniforms || {};
@@ -52,7 +58,11 @@ function draw_it(batch_opts)
             var attr = program[key];
             if (!_.isUndefined(attr)) {
                 ctx.enableVertexAttribArray(attr);
-                attributes[key].bind(attr);
+                var buffer = attributes[key].get();
+                if (!buffer) {
+                    throw "Unbound Shade.attribute " + attributes[key]._attribute_name;
+                }
+                buffer.bind(attr);
             }
         }
         
@@ -133,7 +143,7 @@ Facet.bake = function(model, appearance, opts)
 
     function build_attribute_arrays_obj(prog) {
         return _.build(_.map(
-            prog.attribute_buffers, function(v) { return [v._shade_name, v]; }
+            prog.attribute_buffers, function(v) { return [v._attribute_name, v]; }
         ));
     }
 
