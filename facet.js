@@ -3307,7 +3307,6 @@ function draw_it(batch_opts)
         var attributes = batch_opts.attributes || {};
         var uniforms = batch_opts.uniforms || {};
         var program = batch_opts.program;
-        var primitives = batch_opts.primitives;
         var key;
 
         Facet.unload_batch();
@@ -3513,11 +3512,17 @@ Facet.bake = function(model, appearance, opts)
             ctx.drawArrays(primitive_type, 0, elements);
         };
     } else {
-        draw_chunk = function() {
-            elements.bind_and_draw(elements, primitive_type);
-        };
+        if (elements._shade_type === 'attribute_buffer') {
+            draw_chunk = function() {
+                elements.draw(primitive_type);
+            };
+        } else if (elements._shade_type === 'element_buffer') {
+            draw_chunk = function() {
+                elements.bind_and_draw(primitive_type);
+            };
+        } else
+            throw "model.elements must be a number, an element buffer or an attribute buffer";
     }
-    var primitives = [primitive_types[model.type], model.elements];
 
     // FIXME the batch_id field in the batch_opts objects is not
     // the same as the batch_id in the batch itself. 
@@ -3604,23 +3609,18 @@ Facet.element_buffer = function(vertex_array)
     result.array = typedArray;
     result.itemSize = 1;
     result.numItems = vertex_array.length;
-    result.bind = function() {
-        /* Javascript functions are quirky in that they can take unused arguments.
-         So if a call passes an argument to result.bind, it won't fail; the argument
-         is simply dropped.
 
-         This has the fortuitous consequence of making attribute
-         buffers and element buffers share the same interface
-         (attributes that get passed to bind are ignored by element
-         buffers and handled by attribute buffers)
-        */
+    //////////////////////////////////////////////////////////////////////////
+    // These methods are only for internal use within Facet
+
+    result.bind = function() {
         ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, this);
     };
     result.draw = function(primitive) {
         ctx.drawElements(primitive, this.numItems, ctx.UNSIGNED_SHORT, 0);
     };
-    result.bind_and_draw = function(attribute, primitive) {
-        this.bind(attribute);
+    result.bind_and_draw = function(primitive) {
+        this.bind();
         this.draw(primitive);
     };
     return result;
@@ -4786,6 +4786,13 @@ Facet.DrawingMode.standard = {
         ctx.disable(ctx.BLEND);
     }
 };
+/*
+ * Facet.DrawingMode.pass is used whenever depth testing needs to be off;
+ * 
+ * Facet.DrawingMode.pass disables *writing* to the depth test as well
+ * 
+ */
+
 Facet.DrawingMode.pass = {
     set_draw_caps: function()
     {
