@@ -44,7 +44,6 @@ function draw_it(batch_opts)
         var attributes = batch_opts.attributes || {};
         var uniforms = batch_opts.uniforms || {};
         var program = batch_opts.program;
-        var primitives = batch_opts.primitives;
         var key;
 
         Facet.unload_batch();
@@ -250,11 +249,17 @@ Facet.bake = function(model, appearance, opts)
             ctx.drawArrays(primitive_type, 0, elements);
         };
     } else {
-        draw_chunk = function() {
-            elements.bind_and_draw(elements, primitive_type);
-        };
+        if (elements._shade_type === 'attribute_buffer') {
+            draw_chunk = function() {
+                elements.draw(primitive_type);
+            };
+        } else if (elements._shade_type === 'element_buffer') {
+            draw_chunk = function() {
+                elements.bind_and_draw(primitive_type);
+            };
+        } else
+            throw "model.elements must be a number, an element buffer or an attribute buffer";
     }
-    var primitives = [primitive_types[model.type], model.elements];
 
     // FIXME the batch_id field in the batch_opts objects is not
     // the same as the batch_id in the batch itself. 
