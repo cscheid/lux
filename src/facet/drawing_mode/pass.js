@@ -1,3 +1,10 @@
+/*
+ * Facet.DrawingMode.pass is used whenever depth testing needs to be off;
+ * 
+ * Facet.DrawingMode.pass disables *writing* to the depth test as well
+ * 
+ */
+
 Facet.DrawingMode.pass = {
     set_draw_caps: function()
     {
