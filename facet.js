@@ -3165,7 +3165,9 @@ Facet.attribute_buffer = function(opts)
         item_type: 'float',
         usage: ctx.STATIC_DRAW,
         normalized: false,
-        keep_array: false
+        keep_array: false,
+        stride: 0,
+        offset: 0
     });
 
     var vertex_array = opts.vertex_array;
@@ -3215,7 +3217,16 @@ Facet.attribute_buffer = function(opts)
         if (vertex_array.length % itemSize !== 0) {
             throw "length of array must be multiple of item_size";
         }
-        var typedArray = new this._typed_array_ctor(vertex_array);
+        var typedArray;
+        // FIXME this might be brittle, but I don't know a better way
+        if (vertex_array.constructor.name === 'Array') {
+            typedArray = new this._typed_array_ctor(vertex_array);
+        } else {
+            if (vertex_array.constructor !== this._typed_array_ctor) {
+                throw "Facet.attribute_buffer.set requires either a plain list of a typed array of the right type";
+            }
+            typedArray = vertex_array;
+        }
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
         if (opts.keep_array) {
@@ -3245,7 +3256,7 @@ Facet.attribute_buffer = function(opts)
     result.bind = function(attribute) {
         Facet.set_context(ctx);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-        ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, 0, 0);
+        ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, opts.stride, opts.offset);
     };
 
     result.draw = function(primitive) {
@@ -3256,7 +3267,7 @@ Facet.attribute_buffer = function(opts)
         // here we inline the calls to bind and draw to shave a redundant set_context.
         Facet.set_context(ctx);
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-        ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, 0, 0);
+        ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, opts.stride, opts.offset);
         ctx.drawArrays(primitive, 0, this.numItems);
     };
     return result;
