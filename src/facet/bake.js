@@ -4,7 +4,7 @@ var previous_batch_opts = {};
 Facet.get_current_batch_opts = function()
 {
     return previous_batch_opts;
-}
+};
 
 Facet.unload_batch = function()
 {
@@ -246,7 +246,12 @@ Facet.bake = function(model, appearance, opts)
     var draw_chunk;
     if (facet_typeOf(elements) === 'number') {
         draw_chunk = function() {
-            ctx.drawArrays(primitive_type, 0, elements);
+            // it's important to use "model.elements" here instead of "elements" because
+            // the indirection captures the fact that the model might have been updated with
+            // a different number of elements, by changing the attribute buffers.
+            // 
+            // FIXME This is a phenomentally bad way to go about this problem, but let's go with it for now.
+            ctx.drawArrays(primitive_type, 0, model.elements);
         };
     } else {
         if (elements._shade_type === 'attribute_buffer') {

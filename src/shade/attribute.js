@@ -55,7 +55,7 @@ Shade.attribute = function(type)
         set: function(buffer) {
             // FIXME buffer typechecking
             var batch_opts = Facet.get_current_batch_opts();
-            if (batch_opts.program && batch_opts.program[name]) {
+            if (batch_opts.program && (name in batch_opts.program)) {
                 var ctx = batch_opts._ctx;
                 buffer.bind(batch_opts.program[name]);
             }
