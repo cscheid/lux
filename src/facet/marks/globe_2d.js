@@ -227,7 +227,7 @@ Facet.Marks.globe_2d = function(opts)
                 ctx.drawImage(image, 0, 0);
                 ctx.font = "12pt Helvetica Neue";
                 ctx.fillStyle = "black";
-                ctx.fillText(x + " " + y + " " + zoom + " ", 10, 250);
+                ctx.fillText(zoom + " " + x + " " + y + " ", 10, 250);
                 ctx.lineWidth = 3;
                 ctx.strokeStyle = "black";
                 ctx.strokeRect(0, 0, 256, 256);
