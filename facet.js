@@ -5166,20 +5166,23 @@ Facet.UI.center_zoom_interactor = function(opts)
         opts.mousedown(event);
     }
 
+    // c stores the compensation for the kahan compensated sum
     var c = vec.make([0, 0]);
+    function internal_move(dx, dy) {
+        var negdelta = vec.make([-dx / (height * zoom.get() / 2), 
+                                  dy / (height * zoom.get() / 2)]);
+        // we use a kahan compensated sum here:
+        // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+        // to accumulate minute changes in the center that come from deep zooms.
+        var y = vec.minus(negdelta, c);
+        var t = vec.plus(center.get(), y);
+        c = vec.minus(vec.minus(t, center.get()), y);
+        center.set(t);
+    }
 
     function mousemove(event) {
         if ((event.which & 1) && !event.shiftKey) {
-            var deltaX =  (event.offsetX - prev_mouse_pos[0]) / (height * zoom.get() / 2);
-            var deltaY = -(event.offsetY - prev_mouse_pos[1]) / (height * zoom.get() / 2);
-            var negdelta = vec.make([-deltaX, -deltaY]);
-            // we use a kahan compensated sum here:
-            // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
-            // to accumulate minute changes in the center that come from deep zooms.
-            var y = vec.minus(negdelta, c);
-            var t = vec.plus(center.get(), y);
-            c = vec.minus(vec.minus(t, center.get()), y);
-            center.set(t); // vec.plus(center.get(), negdelta));
+            internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
             Facet.Scene.invalidate();
         } else if ((event.which & 1) && event.shiftKey) {
             zoom.set(zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
@@ -5190,7 +5193,9 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     function mousewheel(event) {
+        internal_move(width/2-event.clientX, height/2-event.clientY);
         zoom.set(zoom.get() * (1.0 + event.wheelDelta / 1200));
+        internal_move(event.clientX-width/2, event.clientY-height/2);
         opts.mousewheel(event);
         Facet.Scene.invalidate();
         return false;
