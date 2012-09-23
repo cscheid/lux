@@ -3267,7 +3267,7 @@ var previous_batch_opts = {};
 Facet.get_current_batch_opts = function()
 {
     return previous_batch_opts;
-}
+};
 
 Facet.unload_batch = function()
 {
@@ -3509,7 +3509,12 @@ Facet.bake = function(model, appearance, opts)
     var draw_chunk;
     if (facet_typeOf(elements) === 'number') {
         draw_chunk = function() {
-            ctx.drawArrays(primitive_type, 0, elements);
+            // it's important to use "model.elements" here instead of "elements" because
+            // the indirection captures the fact that the model might have been updated with
+            // a different number of elements, by changing the attribute buffers.
+            // 
+            // FIXME This is a phenomentally bad way to go about this problem, but let's go with it for now.
+            ctx.drawArrays(primitive_type, 0, model.elements);
         };
     } else {
         if (elements._shade_type === 'attribute_buffer') {
@@ -4761,6 +4766,30 @@ Facet.DrawingMode.over_with_depth = {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LEQUAL);
+    }
+};
+
+Facet.DrawingMode.over_no_depth = {
+    set_draw_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.BLEND);
+        ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
+                              ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
+        ctx.disable(ctx.DEPTH_TEST);
+        ctx.depthMask(false);
+    },
+    set_pick_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.disable(ctx.DEPTH_TEST);
+        ctx.depthMask(false);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.disable(ctx.DEPTH_TEST);
+        ctx.depthMask(false);
     }
 };
 Facet.DrawingMode.standard = {
@@ -7746,7 +7775,7 @@ Shade.attribute = function(type)
         set: function(buffer) {
             // FIXME buffer typechecking
             var batch_opts = Facet.get_current_batch_opts();
-            if (batch_opts.program && batch_opts.program[name]) {
+            if (batch_opts.program && (name in batch_opts.program)) {
                 var ctx = batch_opts._ctx;
                 buffer.bind(batch_opts.program[name]);
             }
@@ -12367,7 +12396,7 @@ Facet.Marks.globe_2d = function(opts)
                 ctx.drawImage(image, 0, 0);
                 ctx.font = "12pt Helvetica Neue";
                 ctx.fillStyle = "black";
-                ctx.fillText(x + " " + y + " " + zoom + " ", 10, 250);
+                ctx.fillText(zoom + " " + x + " " + y + " ", 10, 250);
                 ctx.lineWidth = 3;
                 ctx.strokeStyle = "black";
                 ctx.strokeRect(0, 0, 256, 256);
