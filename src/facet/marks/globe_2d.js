@@ -234,7 +234,6 @@ Facet.Marks.globe_2d = function(opts)
                 return c;
             } : function(image) { return image; };
             var obj = {
-                texture: tiles[id].texture,
                 transform_image: xform,
                 crossOrigin: "anonymous",
                 x_offset: tiles[id].offset_x * tile_size,
@@ -255,7 +254,7 @@ Facet.Marks.globe_2d = function(opts)
             } else {
                 obj.src = opts.tile_pattern(zoom, x, y);
             }
-            Facet.load_image_into_texture(obj);
+            tiles[id].texture.load(obj);
         },
         draw: function() {
             this.new_center(opts.center.get()[0],
