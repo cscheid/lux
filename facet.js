@@ -5151,7 +5151,8 @@ Facet.UI.center_zoom_interactor = function(opts)
         mousedown: function() {},
         mousewheel: function() {},
         center: vec.make([0,0]),
-        zoom: 1
+        zoom: 1,
+        widest_zoom: 0.1
     });
 
     var height = opts.height;
@@ -5193,7 +5194,8 @@ Facet.UI.center_zoom_interactor = function(opts)
 
     function mousewheel(event) {
         internal_move(width/2-event.clientX, height/2-event.clientY);
-        zoom.set(zoom.get() * (1.0 + event.wheelDelta / 1200));
+        var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
+        zoom.set(new_value);
         internal_move(event.clientX-width/2, event.clientY-height/2);
         opts.mousewheel(event);
         Facet.Scene.invalidate();
