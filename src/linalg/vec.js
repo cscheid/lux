@@ -58,7 +58,7 @@ vec.schur_product = function(v1, v2)
 
 vec.normalized = function(v)
 {
-    return vec[v.length].schur_product(v);
+    return vec[v.length].normalized(v);
 };
 
 vec.length = function(v)

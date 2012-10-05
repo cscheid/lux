@@ -119,3 +119,14 @@ test("mat properties", function() {
                      Math.sqrt(vec.eps)));
     });
 });
+
+test("dimension-conveniency sanity checks", function() {
+    for (var i=2; i<5; ++i) {
+        var v1 = vec[i].random();
+        var v2 = vec[i].random();
+        ok(vec.equal(vec[i].normalized(v1),
+                     vec.normalized(v1)));
+        equal(vec[i].length(v1),
+              vec.length(v1));
+    }
+});
