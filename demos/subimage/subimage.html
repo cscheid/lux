@@ -24,8 +24,7 @@
 var texture = Facet.texture({ width: 2048, height: 2048 });
 for (var i=0; i < 8; ++i)
 for (var j=0; j < 8; ++j)
-    Facet.load_image_into_texture({
-        texture: texture,
+    texture.load({
         src: "http://tile.openstreetmap.org/3/" + i + "/" + j + ".png",
         crossOrigin: "anonymous",
         x_offset: i * 256,

@@ -427,14 +427,13 @@ Shade.Exp = {
     _facet_expression: true, // used by facet_typeOf
     expression_type: "other",
     _type: "shade_expression",
-    _attribute_buffers: [],
     _uniforms: [],
 
     //////////////////////////////////////////////////////////////////////////
 
     attribute_buffers: function() {
         return _.flatten(this.sorted_sub_expressions().map(function(v) { 
-            return v._attribute_buffers; 
+            return v.expression_type === 'attribute' ? [v] : [];
         }));
     },
     uniforms: function() {

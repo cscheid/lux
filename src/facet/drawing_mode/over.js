@@ -69,3 +69,27 @@ Facet.DrawingMode.over_with_depth = {
         ctx.depthFunc(ctx.LEQUAL);
     }
 };
+
+Facet.DrawingMode.over_no_depth = {
+    set_draw_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.enable(ctx.BLEND);
+        ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
+                              ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
+        ctx.disable(ctx.DEPTH_TEST);
+        ctx.depthMask(false);
+    },
+    set_pick_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.disable(ctx.DEPTH_TEST);
+        ctx.depthMask(false);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Facet._globals.ctx;
+        ctx.disable(ctx.DEPTH_TEST);
+        ctx.depthMask(false);
+    }
+};

@@ -263,7 +263,7 @@ test("Shade constant folding", function() {
                            Shade.vec(1,2,3,4)).constant_value(),
                  vec.make([1,2,3,7])),
        "constant folding");
-    var v = Shade.vec(Shade.attribute("foo", "vec2"),
+    var v = Shade.vec(Shade.attribute("vec2"),
                       Shade.vec(1, 2));
     equal(v.element_is_constant(0), false, "constant element checks");
     equal(v.element_is_constant(1), false, "constant element checks");
@@ -281,8 +281,8 @@ test("Shade constant folding", function() {
         return e === "operator== does not support arrays";
     }, "operator== does not support arrays");
 
-    equal(Shade.mul(Shade.vec(1, Shade.attribute("foo", "vec2")),
-                    Shade.vec(4, Shade.attribute("bar", "vec2"))).element_constant_value(0),
+    equal(Shade.mul(Shade.vec(1, Shade.attribute("vec2")),
+                    Shade.vec(4, Shade.attribute("vec2"))).element_constant_value(0),
           4, "very basic partial constant folding");
 
     ok(vec.equal(Shade.vec(1,2,3,4).swizzle("xyz").constant_value(),

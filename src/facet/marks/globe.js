@@ -335,8 +335,7 @@ Facet.Marks.globe = function(opts)
                     Facet.Scene.invalidate();
                 };
             };
-            Facet.load_image_into_texture({
-                texture: tiles[id].texture,
+            texture: tiles[id].texture.load({
                 src: opts.tile_pattern(zoom, x, y),
                 crossOrigin: "anonymous",
                 x_offset: tiles[id].offset_x * tile_size,

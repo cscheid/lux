@@ -1,6 +1,10 @@
 (function() {
 
 var previous_batch_opts = {};
+Facet.get_current_batch_opts = function()
+{
+    return previous_batch_opts;
+};
 
 Facet.unload_batch = function()
 {
@@ -34,11 +38,12 @@ function draw_it(batch_opts)
     if (_.isUndefined(batch_opts))
         throw "drawing mode undefined";
 
+    // When the batch_options object is different from the one previously drawn,
+    // we must set up the appropriate state for drawing.
     if (batch_opts.batch_id !== previous_batch_opts.batch_id) {
         var attributes = batch_opts.attributes || {};
         var uniforms = batch_opts.uniforms || {};
         var program = batch_opts.program;
-        var primitives = batch_opts.primitives;
         var key;
 
         Facet.unload_batch();
@@ -52,7 +57,11 @@ function draw_it(batch_opts)
             var attr = program[key];
             if (!_.isUndefined(attr)) {
                 ctx.enableVertexAttribArray(attr);
-                attributes[key].bind(attr);
+                var buffer = attributes[key].get();
+                if (!buffer) {
+                    throw "Unbound Shade.attribute " + attributes[key]._attribute_name;
+                }
+                buffer.bind(attr);
             }
         }
         
@@ -133,7 +142,7 @@ Facet.bake = function(model, appearance, opts)
 
     function build_attribute_arrays_obj(prog) {
         return _.build(_.map(
-            prog.attribute_buffers, function(v) { return [v._shade_name, v]; }
+            prog.attribute_buffers, function(v) { return [v._attribute_name, v]; }
         ));
     }
 
@@ -237,14 +246,25 @@ Facet.bake = function(model, appearance, opts)
     var draw_chunk;
     if (facet_typeOf(elements) === 'number') {
         draw_chunk = function() {
-            ctx.drawArrays(primitive_type, 0, elements);
+            // it's important to use "model.elements" here instead of "elements" because
+            // the indirection captures the fact that the model might have been updated with
+            // a different number of elements, by changing the attribute buffers.
+            // 
+            // FIXME This is a phenomentally bad way to go about this problem, but let's go with it for now.
+            ctx.drawArrays(primitive_type, 0, model.elements);
         };
     } else {
-        draw_chunk = function() {
-            elements.bind_and_draw(elements, primitive_type);
-        };
+        if (elements._shade_type === 'attribute_buffer') {
+            draw_chunk = function() {
+                elements.draw(primitive_type);
+            };
+        } else if (elements._shade_type === 'element_buffer') {
+            draw_chunk = function() {
+                elements.bind_and_draw(primitive_type);
+            };
+        } else
+            throw "model.elements must be a number, an element buffer or an attribute buffer";
     }
-    var primitives = [primitive_types[model.type], model.elements];
 
     // FIXME the batch_id field in the batch_opts objects is not
     // the same as the batch_id in the batch itself. 

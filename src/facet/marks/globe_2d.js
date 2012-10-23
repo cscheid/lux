@@ -10,12 +10,17 @@ Facet.Marks.globe_2d = function(opts)
         tile_pattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         },
+        debug: false, // if true, add outline and x-y-zoom marker to every tile
+        no_network: false, // if true, tile is always blank white and does no HTTP requests.
         post_process: function(c) { return c; }
     });
     if (opts.interactor) {
         opts.center = opts.interactor.center;
         opts.zoom   = opts.interactor.zoom;
         opts.camera = opts.interactor.camera;
+    }
+    if (opts.no_network) {
+        opts.debug = true; // no_network implies debug;
     }
 
     var patch = Facet.model({
@@ -214,14 +219,42 @@ Facet.Marks.globe_2d = function(opts)
                     Facet.Scene.invalidate();
                 };
             };
-            Facet.load_image_into_texture({
-                texture: tiles[id].texture,
-                src: opts.tile_pattern(zoom, x, y),
+            var xform = opts.debug ? function(image) {
+                var c = document.createElement("canvas");
+                c.setAttribute("width", image.width);
+                c.setAttribute("height", image.height);
+                var ctx = c.getContext('2d');
+                ctx.drawImage(image, 0, 0);
+                ctx.font = "12pt Helvetica Neue";
+                ctx.fillStyle = "black";
+                ctx.fillText(zoom + " " + x + " " + y + " ", 10, 250);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "black";
+                ctx.strokeRect(0, 0, 256, 256);
+                return c;
+            } : function(image) { return image; };
+            var obj = {
+                transform_image: xform,
                 crossOrigin: "anonymous",
                 x_offset: tiles[id].offset_x * tile_size,
                 y_offset: tiles[id].offset_y * tile_size,
                 onload: f(x, y, zoom, id)
-            });
+            };
+            if (opts.no_network) {
+                if (!Facet._globals.blank_globe_2d_image) {
+                    var c = document.createElement("canvas");
+                    c.setAttribute("width", 256);
+                    c.setAttribute("height", 256);
+                    var ctx = c.getContext('2d');
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(0, 0, 256, 256);
+                    Facet._globals.blank_globe_2d_image = c;
+                }
+                obj.canvas = Facet._globals.blank_globe_2d_image;
+            } else {
+                obj.src = opts.tile_pattern(zoom, x, y);
+            }
+            tiles[id].texture.load(obj);
         },
         draw: function() {
             this.new_center(opts.center.get()[0],

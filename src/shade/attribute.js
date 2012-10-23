@@ -3,25 +3,20 @@ Shade.attribute_from_buffer = function(buffer)
     return buffer._shade_expression || function() {
         var itemTypeMap = [ undefined, Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec3, Shade.Types.vec4 ];
         var itemType = itemTypeMap[buffer.itemSize];
-        var itemName;
-        if (_.isUndefined(buffer._shade_name)) {
-            itemName = Shade.unique_name();
-            buffer._shade_name = itemName;
-        } else {
-            itemName = buffer._shade_name;
-        }
-        var result = Shade.attribute(itemName, itemType);
-        result._attribute_buffers = [buffer];
+        var result = Shade.attribute(itemType);
         buffer._shade_expression = result;
+        result.set(buffer);
         return result;
     }();
 };
 
-Shade.attribute = function(name, type)
+Shade.attribute = function(type)
 {
+    var name = Shade.unique_name();
     if (_.isUndefined(type)) throw "attribute requires type";
     if (typeof type === 'string') type = Shade.Types[type];
     if (_.isUndefined(type)) throw "attribute requires valid type";
+    var bound_buffer;
 
     return Shade._create_concrete_exp( {
         parents: [],
@@ -53,6 +48,19 @@ Shade.attribute = function(name, type)
                 ctx.add_initialization(this.precomputed_value_glsl_name + " = " + name);
                 ctx.value_function(this, this.precomputed_value_glsl_name);
             }
-        }
+        },
+        get: function() {
+            return bound_buffer;
+        },
+        set: function(buffer) {
+            // FIXME buffer typechecking
+            var batch_opts = Facet.get_current_batch_opts();
+            if (batch_opts.program && (name in batch_opts.program)) {
+                var ctx = batch_opts._ctx;
+                buffer.bind(batch_opts.program[name]);
+            }
+            bound_buffer = buffer;
+        },
+        _attribute_name: name
     });
 };
