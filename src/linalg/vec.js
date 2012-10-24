@@ -14,6 +14,14 @@ vec.make = function(v)
     return vec[v.length].make(v);
 };
 
+vec.equal_eps = function(v1, v2)
+{
+    if (v1.length != v2.length) {
+        throw "mismatched lengths";
+    }
+    return vec[v1.length].equal_eps(v1, v2);
+};
+
 vec.equal = function(v1, v2)
 {
     if (v1.length != v2.length) {

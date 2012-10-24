@@ -1,6 +1,6 @@
 (function() {
 
-var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evaluator,
+var logical_operator_binexp = function(exp1, exp2, operator_name, evaluator,
                                        parent_is_unconditional)
 {
     parent_is_unconditional = parent_is_unconditional ||
@@ -10,20 +10,20 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, constant_evalu
         type: Shade.Types.bool_t,
         expression_type: "operator" + operator_name,
         value: function() {
-            return "(" + this.parents[0].evaluate() + " " + operator_name + " " +
-                this.parents[1].evaluate() + ")";
+            return "(" + this.parents[0].glsl_expression() + " " + operator_name + " " +
+                this.parents[1].glsl_expression() + ")";
         },
-        constant_value: Shade.memoize_on_field("_constant_value", function() {
-            return constant_evaluator(this);
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return evaluator(this, cache);
         }),
         parent_is_unconditional: parent_is_unconditional
     });
 };
 
 var lift_binfun_to_evaluator = function(binfun) {
-    return function(exp) {
+    return function(exp, cache) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
-        return binfun(exp1.constant_value(), exp2.constant_value());
+        return binfun(exp1.evaluate(cache), exp2.evaluate(cache));
     };
 };
 
@@ -93,10 +93,10 @@ Shade.not = Shade(function(exp)
         type: Shade.Types.bool_t,
         expression_type: "operator!",
         value: function() {
-            return "(!" + this.parents[0].evaluate() + ")";
+            return "(!" + this.parents[0].glsl_expression() + ")";
         },
-        constant_value: Shade.memoize_on_field("_constant_value", function() {
-            return !this.parents[0].constant_value();
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return !this.parents[0].evaluate(cache);
         })
     });
 });

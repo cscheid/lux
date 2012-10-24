@@ -1,7 +1,10 @@
-Facet.Scene.add = function(obj)
+Facet.Scene.add = function(obj, ctx)
 {
-    var scene = Facet._globals.ctx._facet_globals.scene;
+    if (_.isUndefined(ctx)) {
+        ctx = Facet._globals.ctx;
+    }
+    var scene = ctx._facet_globals.scene;
 
     scene.push(obj);
-    Facet.Scene.invalidate();
+    Facet.Scene.invalidate(undefined, undefined, ctx);
 };

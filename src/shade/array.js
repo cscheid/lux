@@ -22,14 +22,21 @@ Shade.array = function(v)
             type: array_type,
             array_element_type: new_types[0],
             expression_type: "constant", // FIXME: is there a reason this is not "array"?
-            evaluate: function() { return this.glsl_name; },
+
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                return _.map(this.parents, function(e) {
+                    return e.evaluate(cache);
+                });
+            }),
+            
+            glsl_expression: function() { return this.glsl_name; },
             compile: function (ctx) {
                 this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
                 ctx.strings.push(this.type.declare(this.glsl_name), ";\n");
                 ctx.strings.push("void", this.array_initializer_glsl_name, "(void) {\n");
                 for (var i=0; i<this.parents.length; ++i) {
                     ctx.strings.push("    ", this.glsl_name, "[", i, "] =",
-                                     this.parents[i].evaluate(), ";\n");
+                                     this.parents[i].glsl_expression(), ";\n");
                 }
                 ctx.strings.push("}\n");
                 ctx.add_initialization(this.array_initializer_glsl_name + "()");

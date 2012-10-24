@@ -16,12 +16,12 @@ function make_points_batch(x, y, width, height)
     var pt = Shade.vec(points_model.x, points_model.y);
 
     rb = Facet.render_buffer({ width: width, height: height, type: gl.FLOAT });
-    var rb_batch = rb.make_screen_batch(function(texel_at_uv) {
+    var rb_batch = rb.make_screen_batch(function(texel_accessor) {
         return Shade.vec(1,1,1,2)
             .sub(Shade.Utils.lerp([Shade.color("white"),
                                    Shade.color("#d29152"),
                                    Shade.color("sienna"),
-                                   Shade.color("black")])(texel_at_uv.at(0).add(1).log()));
+                                   Shade.color("black")])(texel_accessor().at(0).add(1).log()));
     });
 
     var batch = Facet.bake(points_model, {

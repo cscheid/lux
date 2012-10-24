@@ -80,7 +80,7 @@ $().ready(function() {
                     points_batch = Facet.bake(points_model, {
                         position: view_proj
                             .mul(globe.model_matrix)
-                            .mul(Facet.Scale.Geo.latlong_to_spherical(Shade.radians(lats),
+                            .mul(Shade.Scale.Geo.latlong_to_spherical(Shade.radians(lats),
                                                                       Shade.radians(lons))),
                         color: colormap(points_model.incident_type),
                         point_size: 1

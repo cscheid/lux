@@ -159,18 +159,24 @@ Shade.CompilationContext = function(compile_type)
             _.each(this.global_scope.initializations, function(exp) {
                 that.strings.push("    ", exp, ";\n");
             });
-            this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
+            this.strings.push("    ", fun.glsl_expression(), ";\n", "}\n");
             // for (i=0; i<this.initialization_exprs.length; ++i)
             //     this.strings.push("    ", this.initialization_exprs[i], ";\n");
-            // this.strings.push("    ", fun.evaluate(), ";\n", "}\n");
+            // this.strings.push("    ", fun.glsl_expression(), ";\n", "}\n");
         },
         add_initialization: function(expr) {
             this.global_scope.initializations.push(expr);
         },
         value_function: function() {
+            var that = this;
             this.strings.push(arguments[0].type.repr(),
                               arguments[0].glsl_name,
                               "(");
+            _.each(arguments[0].loop_variable_dependencies(), function(exp, i) {
+                if (i > 0)
+                    that.strings.push(',');
+                that.strings.push('int', exp.glsl_name);
+            });
             this.strings.push(") {\n",
                               "    return ");
             for (var i=1; i<arguments.length; ++i) {

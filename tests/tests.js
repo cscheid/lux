@@ -104,7 +104,7 @@ test("Shade expressions", function() {
 });
 
 test("Shade compilation", function() {
-    ok(Shade.constant(vec.make([1,2,3,4])).evaluate());
+    ok(Shade.constant(vec.make([1,2,3,4])).glsl_expression());
 
     // this is a little finicky because the unique names might get
     // incremented, but I don't know any easy way around it.
@@ -137,13 +137,13 @@ test("Shade compilation", function() {
 
         equal(cc.source(), "precision highp float;\n" + 
               " vec4 glsl_name_8 ;\n" +
-              " uniform vec4 _unique_name_1;\n" +
-              " uniform float _unique_name_2;\n" +
+              " uniform vec4 _unique_name_5;\n" +
+              " uniform float _unique_name_6;\n" +
               " vec4 glsl_name_7 ( ) {\n" +
-              "     return  ((_unique_name_2 > float(0.0))?cos ( glsl_name_8 ):sin ( glsl_name_8 )) ;\n" +
+              "     return  ((_unique_name_6 > float(0.0))?cos ( glsl_name_8 ):sin ( glsl_name_8 )) ;\n" +
               "}\n" +
               " void main() {\n" +
-              "      glsl_name_8 = exp ( _unique_name_1 ) ;\n" +
+              "      glsl_name_8 = exp ( _unique_name_5 ) ;\n" +
               "      glsl_name_7() ;\n" +
               " }\n");
     })();
@@ -175,7 +175,7 @@ test("Shade structs", function() {
         v5 = v2("foo");
 
     ok(_.isEqual(v1.constant_value(), v2.constant_value()));
-    ok(_.isEqual(v2.constant_value(), v3));    
+    ok(_.isEqual(v2.constant_value(), v3));
     ok(_.isEqual(v4.constant_value(), v3.foo));
     ok(_.isEqual(v4.constant_value(), v5.constant_value()));
 
@@ -227,7 +227,8 @@ test("Shade structs", function() {
 
 test("Shade constant folding", function() {
     equal(Shade.unknown("float").guid, Shade.unknown("float").guid);
-    notEqual(Shade.unknown("float").guid, Shade.unknown("mat2").guid);
+    ok(Shade.unknown("float").guid !== Shade.unknown("mat2").guid);
+    // notEqual();
 
     var x = Shade.parameter("float");
     equal(Shade.mul(2, Shade.vec(2, 2)).element(1).constant_value(), 4, 
@@ -262,7 +263,7 @@ test("Shade constant folding", function() {
                            Shade.vec(1,2,3,4)).constant_value(),
                  vec.make([1,2,3,7])),
        "constant folding");
-    var v = Shade.vec(Shade.attribute("foo", "vec2"),
+    var v = Shade.vec(Shade.attribute("vec2"),
                       Shade.vec(1, 2));
     equal(v.element_is_constant(0), false, "constant element checks");
     equal(v.element_is_constant(1), false, "constant element checks");
@@ -280,8 +281,8 @@ test("Shade constant folding", function() {
         return e === "operator== does not support arrays";
     }, "operator== does not support arrays");
 
-    equal(Shade.mul(Shade.vec(1, Shade.attribute("foo", "vec2")),
-                    Shade.vec(4, Shade.attribute("bar", "vec2"))).element_constant_value(0),
+    equal(Shade.mul(Shade.vec(1, Shade.attribute("vec2")),
+                    Shade.vec(4, Shade.attribute("vec2"))).element_constant_value(0),
           4, "very basic partial constant folding");
 
     ok(vec.equal(Shade.vec(1,2,3,4).swizzle("xyz").constant_value(),
@@ -551,6 +552,8 @@ test("Shade constant folding", function() {
                "Shade.sub");
         })();
     }
+
+    equal(Shade.div(Shade(3).as_int(), Shade(2).as_int()).constant_value(), 1);
 });
 
 test("Shade optimizer", function() {
@@ -858,6 +861,15 @@ test("Shade Bits", function() {
             almost_equal(t, convert_through_encode(t), "encode_float");
         }
     })();
+});
+
+test("Shade.evaluate()", function() {
+    var v1 = Shade.parameter("float", 3);
+    var v2 = Shade.parameter("float", 3);
+    equal(v1.add(v2).evaluate(), 6);
+    equal(Shade(v1).sin().cos().evaluate(), Math.cos(Math.sin(3)));
+    v1.set(6);
+    equal(Shade(v1).sin().cos().evaluate(), Math.cos(Math.sin(6)));
 });
 
 module("Facet tests");

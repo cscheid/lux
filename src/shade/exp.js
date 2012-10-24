@@ -29,11 +29,10 @@ Shade.Exp = {
         _debug_print(this, 0);
         do_what = do_what || function(l) {
             var s = l.join("\n");
-            console.log(s);
         };
         do_what(lst);
     },
-    evaluate: function() {
+    glsl_expression: function() {
         return this.glsl_name + "()";
     },
     parent_is_unconditional: function(i) {
@@ -76,14 +75,19 @@ Shade.Exp = {
     }),
 
     //////////////////////////////////////////////////////////////////////////
-    // constant checking, will be useful for folding and for enforcement
+    // javascript-side evaluation of Shade expressions
 
+    evaluate: function() {
+        throw "internal error: evaluate undefined for " + this.expression_type;
+    },
     is_constant: function() {
         return false;
     },
-    constant_value: function() {
-        throw "invalid call: this.is_constant() == false";
-    },
+    constant_value: Shade.memoize_on_field("_constant_value", function() {
+        if (!this.is_constant())
+            throw "constant_value called on non-constant expression";
+        return this.evaluate();
+    }),
     element_is_constant: function(i) {
         return false;
     },
@@ -177,12 +181,12 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.int_t,
-            value: function() { return "int(" + this.parents[0].evaluate() + ")"; },
-            is_constant: function() { return parent.is_constant(); },
-            constant_value: function() {
-                var v = parent.constant_value();
+            value: function() { return "int(" + this.parents[0].glsl_expression() + ")"; },
+            is_constant: function() { return this.parents[0].is_constant(); },
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var v = parent.evaluate(cache);
                 return Math.floor(v);
-            },
+            }),
             expression_type: "cast(int)"
         });
     },
@@ -193,12 +197,12 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.bool_t,
-            value: function() { return "bool(" + this.parents[0].evaluate() + ")"; },
-            is_constant: function() { return parent.is_constant(); },
-            constant_value: function() {
-                var v = parent.constant_value();
+            value: function() { return "bool(" + this.parents[0].glsl_expression() + ")"; },
+            is_constant: function() { return this.parents[0].is_constant(); },
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var v = this.parents[0].evaluate(cache);
                 return ~~v;
-            },
+            }),
             expression_type: "cast(bool)"
         });
     },
@@ -209,12 +213,12 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [parent],
             type: Shade.Types.float_t,
-            value: function() { return "float(" + this.parents[0].evaluate() + ")"; },
-            is_constant: function() { return parent.is_constant(); },
-            constant_value: function() {
-                var v = parent.constant_value();
+            value: function() { return "float(" + this.parents[0].glsl_expression() + ")"; },
+            is_constant: function() { return this.parents[0].is_constant(); },
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var v = this.parents[0].evaluate(cache);
                 return Number(v);
-            },
+            }),
             expression_type: "cast(float)"
         });
     },
@@ -250,11 +254,11 @@ Shade.Exp = {
             parents: [parent],
             type: parent.type.swizzle(pattern),
             expression_type: "swizzle{" + pattern + "}",
-            evaluate: function() {
+            glsl_expression: function() {
                 if (this._must_be_function_call)
                     return this.glsl_name + "()";
                 else
-                    return this.parents[0].evaluate() + "." + pattern; 
+                    return this.parents[0].glsl_expression() + "." + pattern; 
             },
             is_constant: Shade.memoize_on_field("_is_constant", function () {
                 var that = this;
@@ -262,13 +266,13 @@ Shade.Exp = {
                     return that.parents[0].element_is_constant(i);
                 });
             }),
-            constant_value: Shade.memoize_on_field("_constant_value", function() {
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
                 if (this.type.is_pod()) {
-                    return this.parents[0].element_constant_value(indices[0]);
+                    return this.parents[0].element(indices[0]).evaluate(cache);
                 } else {
                     var that = this;
                     var ar = _.map(indices, function(index) {
-                        return that.parents[0].element_constant_value(index);
+                        return that.parents[0].element(index).evaluate(cache);
                     });
                     var d = this.type.vec_dimension();
                     switch (d) {
@@ -294,7 +298,7 @@ Shade.Exp = {
                     this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
                     ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
                     ctx.add_initialization(this.precomputed_value_glsl_name + " = " + 
-                                           this.parents[0].evaluate() + "." + pattern);
+                                           this.parents[0].glsl_expression() + "." + pattern);
                     ctx.value_function(this, this.precomputed_value_glsl_name);
                 }
             }
@@ -315,13 +319,13 @@ Shade.Exp = {
             parents: [parent, index],
             type: parent.type.array_base(),
             expression_type: "index",
-            evaluate: function() {
+            glsl_expression: function() {
                 if (this.parents[1].type.is_integral()) {
-                    return this.parents[0].evaluate() + 
-                        "[" + this.parents[1].evaluate() + "]"; 
+                    return this.parents[0].glsl_expression() + 
+                        "[" + this.parents[1].glsl_expression() + "]"; 
                 } else {
-                    return this.parents[0].evaluate() + 
-                        "[int(" + this.parents[1].evaluate() + ")]"; 
+                    return this.parents[0].glsl_expression() + 
+                        "[int(" + this.parents[1].glsl_expression() + ")]"; 
                 }
             },
             is_constant: function() {
@@ -331,9 +335,11 @@ Shade.Exp = {
                 return (this.parents[1].is_constant() &&
                         this.parents[0].element_is_constant(ix));
             },
-            constant_value: Shade.memoize_on_field("_constant_value", function() {
-                var ix = Math.floor(this.parents[1].constant_value());
-                return this.parents[0].element_constant_value(ix);
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var ix = Math.floor(this.parents[1].evaluate(cache));
+                var parent_value = this.parents[0].evaluate();
+                return parent_value[ix];
+                // return this.parents[0].element(ix).evaluate(cache);
             }),
 
             element: Shade.memoize_on_field("_element", function(i) {
@@ -403,29 +409,31 @@ Shade.Exp = {
             type: this.type.fields[field_name],
             expression_type: "struct-accessor",
             value: function() {
-                return "(" + this.parents[0].evaluate() + "." + field_name + ")";
+                return "(" + this.parents[0].glsl_expression() + "." + field_name + ")";
             },
-            constant_value: Shade.memoize_on_field("_constant_value", function() {
-                var struct_value = this.parents[0].constant_value();
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                var struct_value = this.parents[0].evaluate(cache);
                 return struct_value[field_name];
             }),
             is_constant: Shade.memoize_on_field("_is_constant", function() {
                 // this is conservative for many situations, but hey.
                 return this.parents[0].is_constant();
-            })
+            }),
+            element: function(i) {
+                return this.at(i);
+            }
         });
     },
     _facet_expression: true, // used by facet_typeOf
     expression_type: "other",
     _type: "shade_expression",
-    _attribute_buffers: [],
     _uniforms: [],
 
     //////////////////////////////////////////////////////////////////////////
 
     attribute_buffers: function() {
         return _.flatten(this.sorted_sub_expressions().map(function(v) { 
-            return v._attribute_buffers; 
+            return v.expression_type === 'attribute' ? [v] : [];
         }));
     },
     uniforms: function() {

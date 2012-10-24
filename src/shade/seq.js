@@ -6,10 +6,13 @@ Shade.seq = function(parents)
     return Shade._create_concrete_exp({
         expression_name: "seq",
         parents: parents,
-        evaluate: function(glsl_name) {
-            return this.parents.map(function (n) { return n.evaluate(); }).join("; ");
+        glsl_expression: function(glsl_name) {
+            return this.parents.map(function (n) { return n.glsl_expression(); }).join("; ");
         },
         type: Shade.Types.void_t,
-        compile: function (ctx) {}
+        compile: function (ctx) {},
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return this.parents[this.parents.length-1].evaluate(cache);
+        })
     });
 };

@@ -26,8 +26,15 @@ Facet.program = function(vs_src, fs_src)
     ctx.linkProgram(shaderProgram);
     
     if (!ctx.getProgramParameter(shaderProgram, ctx.LINK_STATUS)) {
-        alert("Could not initialise shaders");
-        return null;
+        alert("Could not link program");
+        console.log("Error message: ");
+        console.log(ctx.getProgramInfoLog(shaderProgram));
+        console.log("Failing shader pair:");
+        console.log("Vertex shader");
+        console.log(vs_src);
+        console.log("Fragment shader");
+        console.log(fs_src);
+        throw "failed link";
     }
 
     var active_parameters = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);

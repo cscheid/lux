@@ -19,6 +19,7 @@ Shade.varying = function(name, type)
         parents: [],
         type: type,
         expression_type: 'varying',
+        _varying_name: name,
         element: Shade.memoize_on_field("_element", function(i) {
             if (this.type.is_pod()) {
                 if (i === 0)
@@ -28,9 +29,23 @@ Shade.varying = function(name, type)
             } else
                 return this.at(i);
         }),
-        evaluate: function() { return name; },
+        glsl_expression: function() { 
+            if (this._must_be_function_call) {
+                return this.glsl_name + "()";
+            } else
+                return name; 
+        },
+        evaluate: function() {
+            throw "evaluate unsupported for varying expressions";
+        },
         compile: function(ctx) {
             ctx.declare_varying(name, this.type);
+            if (this._must_be_function_call) {
+                this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
+                ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
+                ctx.add_initialization(this.precomputed_value_glsl_name + " = " + name);
+                ctx.value_function(this, this.precomputed_value_glsl_name);
+            }
         }
     });
 };

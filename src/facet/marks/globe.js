@@ -20,7 +20,7 @@ function spherical_mercator_patch(tess)
         elements: elements,
         vertex: function(min, max) {
             var xf = this.uv.mul(max.sub(min)).add(min);
-            return Facet.Scale.Geo.mercator_to_spherical(xf.at(0), xf.at(1));
+            return Shade.Scale.Geo.mercator_to_spherical(xf.at(0), xf.at(1));
         },
         transformed_uv: function(min, max) {
             return Shade.mix(min, max, this.uv).div(Math.PI * 2).add(Shade.vec(0, 0.5));
@@ -157,7 +157,7 @@ Facet.Marks.globe = function(opts)
         model_matrix: model,
         mvp: mvp,
         lat_lon_position: function(lat, lon) {
-            return mvp(Facet.Scale.Geo.latlong_to_spherical(lat, lon));
+            return mvp(Shade.Scale.Geo.latlong_to_spherical(lat, lon));
         },
         resolution_bias: opts.resolution_bias,
         update_model_matrix: function() {
@@ -335,8 +335,7 @@ Facet.Marks.globe = function(opts)
                     Facet.Scene.invalidate();
                 };
             };
-            Facet.load_image_into_texture({
-                texture: tiles[id].texture,
+            texture: tiles[id].texture.load({
                 src: opts.tile_pattern(zoom, x, y),
                 crossOrigin: "anonymous",
                 x_offset: tiles[id].offset_x * tile_size,

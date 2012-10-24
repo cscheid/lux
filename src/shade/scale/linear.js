@@ -1,5 +1,25 @@
 Shade.Scale.linear = function(opts)
 {
+    var allowable_types = [
+        Shade.Types.float_t,
+        Shade.Types.vec2,
+        Shade.Types.vec3,
+        Shade.Types.vec4
+    ];
+    var vec_types = [
+        Shade.Types.vec2,
+        Shade.Types.vec3,
+        Shade.Types.vec4
+    ];
+    function is_any(set) {
+        return function(t) {
+            return _.any(set, function(v) { return v.equals(t); });
+        };
+    }
+    function all_same(set) {
+        return _.all(set, function(v) { return v.equals(set[0]); });
+    }
+
     opts = _.defaults(opts || {}, {
         domain: [0, 1],
         range: [0, 1]
@@ -22,26 +42,7 @@ Shade.Scale.linear = function(opts)
 
     var domain_types = _.map(opts.domain, function(v) { return v.type; });
     var range_types =  _.map(opts.range,  function(v) { return v.type; });
-    var allowable_types = [
-        Shade.Types.float_t,
-        Shade.Types.vec2,
-        Shade.Types.vec3,
-        Shade.Types.vec4
-    ];
-    var vec_types = [
-        Shade.Types.vec2,
-        Shade.Types.vec3,
-        Shade.Types.vec4
-    ];
-    function is_any(set) {
-        return function(t) {
-            return _.any(allowable_types, function(v) { return v.equals(t); });
-        };
-    }
-    function all_same(set) {
-        return _.all(set, function(v) { return v.equals(set[0]); });
-    }
-    
+
     if (!is_any(allowable_types)(domain_types[0]))
         throw "Shade.Scale.linear requires domain type to be one of {float, vec2, vec3, vec4}";
     if (!all_same(domain_types))
@@ -52,6 +53,8 @@ Shade.Scale.linear = function(opts)
         throw "Shade.Scale.linear requires range elements to have the same type";
     if (is_any(vec_types)(domain_types[0]) && (!domain_types[0].equals(range_types[0])))
         throw "Shade.Scale.linear for vec types require equal domain and range types";
+    if (opts.domain.length < 2 || opts.range.length < 2)
+        throw "Shade.Scale.linear requires domain and range to have at least two elements";
 
     // Special-case the two-element scale for performance
     if (opts.domain.length === 2) {
@@ -69,6 +72,34 @@ Shade.Scale.linear = function(opts)
         var domain_array = Shade.array(opts.domain);
         var range_array = Shade.array(opts.range);
         var dt = domain_array.array_element_type;
+
+        return Shade(function(x) {
+            function create_shade(i) {
+                var segment_at_x = Shade.Scale.linear({
+                    domain: [ opts.domain[i], opts.domain[i+1] ],
+                    range:  [ opts.range[i],  opts.range[i+1] ] })(x);
+                if (i === opts.domain.length-2) {
+                    return segment_at_x;
+                } else {
+                    return Shade.ifelse(x.lt(opts.domain[i+1]),
+                                        segment_at_x,
+                                        create_shade(i+1));
+                }
+            }
+            return create_shade(0);
+        });
+    }
+
+/*
+
+ The previous version of the code uses Shade.Array.locate to binary-search the array.
+ However, it turns out that we're not allowed to read from arbitrary locations in an
+ array (even if we could prove their safety) in WebGL's version of GLSL, which means
+ I believe, in principle, that binary search is not implementable inside a for loop 
+ in WebGL GLSL. (?!)
+
+ I have temporarily replaced it with a dumb loop over the array.
+
         var result;
 
         if (dt.equals(Shade.Types.float_t))
@@ -97,5 +128,6 @@ Shade.Scale.linear = function(opts)
         } else {
             throw "internal error on Shade.Scale.linear";
         }
-    }
+        return result;
+*/
 };

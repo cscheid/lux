@@ -33,9 +33,12 @@ Shade.set = function(exp, name)
                 name.substring(0, 11) !== "gl_FragData") {
                 ctx.declare_varying(name, type);
             }
-            ctx.void_function(this, "(", name, "=", this.parents[0].evaluate(), ")");
+            ctx.void_function(this, "(", name, "=", this.parents[0].glsl_expression(), ")");
         },
         type: Shade.Types.void_t,
-        parents: [exp]
+        parents: [exp],
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return this.parents[0].evaluate(cache);
+        })
     });
 };

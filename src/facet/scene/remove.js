@@ -1,6 +1,9 @@
-Facet.Scene.remove = function(obj)
+Facet.Scene.remove = function(obj, ctx)
 {
-    var scene = Facet._globals.ctx._facet_globals.scene;
+    if (_.isUndefined(ctx)) {
+        ctx = Facet._globals.ctx;
+    }
+    var scene = ctx._facet_globals.scene;
 
     var i = scene.indexOf(obj);
 
@@ -9,5 +12,5 @@ Facet.Scene.remove = function(obj)
     } else {
         return scene.splice(i, 1)[0];
     }
-    Facet.Scene.invalidate();
+    Facet.Scene.invalidate(undefined, undefined, ctx);
 };

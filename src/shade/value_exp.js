@@ -3,7 +3,7 @@
  * conditional expressions in longer shaders.  Temporarily, then, I
  * will replace all "unconditional" checks with "true". The end effect
  * is that the shader always evaluates potentially unused sides of a
- * conditional expression if they're is used in two or more places in
+ * conditional expression if they're used in two or more places in
  * the shader.
  */
 
@@ -20,10 +20,12 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         return this.element(i).constant_value();
     }),
     _must_be_function_call: false,
-    evaluate: function() {
+    glsl_expression: function() {
         var unconditional = true; // see comment on top
         if (this._must_be_function_call) {
-            return this.glsl_name + "(" + ")";
+            return this.glsl_name + "(" + _.map(this.loop_variable_dependencies(), function(exp) {
+                return exp.glsl_name;
+            }).join(",") + ")";
         }
         // this.children_count will be undefined if object was built
         // during compilation (lifted operators for structs will do that, for example)
@@ -34,6 +36,10 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         else
             return this.glsl_name + "()";
     },
+    // For types which are not POD, element(i) returns a Shade expression
+    // whose value is equivalent to evaluating the i-th element of the
+    // expression itself. for example:
+    // Shade.add(vec1, vec2).element(0) -> Shade.add(vec1.element(0), vec2.element(0));
     element: function(i) {
         if (this.type.is_pod()) {
             if (i === 0)
@@ -80,7 +86,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                     this.scope.add_declaration(this.type.declare(this.precomputed_value_glsl_name));
                     this.scope.add_initialization(this.precomputed_value_glsl_name + " = " + this.value());
                 } else {
-                    // don't emit anything, all is taken care by evaluate()
+                    // don't emit anything, all is taken care by glsl_expression()
                 }
             } else {
                 if (this.children_count > 1) {
@@ -95,7 +101,7 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                                        + this.precomputed_value_glsl_name + "="
                                        + this.value() + ")))");
                 } else {
-                    // don't emit anything, all is taken care by evaluate()
+                    // don't emit anything, all is taken care by glsl_expression()
                 }
             }
         }

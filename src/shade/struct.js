@@ -30,15 +30,15 @@ Shade.struct = function(obj)
         value: function() {
             return [this.type.internal_type_name, "(",
                     this.parents.map(function(t) {
-                        return t.evaluate();
+                        return t.glsl_expression();
                     }).join(", "),
                     ")"].join(" ");
         },
-        constant_value: Shade.memoize_on_field("_constant_value", function() {
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
             var result = {};
             var that = this;
             _.each(this.parents, function(v, i) {
-                result[that.fields[i]] = v.constant_value();
+                result[that.fields[i]] = v.evaluate(cache);
             });
             return result;
         }),

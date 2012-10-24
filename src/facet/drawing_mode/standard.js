@@ -4,17 +4,20 @@ Facet.DrawingMode.standard = {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
+        ctx.disable(ctx.BLEND);
     },
     set_pick_caps: function()
     { 
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
+        ctx.disable(ctx.BLEND);
    },
     set_unproject_caps: function()
     {
         var ctx = Facet._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
+        ctx.disable(ctx.BLEND);
     }
 };

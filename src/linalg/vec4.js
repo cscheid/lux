@@ -25,12 +25,17 @@ vec4.random = function() {
     return vec4.make(lst);
 };
 
-vec4.equal = function(v1, v2)
+vec4.equal_eps = function(v1, v2)
 {
     return Math.abs(v1[0] - v2[0]) < vec.eps &&
         Math.abs(v1[1] - v2[1]) < vec.eps &&
         Math.abs(v1[2] - v2[2]) < vec.eps &&
         Math.abs(v1[3] - v2[3]) < vec.eps;
+};
+
+vec4.equal = function(v1, v2)
+{
+    return v1[0] === v2[0] && v1[1] === v2[1] && v1[2] === v2[2] && v1[3] === v2[3];
 };
 
 vec4.set = function(dest, vec)

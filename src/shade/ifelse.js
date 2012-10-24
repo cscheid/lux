@@ -16,10 +16,19 @@ Shade.ifelse = function(condition, if_true, if_false)
         // FIXME: works around Chrome Bug ID 103053
         _must_be_function_call: true,
         value: function() {
-            return "(" + this.parents[0].evaluate() + "?"
-                + this.parents[1].evaluate() + ":"
-                + this.parents[2].evaluate() + ")";
+            return "(" + this.parents[0].glsl_expression() + "?"
+                + this.parents[1].glsl_expression() + ":"
+                + this.parents[2].glsl_expression() + ")";
         },
+        /*
+         * The methods is_constant(), constant_value() and evaluate() for
+         * Shade.ifelse are designed to handle cases like the following:
+         * 
+         * Shade.ifelse(Shade.parameter("bool"), 3, 3).is_constant()
+         * 
+         * That expression should be true.
+         * 
+         */ 
         constant_value: function() {
             if (!this.parents[0].is_constant()) {
                 // This only gets called when this.is_constant() holds, so
@@ -32,6 +41,11 @@ Shade.ifelse = function(condition, if_true, if_false)
                         this.parents[2].constant_value());
             }
         },
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return this.parents[0].evaluate(cache)?
+                this.parents[1].evaluate(cache):
+                this.parents[2].evaluate(cache);
+        }),
         is_constant: function() {
             if (!this.parents[0].is_constant()) {
                 // if condition is not constant, 

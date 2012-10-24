@@ -46,7 +46,7 @@ Shade.constant = function(v, type)
         }
 
         return Shade._create_concrete_exp( {
-            evaluate: function(glsl_name) {
+            glsl_expression: function(glsl_name) {
                 return to_glsl(this.type.repr(), args);
             },
             expression_type: "constant{" + args + "}",
@@ -77,7 +77,7 @@ Shade.constant = function(v, type)
                 }
                 return vec[this.type.array_size()].make(matrix_row(i));
             }),
-            constant_value: Shade.memoize_on_field("_constant_value", function() {
+            evaluate: Shade.memoize_on_guid_dict(function(cache) {
                 // FIXME boolean_vector
                 if (this.type.is_pod())
                     return args[0];

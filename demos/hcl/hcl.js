@@ -8,7 +8,6 @@ $().ready(function () {
     show_out_of_gamut = Shade.parameter("bool", true);
     var gl = Facet.init(document.getElementById("webgl"));
 
-    var steps = 1;
     function max3(v) {
         return Shade.max(v.r(), Shade.max(v.g(), v.b()));
     }
@@ -31,7 +30,7 @@ $().ready(function () {
                             rgb,
                             rgb.clamp(0, 1).alpha(0.1));
     }
-    var hcl_mesh = Facet.Models.mesh(steps, steps);
+    var hcl_mesh = Facet.Models.mesh(1, 1);
     var color = Shade.Colors.hcl(
         hcl_mesh.tex_coord.r().mul(Math.PI*2),
         hcl_mesh.tex_coord.g().mul(100),

@@ -36,12 +36,12 @@ facet.js:					\
 	src/typeinfo.js				\
 	src/facet/attribute_buffer.js		\
 	src/facet/bake.js			\
+	src/facet/conditional_batch.js		\
 	src/facet/draw.js			\
 	src/facet/element_buffer.js		\
 	src/facet/fresh_pick_id.js		\
 	src/facet/id_buffer.js			\
 	src/facet/init.js			\
-	src/facet/load_image_into_texture.js	\
 	src/facet/matrix.js			\
 	src/facet/model.js			\
 	src/facet/picker.js			\
@@ -57,10 +57,6 @@ facet.js:					\
 	src/facet/net/json.js			\
 	src/facet/net/binary.js			\
 	src/facet/net/_end.js			\
-	src/facet/scale/_begin.js		\
-	src/facet/scale/geo/_begin.js		\
-	src/facet/scale/geo/mercator_to_spherical.js	\
-	src/facet/scale/geo/latlong_to_spherical.js	\
 	src/facet/drawing_mode/_begin.js	\
 	src/facet/drawing_mode/additive.js	\
 	src/facet/drawing_mode/over.js		\
@@ -73,10 +69,12 @@ facet.js:					\
 	src/facet/data/array_1d.js		\
 	src/facet/ui/_begin.js			\
 	src/facet/ui/parameter_slider.js	\
+	src/facet/ui/parameter_checkbox.js	\
 	src/facet/ui/center_zoom_interactor.js	\
 	src/shade/_begin.js			\
 	src/shade/make.js			\
 	src/shade/memoize_on_field.js		\
+	src/shade/memoize_on_guid_dict.js	\
 	src/shade/unknown.js			\
 	src/shade/camera/_begin.js		\
 	src/shade/camera/perspective.js		\
@@ -149,12 +147,25 @@ facet.js:					\
 	src/shade/bits/shift_right.js		\
 	src/shade/scale/_begin.js		\
 	src/shade/scale/linear.js		\
+	src/shade/scale/transformed.js		\
+	src/shade/scale/log.js   		\
+	src/shade/scale/log10.js   		\
+	src/shade/scale/log2.js   		\
+	src/shade/scale/geo/_begin.js		\
+	src/shade/scale/geo/mercator_to_spherical.js	\
+	src/shade/scale/geo/mercator_to_latlong.js	\
+	src/shade/scale/geo/latlong_to_spherical.js	\
+	src/shade/scale/geo/latlong_to_mercator.js	\
+	src/facet/debug/_begin.js		\
+	src/facet/debug/init.js			\
+	src/facet/debug/post.js			\
 	src/facet/marks/_begin.js		\
 	src/facet/marks/aligned_rects.js	\
 	src/facet/marks/lines.js		\
 	src/facet/marks/dots.js			\
 	src/facet/marks/scatterplot.js		\
 	src/facet/marks/globe.js		\
+	src/facet/marks/globe_2d.js		\
 	src/facet/marks/polygon.js		\
 	src/facet/models/_begin.js		\
 	src/facet/models/flat_cube.js		\
@@ -169,6 +180,7 @@ facet.js:					\
 	src/facet/scene/add.js			\
 	src/facet/scene/remove.js		\
 	src/facet/scene/render.js		\
+	src/facet/scene/animate.js		\
 	src/facet/scene/invalidate.js
 
 # If the chmods below don't make sense to you right now, wait until
