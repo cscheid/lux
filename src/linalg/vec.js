@@ -79,7 +79,27 @@ vec.map = function(c, f)
     return vec[c.length].map(c, f);
 };
 
-vec.str = function(vec)
+/*
+// strictly speaking, this is unnecessary, since only vec3.cross exists.
+// However, to force vec3.* to be written alongside vec.* would mean that
+// some code would be written
+// x = vec.normalized(foo);
+// y = vec.normalized(bar);
+// z = vec3.cross(x, y);
+
+// instead of
+
+// z = vec.cross(x, y);
+
+// The notational uniformity of the latter wins
+*/
+
+vec.cross = function(v1, v2)
 {
-    return vec[vec.length].str(vec);
+    return vec[v1.length].cross(v1, v2);
+};
+
+vec.str = function(v)
+{
+    return vec[v.length].str(v);
 };

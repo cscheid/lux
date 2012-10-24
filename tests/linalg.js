@@ -128,5 +128,6 @@ test("dimension-conveniency sanity checks", function() {
                      vec.normalized(v1)));
         equal(vec[i].length(v1),
               vec.length(v1));
+        ok(vec.str(v1));
     }
 });
