@@ -32,20 +32,6 @@ which are affine in the attribute variables. These are safe to hoist
 to a vertex shader, since fragments are linearly interpolated (what
 about perspective correction?)
 * Types
-** TODO Structure types
-Currently Facet does not allow structure types. Support for structure
-types would make the looping infrastructure much more useful.
-One complication for the implementation is the varying infrastructure
-(and, more generally, the automatic splitting of shading stages). 
-
-GLSL ES only allows basic types to be varying; how should Facet handle
-varying structs? Facet right now only hoists attributes to varying.
-It could hoist expressions which are linear in the attributes as well,
-but it doesn't right now.
-
-It is already the case that varying ints are
-illegal. Hmmm...
-
 ** TODO GLSL disallows swizzling from a float, but I could allow it
 The idea would be to make Shade.Types.float_t.is_vec() true, and then
 special-case a swizzle from a float to simple return a Shade.vec()
@@ -58,11 +44,6 @@ since is_vec() could become a proxy for "can use .add, .sub and
 
 ** TODO Function types
 These will be useful when we have user-defined GLSL.
-
-** TODO Loops of some kind. 
-
-  Streams of value-generating expressions seem appropriate, since we
-  can constrain the generator to be finite.
 
 ** TODO user-defined glsl
 
