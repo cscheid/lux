@@ -5130,6 +5130,23 @@ Facet.UI.parameter_slider = function(opts)
         }
     });
 };
+Facet.UI.parameter_checkbox = function(opts)
+{
+    opts = _.defaults(opts, {
+        toggle: function() {}
+    });
+    var element = opts.element;
+    var parameter = opts.parameter;
+
+    function on_click(event) {
+        parameter.set(~~event.target.checked);
+        console.log(parameter.get());
+        opts.toggle(event);
+        Facet.Scene.invalidate();
+    }
+
+    $(element).button().click(on_click);
+};
 /*
  * A Facet interactor is an object that exposes a list of events that
  * Facet.init uses to hook up to canvas event handlers.
@@ -11584,6 +11601,37 @@ Shade.Scale.linear = function(opts)
         }
         return result;
 */
+};
+Shade.Scale.transformed = function(opts)
+{
+    if (_.isUndefined(opts.transform)) {
+        throw "Shade.Scale.transform expects a domain transformation function";
+    };
+    var linear_scale = Shade.Scale.linear(opts);
+    return Shade(function(x) {
+        return linear_scale(opts.transform(x));
+    });
+};
+Shade.Scale.log = function(opts)
+{
+    var new_opts = _.extend({
+        transform: function(x) { return Shade.log(x); }
+    }, opts);
+    return Shade.Scale.transformed(new_opts);
+};
+Shade.Scale.log10 = function(opts)
+{
+    var new_opts = _.extend({
+        transform: function(x) { return Shade.log(x).div(Math.log(10)); }
+    }, opts);
+    return Shade.Scale.transformed(new_opts);
+};
+Shade.Scale.log2 = function(opts)
+{
+    var new_opts = _.extend({
+        transform: function(x) { return Shade.log(x).div(Math.log(2)); }
+    }, opts);
+    return Shade.Scale.transformed(new_opts);
 };
 Shade.Scale.Geo = {};
 Shade.Scale.Geo.mercator_to_spherical = Shade(function(x, y)

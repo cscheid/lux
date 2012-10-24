@@ -69,6 +69,7 @@ facet.js:					\
 	src/facet/data/array_1d.js		\
 	src/facet/ui/_begin.js			\
 	src/facet/ui/parameter_slider.js	\
+	src/facet/ui/parameter_checkbox.js	\
 	src/facet/ui/center_zoom_interactor.js	\
 	src/shade/_begin.js			\
 	src/shade/make.js			\
@@ -146,6 +147,10 @@ facet.js:					\
 	src/shade/bits/shift_right.js		\
 	src/shade/scale/_begin.js		\
 	src/shade/scale/linear.js		\
+	src/shade/scale/transformed.js		\
+	src/shade/scale/log.js   		\
+	src/shade/scale/log10.js   		\
+	src/shade/scale/log2.js   		\
 	src/shade/scale/geo/_begin.js		\
 	src/shade/scale/geo/mercator_to_spherical.js	\
 	src/shade/scale/geo/mercator_to_latlong.js	\
