@@ -146,6 +146,7 @@ facet.js:					\
 	src/shade/bits/shift_left.js		\
 	src/shade/bits/shift_right.js		\
 	src/shade/scale/_begin.js		\
+	src/shade/scale/ordinal.js		\
 	src/shade/scale/linear.js		\
 	src/shade/scale/transformed.js		\
 	src/shade/scale/log.js   		\

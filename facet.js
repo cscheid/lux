@@ -10004,14 +10004,14 @@ Shade.Utils.lerp = function(lst) {
     };
 };
 // given a list of values, returns a function which, when given a
-// value between 0 and 1, returns the nearest value;
+// value between 0 and l, returns the value of the index;
 
 // box function reconstruction
 
 Shade.Utils.choose = function(lst) {
     var new_lst = _.toArray(lst);
+    var vals_exp = Shade.array(new_lst);
     return function(v) {
-        var vals_exp = Shade.array(new_lst);
         v = Shade.clamp(v, 0, new_lst.length-1).floor().as_int();
         return vals_exp.at(v);
     };
@@ -11553,6 +11553,29 @@ Shade.Bits.shift_right = Shade.make(function(v, amt) {
 });
 Shade.Scale = {};
 
+/*
+ * nearest-neighbor interpolation
+ */
+
+Shade.Scale.ordinal = function(opts)
+{
+    function all_same(set) {
+        return _.all(set, function(v) { return v.equals(set[0]); });
+    }
+    if (!(opts.range.length >= 2)) { 
+        throw "Shade.Scale.ordinal requires arrays of length at least 2";
+    }
+    opts.range = _.map(opts.range, Shade.make);
+    var range_types = _.map(opts.range,  function(v) { return v.type; });
+    if (!all_same(range_types))
+        throw "Shade.Scale.linear requires range elements to have the same type";
+
+    var choose = Shade.Utils.choose(range_types);
+
+    return function(v) {
+        return choose(v.as_float().add(0.5));
+    };
+};
 Shade.Scale.linear = function(opts)
 {
     var allowable_types = [
