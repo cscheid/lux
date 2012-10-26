@@ -151,21 +151,18 @@ function make_points_batch()
         x: bx, y: by, seed: b_seed, type: "points"
     });
     
-    var start = {
-        seed: model.seed.add(global_seed_offset).mod(65536),
-        pos: Shade.vec(model.x, model.y),
-        col: Shade.vec(0,0,0)
-    };
-
-    var state = start;
-    for (var i=0; i<10; ++i) {
-        state = iterate_f5(state);
+    var start = state(Shade.vec(model.x, model.y),
+                      Shade(0),
+                      model.seed.add(global_seed_offset).mod(65536));
+    var it_state = start;
+    for (var i=0; i<5; ++i) {
+        it_state = sheep.iteration(it_state);
     }
 
-    var batch =  Facet.bake(model, {
+    var batch = Facet.bake(model, {
         mode: Facet.DrawingMode.additive,
-        position: interactor.camera(state.pos.swizzle("xy")),
-        color: Shade.vec(state.col, 1)
+        position: interactor.camera(it_state.pos().swizzle("xy")),
+        color: Shade.vec(sheep.colormap(it_state.color()), 1)
     }, {
         force_no_pick: true,
         force_no_unproject: true
@@ -336,7 +333,6 @@ $().ready(function() {
         main_batch.count_scale.set(1/Math.log(frame_count-1));
         var offset = global_seed_offset.get();
         if (offset == 20) {
-            console.log("click", offset * batch_size * batch_size);
             offset = 0;
             main_batch.update_random();
         }

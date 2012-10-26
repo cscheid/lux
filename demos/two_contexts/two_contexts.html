@@ -1,0 +1,48 @@
+<html>
+<head><title>Two active Facet contexts</title>
+  <link rel="stylesheet" href="../css/bootstrap.css"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <link rel="stylesheet" href="../css/mchighlight-javascript.css"/>
+  <script src="../../lib/jquery-1.6.2.min.js"></script>
+  <script src="../../facet.js"></script>
+  <script src="../../src/models.js"></script>
+  <script src="two_contexts.js"></script>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>Two active Facet contexts</h1>
+<div style="position: relative;">
+  <canvas id="webgl1" width="720" height="480"></canvas>
+  <canvas id="webgl2" width="640" height="400"></canvas>
+  <div style="position: absolute; top: 5px; right: 5px;">Cartography OpenStreetMap CC-by-sa</div></div>
+<div style="text-align: right">View the <a href="two_contexts.js">full source</a>.</div>
+
+<p>WebGL objects cannot be shared across contexts, which mean that
+   when two different WebGL contexts are active at the same time, one
+   must usually be careful to call the appropriate WebGL functions with
+   the appropriate context object. Facet does the multiple-context
+   book-keeping mostly transparently for you.
+</p>
+
+<p>Note, however, that some Shade objects have context-sensitive WebGL objects
+   associated with it. Those Shade expressions must only be used with other
+   objects from the same context.
+</p>
+
+<p>TODO: enumerate these shade expressions.</p>
+
+<p>In addition, if you issue an asynchronous call (typically an AJAX
+  request), there is generally no guarantee that the invoked callback will have
+  the same current active context. Facet.Net.* calls set the right
+  context on callback, but if you use asynchronous routines
+  (requestAnimFrame, for example), you'll have to be careful about it.</p>
+
+<p>Back to the <a href="index.html">index</a>.</p>
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</body>
+</html>
+

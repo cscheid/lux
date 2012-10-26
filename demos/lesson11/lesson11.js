@@ -5,10 +5,9 @@
  */
 
 var gl;
-var cube_drawable, pyramid_drawable;
+var flag;
 var mvp;
 var phase = 0;
-var Models = Facet.Models;
 
 var current_mouse_x = 0;
 var current_mouse_y = 0;
@@ -24,7 +23,7 @@ function draw_it()
     var view = mat4.lookAt([current_mouse_x, current_mouse_y, 0], 
                            [0, 0, -3], [0,1,0]);
     mvp.set(mat4.product(proj, mat4.product(view, model)));
-    cube_drawable.draw();
+    flag.draw();
 }
 
 $().ready(function () {
@@ -45,16 +44,19 @@ $().ready(function () {
         }
     });
 
-    var flag = Models.mesh(50, 2);
+    var mesh = Facet.Models.mesh(50, 2);
 
     mvp = Shade.parameter("mat4");
     phase = Shade.parameter("float");
+    var texture = Facet.texture({ src: "../img/sunflower.jpg" });
 
-    cube_drawable = Facet.bake(flag, {
-        position: mvp.mul(Shade.vec(flag.vertex, Shade.sin(flag.tex_coord.at(0).mul(20).add(phase)).mul(0.08), 1)),
-        color: Shade.texture2D(Facet.texture({ src: "../img/sunflower.jpg" }),
-                               flag.tex_coord)
-    });
+    flag = Facet.conditional_batch(
+        Facet.bake(mesh, {
+            position: mvp.mul(Shade.vec(mesh.vertex, Shade.sin(mesh.tex_coord.at(0).mul(20).add(phase)).mul(0.08), 1)),
+            color: Shade.texture2D(texture, mesh.tex_coord)
+        }), function() {
+            return texture.ready;
+        });
 
     var start = new Date().getTime();
     var f = function() {

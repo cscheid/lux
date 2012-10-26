@@ -30,17 +30,18 @@ function create_parallel_coords_batch()
         var col = primitive.div(table.n_rows).floor().add(vertex),
             row = primitive.mod(table.n_rows).floor();
         
-        var y = Shade.Scale.linear({ domain: [column_min(col), column_max(col)],
-                                     range: [-0.95, 0.95] })(table.at(row, col));
-        var x = Shade.Scale.linear({ domain: [0, Shade.sub(table.n_cols, 1)],
-                                     range: [-0.95, 0.95] })(col);
+        var y = Shade.Scale.linear({domain: [column_min(col), column_max(col)],
+                                    range: [-0.95, 0.95]})(table.at(row, col));
+        var x = Shade.Scale.linear({domain: [0, Shade.sub(table.n_cols, 1)],
+                                    range: [-0.95, 0.95]})(col);
         return Shade.vec(x, y);
     };
     
     var color_from_index = function(primitive_index, vertex_in_primitive) {
         var which_column = primitive_index.div(table.n_rows).floor(),
             which_row    = primitive_index.mod(table.n_rows).floor();
-        var u = Shade.Scale.linear({ domain: [0, table.n_rows] })(which_row);
+        var u = Shade.Scale.linear({domain: [0, table.n_rows], 
+                                    range: [0, 1]})(which_row);
         var h = u.mul(1.5).add(3),
             l = Shade.sub(95, u.mul(30));
         return Shade.Colors.shadetable.hcl.create(h, 20, l).as_shade();

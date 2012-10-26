@@ -51,7 +51,8 @@ $().ready(function () {
     });
 
     var camera = Shade.Camera.perspective();
-    var angle = Shade.parameter("float");
+    // rotate the objects at 50 degrees/second.
+    var angle = gl.parameters.now.mul(50).radians();
 
     var cube_xformed_vertex = Shade.translation(1.5, 0, -6)
         (Shade.rotation(angle, Shade.vec(1,1,1)))
@@ -70,12 +71,6 @@ $().ready(function () {
         color: pyramid_model.color
     }));
 
-    var start = new Date().getTime();
-    var f = function() {
-        window.requestAnimFrame(f);
-        var elapsed = new Date().getTime() - start;
-        angle.set((elapsed / 20) * (Math.PI / 180));
-        gl.display();
-    };
-    f();
+    // Start scene animation
+    Facet.Scene.animate();
 });

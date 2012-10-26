@@ -54,7 +54,7 @@ $().ready(function () {
         Facet.Scene.add(cube_batch[$(this).is(":checked")]);
     });
 
-    angle = Shade.parameter("float");
+    angle = gl.parameters.now.mul(50).radians();
 
     texture[0] = Facet.texture({ 
         src: "../img/crate.jpg",
@@ -80,14 +80,9 @@ $().ready(function () {
         false: cube_batch_per_fragment,
         true: cube_batch_per_vertex
     };
-    Facet.Scene.add(cube_batch_per_vertex);
-
-    var start = new Date().getTime();
-    var f = function() {
-        window.requestAnimFrame(f);
-        var elapsed = new Date().getTime() - start;
-        angle.set((elapsed / 20) * (Math.PI/180));
-        gl.display();
-    };
-    f();
+    Facet.Scene.add(Facet.conditional_batch(
+        cube_batch_per_vertex, function() {
+            return texture[0].ready && texture[1].ready && texture[2].ready;
+        }));
+    Facet.Scene.animate();
 });

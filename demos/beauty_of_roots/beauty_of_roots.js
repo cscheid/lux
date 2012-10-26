@@ -16,12 +16,12 @@ function make_points_batch(x, y, width, height)
     var pt = Shade.vec(points_model.x, points_model.y);
 
     rb = Facet.render_buffer({ width: width, height: height, type: gl.FLOAT });
-    var rb_batch = rb.make_screen_batch(function(texel_at_uv) {
+    var rb_batch = rb.make_screen_batch(function(texel_accessor) {
         return Shade.vec(1,1,1,2)
             .sub(Shade.Utils.lerp([Shade.color("white"),
                                    Shade.color("#d29152"),
                                    Shade.color("sienna"),
-                                   Shade.color("black")])(texel_at_uv.at(0).add(1).log()));
+                                   Shade.color("black")])(texel_accessor().at(0).add(1).log()));
     });
 
     var batch = Facet.bake(points_model, {
@@ -58,8 +58,9 @@ function init_gui()
         var x = Number($("#realvalue").val()),
             y = Number($("#imagvalue").val());
         if (!isNaN(x) && !isNaN(y)) {
-            interactor.center.set(vec.make([x, y]));
-            Facet.Scene.invalidate();
+            interactor.transition_to(vec.make([x, y]), interactor.zoom.get(), 3);
+            // interactor.center.set();
+            // Facet.Scene.invalidate();
         }
     });
     $(window).resize(function(eventObject) {
@@ -92,6 +93,23 @@ $().ready(function() {
 
     interactor = Facet.UI.center_zoom_interactor({
         width: width, height: height, zoom: 2/3
+    });
+
+    $("#overview").click(function() { interactor.transition_to(vec.make([0, 0]), 0.8333, 3); });
+    $("#fractal1").click(function() { interactor.transition_to(vec.make([-0.4501, -0.5069]), 15, 3); });
+    $("#fractal2").click(function() { interactor.transition_to(vec.make([0.6601, -0.1711]), 9, 3); });
+    $("#fractal3").click(function() { interactor.transition_to(vec.make([-1.5333, 0.2376]), 6, 3); });
+    $("#fractal4").click(function() { interactor.transition_to(vec.make([-0.9129, 1.298]), 4, 3); });
+    $("#squares").click(function() { interactor.transition_to(vec.make([0, 0.73]), 7, 3); });
+    $("#eye1").click(function() { interactor.transition_to(vec.make([-1, 0]), 7, 3); });
+    $("#eye2").click(function() { interactor.transition_to(vec.make([0, -1]), 20, 3); });
+    $("#eye3").click(function() { interactor.transition_to(vec.make([-0.5, 0.8666]), 15, 3); });
+    $("#eye4").click(function() { interactor.transition_to(vec.make([0.7071, -0.7071]), 15, 3); });
+
+    interactor.center.watch(function(c) {
+        $("#current-real").text(Math.round(c[0] * 10000) / 10000);
+        $("#current-imag").text(Math.round(c[1] * 10000) / 10000);
+        $("#plus-sign").css("display", c[1] >= 0 ? "" : "none");
     });
 
     // FIXME That hardcoded 240 should be computed based on screen size or something
