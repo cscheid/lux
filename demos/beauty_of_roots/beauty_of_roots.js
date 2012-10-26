@@ -58,8 +58,9 @@ function init_gui()
         var x = Number($("#realvalue").val()),
             y = Number($("#imagvalue").val());
         if (!isNaN(x) && !isNaN(y)) {
-            interactor.center.set(vec.make([x, y]));
-            Facet.Scene.invalidate();
+            interactor.transition_to(vec.make([x, y]), interactor.zoom.get(), 3.0);
+            // interactor.center.set();
+            // Facet.Scene.invalidate();
         }
     });
     $(window).resize(function(eventObject) {
@@ -92,6 +93,12 @@ $().ready(function() {
 
     interactor = Facet.UI.center_zoom_interactor({
         width: width, height: height, zoom: 2/3
+    });
+
+    interactor.center.watch(function(c) {
+        $("#current-real").text(Math.round(c[0] * 10000) / 10000);
+        $("#current-imag").text(Math.round(c[1] * 10000) / 10000);
+        $("#plus-sign").css("display", c[1] >= 0 ? "" : "none");
     });
 
     // FIXME That hardcoded 240 should be computed based on screen size or something
