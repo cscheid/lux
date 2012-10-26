@@ -89,6 +89,60 @@ Facet.UI.center_zoom_interactor = function(opts)
             Facet.Scene.invalidate();
         },
 
+        // Transitions between two projections using van Wijk and Nuij's scale-space geodesics
+        // from "Smooth and Efficient zooming and panning", IEEE Infovis 2003.
+        transition_to: function(new_center, new_zoom, seconds) {
+            new_zoom = 1.0 / new_zoom;
+            var old_zoom = 1.0 / zoom.get(),
+                old_center = center.get();
+            var start = (new Date()).getTime() / 1000.0;
+            var rho = 1.6;
+            var direction = vec.minus(new_center, old_center);
+            var d = vec.length(direction);
+
+            if (d < 1e-6) {
+                console.log("unimplemented"); 
+                return;
+            }
+
+            var u = [0, d],
+                w = [old_zoom, new_zoom],
+                b = [(w[1] * w[1] - w[0] * w[0] + Math.pow(rho, 4) * Math.pow(u[1] - u[0], 2)) / (2 * w[0] * rho * rho * (u[1] - u[0])),
+                     (w[1] * w[1] - w[0] * w[0] - Math.pow(rho, 4) * Math.pow(u[1] - u[0], 2)) / (2 * w[1] * rho * rho * (u[1] - u[0]))];
+            var r = [Math.log(-b[0] + Math.sqrt(b[0] * b[0] + 1)),
+                     Math.log(-b[1] + Math.sqrt(b[1] * b[1] + 1))];
+            var S = (r[1] - r[0]) / rho;
+            
+            function cosh(x) {
+                return 0.5 * (Math.exp(x) + Math.exp(-x));
+            }
+            function sinh(x) {
+                return 0.5 * (Math.exp(x) - Math.exp(-x));
+            }
+            function tanh(x) {
+                return sinh(x) / cosh(x);
+            }
+
+            var that = this;
+
+            var ticker = Facet.Scene.animate(function() {
+                var now = (new Date()).getTime() / 1000.0;
+                var s = (now - start) / seconds * S;
+                var u_s = (w[0] / (rho * rho)) * (cosh(r[0]) * tanh(rho * s + r[0]) - sinh(r[0])) + u[0];
+                var w_s = w[0] * cosh(r[0]) / cosh(rho * s + r[0]);
+                var this_center = vec.plus(old_center, vec.scaling(direction, u_s / d));
+                var this_zoom = w_s;
+                that.center.set(this_center);
+                that.zoom.set(1.0 / this_zoom);
+                if (s >= S) {
+                    that.center.set(new_center);
+                    that.zoom.set(1.0 / new_zoom);
+                    ticker.stop();
+                    return;
+                }
+            });
+        },
+
         events: {
             mousedown: mousedown,
             mousemove: mousemove,
