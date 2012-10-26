@@ -5222,7 +5222,7 @@ Facet.UI.center_zoom_interactor = function(opts)
             internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
             Facet.Scene.invalidate();
         } else if ((event.which & 1) && event.shiftKey) {
-            zoom.set(zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
+            zoom.set(Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240)));
             Facet.Scene.invalidate();
         }
         prev_mouse_pos = [ event.offsetX, event.offsetY ];
