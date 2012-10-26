@@ -5261,6 +5261,8 @@ Facet.UI.center_zoom_interactor = function(opts)
         // Transitions between two projections using van Wijk and Nuij's scale-space geodesics
         // from "Smooth and Efficient zooming and panning", IEEE Infovis 2003.
         transition_to: function(new_center, new_zoom, seconds) {
+            if (_.isUndefined(seconds))
+                seconds = 3;
             new_zoom = 1.0 / new_zoom;
             var old_zoom = 1.0 / zoom.get(),
                 old_center = center.get();
