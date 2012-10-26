@@ -30,6 +30,7 @@ Shade.parameter = function(type, v)
     }
     var result = Shade._create_concrete_exp({
         parents: [],
+        watchers: [],
         type: type,
         expression_type: 'parameter',
         glsl_expression: function() {
@@ -71,9 +72,16 @@ Shade.parameter = function(type, v)
             if (this._facet_active_uniform) {
                 this._facet_active_uniform(v);
             }
+            _.each(this.watchers, function(f) { f(v); });
         },
         get: function(v) {
             return value;
+        },
+        watch: function(callback) {
+            this.watchers.push(callback);
+        },
+        unwatch: function(callback) {
+            this.watchers.splice(this.watchers.indexOf(callback), 1);
         },
         uniform_call: call,
         uniform_name: uniform_name
