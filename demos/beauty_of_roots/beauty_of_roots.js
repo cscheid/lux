@@ -58,7 +58,7 @@ function init_gui()
         var x = Number($("#realvalue").val()),
             y = Number($("#imagvalue").val());
         if (!isNaN(x) && !isNaN(y)) {
-            interactor.transition_to(vec.make([x, y]), interactor.zoom.get(), 3.0);
+            interactor.transition_to(vec.make([x, y]), interactor.zoom.get(), 3);
             // interactor.center.set();
             // Facet.Scene.invalidate();
         }
@@ -94,6 +94,17 @@ $().ready(function() {
     interactor = Facet.UI.center_zoom_interactor({
         width: width, height: height, zoom: 2/3
     });
+
+    $("#overview").click(function() { interactor.transition_to(vec.make([0, 0]), 0.8333, 3); });
+    $("#fractal1").click(function() { interactor.transition_to(vec.make([-0.4501, -0.5069]), 15, 3); });
+    $("#fractal2").click(function() { interactor.transition_to(vec.make([0.6601, -0.1711]), 9, 3); });
+    $("#fractal3").click(function() { interactor.transition_to(vec.make([-1.5333, 0.2376]), 6, 3); });
+    $("#fractal4").click(function() { interactor.transition_to(vec.make([-0.9129, 1.298]), 4, 3); });
+    $("#squares").click(function() { interactor.transition_to(vec.make([0, 0.73]), 7, 3); });
+    $("#eye1").click(function() { interactor.transition_to(vec.make([-1, 0]), 7, 3); });
+    $("#eye2").click(function() { interactor.transition_to(vec.make([0, -1]), 20, 3); });
+    $("#eye3").click(function() { interactor.transition_to(vec.make([-0.5, 0.8666]), 15, 3); });
+    $("#eye4").click(function() { interactor.transition_to(vec.make([0.7071, -0.7071]), 15, 3); });
 
     interactor.center.watch(function(c) {
         $("#current-real").text(Math.round(c[0] * 10000) / 10000);
