@@ -1160,6 +1160,10 @@ vec2.map = function(vec, f) {
 };
 
 vec2.str = function(v) { return "[" + v[0] + ", " + v[1] + "]"; };
+
+vec2.cross = function(v0, v1) {
+    return v0[0] * v1[1] - v0[1] * v1[0];
+};
 var vec3 = {};
 
 vec3.create = function()
@@ -5230,10 +5234,10 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     function mousewheel(event) {
-        internal_move(width/2-event.clientX, height/2-event.clientY);
+        internal_move(width/2-event.offsetX, height/2-event.offsetY);
         var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
         zoom.set(new_value);
-        internal_move(event.clientX-width/2, event.clientY-height/2);
+        internal_move(event.offsetX-width/2, event.offsetY-height/2);
         opts.mousewheel(event);
         Facet.Scene.invalidate();
         return false;
