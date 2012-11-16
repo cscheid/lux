@@ -169,3 +169,7 @@ vec2.map = function(vec, f) {
 };
 
 vec2.str = function(v) { return "[" + v[0] + ", " + v[1] + "]"; };
+
+vec2.cross = function(v0, v1) {
+    return v0[0] * v1[1] - v0[1] * v1[0];
+};
