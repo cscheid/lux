@@ -36,7 +36,7 @@ $().ready(function () {
         },
         mousedown: function(event) {
             Facet.Picker.draw_pick_scene();
-            var r = Facet.Picker.pick(event.offsetX, gl.viewportHeight - event.offsetY);
+            var r = Facet.Picker.pick(event.facetX, event.facetY);
             $("#pickresult").html(strings[r]);
         }
     });
