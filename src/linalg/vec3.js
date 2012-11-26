@@ -187,6 +187,11 @@ vec3.length = function(vec)
     return Math.sqrt(x*x + y*y + z*z);
 };
 
+vec3.length2 = function(vec)
+{
+    return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
+};
+
 vec3.dot = function(v1, v2)
 {
     return v1[0] * v2[0] + 

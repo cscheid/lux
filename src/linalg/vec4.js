@@ -190,6 +190,11 @@ vec4.length = function(vec)
     return Math.sqrt(x*x + y*y + z*z + w*w);
 };
 
+vec4.length2 = function(vec)
+{
+    return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2] + vec[3] * vec[3];
+};
+
 vec4.dot = function(v1, v2)
 {
     return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3] * v2[3];

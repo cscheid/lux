@@ -59,7 +59,7 @@ function draw_it(batch_opts)
                 ctx.enableVertexAttribArray(attr);
                 var buffer = attributes[key].get();
                 if (!buffer) {
-                    throw "Unbound Shade.attribute " + attributes[key]._attribute_name;
+                    throw "Unset Shade.attribute " + attributes[key]._attribute_name;
                 }
                 buffer.bind(attr);
             }
@@ -323,7 +323,9 @@ Facet.bake = function(model, appearance, opts)
         },
         _pick: function() {
             draw_it(pick_opts);
-        }
+        },
+        // for debugging purposes
+        _batch_opts: function() { return which_opts; }
     };
     return result;
 };

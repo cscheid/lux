@@ -159,6 +159,11 @@ vec2.length = function(vec)
     return Math.sqrt(x*x + y*y);
 };
 
+vec2.length2 = function(vec)
+{
+    return vec[0] * vec[0] + vec[1] * vec[1];
+};
+
 vec2.dot = function(v1, v2)
 {
     return v1[0] * v2[0] + v1[1] * v2[1];
@@ -169,3 +174,7 @@ vec2.map = function(vec, f) {
 };
 
 vec2.str = function(v) { return "[" + v[0] + ", " + v[1] + "]"; };
+
+vec2.cross = function(v0, v1) {
+    return v0[0] * v1[1] - v0[1] * v1[0];
+};
