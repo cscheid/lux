@@ -64,7 +64,7 @@ Facet.attribute_buffer = function(opts)
             typedArray = new this._typed_array_ctor(vertex_array);
         } else {
             if (vertex_array.constructor !== this._typed_array_ctor) {
-                throw "Facet.attribute_buffer.set requires either a plain list of a typed array of the right type";
+                throw "Facet.attribute_buffer.set requires either a plain list or a typed array of the right type";
             }
             typedArray = vertex_array;
         }
