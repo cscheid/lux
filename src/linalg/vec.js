@@ -74,6 +74,11 @@ vec.length = function(v)
     return vec[v.length].length(v);
 };
 
+vec.length2 = function(v)
+{
+    return vec[v.length].length2(v);
+};
+
 vec.dot = function(v1, v2)
 {
     if (v1.length != v2.length) {
