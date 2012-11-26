@@ -1,4 +1,4 @@
-/* outputs parts of a graph to a json format HLGL understands */
+/* outputs parts of a graph to a json format Facet understands */
 
 BEG_G {
     printf("{\n");
@@ -10,15 +10,23 @@ BEG_G {
 
 N {
     double x, y;
-    sscanf($.pos, "%f,%f", &x, &y);
     printf("    ");
     if (seen_node == 0) {
         seen_node = 1;
     } else {
         printf(",");
     }
-    printf("{\"position\": [%f,%f], \"name\": \"%s\"}\n",
-           x, y, $.name);
+    printf("{ \"name\": \"%s\"", $.name);
+    string attr = fstAttr($G, "N");
+    while (1) {
+        if (hasAttr($, attr)) {
+            printf(", \"%s\": \"%s\"", attr, aget($, attr));
+        }
+        if (!(attr = nxtAttr($G, "N", attr)))
+            break;
+    };
+
+    printf("}\n");
 }
 
 E {

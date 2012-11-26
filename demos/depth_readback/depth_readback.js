@@ -32,7 +32,7 @@ $().ready(function () {
         },
         mousedown: function(event) {
             Facet.Unprojector.draw_unproject_scene();
-            var r = Facet.Unprojector.unproject(event.offsetX, gl.viewportHeight - event.offsetY);
+            var r = Facet.Unprojector.unproject(event.facetX, event.facetY);
             $("#pickresult").html(String(r));
         }
     });

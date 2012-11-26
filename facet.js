@@ -75,14 +75,6 @@
  */
 // END WEBGL-UTILS.JS NOTICE
 ////////////////////////////////////////////////////////////////////////////////
-/*
-
-  Facet is a library for making WebGL marginally
-  less painful to program, featuring things like nicer support for
-  fragment and vertex programs, webgl buffers, textures, etc.
-
- */
-
 Facet = {};
 // yucky globals used throughout Facet. I guess this means I lost.
 //
@@ -1150,6 +1142,11 @@ vec2.length = function(vec)
     return Math.sqrt(x*x + y*y);
 };
 
+vec2.length2 = function(vec)
+{
+    return vec[0] * vec[0] + vec[1] * vec[1];
+};
+
 vec2.dot = function(v1, v2)
 {
     return v1[0] * v2[0] + v1[1] * v2[1];
@@ -1160,6 +1157,10 @@ vec2.map = function(vec, f) {
 };
 
 vec2.str = function(v) { return "[" + v[0] + ", " + v[1] + "]"; };
+
+vec2.cross = function(v0, v1) {
+    return v0[0] * v1[1] - v0[1] * v1[0];
+};
 var vec3 = {};
 
 vec3.create = function()
@@ -1347,6 +1348,11 @@ vec3.length = function(vec)
 {
     var x = vec[0], y = vec[1], z = vec[2];
     return Math.sqrt(x*x + y*y + z*z);
+};
+
+vec3.length2 = function(vec)
+{
+    return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
 };
 
 vec3.dot = function(v1, v2)
@@ -1553,6 +1559,11 @@ vec4.length = function(vec)
 {
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     return Math.sqrt(x*x + y*y + z*z + w*w);
+};
+
+vec4.length2 = function(vec)
+{
+    return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2] + vec[3] * vec[3];
 };
 
 vec4.dot = function(v1, v2)
@@ -3026,6 +3037,11 @@ vec.length = function(v)
     return vec[v.length].length(v);
 };
 
+vec.length2 = function(v)
+{
+    return vec[v.length].length2(v);
+};
+
 vec.dot = function(v1, v2)
 {
     if (v1.length != v2.length) {
@@ -3243,7 +3259,7 @@ Facet.attribute_buffer = function(opts)
             typedArray = new this._typed_array_ctor(vertex_array);
         } else {
             if (vertex_array.constructor !== this._typed_array_ctor) {
-                throw "Facet.attribute_buffer.set requires either a plain list of a typed array of the right type";
+                throw "Facet.attribute_buffer.set requires either a plain list or a typed array of the right type";
             }
             typedArray = vertex_array;
         }
@@ -3353,7 +3369,7 @@ function draw_it(batch_opts)
                 ctx.enableVertexAttribArray(attr);
                 var buffer = attributes[key].get();
                 if (!buffer) {
-                    throw "Unbound Shade.attribute " + attributes[key]._attribute_name;
+                    throw "Unset Shade.attribute " + attributes[key]._attribute_name;
                 }
                 buffer.bind(attr);
             }
@@ -3617,11 +3633,27 @@ Facet.bake = function(model, appearance, opts)
         },
         _pick: function() {
             draw_it(pick_opts);
-        }
+        },
+        // for debugging purposes
+        _batch_opts: function() { return which_opts; }
     };
     return result;
 };
 })();
+Facet.batch_list = function(lst)
+{
+    lst = lst.slice().reverse();
+    return {
+        list: lst,
+        draw: function() {
+            var i=this.list.length;
+            var lst = this.list;
+            while (i--) {
+                lst[i].draw();
+            }
+        }
+    };
+};
 Facet.conditional_batch = function(batch, condition)
 {
     return {
@@ -3638,16 +3670,31 @@ Facet.element_buffer = function(vertex_array)
 {
     var ctx = Facet._globals.ctx;
     var result = ctx.createBuffer();
-    ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, result);
     var typedArray = new Uint16Array(vertex_array);
-    ctx.bufferData(ctx.ELEMENT_ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
+    result._ctx = ctx;
     result._shade_type = 'element_buffer';
-    result.array = typedArray;
     result.itemSize = 1;
-    result.numItems = vertex_array.length;
 
     //////////////////////////////////////////////////////////////////////////
     // These methods are only for internal use within Facet
+
+    result.set = function(vertex_array) {
+        Facet.set_context(ctx);
+        var typedArray;
+        if (vertex_array.constructor.name === 'Array') {
+            typedArray = new Uint16Array(vertex_array);
+        } else {
+            if (vertex_array.constructor !== Uint16Array) {
+                throw "Facet.element_buffer.set requires either a plain list or a Uint16Array";
+            }
+            typedArray = vertex_array;
+        }
+        ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, this);
+        ctx.bufferData(ctx.ELEMENT_ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
+        this.array = typedArray;
+        this.numItems = typedArray.length;
+    };
+    result.set(vertex_array);
 
     result.bind = function() {
         ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, this);
@@ -3722,7 +3769,11 @@ function initialize_context_globals(gl)
 
     gl._facet_globals.pre_display_list = [];
     gl._facet_globals.post_display_list = [];
+
+    gl._facet_globals.devicePixelRatio = undefined;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 Facet.init = function(canvas, opts)
 {
@@ -3735,7 +3786,8 @@ Facet.init = function(canvas, opts)
                                     attributes: {
                                         alpha: true,
                                         depth: true
-                                    }
+                                    },
+                                    highDPS: true
                                   });
     if (Facet.is_shade_expression(opts.clearColor)) {
         if (!opts.clearColor.is_constant())
@@ -3755,6 +3807,15 @@ Facet.init = function(canvas, opts)
         clearDepth = opts.clearDepth.constant_value();
     } else
         clearDepth = opts.clearDepth;
+
+    var devicePixelRatio = 1;
+    if (opts.highDPS) {
+        devicePixelRatio = window.devicePixelRatio || 1;
+        canvas.style.width = canvas.width;
+        canvas.style.height = canvas.height;
+        canvas.width = canvas.clientWidth * devicePixelRatio;
+        canvas.height = canvas.clientHeight * devicePixelRatio;
+    }
 
     try {
         if ("attributes" in opts) {
@@ -3802,8 +3863,8 @@ Facet.init = function(canvas, opts)
             if (!_.isUndefined(listener)) {
                 (function(listener) {
                     function internal_listener(event) {
-                        event.facetX = event.offsetX;
-                        event.facetY = gl.viewportHeight - event.offsetY;
+                        event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
+                        event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
                         return listener(event);
                     }
                     canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
@@ -3835,6 +3896,8 @@ Facet.init = function(canvas, opts)
     }
 
     initialize_context_globals(gl);
+    gl._facet_globals.devicePixelRatio = devicePixelRatio;
+
     Facet.set_context(gl);
 
     if (opts.display) {
@@ -4024,6 +4087,9 @@ Facet.model = function(input)
         } else {
             result.elements = n_elements;
         }
+    }
+    if (!("type" in result)) {
+        result.add("type", "triangles");
     }
     result._ctx = Facet._globals.ctx;
     return result;
@@ -5222,7 +5288,7 @@ Facet.UI.center_zoom_interactor = function(opts)
             internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
             Facet.Scene.invalidate();
         } else if ((event.which & 1) && event.shiftKey) {
-            zoom.set(zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
+            zoom.set(Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240)));
             Facet.Scene.invalidate();
         }
         prev_mouse_pos = [ event.offsetX, event.offsetY ];
@@ -5230,10 +5296,10 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     function mousewheel(event) {
-        internal_move(width/2-event.clientX, height/2-event.clientY);
+        internal_move(width/2-event.offsetX, height/2-event.offsetY);
         var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
         zoom.set(new_value);
-        internal_move(event.clientX-width/2, event.clientY-height/2);
+        internal_move(event.offsetX-width/2, event.offsetY-height/2);
         opts.mousewheel(event);
         Facet.Scene.invalidate();
         return false;
@@ -10004,14 +10070,14 @@ Shade.Utils.lerp = function(lst) {
     };
 };
 // given a list of values, returns a function which, when given a
-// value between 0 and 1, returns the nearest value;
+// value between 0 and l, returns the value of the index;
 
 // box function reconstruction
 
 Shade.Utils.choose = function(lst) {
     var new_lst = _.toArray(lst);
+    var vals_exp = Shade.array(new_lst);
     return function(v) {
-        var vals_exp = Shade.array(new_lst);
         v = Shade.clamp(v, 0, new_lst.length-1).floor().as_int();
         return vals_exp.at(v);
     };
@@ -11553,6 +11619,29 @@ Shade.Bits.shift_right = Shade.make(function(v, amt) {
 });
 Shade.Scale = {};
 
+/*
+ * nearest-neighbor interpolation
+ */
+
+Shade.Scale.ordinal = function(opts)
+{
+    function all_same(set) {
+        return _.all(set, function(v) { return v.equals(set[0]); });
+    }
+    if (!(opts.range.length >= 2)) { 
+        throw "Shade.Scale.ordinal requires arrays of length at least 2";
+    }
+    opts.range = _.map(opts.range, Shade.make);
+    var range_types = _.map(opts.range,  function(v) { return v.type; });
+    if (!all_same(range_types))
+        throw "Shade.Scale.linear requires range elements to have the same type";
+
+    var choose = Shade.Utils.choose(range_types);
+
+    return function(v) {
+        return choose(v.as_float().add(0.5));
+    };
+};
 Shade.Scale.linear = function(opts)
 {
     var allowable_types = [
@@ -11741,6 +11830,420 @@ Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
     lat = lat.div(2).add(Math.PI/4).tan().log();
     return Shade.vec(lon, lat);
 });
+Facet.Geometry = {};
+Facet.Geometry.triangulate = function(opts) {
+    opts = _.defaults(opts, {
+        keep_array: false
+    });
+    var poly = opts.contour;
+    var keep_array = opts.keep_array;
+    if (_.isUndefined(poly)) {
+        throw "Facet.Geometry.triangulate requires contour option";
+    };
+
+    var CW = 1, CCW = 0;
+
+    function getRotation(polyList) {
+        var z = 0, current, next, prev, j, numpts, first;
+
+        numpts = polyList.length;
+
+        //check that the linked list contains points
+        for (j=0;j<numpts;j++)
+            if (polyList[j].next > 0)
+                break;
+        if (j === numpts)
+            return -1;
+
+        first = j;
+        for (var i=0; i<polyList.length; i++){
+            current = polyList[j];
+            next = polyList[current.next];
+            z += vec.cross(current.point, next.point);
+            j = polyList[j].next;
+            if (j === first)
+                break;
+        }
+        if(z > 0)
+            return CCW;
+        else
+            return CW;
+    }
+
+    function hidePolyListElement(polyList,indx) {
+        polyList[polyList[indx].prev].next = polyList[indx].next;
+        polyList[polyList[indx].next].prev = polyList[indx].prev;
+        polyList[indx].next = -1;
+        polyList[indx].prev = -1;
+    }
+
+    //adjust linked list pointers and remove element from array
+    function hideElement(list,val){
+
+        for(var i=0;i<list.length;i++){
+
+            if((list[i].val === val) && (list[i].next >= 0)){
+                list[list[i].prev].next = list[i].next;
+                list[list[i].next].prev = list[i].prev;
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    function removeElement(list,val){
+        var indx;
+
+        indx = hideElement(list,val);
+        if(indx >= 0){
+            list[indx].next = -1;
+            list[indx].prev = -1;
+        }
+    }
+
+    function addElement(list,val){
+        var i;
+        var element = {};
+        if(list.length === 0){
+            element.prev = 0;
+            element.next = 0;
+        }
+        else {
+            for(i=list.length - 1;i>=0;i--)
+                if(list[i].next >= 0)
+                    break;
+            if(i === -1){
+                element.prev = i;
+                element.next = i;
+            }
+            else {
+                element.prev = i;
+                element.next = list[i].next;
+                list[list[i].next].prev = list.length;
+                list[i].next = list.length;
+            }
+        }
+        element.val = val;
+        list.push(element);
+    }
+
+    function isElementInList(list,val){
+        var i;
+
+        if(list.length === 0)
+            return false;
+        
+        for(i=0;i<list.length;i++){
+            if((list[i].val === val) && list[i].prev >= 0)
+                return true;
+        }
+
+        return false;
+    }
+
+
+    /*
+     pt1 is the first point for comparison
+     pt2 is the second point for comparison
+     pt3 is a point on the line used for comparison
+     m and b are the parameters of the line used for comparison
+     
+     determine if the two points are on the same side of the line
+     */
+
+    function isSameSide(pt1,pt2,pt3,m,b){
+        if(!isFinite(m)){
+            if((pt1[0] < pt3[0]) && (pt2[0] < pt3[0]))
+                return true;
+            else if((pt1[0] > pt3[0]) && (pt2[0] > pt3[0]))
+                return true;
+        }
+        else {  
+            if((pt1[1] < ((m*pt1[0]) + b)) && (pt2[1] < ((m*pt2[0]) + b)))
+                return true;
+            else if((pt1[1] > ((m*pt1[0]) + b)) && (pt2[1] > ((m*pt2[0]) + b)))
+                return true;
+        }
+        return false;
+
+    }
+
+
+
+
+    function angleType(polyList,indx,rotation){
+        var next,prev,current,angle,angleN,angleP,degree;
+        var count;
+        var isEar;
+
+
+        current = polyList[indx];
+        next = polyList[current.next];
+        prev = polyList[current.prev];
+
+
+        if(rotation === CCW){
+            angleN = Math.atan2((next.point[1] - current.point[1]),(next.point[0] - current.point[0]));
+            angleP = Math.atan2((prev.point[1] - current.point[1]),(prev.point[0] - current.point[0]));
+            angle = angleP - angleN;
+        }
+        else{
+            angleN = Math.atan2((next.point[1] - current.point[1]),(next.point[0] - current.point[0]));
+            angleP = Math.atan2((prev.point[1] - current.point[1]),(prev.point[0] - current.point[0]));
+            angle = angleN - angleP;
+        }
+
+        degree = angle * (180/Math.PI);
+        if(degree < 0)
+            degree += 360;
+
+        if(degree < 180){
+            polyList[indx].isReflex = false;
+            isEar = true;
+            next = polyList[current.next];
+            prev = polyList[current.prev];
+            //determine if this vertex is an ear tip
+            for(var i=0;i<polyList.length;i++){
+                if(polyList[i].next < 0)
+                    continue;
+                //exclude vertices that cannot be in the interior of the acute angle
+                if(polyList[i] === current || polyList[i] === next || polyList[i] === prev)
+                    continue;
+
+                //if any vertex falls within the triangle then it is not an ear
+                if(isSameSide(current.point,polyList[i].point,next.point,current.diag.edge.m,current.diag.edge.b) &&
+                   isSameSide(next.point,polyList[i].point,prev.point,prev.edge.m,prev.edge.b) &&
+                   isSameSide(prev.point,polyList[i].point,current.point,current.edge.m,current.edge.b)){
+                    isEar = false;
+                    break;
+                }       
+            }
+            polyList[indx].isEar = isEar;
+        }
+        else {
+            polyList[indx].isReflex = true;
+            polyList[indx].isEar = false;
+        }
+
+    }
+
+
+    function getLineParams(vertx1,vertx2,shift){
+        var edge = {}, mid = vec.make([0,0]);
+        var deltaY,deltaX,cx,cy,rayStart,rayEnd;
+        var m,b,displacement = .000001;
+
+        rayStart = vec.make([vertx1.point[0],vertx1.point[1]]);
+        if(typeof shift == "undefined")
+            shift = 0;
+
+        //change position of the point where the ray ends
+        if(shift > 0){
+            m = vertx2.m;
+            b = vertx2.b;
+            cx = vertx2.point[0] - (shift * displacement);
+            cy = (m * cx) + b;
+            rayEnd = vec.make([cx, cy]);
+        }
+        else
+            rayEnd = vec.make([vertx2.point[0], vertx2.point[1]]);
+
+        deltaX = rayEnd[0] - rayStart[0];
+        deltaY = rayEnd[1] - rayStart[1];
+        cx = rayStart[0];
+        cy = rayStart[1];
+
+        if(deltaX === 0.){
+            if(deltaY === 0.){ //single point
+                edge.m = Number.NaN;
+                edge.b = Number.NaN;
+            }
+            else if(deltaY < 0.){ //verticle line
+                edge.m = Number.NEGATIVE_INFINITY;
+                edge.b = Number.NaN;
+            }
+            else { //verticle line
+                edge.m = Number.POSITIVE_INFINITY;
+                edge.b = Number.NaN;
+            }
+            mid[0] = cx;
+            mid[1] = cy + (deltaY/2.);
+        }
+        else if(deltaY === 0.){ //horizontal line
+            edge.m = 0.;
+            edge.b = cy;
+            mid[0] = cx + (deltaX/2.);
+            mid[1] = cy;
+        }
+        else { //arbitrary slope
+            edge.m = deltaY/deltaX;
+            edge.b = cy -(edge.m * cx);
+            mid[0] = cx + (deltaX/2.);
+            mid[1] = cy + (deltaY/2.);
+        }
+        edge.point = mid;
+
+        return edge;
+    }
+
+    /*
+     *
+     *  get the line parameters (slope m and y intercept b)
+     *  for each edge and the line that closes the triange
+     *  defined by a vertex and its previous and next vertices
+     *
+     */
+    function getListParams(polyList,indx){
+
+        var prev,next,current,prevElmt,nextElmt;
+        var point = {};
+        var edge = {point:{}};
+        var diag = {point:{}};
+        current = polyList[indx];
+        prev = polyList[indx].prev;
+        next = polyList[indx].next;
+        prevElmt = polyList[prev];
+        nextElmt = polyList[next];
+
+        //get edge slope, y-intersect and midpoint coordinates
+        edge = getLineParams(current,nextElmt);
+        current.edge = {};
+        current.edge.m = edge.m;
+        current.edge.b = edge.b;
+        current.edge.point = vec.make([0,0]);
+        current.edge.point[0] = edge.point[0];
+        current.edge.point[1] = edge.point[1];
+
+        //get diagnal slope, y-intersect and midpoint coordinates
+        current.diag = {};
+        current.diag.edge = getLineParams(prevElmt,nextElmt);;
+    }
+
+    function triangulate(poly){
+        var polyList = [];
+        var reflex = [];
+        var concave = [];
+        var earTip = [];
+        var triangles = [];
+        var currentEar,tPrev,tNext,triangle,prev,next,aType,vertxCount; 
+        var rotation, element;
+        var i;
+
+        //create linked list
+        for(i=0;i<poly.length;i++){
+            var polyListItem = {};
+            polyListItem.point = vec.make([poly[i][0],poly[i][1]]);
+            if(i === 0)
+                polyListItem.prev = poly.length - 1;
+            else
+                polyListItem.prev = i-1;
+
+            if(i === (poly.length -1))
+                polyListItem.next = 0;
+            else
+                polyListItem.next = i + 1;
+
+            polyList.push(polyListItem);
+        }
+
+
+        rotation = getRotation(polyList);
+
+
+        //assign vertex edges and diagnals
+        for(i=0;i<polyList.length;i++)
+            getListParams(polyList,i);
+
+        for(i=0;i<polyList.length;i++){
+            angleType(polyList,i,rotation);
+            if(polyList[i].isReflex){
+                addElement(reflex,i);
+            }
+            else {
+                addElement(concave,i);
+                if(polyList[i].isEar){
+                    element = {};
+                    addElement(earTip,i);
+                }
+            }
+        }
+        //the polygon, reflex, concave and ear tip structures are initialize at this point
+
+        vertxCount = polyList.length;
+        while(vertxCount >= 3){
+            for(i=0;i<earTip.length;i++)
+                if(earTip[i].next >= 0)
+                    break;
+            if(i === earTip.length)
+                break;
+            currentEar = earTip[i];
+            tPrev = polyList[currentEar.val].prev;
+            tNext = polyList[currentEar.val].next;
+            triangle = [tPrev,currentEar.val,tNext];
+            triangles.push(triangle);
+            removeElement(earTip,currentEar.val);
+            removeElement(concave,currentEar.val);
+            hidePolyListElement(polyList,currentEar.val);
+            getListParams(polyList,tPrev);
+            aType = angleType(polyList,tPrev,rotation);
+            if(polyList[tPrev].isReflex){
+                if(!isElementInList(reflex,tPrev))
+                    addElement(reflex,tPrev);
+                if(isElementInList(concave,tPrev))
+                    removeElement(concave,tPrev);
+                if(isElementInList(earTip,tPrev))
+                    removeElement(earTip,tPrev);
+            }
+            else {
+                if(!isElementInList(concave,tPrev))
+                    addElement(concave,tPrev);
+                if(isElementInList(reflex,tPrev))
+                    removeElement(reflex,tPrev);
+                if(polyList[tPrev].isEar){
+                    if(!isElementInList(earTip,tPrev))
+                        addElement(earTip,tPrev);
+                }
+                else{
+                    if(isElementInList(earTip,tPrev))
+                        removeElement(earTip,tPrev);
+                }
+            }
+            getListParams(polyList,tNext);
+            aType = angleType(polyList,tNext,rotation);
+            if(polyList[tNext].isReflex){
+                if(!isElementInList(reflex,tNext))
+                    addElement(reflex,tNext);
+                if(isElementInList(concave,tNext))
+                    removeElement(concave,tNext);
+                if(isElementInList(earTip,tNext))
+                    removeElement(earTip,tNext);
+            }
+            else {
+                if(!isElementInList(concave,tNext))
+                    addElement(concave,tNext);
+                if(isElementInList(reflex,tNext))
+                    removeElement(reflex,tNext);
+                if(polyList[tNext].isEar){
+                    if(!isElementInList(earTip,tNext))
+                        addElement(earTip,tNext);
+                }
+                else{
+                    if(isElementInList(earTip,tNext))
+                        removeElement(earTip,tNext);
+                }
+            }
+            vertxCount--;
+        }
+        return triangles;
+
+    }
+
+    // get an array of arrays containing the triangulation of the polygon
+    // every element of indx represents an array of three indices of the polygon
+    // the points of polygon corresponding to the indices define a triangle
+    return triangulate(poly);
+};
 Facet.Debug = {};
 Facet.Debug.init = function(div)
 {
@@ -14826,6 +15329,37 @@ if (! _.isUndefined(poly)){
 
 } else
 throw "poly is a required parameter";
+};
+
+Facet.Models.polygon2 = function(opts) {
+    opts = _.defaults(opts, {
+        type: "triangles",
+        keep_array: false
+    });
+    var poly = opts.contour;
+    var style = opts.type;
+    var keep_array = opts.keep_array;
+    var vertexColor = opts.vertex_color;
+    if (_.isUndefined(poly)) {
+        throw "Facet.Models.polygon requires contour option";
+    };
+
+    var triangles = Facet.Geometry.triangulate({ contour: poly });
+    var verts = [];
+    var elements = [].concat.apply([], triangles);
+    _.each(poly, function(v) { verts.push.apply(verts, v); });
+
+    var uv = Shade(Facet.attribute_buffer({
+        vertex_array: verts, 
+        item_size: 2, 
+        keep_array: keep_array
+    }));
+
+    return Facet.model({
+        type: style,
+        elements: Facet.element_buffer(elements),
+        vertex: uv
+    });
 };
 
 Facet.Mesh = {};

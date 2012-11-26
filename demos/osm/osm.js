@@ -27,11 +27,10 @@ $().ready(function () {
     var globe = Facet.Marks.globe({ 
         view_proj: view_proj,
         zoom: globe_zoom
-        // Uncomment this to get satellite imagery
-        // ,
-        // tile_pattern: function(zoom, x, y) {
-        //     return "http://oatile1.mqcdn.com/tiles/1.0.0/sat/" + zoom + "/" + x + "/" + y + ".jpg";
-        // }
+        ,
+        tile_pattern: function(zoom, x, y) {
+            return "http://oatile1.mqcdn.com/tiles/1.0.0/sat/" + zoom + "/" + x + "/" + y + ".jpg";
+        }
     });
 
     Facet.Scene.add(globe);
