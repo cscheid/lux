@@ -28,9 +28,9 @@ Shade.Exp = {
         };
         _debug_print(this, 0);
         do_what = do_what || function(l) {
-            var s = l.join("\n");
+            return l.join("\n");
         };
-        do_what(lst);
+        return do_what(lst);
     },
     glsl_expression: function() {
         return this.glsl_name + "()";
@@ -266,7 +266,22 @@ Shade.Exp = {
                     return that.parents[0].element_is_constant(i);
                 });
             }),
+            constant_value: Shade.memoize_on_field("_constant_value", function() {
+                var that = this;
+                var ar = _.map(indices, function(i) {
+                    return that.parents[0].element_constant_value(i);
+                });
+                if (ar.length === 1)
+                    return ar[0];
+                var d = this.type.vec_dimension();
+                var ctor = vec[d];
+                if (_.isUndefined(ctor))
+                    throw "bad vec dimension " + d;
+                return ctor.make(ar);
+            }),
             evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                if (this.is_constant())
+                    return this.constant_value();
                 if (this.type.is_pod()) {
                     return this.parents[0].element(indices[0]).evaluate(cache);
                 } else {
@@ -275,13 +290,17 @@ Shade.Exp = {
                         return that.parents[0].element(index).evaluate(cache);
                     });
                     var d = this.type.vec_dimension();
-                    switch (d) {
-                    case 2: return vec2.make(ar);
-                    case 3: return vec3.make(ar);
-                    case 4: return vec4.make(ar);
-                    default:
+                    var ctor = vec[d];
+                    if (_.isUndefined(ctor))
                         throw "bad vec dimension " + d;
-                    }
+                    return ctor.make(ar);
+                    // switch (d) {
+                    // case 2: return vec2.make(ar);
+                    // case 3: return vec3.make(ar);
+                    // case 4: return vec4.make(ar);
+                    // default:
+                    //     throw "bad vec dimension " + d;
+                    // }
                 }
             }),
             element: function(i) {

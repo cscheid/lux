@@ -160,6 +160,8 @@ facet.js:					\
 	src/shade/scale/geo/latlong_to_mercator.js	\
 	src/facet/geometry/_begin.js		\
 	src/facet/geometry/triangulate.js	\
+	src/facet/text/_begin.js		\
+	src/facet/text/string_batch.js		\
 	src/facet/debug/_begin.js		\
 	src/facet/debug/init.js			\
 	src/facet/debug/post.js			\
