@@ -28,9 +28,9 @@ Shade.Exp = {
         };
         _debug_print(this, 0);
         do_what = do_what || function(l) {
-            var s = l.join("\n");
+            return l.join("\n");
         };
-        do_what(lst);
+        return do_what(lst);
     },
     glsl_expression: function() {
         return this.glsl_name + "()";
