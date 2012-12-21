@@ -36,6 +36,7 @@ facet.js:					\
 	src/typeinfo.js				\
 	src/facet/attribute_buffer.js		\
 	src/facet/bake.js			\
+	src/facet/batch_list.js			\
 	src/facet/conditional_batch.js		\
 	src/facet/draw.js			\
 	src/facet/element_buffer.js		\
@@ -157,6 +158,10 @@ facet.js:					\
 	src/shade/scale/geo/mercator_to_latlong.js	\
 	src/shade/scale/geo/latlong_to_spherical.js	\
 	src/shade/scale/geo/latlong_to_mercator.js	\
+	src/facet/geometry/_begin.js		\
+	src/facet/geometry/triangulate.js	\
+	src/facet/text/_begin.js		\
+	src/facet/text/string_batch.js		\
 	src/facet/debug/_begin.js		\
 	src/facet/debug/init.js			\
 	src/facet/debug/post.js			\
@@ -175,6 +180,7 @@ facet.js:					\
 	src/facet/models/square.js		\
 	src/facet/models/teapot.js		\
 	src/facet/models/polygon.js		\
+	src/facet/models/polygon2.js		\
 	src/facet/mesh/_begin.js		\
 	src/facet/mesh/indexed.js		\
 	src/facet/scene/_begin.js		\

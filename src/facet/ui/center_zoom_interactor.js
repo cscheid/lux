@@ -61,10 +61,10 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     function mousewheel(event) {
-        internal_move(width/2-event.clientX, height/2-event.clientY);
+        internal_move(width/2-event.offsetX, height/2-event.offsetY);
         var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
         zoom.set(new_value);
-        internal_move(event.clientX-width/2, event.clientY-height/2);
+        internal_move(event.offsetX-width/2, event.offsetY-height/2);
         opts.mousewheel(event);
         Facet.Scene.invalidate();
         return false;
@@ -128,7 +128,7 @@ Facet.UI.center_zoom_interactor = function(opts)
             var that = this;
 
             var ticker = Facet.Scene.animate(function() {
-                var now = (new Date()).getTime() / 1000.0;
+                var now = Date.now() / 1000.0;
                 var s = (now - start) / seconds * S;
                 var u_s = (w[0] / (rho * rho)) * (cosh(r[0]) * tanh(rho * s + r[0]) - sinh(r[0])) + u[0];
                 var w_s = w[0] * cosh(r[0]) / cosh(rho * s + r[0]);

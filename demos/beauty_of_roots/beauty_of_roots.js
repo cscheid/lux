@@ -116,7 +116,8 @@ $().ready(function() {
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,1],
-        interactor: interactor
+        interactor: interactor,
+        highDPS: false
     });
 
     Facet.Net.binary(["data/roots_real.raw", "data/roots_imag.raw"], function (obj) {

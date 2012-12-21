@@ -210,7 +210,7 @@ Facet.Marks.globe = function(opts)
             var h = ctx.viewportHeight;
             var w_divider = 218.18;
             var h_divider = 109.09;
-            var now = new Date().getTime();
+            var now = Date.now();
             // assume 16.66 ms per tick,
             inertia = Math.pow(0.95, (now - last_moves[1]) / 16.666);
             if (panning)
@@ -249,7 +249,7 @@ Facet.Marks.globe = function(opts)
         },
         get_available_id: function(x, y, zoom) {
             // easy cases first: return available tile or a cache hit
-            var now = new Date().getTime();
+            var now = Date.now();
             for (var i=0; i<cache_size; ++i) {
                 if (this.tiles[i].x == x &&
                     this.tiles[i].y == y &&

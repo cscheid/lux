@@ -83,6 +83,9 @@ Facet.model = function(input)
             result.elements = n_elements;
         }
     }
+    if (!("type" in result)) {
+        result.add("type", "triangles");
+    }
     result._ctx = Facet._globals.ctx;
     return result;
 };

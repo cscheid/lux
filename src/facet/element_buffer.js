@@ -3,16 +3,31 @@ Facet.element_buffer = function(vertex_array)
 {
     var ctx = Facet._globals.ctx;
     var result = ctx.createBuffer();
-    ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, result);
     var typedArray = new Uint16Array(vertex_array);
-    ctx.bufferData(ctx.ELEMENT_ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
+    result._ctx = ctx;
     result._shade_type = 'element_buffer';
-    result.array = typedArray;
     result.itemSize = 1;
-    result.numItems = vertex_array.length;
 
     //////////////////////////////////////////////////////////////////////////
     // These methods are only for internal use within Facet
+
+    result.set = function(vertex_array) {
+        Facet.set_context(ctx);
+        var typedArray;
+        if (vertex_array.constructor.name === 'Array') {
+            typedArray = new Uint16Array(vertex_array);
+        } else {
+            if (vertex_array.constructor !== Uint16Array) {
+                throw "Facet.element_buffer.set requires either a plain list or a Uint16Array";
+            }
+            typedArray = vertex_array;
+        }
+        ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, this);
+        ctx.bufferData(ctx.ELEMENT_ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
+        this.array = typedArray;
+        this.numItems = typedArray.length;
+    };
+    result.set(vertex_array);
 
     result.bind = function() {
         ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, this);

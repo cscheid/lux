@@ -29,7 +29,11 @@ function initialize_context_globals(gl)
 
     gl._facet_globals.pre_display_list = [];
     gl._facet_globals.post_display_list = [];
+
+    gl._facet_globals.devicePixelRatio = undefined;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 Facet.init = function(canvas, opts)
 {
@@ -42,7 +46,8 @@ Facet.init = function(canvas, opts)
                                     attributes: {
                                         alpha: true,
                                         depth: true
-                                    }
+                                    },
+                                    highDPS: true
                                   });
     if (Facet.is_shade_expression(opts.clearColor)) {
         if (!opts.clearColor.is_constant())
@@ -62,6 +67,15 @@ Facet.init = function(canvas, opts)
         clearDepth = opts.clearDepth.constant_value();
     } else
         clearDepth = opts.clearDepth;
+
+    var devicePixelRatio = 1;
+    if (opts.highDPS) {
+        devicePixelRatio = window.devicePixelRatio || 1;
+        canvas.style.width = canvas.width;
+        canvas.style.height = canvas.height;
+        canvas.width = canvas.clientWidth * devicePixelRatio;
+        canvas.height = canvas.clientHeight * devicePixelRatio;
+    }
 
     try {
         if ("attributes" in opts) {
@@ -109,8 +123,8 @@ Facet.init = function(canvas, opts)
             if (!_.isUndefined(listener)) {
                 (function(listener) {
                     function internal_listener(event) {
-                        event.facetX = event.offsetX;
-                        event.facetY = gl.viewportHeight - event.offsetY;
+                        event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
+                        event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
                         return listener(event);
                     }
                     canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
@@ -142,6 +156,8 @@ Facet.init = function(canvas, opts)
     }
 
     initialize_context_globals(gl);
+    gl._facet_globals.devicePixelRatio = devicePixelRatio;
+
     Facet.set_context(gl);
 
     if (opts.display) {

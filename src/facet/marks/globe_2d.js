@@ -135,7 +135,7 @@ Facet.Marks.globe_2d = function(opts)
         },
         get_available_id: function(x, y, zoom) {
             // easy cases first: return available tile or a cache hit
-            var now = new Date().getTime();
+            var now = Date.now();
             for (var i=0; i<cache_size; ++i) {
                 if (this.tiles[i].x == x &&
                     this.tiles[i].y == y &&
@@ -213,7 +213,7 @@ Facet.Marks.globe_2d = function(opts)
             var f = function(x, y, zoom, id) {
                 return function() {
                     that.tiles[id].active = 2;
-                    that.tiles[id].last_touched = new Date().getTime();
+                    that.tiles[id].last_touched = Date.now();
                     // uncomment this during debugging
                     // that.sanity_check();
                     Facet.Scene.invalidate();

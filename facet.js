@@ -13,7 +13,12 @@
  *
  */
 
-// Facet depends on the following software libraries:
+// Facet depends, at least partially, on the following software libraries:
+// - underscore.js
+// - webgl-debug
+// - webgl-utils
+// - typeface.js
+// attribution notices and licenses for these libraries follow.
 
 ////////////////////////////////////////////////////////////////////////////////
 // BEGIN UNDERSCORE.JS NOTICE
@@ -75,14 +80,37 @@
  */
 // END WEBGL-UTILS.JS NOTICE
 ////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+// BEGIN TYPEFACE.JS NOTICE
 /*
+typeface.js, version 0.15 | typefacejs.neocracy.org
 
-  Facet is a library for making WebGL marginally
-  less painful to program, featuring things like nicer support for
-  fragment and vertex programs, webgl buffers, textures, etc.
+Copyright (c) 2008 - 2009, David Chester davidchester@gmx.net 
 
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
  */
-
+// END TYPEFACE.JS NOTICE
+////////////////////////////////////////////////////////////////////////////////
 Facet = {};
 // yucky globals used throughout Facet. I guess this means I lost.
 //
@@ -1150,6 +1178,11 @@ vec2.length = function(vec)
     return Math.sqrt(x*x + y*y);
 };
 
+vec2.length2 = function(vec)
+{
+    return vec[0] * vec[0] + vec[1] * vec[1];
+};
+
 vec2.dot = function(v1, v2)
 {
     return v1[0] * v2[0] + v1[1] * v2[1];
@@ -1160,6 +1193,10 @@ vec2.map = function(vec, f) {
 };
 
 vec2.str = function(v) { return "[" + v[0] + ", " + v[1] + "]"; };
+
+vec2.cross = function(v0, v1) {
+    return v0[0] * v1[1] - v0[1] * v1[0];
+};
 var vec3 = {};
 
 vec3.create = function()
@@ -1347,6 +1384,11 @@ vec3.length = function(vec)
 {
     var x = vec[0], y = vec[1], z = vec[2];
     return Math.sqrt(x*x + y*y + z*z);
+};
+
+vec3.length2 = function(vec)
+{
+    return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
 };
 
 vec3.dot = function(v1, v2)
@@ -1553,6 +1595,11 @@ vec4.length = function(vec)
 {
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     return Math.sqrt(x*x + y*y + z*z + w*w);
+};
+
+vec4.length2 = function(vec)
+{
+    return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2] + vec[3] * vec[3];
 };
 
 vec4.dot = function(v1, v2)
@@ -3026,6 +3073,11 @@ vec.length = function(v)
     return vec[v.length].length(v);
 };
 
+vec.length2 = function(v)
+{
+    return vec[v.length].length2(v);
+};
+
 vec.dot = function(v1, v2)
 {
     if (v1.length != v2.length) {
@@ -3243,7 +3295,7 @@ Facet.attribute_buffer = function(opts)
             typedArray = new this._typed_array_ctor(vertex_array);
         } else {
             if (vertex_array.constructor !== this._typed_array_ctor) {
-                throw "Facet.attribute_buffer.set requires either a plain list of a typed array of the right type";
+                throw "Facet.attribute_buffer.set requires either a plain list or a typed array of the right type";
             }
             typedArray = vertex_array;
         }
@@ -3353,7 +3405,7 @@ function draw_it(batch_opts)
                 ctx.enableVertexAttribArray(attr);
                 var buffer = attributes[key].get();
                 if (!buffer) {
-                    throw "Unbound Shade.attribute " + attributes[key]._attribute_name;
+                    throw "Unset Shade.attribute " + attributes[key]._attribute_name;
                 }
                 buffer.bind(attr);
             }
@@ -3617,11 +3669,27 @@ Facet.bake = function(model, appearance, opts)
         },
         _pick: function() {
             draw_it(pick_opts);
-        }
+        },
+        // for debugging purposes
+        _batch_opts: function() { return which_opts; }
     };
     return result;
 };
 })();
+Facet.batch_list = function(lst)
+{
+    lst = lst.slice().reverse();
+    return {
+        list: lst,
+        draw: function() {
+            var i=this.list.length;
+            var lst = this.list;
+            while (i--) {
+                lst[i].draw();
+            }
+        }
+    };
+};
 Facet.conditional_batch = function(batch, condition)
 {
     return {
@@ -3638,16 +3706,31 @@ Facet.element_buffer = function(vertex_array)
 {
     var ctx = Facet._globals.ctx;
     var result = ctx.createBuffer();
-    ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, result);
     var typedArray = new Uint16Array(vertex_array);
-    ctx.bufferData(ctx.ELEMENT_ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
+    result._ctx = ctx;
     result._shade_type = 'element_buffer';
-    result.array = typedArray;
     result.itemSize = 1;
-    result.numItems = vertex_array.length;
 
     //////////////////////////////////////////////////////////////////////////
     // These methods are only for internal use within Facet
+
+    result.set = function(vertex_array) {
+        Facet.set_context(ctx);
+        var typedArray;
+        if (vertex_array.constructor.name === 'Array') {
+            typedArray = new Uint16Array(vertex_array);
+        } else {
+            if (vertex_array.constructor !== Uint16Array) {
+                throw "Facet.element_buffer.set requires either a plain list or a Uint16Array";
+            }
+            typedArray = vertex_array;
+        }
+        ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, this);
+        ctx.bufferData(ctx.ELEMENT_ARRAY_BUFFER, typedArray, ctx.STATIC_DRAW);
+        this.array = typedArray;
+        this.numItems = typedArray.length;
+    };
+    result.set(vertex_array);
 
     result.bind = function() {
         ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, this);
@@ -3722,7 +3805,11 @@ function initialize_context_globals(gl)
 
     gl._facet_globals.pre_display_list = [];
     gl._facet_globals.post_display_list = [];
+
+    gl._facet_globals.devicePixelRatio = undefined;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 Facet.init = function(canvas, opts)
 {
@@ -3735,7 +3822,8 @@ Facet.init = function(canvas, opts)
                                     attributes: {
                                         alpha: true,
                                         depth: true
-                                    }
+                                    },
+                                    highDPS: true
                                   });
     if (Facet.is_shade_expression(opts.clearColor)) {
         if (!opts.clearColor.is_constant())
@@ -3755,6 +3843,15 @@ Facet.init = function(canvas, opts)
         clearDepth = opts.clearDepth.constant_value();
     } else
         clearDepth = opts.clearDepth;
+
+    var devicePixelRatio = 1;
+    if (opts.highDPS) {
+        devicePixelRatio = window.devicePixelRatio || 1;
+        canvas.style.width = canvas.width;
+        canvas.style.height = canvas.height;
+        canvas.width = canvas.clientWidth * devicePixelRatio;
+        canvas.height = canvas.clientHeight * devicePixelRatio;
+    }
 
     try {
         if ("attributes" in opts) {
@@ -3802,8 +3899,8 @@ Facet.init = function(canvas, opts)
             if (!_.isUndefined(listener)) {
                 (function(listener) {
                     function internal_listener(event) {
-                        event.facetX = event.offsetX;
-                        event.facetY = gl.viewportHeight - event.offsetY;
+                        event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
+                        event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
                         return listener(event);
                     }
                     canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
@@ -3835,6 +3932,8 @@ Facet.init = function(canvas, opts)
     }
 
     initialize_context_globals(gl);
+    gl._facet_globals.devicePixelRatio = devicePixelRatio;
+
     Facet.set_context(gl);
 
     if (opts.display) {
@@ -4024,6 +4123,9 @@ Facet.model = function(input)
         } else {
             result.elements = n_elements;
         }
+    }
+    if (!("type" in result)) {
+        result.add("type", "triangles");
     }
     result._ctx = Facet._globals.ctx;
     return result;
@@ -5230,10 +5332,10 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     function mousewheel(event) {
-        internal_move(width/2-event.clientX, height/2-event.clientY);
+        internal_move(width/2-event.offsetX, height/2-event.offsetY);
         var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
         zoom.set(new_value);
-        internal_move(event.clientX-width/2, event.clientY-height/2);
+        internal_move(event.offsetX-width/2, event.offsetY-height/2);
         opts.mousewheel(event);
         Facet.Scene.invalidate();
         return false;
@@ -6774,9 +6876,9 @@ Shade.Exp = {
         };
         _debug_print(this, 0);
         do_what = do_what || function(l) {
-            var s = l.join("\n");
+            return l.join("\n");
         };
-        do_what(lst);
+        return do_what(lst);
     },
     glsl_expression: function() {
         return this.glsl_name + "()";
@@ -7012,7 +7114,22 @@ Shade.Exp = {
                     return that.parents[0].element_is_constant(i);
                 });
             }),
+            constant_value: Shade.memoize_on_field("_constant_value", function() {
+                var that = this;
+                var ar = _.map(indices, function(i) {
+                    return that.parents[0].element_constant_value(i);
+                });
+                if (ar.length === 1)
+                    return ar[0];
+                var d = this.type.vec_dimension();
+                var ctor = vec[d];
+                if (_.isUndefined(ctor))
+                    throw "bad vec dimension " + d;
+                return ctor.make(ar);
+            }),
             evaluate: Shade.memoize_on_guid_dict(function(cache) {
+                if (this.is_constant())
+                    return this.constant_value();
                 if (this.type.is_pod()) {
                     return this.parents[0].element(indices[0]).evaluate(cache);
                 } else {
@@ -7021,13 +7138,17 @@ Shade.Exp = {
                         return that.parents[0].element(index).evaluate(cache);
                     });
                     var d = this.type.vec_dimension();
-                    switch (d) {
-                    case 2: return vec2.make(ar);
-                    case 3: return vec3.make(ar);
-                    case 4: return vec4.make(ar);
-                    default:
+                    var ctor = vec[d];
+                    if (_.isUndefined(ctor))
                         throw "bad vec dimension " + d;
-                    }
+                    return ctor.make(ar);
+                    // switch (d) {
+                    // case 2: return vec2.make(ar);
+                    // case 3: return vec3.make(ar);
+                    // case 4: return vec4.make(ar);
+                    // default:
+                    //     throw "bad vec dimension " + d;
+                    // }
                 }
             }),
             element: function(i) {
@@ -11764,6 +11885,944 @@ Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
     lat = lat.div(2).add(Math.PI/4).tan().log();
     return Shade.vec(lon, lat);
 });
+Facet.Geometry = {};
+Facet.Geometry.triangulate = function(opts) {
+    opts = _.defaults(opts, {
+        keep_array: false
+    });
+    var poly = opts.contour;
+    var keep_array = opts.keep_array;
+    if (_.isUndefined(poly)) {
+        throw "Facet.Geometry.triangulate requires contour option";
+    };
+
+    var CW = 1, CCW = 0;
+
+    function getRotation(polyList) {
+        var z = 0, current, next, prev, j, numpts, first;
+
+        numpts = polyList.length;
+
+        //check that the linked list contains points
+        for (j=0;j<numpts;j++)
+            if (polyList[j].next > 0)
+                break;
+        if (j === numpts)
+            return -1;
+
+        first = j;
+        for (var i=0; i<polyList.length; i++){
+            current = polyList[j];
+            next = polyList[current.next];
+            z += vec.cross(current.point, next.point);
+            j = polyList[j].next;
+            if (j === first)
+                break;
+        }
+        if(z > 0)
+            return CCW;
+        else
+            return CW;
+    }
+
+    function hidePolyListElement(polyList,indx) {
+        polyList[polyList[indx].prev].next = polyList[indx].next;
+        polyList[polyList[indx].next].prev = polyList[indx].prev;
+        polyList[indx].next = -1;
+        polyList[indx].prev = -1;
+    }
+
+    //adjust linked list pointers and remove element from array
+    function hideElement(list,val){
+
+        for(var i=0;i<list.length;i++){
+
+            if((list[i].val === val) && (list[i].next >= 0)){
+                list[list[i].prev].next = list[i].next;
+                list[list[i].next].prev = list[i].prev;
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    function removeElement(list,val){
+        var indx;
+
+        indx = hideElement(list,val);
+        if(indx >= 0){
+            list[indx].next = -1;
+            list[indx].prev = -1;
+        }
+    }
+
+    function addElement(list,val){
+        var i;
+        var element = {};
+        if(list.length === 0){
+            element.prev = 0;
+            element.next = 0;
+        }
+        else {
+            for(i=list.length - 1;i>=0;i--)
+                if(list[i].next >= 0)
+                    break;
+            if(i === -1){
+                element.prev = i;
+                element.next = i;
+            }
+            else {
+                element.prev = i;
+                element.next = list[i].next;
+                list[list[i].next].prev = list.length;
+                list[i].next = list.length;
+            }
+        }
+        element.val = val;
+        list.push(element);
+    }
+
+    function isElementInList(list,val){
+        var i;
+
+        if(list.length === 0)
+            return false;
+        
+        for(i=0;i<list.length;i++){
+            if((list[i].val === val) && list[i].prev >= 0)
+                return true;
+        }
+
+        return false;
+    }
+
+
+    /*
+     pt1 is the first point for comparison
+     pt2 is the second point for comparison
+     pt3 is a point on the line used for comparison
+     m and b are the parameters of the line used for comparison
+     
+     determine if the two points are on the same side of the line
+     */
+
+    function isSameSide(pt1,pt2,pt3,m,b){
+        if(!isFinite(m)){
+            if((pt1[0] < pt3[0]) && (pt2[0] < pt3[0]))
+                return true;
+            else if((pt1[0] > pt3[0]) && (pt2[0] > pt3[0]))
+                return true;
+        }
+        else {  
+            if((pt1[1] < ((m*pt1[0]) + b)) && (pt2[1] < ((m*pt2[0]) + b)))
+                return true;
+            else if((pt1[1] > ((m*pt1[0]) + b)) && (pt2[1] > ((m*pt2[0]) + b)))
+                return true;
+        }
+        return false;
+
+    }
+
+
+
+
+    function angleType(polyList,indx,rotation){
+        var next,prev,current,angle,angleN,angleP,degree;
+        var count;
+        var isEar;
+
+
+        current = polyList[indx];
+        next = polyList[current.next];
+        prev = polyList[current.prev];
+
+
+        if(rotation === CCW){
+            angleN = Math.atan2((next.point[1] - current.point[1]),(next.point[0] - current.point[0]));
+            angleP = Math.atan2((prev.point[1] - current.point[1]),(prev.point[0] - current.point[0]));
+            angle = angleP - angleN;
+        }
+        else{
+            angleN = Math.atan2((next.point[1] - current.point[1]),(next.point[0] - current.point[0]));
+            angleP = Math.atan2((prev.point[1] - current.point[1]),(prev.point[0] - current.point[0]));
+            angle = angleN - angleP;
+        }
+
+        degree = angle * (180/Math.PI);
+        if(degree < 0)
+            degree += 360;
+
+        if(degree < 180){
+            polyList[indx].isReflex = false;
+            isEar = true;
+            next = polyList[current.next];
+            prev = polyList[current.prev];
+            //determine if this vertex is an ear tip
+            for(var i=0;i<polyList.length;i++){
+                if(polyList[i].next < 0)
+                    continue;
+                //exclude vertices that cannot be in the interior of the acute angle
+                if(polyList[i] === current || polyList[i] === next || polyList[i] === prev)
+                    continue;
+
+                //if any vertex falls within the triangle then it is not an ear
+                if(isSameSide(current.point,polyList[i].point,next.point,current.diag.edge.m,current.diag.edge.b) &&
+                   isSameSide(next.point,polyList[i].point,prev.point,prev.edge.m,prev.edge.b) &&
+                   isSameSide(prev.point,polyList[i].point,current.point,current.edge.m,current.edge.b)){
+                    isEar = false;
+                    break;
+                }       
+            }
+            polyList[indx].isEar = isEar;
+        }
+        else {
+            polyList[indx].isReflex = true;
+            polyList[indx].isEar = false;
+        }
+
+    }
+
+
+    function getLineParams(vertx1,vertx2,shift){
+        var edge = {}, mid = vec.make([0,0]);
+        var deltaY,deltaX,cx,cy,rayStart,rayEnd;
+        var m,b,displacement = .000001;
+
+        rayStart = vec.make([vertx1.point[0],vertx1.point[1]]);
+        if(typeof shift == "undefined")
+            shift = 0;
+
+        //change position of the point where the ray ends
+        if(shift > 0){
+            m = vertx2.m;
+            b = vertx2.b;
+            cx = vertx2.point[0] - (shift * displacement);
+            cy = (m * cx) + b;
+            rayEnd = vec.make([cx, cy]);
+        }
+        else
+            rayEnd = vec.make([vertx2.point[0], vertx2.point[1]]);
+
+        deltaX = rayEnd[0] - rayStart[0];
+        deltaY = rayEnd[1] - rayStart[1];
+        cx = rayStart[0];
+        cy = rayStart[1];
+
+        if(deltaX === 0.){
+            if(deltaY === 0.){ //single point
+                edge.m = Number.NaN;
+                edge.b = Number.NaN;
+            }
+            else if(deltaY < 0.){ //verticle line
+                edge.m = Number.NEGATIVE_INFINITY;
+                edge.b = Number.NaN;
+            }
+            else { //verticle line
+                edge.m = Number.POSITIVE_INFINITY;
+                edge.b = Number.NaN;
+            }
+            mid[0] = cx;
+            mid[1] = cy + (deltaY/2.);
+        }
+        else if(deltaY === 0.){ //horizontal line
+            edge.m = 0.;
+            edge.b = cy;
+            mid[0] = cx + (deltaX/2.);
+            mid[1] = cy;
+        }
+        else { //arbitrary slope
+            edge.m = deltaY/deltaX;
+            edge.b = cy -(edge.m * cx);
+            mid[0] = cx + (deltaX/2.);
+            mid[1] = cy + (deltaY/2.);
+        }
+        edge.point = mid;
+
+        return edge;
+    }
+
+    /*
+     *
+     *  get the line parameters (slope m and y intercept b)
+     *  for each edge and the line that closes the triange
+     *  defined by a vertex and its previous and next vertices
+     *
+     */
+    function getListParams(polyList,indx){
+
+        var prev,next,current,prevElmt,nextElmt;
+        var point = {};
+        var edge = {point:{}};
+        var diag = {point:{}};
+        current = polyList[indx];
+        prev = polyList[indx].prev;
+        next = polyList[indx].next;
+        prevElmt = polyList[prev];
+        nextElmt = polyList[next];
+
+        //get edge slope, y-intersect and midpoint coordinates
+        edge = getLineParams(current,nextElmt);
+        current.edge = {};
+        current.edge.m = edge.m;
+        current.edge.b = edge.b;
+        current.edge.point = vec.make([0,0]);
+        current.edge.point[0] = edge.point[0];
+        current.edge.point[1] = edge.point[1];
+
+        //get diagnal slope, y-intersect and midpoint coordinates
+        current.diag = {};
+        current.diag.edge = getLineParams(prevElmt,nextElmt);;
+    }
+
+    function triangulate(poly){
+        var polyList = [];
+        var reflex = [];
+        var concave = [];
+        var earTip = [];
+        var triangles = [];
+        var currentEar,tPrev,tNext,triangle,prev,next,aType,vertxCount; 
+        var rotation, element;
+        var i;
+
+        //create linked list
+        for(i=0;i<poly.length;i++){
+            var polyListItem = {};
+            polyListItem.point = vec.make([poly[i][0],poly[i][1]]);
+            if(i === 0)
+                polyListItem.prev = poly.length - 1;
+            else
+                polyListItem.prev = i-1;
+
+            if(i === (poly.length -1))
+                polyListItem.next = 0;
+            else
+                polyListItem.next = i + 1;
+
+            polyList.push(polyListItem);
+        }
+
+
+        rotation = getRotation(polyList);
+
+
+        //assign vertex edges and diagnals
+        for(i=0;i<polyList.length;i++)
+            getListParams(polyList,i);
+
+        for(i=0;i<polyList.length;i++){
+            angleType(polyList,i,rotation);
+            if(polyList[i].isReflex){
+                addElement(reflex,i);
+            }
+            else {
+                addElement(concave,i);
+                if(polyList[i].isEar){
+                    element = {};
+                    addElement(earTip,i);
+                }
+            }
+        }
+        //the polygon, reflex, concave and ear tip structures are initialize at this point
+
+        vertxCount = polyList.length;
+        while(vertxCount >= 3){
+            for(i=0;i<earTip.length;i++)
+                if(earTip[i].next >= 0)
+                    break;
+            if(i === earTip.length)
+                break;
+            currentEar = earTip[i];
+            tPrev = polyList[currentEar.val].prev;
+            tNext = polyList[currentEar.val].next;
+            triangle = [tPrev,currentEar.val,tNext];
+            triangles.push(triangle);
+            removeElement(earTip,currentEar.val);
+            removeElement(concave,currentEar.val);
+            hidePolyListElement(polyList,currentEar.val);
+            getListParams(polyList,tPrev);
+            aType = angleType(polyList,tPrev,rotation);
+            if(polyList[tPrev].isReflex){
+                if(!isElementInList(reflex,tPrev))
+                    addElement(reflex,tPrev);
+                if(isElementInList(concave,tPrev))
+                    removeElement(concave,tPrev);
+                if(isElementInList(earTip,tPrev))
+                    removeElement(earTip,tPrev);
+            }
+            else {
+                if(!isElementInList(concave,tPrev))
+                    addElement(concave,tPrev);
+                if(isElementInList(reflex,tPrev))
+                    removeElement(reflex,tPrev);
+                if(polyList[tPrev].isEar){
+                    if(!isElementInList(earTip,tPrev))
+                        addElement(earTip,tPrev);
+                }
+                else{
+                    if(isElementInList(earTip,tPrev))
+                        removeElement(earTip,tPrev);
+                }
+            }
+            getListParams(polyList,tNext);
+            aType = angleType(polyList,tNext,rotation);
+            if(polyList[tNext].isReflex){
+                if(!isElementInList(reflex,tNext))
+                    addElement(reflex,tNext);
+                if(isElementInList(concave,tNext))
+                    removeElement(concave,tNext);
+                if(isElementInList(earTip,tNext))
+                    removeElement(earTip,tNext);
+            }
+            else {
+                if(!isElementInList(concave,tNext))
+                    addElement(concave,tNext);
+                if(isElementInList(reflex,tNext))
+                    removeElement(reflex,tNext);
+                if(polyList[tNext].isEar){
+                    if(!isElementInList(earTip,tNext))
+                        addElement(earTip,tNext);
+                }
+                else{
+                    if(isElementInList(earTip,tNext))
+                        removeElement(earTip,tNext);
+                }
+            }
+            vertxCount--;
+        }
+        return triangles;
+
+    }
+
+    // get an array of arrays containing the triangulation of the polygon
+    // every element of indx represents an array of three indices of the polygon
+    // the points of polygon corresponding to the indices define a triangle
+    return triangulate(poly);
+};
+Facet.Text = {};
+
+/*
+ * We include here a shim for typeface.js (http://typeface.neocracy.org)
+ * 
+ * In case typeface.js is already loaded,
+ * this is a no-op. Otherwise, we substitute the minimal API we need for loading
+ * typeface data as returned by typefaceJS.pm (typefaceJS.pm is *different* from typeface.js.
+ * it is a Perl module to convert TTF to the format required by typeface.js)
+ * 
+ */
+
+if (_.isUndefined(window._typeface_js)) {
+    /* we only need one basic function from typeface_js, and we include it from
+     * the original file, which is MIT licensed and copyright 2008-2009 David Chester
+     * 
+     * http://typeface.neocracy.org/typeface-0.15.js
+     */
+    window._typeface_js = {
+        faces: {},
+	loadFace: function(typefaceData) {
+	    var familyName = typefaceData.familyName.toLowerCase();
+	    if (!this.faces[familyName]) {
+		this.faces[familyName] = {};
+	    }
+	    if (!this.faces[familyName][typefaceData.cssFontWeight]) {
+		this.faces[familyName][typefaceData.cssFontWeight] = {};
+	    }
+	    var face = this.faces[familyName][typefaceData.cssFontWeight][typefaceData.cssFontStyle] = typefaceData;
+	    face.loaded = true;
+	}
+    };
+}
+(function() {
+
+function parse_typeface_instructions(glyph)
+{
+    // convert the string of typeface instructions coming from a typeface.js glyph
+    // representation to a list of "paths", each path being a list of points
+    // which are the glyph "internal polygon", and a list of "ears", the quadratic
+    // splines that are to be rendered using Loop-Blinn.
+
+    // this function mutates the passed glyph to memoize the result for increased
+    // performance.
+
+    if (_.isUndefined(glyph.o))
+        return [];
+
+    var x, y, cpx, cpy;
+    var ops = _.map(glyph.o.split(" "), function(e) {
+        var n = Number(e);
+        return isNaN(n) ? e : n;
+    });
+    ops = ops.slice(0, ops.length-1);
+
+    var paths = [];
+    var points = [];
+    var quadratic_ears = [];
+    var current_point = undefined, control_point;
+    var next_point = undefined;
+    var pc = 0;
+    var quadratic_sign, opcode;
+    while (pc < ops.length) {
+        switch (opcode = ops[pc++]) {
+        case "m":
+            if (points.length || quadratic_ears.length) {
+                paths.push({points: points,
+                            ears: quadratic_ears});
+                points = [];
+                quadratic_ears = [];
+            }
+            x = ops[pc++];
+            y = ops[pc++];
+            current_point = vec.make([x, y]);
+            break;
+        case "q":
+            x = ops[pc++];
+            y = ops[pc++];
+            cpx = ops[pc++];
+            cpy = ops[pc++];
+            next_point = vec.make([x, y]);
+            control_point = vec.make([cpx, cpy]);
+            quadratic_sign = vec.cross(vec.minus(control_point, current_point),
+                                       vec.minus(next_point, control_point));
+            quadratic_sign = quadratic_sign / Math.abs(quadratic_sign);
+            quadratic_ears.push([current_point, control_point, next_point, quadratic_sign]);
+
+            if (quadratic_sign < 0) {
+                if (current_point)
+                    points.push(current_point);
+                current_point = next_point;
+            } else {
+                if (current_point)
+                    points.push(current_point);
+                points.push(control_point);
+                current_point = next_point;
+            }
+            break;
+        case "l":
+            if (current_point)
+                points.push(current_point);
+            x = ops[pc++];
+            y = ops[pc++];
+            current_point = vec.make([x, y]);
+            break;
+        default:
+            throw "Unsupported opcode '" + opcode + "'";
+        };
+    }
+    if (points.length || quadratic_ears.length)
+        paths.push({points: points,
+                    ears: quadratic_ears});
+
+    return paths;
+}
+
+function merge_paths(paths)
+{
+    /*
+
+    merge_paths takes a sequence of simply-connected subpaths from
+    a glyph which might contain holes and returns contiguous, 
+    simply-connected subpaths by connecting hole contours to their enclosing contours
+    through the closest pair of points between them.
+    
+    I've taken the idea from Three.JS's FontUtils.js:
+    
+    https://github.com/mrdoob/three.js/blob/7aba6e974350dd7fdac5d399b19e28b32079ffa4/src/extras/FontUtils.js
+
+    That file points out that the technique comes from the following post:
+    http://www.sakri.net/blog/2009/06/12/an-approach-to-triangulating-polygons-with-holes/
+
+    Note especially one of the comments therein, which points out that
+    using polygon endpoints as proxies for polygon's endpoints is not
+    the correct approach, since the closest endpoint might actually
+    cross important bits of the enclosing polygon.  A real solution
+    must find the closest *point on each of the polygon*, possibly
+    further tesselating each contours. Since this involves potentially
+    finding the closest pair of points between two quadratic curves
+    (or, worse, a closest pair between cubics for open-type fonts, which is
+    a sixth-degree root-finding problem if I have my math right!), I
+    don't want to implement the real solution right now.
+
+    In addition, the current algorithm does not implement quadratic
+    curve refinement, which is also necessary whenever the convex
+    hulls of any quadratic ears overlap. This might cause additional
+    artifacts.
+
+    I would love to hear from whomever finds an open-source TTF file
+    in the wild for which this algorithm breaks.
+
+*/
+
+    // we assume all paths are simple and non-intersecting.
+    // 
+    // If your glyphs have non-simple or intersecting paths, your
+    // glyphs are bad, and you should feel bad.
+
+    if (paths.length === 0)
+        return [];
+
+    function flip_quadratic_ear(ear)
+    {
+        // a quadratic ear is represented by a list where
+        // ear[0..2] are the points in the quadratic bezier, and ear[3] is
+        // the quadratic discriminant, either 1 or -1 for quadratic curves.
+        // The discriminant chooses which side of the ear to paint.
+
+        return [ear[2], ear[1], ear[0], ear[3]];
+    }
+    
+    function contour_area(path) {
+        // returns the signed area of the internal polygon. used to determine
+        // whether the contour is a hole inside another contour.
+        // ccw paths have positive area, cw paths have negative area.
+        if (path.points.length === 0)
+            return 0;
+        var area = 0;
+        var current_point = path.points[path.points.length-1];
+        _.each(path.points, function(point) {
+            area += vec.cross(current_point, point);
+            current_point = point;
+        });
+        return area / 2;
+    }
+
+    function reverse_path(path) {
+        var new_points = path.points.slice().reverse();
+        var new_ears = _.map(path.ears, flip_quadratic_ear);
+        return {
+            points: new_points,
+            ears: new_ears
+        };
+    }
+
+    // first, we canonicalize the paths by forcing all of the paths to be CCW.
+    paths = _.map(paths, function(path) {
+        return (contour_area(path) < 0) ? reverse_path(path) : path;
+    });
+
+    // now, for each path, we determine the "contains" relationship, in reduced form.
+    // http://en.wikipedia.org/wiki/Transitive_reduction
+    function determine_contains(paths) {
+        // this test returns *false* if point is on triangle lines.
+        function is_point_in_triangle(pt, tri, pts) {
+            var subtris = [{ points: [pt, pts[tri[0]], pts[tri[1]]] },
+                           { points: [pt, pts[tri[1]], pts[tri[2]]] },
+                           { points: [pt, pts[tri[2]], pts[tri[0]]] }];
+            var subareas = _.map(subtris, contour_area);
+            function same_sign(v1, v2) {
+                if (v1 < 0 && v2 < 0)
+                    return true;
+                if (v1 > 0 && v2 > 0)
+                    return true;
+                if (v1 === 0 && v2 === 0)
+                    return true;
+                return false;
+            }
+            // point is inside triangle if all subtriangle signed
+            // areas are either positive or negative.
+            if (_.all(subareas, function(v) { return v !== 0; })) {
+                return _.all(subareas, function(v) { return same_sign(subareas[0], v); });
+            } else {
+                // some subarea is zero. In this case, the point must lie on some of the lines. 
+                // We will check this by testing that distance(a, b) + distance(b, c) = distance(a, c)
+                // (with some eps)
+                function ddist(l) {
+                    return vec2.length(vec2.minus(l[2], l[0])) + 
+                        vec2.length(vec2.minus(l[1], l[0])) - 
+                        vec2.length(vec2.minus(l[2], l[1]));
+                }
+                var eps = 0.001;
+                return _.all(ddist, function(d) { return d < eps; });
+            }
+            return result;
+        }
+        var triangulations = _.map(paths, function(p) { return Facet.Geometry.triangulate({contour: p.points}); });
+        function is_inside(i1, i2) {
+            // returns true if paths[i1] is inside paths[i2], 
+            // again assuming paths are simple and non-intersecting;
+            var point_inside_poly = function(point) {
+                function point_in_tri(tri) {
+                    return is_point_in_triangle(point, tri, paths[i2].points);
+                }
+                var result = _.any(triangulations[i2], point_in_tri);
+                return result;
+            };
+            var result = _.all(paths[i1].points, point_inside_poly);
+            return result;
+        }
+        var result = _.map(triangulations, function() { 
+            return _.map(triangulations, function() { return 0; });
+        });
+        for (var i=0; i<triangulations.length; ++i)
+            for (var j=0; j<triangulations.length; ++j) {
+                if (i === j)
+                    continue;
+                if (is_inside(i, j)) {
+                    result[j][i] = 1;
+                }
+            }
+        // http://stackoverflow.com/questions/1690953/transitive-reduction-algorithm-pseudocode
+        for (i=0; i<triangulations.length; ++i)
+            for (var j=0; j<triangulations.length; ++j)
+                for (var k=0; k<triangulations.length; ++k)
+                    if (result[i][j] && result[j][k])
+                        result[i][k] = 0;
+        return result;
+    }
+
+    var contains = determine_contains(paths);
+    // then, assuming the paths are simple and non-intersecting,
+    // the outer polygons can be matched to their respective "hole" contours
+    // by traversing the reduced contains relationship
+
+    function match_contours(paths, contains) {
+        // match_contours mutates the contains parameter!
+
+        var in_degrees = [], curves_in_play = {};
+        for (var i=0; i<contains.length; ++i) {
+            in_degrees[i] = 0;
+            curves_in_play[i] = true;
+        }
+        for (i=0; i<contains.length; ++i) {
+            for (var j=0; j<contains.length; ++j) {
+                if (contains[i][j])
+                    in_degrees[j]++;
+            }
+        }
+        function find_index_of(lst, f) {
+            for (var i=0; i<lst.length; ++i) {
+                if (f(lst[i], i))
+                    return i;
+            }
+            return -1;
+        }
+        var source;
+        var result = [];
+        while ((source = find_index_of(in_degrees, function(d, i) { 
+            return d === 0 && curves_in_play[i];
+        })) !== -1) {
+            // collect source together with all direct descendants
+            var curves = _.filter(_.range(contains.length), function(i) { return contains[source][i] === 1; });
+            curves.push(source);
+            result.push(curves);
+            // update in-degrees and available_curves
+            _.each(curves, function(curve) {
+                delete curves_in_play[curve];
+                for (var j=0; j<contains.length; ++j) {
+                    if (contains[curve][j]) {
+                        in_degrees[j]--;
+                    }
+                }
+            });
+        }
+        return result;
+    }
+
+    // now, we collect the lists of subpaths punctuated by the reverse-winding paths.
+    var subpaths = _.map(match_contours(paths, contains), function(curves) {
+        return _.map(curves, function(curve, i) {
+            if (i === curves.length-1)
+                return reverse_path(paths[curve]);
+            else
+                return paths[curve];
+        });
+    });
+
+    function merge_contour(c1, c2) {
+        // precondition: c1 is a ccw path, c2 is a cw path
+        //
+        // return value is a new cw contour which stitches the pair together.
+        //
+        // as described above, this algorithm is not correct, but it seems
+        // to work for TTF files in the wild, and is much simpler than the correct
+        // one.
+        var best_c1_index, best_c2_index, best_l2;
+        _.each(c1.points, function(p1, i) {
+            _.each(c2.points, function(p2, j) {
+                var this_l2 = vec2.length2(vec2.minus(p1, p2));
+                if (!(best_l2 < this_l2)) {
+                    best_l2 = this_l2;
+                    best_c1_index = i;
+                    best_c2_index = j;
+                }
+            });
+        });
+        var merged_ears = c1.ears.concat(_.map(c2.ears, flip_quadratic_ear));
+        var merged_points =
+            [].concat(c2.points.slice(0, best_c2_index+1), // c2[0..best_c2+1)
+                      c1.points.slice(best_c1_index),      // c1[best_c1..end)
+                      c1.points.slice(0, best_c1_index+1), // c1[0..best_c1+1)
+                      c2.points.slice(best_c2_index));     // c2[best_c2..end)
+        return {
+            points: merged_points,
+            ears: merged_ears
+        };
+    }
+
+    // finally, we merge all contours
+    return _.map(subpaths, function(subpath) { 
+        return _.foldr(subpath, function(a, b) { return merge_contour(b, a); });
+    });
+};
+
+var loop_blinn_batch = function(opts) {
+    var position_function = opts.position;
+    var color_function = opts.color;
+    
+    function quadratic_discriminator(model) {
+        var u = model.uv.x(), v = model.uv.y(), 
+        winding = model.winding.sign();
+        return u.mul(u).sub(v).mul(winding);
+    }
+    
+    function quadratic_discard(exp, model) {
+        return exp.discard_if(quadratic_discriminator(model).gt(0));
+    };
+
+    var model = {};
+    var uv = Facet.attribute_buffer({vertex_array: [0,0], item_size: 2});
+    var winding = Facet.attribute_buffer({vertex_array: [0], item_size: 1});
+    var position = Facet.attribute_buffer({vertex_array: [0,0], item_size: 2});
+    var internal_position_attribute = Facet.attribute_buffer({vertex_array: [0,0], item_size: 2});
+    var elements = Facet.element_buffer([0]); // {vertex_array: []});
+    
+    var ears_model = Facet.model({
+        uv: uv,
+        position: position,
+        winding: winding,
+        elements: 1,
+        type: "triangles"
+    });
+    var x_offset = Shade.parameter("float", 0);
+    var y_offset = Shade.parameter("float", 0);
+    var offset = Shade.vec(x_offset, y_offset);
+    var ears_position = Shade.add(ears_model.position, offset);
+    var ears_batch = Facet.bake(ears_model, {
+        position: position_function(ears_position),
+        color: quadratic_discard(color_function(ears_position), ears_model)
+    });
+    var internal_model = Facet.model({
+        vertex: internal_position_attribute,
+        elements: elements
+    });
+    var internal_position = Shade.add(internal_model.vertex, offset);
+    var internal_batch = Facet.bake(internal_model, {
+        // point_size: 10,
+        position: position_function(internal_position),
+        elements: internal_model.elements,
+        color: color_function(internal_position)
+    });
+    return {
+        ears_batch: ears_batch,
+        ears_model: ears_model,
+        internal_batch: internal_batch,
+        internal_model: internal_model,
+        x_offset: x_offset,
+        y_offset: y_offset
+    };
+};
+
+function glyph_to_model(glyph)
+{
+    if (_.isUndefined(glyph._model)) {
+        var paths = merge_paths(parse_typeface_instructions(glyph));
+        if (paths.length === 0)
+            return undefined;
+
+        var elements = [], vertex = [], uv = [], position = [], winding = [];
+        _.each(paths, function(path) {
+            var prev_npoints = vertex.length / 2;
+            var tris = Facet.Geometry.triangulate({ contour: path.points });
+            _.each(path.points, function(vec) {
+                vertex.push.apply(vertex, vec);
+            });
+            _.each(tris, function(tri) {
+                elements.push(tri[0]+prev_npoints);
+                elements.push(tri[1]+prev_npoints);
+                elements.push(tri[2]+prev_npoints);
+            });
+            _.each(path.ears, function(ear) {
+                winding.push.apply(winding, [-ear[3], -ear[3], -ear[3]]);
+                position.push.apply(position, ear[0]);
+                position.push.apply(position, ear[1]);
+                position.push.apply(position, ear[2]);
+                uv.push.apply(uv, [0,0, 0.5,0, 1,1]);
+            });
+        });
+
+        var internal_model = Facet.model({
+            type: "triangles",
+            vertex: Facet.attribute_buffer({vertex_array: vertex, item_size: 2, keep_array: true}), 
+            elements: elements
+        });
+
+        var ears_model = Facet.model({
+            uv: Facet.attribute_buffer({vertex_array: uv, item_size: 2, keep_array: true}),
+            position: Facet.attribute_buffer({vertex_array: position, item_size: 2, keep_array: true}),
+            winding: Facet.attribute_buffer({vertex_array: winding, item_size: 1, keep_array: true}),
+            elements: uv.length/2,
+            type: "triangles"
+        });
+
+        glyph._model = {
+            ears_model: ears_model, 
+            internal_model: internal_model
+        };
+    };
+    return glyph._model;
+}
+
+Facet.Text.string_batch = function(opts) {
+    var old_opts = opts;
+    if (opts.batch) {
+        return opts.batch;
+    }
+    opts = _.defaults(opts, {
+        string: "",
+        position: function(pos) { return Shade.vec(pos, 0, 1); },
+        color: function(pos) { return Shade.color("white"); }
+    });
+    if (_.isUndefined(opts.font)) {
+        throw "string_batch requires font parameter";
+    }
+    var batch = loop_blinn_batch(opts);
+    old_opts.batch = batch;
+
+    var result = {
+        set: function(new_string) {
+            opts.string = new_string;
+        },
+        draw: function() {
+            batch.x_offset.set(0);
+            batch.y_offset.set(0);
+            for (var i=0; i<opts.string.length; ++i) {
+                var c = opts.string[i];
+                if ("\n\r".indexOf(c) !== -1) {
+                    batch.x_offset.set(0);                    
+                    batch.y_offset.set(batch.y_offset.get() - opts.font.lineHeight);
+                    continue;
+                }
+                var glyph = opts.font.glyphs[c];
+                if (_.isUndefined(glyph))
+                    glyph = opts.font.glyphs['?'];
+                var model = glyph_to_model(glyph);
+                if (model) {
+                    batch.ears_model.elements = model.ears_model.elements;
+                    batch.ears_model.uv.set(model.ears_model.uv.get());
+                    batch.ears_model.winding.set(model.ears_model.winding.get());
+                    batch.ears_model.position.set(model.ears_model.position.get());
+                    batch.internal_model.vertex.set(model.internal_model.vertex.get());
+                    batch.internal_model.elements.set(model.internal_model.elements.array);
+                    batch.ears_batch.draw();
+                    batch.internal_batch.draw();
+                }
+                batch.x_offset.set(batch.x_offset.get() + glyph.ha);
+            }
+        }
+    };
+    return result;
+};
+
+})();
 Facet.Debug = {};
 Facet.Debug.init = function(div)
 {
@@ -14849,6 +15908,37 @@ if (! _.isUndefined(poly)){
 
 } else
 throw "poly is a required parameter";
+};
+
+Facet.Models.polygon2 = function(opts) {
+    opts = _.defaults(opts, {
+        type: "triangles",
+        keep_array: false
+    });
+    var poly = opts.contour;
+    var style = opts.type;
+    var keep_array = opts.keep_array;
+    var vertexColor = opts.vertex_color;
+    if (_.isUndefined(poly)) {
+        throw "Facet.Models.polygon requires contour option";
+    };
+
+    var triangles = Facet.Geometry.triangulate({ contour: poly });
+    var verts = [];
+    var elements = [].concat.apply([], triangles);
+    _.each(poly, function(v) { verts.push.apply(verts, v); });
+
+    var uv = Shade(Facet.attribute_buffer({
+        vertex_array: verts, 
+        item_size: 2, 
+        keep_array: keep_array
+    }));
+
+    return Facet.model({
+        type: style,
+        elements: Facet.element_buffer(elements),
+        vertex: uv
+    });
 };
 
 Facet.Mesh = {};
