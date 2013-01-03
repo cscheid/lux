@@ -5399,7 +5399,7 @@ Facet.UI.center_zoom_interactor = function(opts)
             var that = this;
 
             var ticker = Facet.Scene.animate(function() {
-                var now = (new Date()).getTime() / 1000.0;
+                var now = Date.now() / 1000.0;
                 var s = (now - start) / seconds * S;
                 var u_s = (w[0] / (rho * rho)) * (cosh(r[0]) * tanh(rho * s + r[0]) - sinh(r[0])) + u[0];
                 var w_s = w[0] * cosh(r[0]) / cosh(rho * s + r[0]);
@@ -13266,7 +13266,7 @@ Facet.Marks.globe = function(opts)
             var h = ctx.viewportHeight;
             var w_divider = 218.18;
             var h_divider = 109.09;
-            var now = new Date().getTime();
+            var now = Date.now();
             // assume 16.66 ms per tick,
             inertia = Math.pow(0.95, (now - last_moves[1]) / 16.666);
             if (panning)
@@ -13305,7 +13305,7 @@ Facet.Marks.globe = function(opts)
         },
         get_available_id: function(x, y, zoom) {
             // easy cases first: return available tile or a cache hit
-            var now = new Date().getTime();
+            var now = Date.now();
             for (var i=0; i<cache_size; ++i) {
                 if (this.tiles[i].x == x &&
                     this.tiles[i].y == y &&
@@ -13564,7 +13564,7 @@ Facet.Marks.globe_2d = function(opts)
         },
         get_available_id: function(x, y, zoom) {
             // easy cases first: return available tile or a cache hit
-            var now = new Date().getTime();
+            var now = Date.now();
             for (var i=0; i<cache_size; ++i) {
                 if (this.tiles[i].x == x &&
                     this.tiles[i].y == y &&
@@ -13642,7 +13642,7 @@ Facet.Marks.globe_2d = function(opts)
             var f = function(x, y, zoom, id) {
                 return function() {
                     that.tiles[id].active = 2;
-                    that.tiles[id].last_touched = new Date().getTime();
+                    that.tiles[id].last_touched = Date.now();
                     // uncomment this during debugging
                     // that.sanity_check();
                     Facet.Scene.invalidate();
