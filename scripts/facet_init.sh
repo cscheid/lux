@@ -51,7 +51,9 @@ mkdir -p $TARGET_DIR/css
 mkdir -p $TARGET_DIR/lib
 
 cp $FACET_DIR/facet.min.js $TARGET_DIR/src
-cp $FACET_DIR/lib/jquery-1.7.2.min.js $TARGET_DIR/lib
+cp $FACET_DIR/facet.js $TARGET_DIR/src
+cp $FACET_DIR/lib/jquery-1.6.2.min.js $TARGET_DIR/lib
+cp $FACET_DIR/lib/jquery.mousewheel.js $TARGET_DIR/lib
 cp $FACET_DIR/lib/jquery-ui-1.8.16.custom.min.js $TARGET_DIR/lib
 cp -r $FACET_DIR/demos/css $TARGET_DIR
 
@@ -61,9 +63,10 @@ cat > $TARGET_DIR/index.html <<EOF
   <link rel="stylesheet" href="css/bootstrap.css"/>
   <link rel="stylesheet" href="css/style.css"/>
   <link rel="stylesheet" href="css/mchighlight-javascript.css"/>
-  <script src="lib/jquery-1.7.2.min.js"></script>
+  <script src="lib/jquery-1.6.2.min.js"></script>
+  <script src="lib/jquery.mousewheel.js"></script>
   <script src="lib/jquery-ui-1.8.16.custom.min.js"></script>
-  <script src="src/facet.min.js"></script>
+  <script src="src/facet.js"></script> <!-- replace with facet.min.js when you're done debugging -->
   <script src="main.js"></script>
 </head>
 <body>
