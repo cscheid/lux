@@ -112,7 +112,6 @@ $().ready(function() {
         $("#plus-sign").css("display", c[1] >= 0 ? "" : "none");
     });
 
-    // FIXME That hardcoded 240 should be computed based on screen size or something
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,1],

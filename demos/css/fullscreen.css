@@ -25,3 +25,9 @@ p {
     padding: 0.1em;
     margin: 0;
 }
+
+canvas.fullscreen {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}

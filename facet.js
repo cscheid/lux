@@ -5399,7 +5399,7 @@ Facet.UI.center_zoom_interactor = function(opts)
             var that = this;
 
             var ticker = Facet.Scene.animate(function() {
-                var now = (new Date()).getTime() / 1000.0;
+                var now = Date.now() / 1000.0;
                 var s = (now - start) / seconds * S;
                 var u_s = (w[0] / (rho * rho)) * (cosh(r[0]) * tanh(rho * s + r[0]) - sinh(r[0])) + u[0];
                 var w_s = w[0] * cosh(r[0]) / cosh(rho * s + r[0]);
@@ -12697,7 +12697,7 @@ var loop_blinn_batch = function(opts) {
     var offset = Shade.vec(x_offset, y_offset);
     var ears_position = Shade.add(ears_model.position, offset);
     var ears_batch = Facet.bake(ears_model, {
-        position: position_function(ears_position),
+        position: position_function(ears_position.div(1000).mul(opts.size)),
         color: quadratic_discard(color_function(ears_position), ears_model)
     });
     var internal_model = Facet.model({
@@ -12707,7 +12707,7 @@ var loop_blinn_batch = function(opts) {
     var internal_position = Shade.add(internal_model.vertex, offset);
     var internal_batch = Facet.bake(internal_model, {
         // point_size: 10,
-        position: position_function(internal_position),
+        position: position_function(internal_position.div(1000).mul(opts.size)),
         elements: internal_model.elements,
         color: color_function(internal_position)
     });
@@ -12778,6 +12778,8 @@ Facet.Text.string_batch = function(opts) {
     }
     opts = _.defaults(opts, {
         string: "",
+        size: 10,
+        align: "left",
         position: function(pos) { return Shade.vec(pos, 0, 1); },
         color: function(pos) { return Shade.color("white"); }
     });
@@ -12791,8 +12793,35 @@ Facet.Text.string_batch = function(opts) {
         set: function(new_string) {
             opts.string = new_string;
         },
+        advance: function(char_offset) {
+            var result = 0;
+            while (char_offset < opts.string.length &&
+                   "\n\r".indexOf(opts.string[char_offset])) {
+                result += opts.font.glyphs[opts.string[char_offset++]].ha;
+            }
+            return result;
+        },
+        alignment_offset: function(char_offset) {
+            var advance = this.advance(char_offset);
+            switch (opts.align) {
+            case "left": return 0;
+            case "right": return -advance;
+            case "center": return -advance/2;
+            default:
+                throw "Facet.Text.string_batch.align must be one of 'left', 'center' or 'right'";
+            }
+        },
+        // vertical_alignment_offset: function() {
+        //     switch (opts.vertical_align) {
+        //     case "baseline": return 0;
+        //     case "middle": return -opts.font.lineHeight/2;
+        //     case "top": return -opts.font.lineHeight;
+        //         default:
+        //         throw "Facet.Text.string_batch.vertical_align must be one of 'baseline', 'middle' or 'top'";
+        //     };
+        // },
         draw: function() {
-            batch.x_offset.set(0);
+            batch.x_offset.set(this.alignment_offset(0));
             batch.y_offset.set(0);
             for (var i=0; i<opts.string.length; ++i) {
                 var c = opts.string[i];
@@ -13266,7 +13295,7 @@ Facet.Marks.globe = function(opts)
             var h = ctx.viewportHeight;
             var w_divider = 218.18;
             var h_divider = 109.09;
-            var now = new Date().getTime();
+            var now = Date.now();
             // assume 16.66 ms per tick,
             inertia = Math.pow(0.95, (now - last_moves[1]) / 16.666);
             if (panning)
@@ -13305,7 +13334,7 @@ Facet.Marks.globe = function(opts)
         },
         get_available_id: function(x, y, zoom) {
             // easy cases first: return available tile or a cache hit
-            var now = new Date().getTime();
+            var now = Date.now();
             for (var i=0; i<cache_size; ++i) {
                 if (this.tiles[i].x == x &&
                     this.tiles[i].y == y &&
@@ -13564,7 +13593,7 @@ Facet.Marks.globe_2d = function(opts)
         },
         get_available_id: function(x, y, zoom) {
             // easy cases first: return available tile or a cache hit
-            var now = new Date().getTime();
+            var now = Date.now();
             for (var i=0; i<cache_size; ++i) {
                 if (this.tiles[i].x == x &&
                     this.tiles[i].y == y &&
@@ -13642,7 +13671,7 @@ Facet.Marks.globe_2d = function(opts)
             var f = function(x, y, zoom, id) {
                 return function() {
                     that.tiles[id].active = 2;
-                    that.tiles[id].last_touched = new Date().getTime();
+                    that.tiles[id].last_touched = Date.now();
                     // uncomment this during debugging
                     // that.sanity_check();
                     Facet.Scene.invalidate();
