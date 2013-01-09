@@ -3912,17 +3912,18 @@ Facet.init = function(canvas, opts)
         };
 
         var ext;
-        var exts = _.map(gl.getSupportedExtensions(), function (x) { 
-            return x.toLowerCase();
+        var exts = gl.getSupportedExtensions(); // _.map(gl.getSupportedExtensions(), function (x) { 
+        //     return x.toLowerCase();
+        // });
+        _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
+            if (exts.indexOf(ext) === -1) {
+                alert(ext + " is not available on your browser/computer! " +
+                      "Facet will not work, sorry.");
+                throw "insufficient GPU support";
+            } else {
+                console.log(ext, gl.getExtension(ext));
+            }
         });
-        if (exts.indexOf("oes_texture_float") == -1) {
-            // FIXME design something like progressive enhancement for these cases. HARD!
-            alert("OES_texture_float is not available on your browser/computer! " +
-                  "Facet will not work, sorry.");
-            throw "insufficient GPU support";
-        } else {
-            gl.getExtension("oes_texture_float");
-        }
     } catch(e) {
         alert(e);
     }
@@ -4546,34 +4547,6 @@ Facet.texture = function(opts)
         delete this.buffer;
         delete this.image;
 
-        // if (opts.src) {
-        //     var image = new Image();
-        //     image.onload = function() {
-        //         that.width = image.width;
-        //         that.height = image.height;
-        //         handler();
-        //     };
-        //     this.image = image;
-        //     if (opts.crossOrigin)
-        //         image.crossOrigin = opts.crossOrigin; // CORS support
-        //     image.src = opts.src;
-        // } else if (opts.img) {
-        //     this.image = opts.img;
-        //     if (this.image.isComplete) {
-        //         this.width = this.image.width;
-        //         this.height = this.image.height;
-        //         handler();
-        //     } else {
-        //         this.image.onload = function() {
-        //             that.width = that.image.width;
-        //             that.height = that.image.height;
-        //             handler();
-        //         };
-        //     }
-        // } else {
-        //     this.buffer = opts.buffer || null;
-        //     handler();        
-        // }
         this.load(opts);
     });
     texture.init(opts);
@@ -6812,6 +6785,7 @@ Shade.CompilationContext = function(compile_type)
             args.push.apply(args, this.global_decls);
             this.strings.splice.apply(this.strings, args);
             this.strings.splice(0, 0, "precision",this.float_precision,"float;\n");
+            this.strings.splice(0, 0, "#extension GL_OES_standard_derivatives : enable\n");
             this.strings.push("void main() {\n");
             _.each(this.global_scope.initializations, function(exp) {
                 that.strings.push("    ", exp, ";\n");
@@ -9463,6 +9437,32 @@ var texture2D = builtin_glsl_function({
     }
 });
 Shade.texture2D = texture2D;
+
+_.each(["dFdx", "dFdy", "fwidth"], function(cmd) {
+    var fun = builtin_glsl_function({
+        name: cmd,
+        type_resolving_list: [
+            [Shade.Types.float_t, Shade.Types.float_t],
+            [Shade.Types.vec2, Shade.Types.vec2],
+            [Shade.Types.vec3, Shade.Types.vec3],
+            [Shade.Types.vec4, Shade.Types.vec4]
+        ],
+
+        // This line below is necessary to prevent an infinite loop
+        // because we're expressing element_function as exp.at();
+        element_function: function(exp, i) { return exp.at(i); },
+
+        element_constant_evaluator: function(exp, i) { return false; },
+
+        evaluator: function(exp) {
+            throw "evaluate unsupported on " + cmd + " expressions";
+        }
+    });
+    Shade[cmd] = fun;
+    Shade.Exp[cmd] = function() {
+        return Shade[cmd](this);
+    };
+});
 
 Shade.equal = builtin_glsl_function({
     name: "equal", 
@@ -12881,7 +12881,13 @@ function internal_batch(opts, texture) {
     });
     var world_position = Shade.add(model.position, offset).div(opts.font.ascender).mul(opts.size);
     var opacity = Shade.texture2D(texture, model.uv).r();
-    var final_color = color_function(world_position).mul(Shade.vec(1,1,1,opacity));
+    var uv_gradmag = model.uv.x().mul(texture.width).dFdx().pow(2).add(model.uv.y().mul(texture.height).dFdy().pow(2)).sqrt();
+
+    var opacity_step = Shade.Scale.linear(
+        {domain: [Shade.max(Shade(0.5).sub(uv_gradmag), 0), Shade.min(Shade(0.5).add(uv_gradmag), 1)],
+         range: [0, 1]})(opacity).clamp(0, 1);
+
+    var final_color = color_function(world_position).mul(Shade.vec(1,1,1,opacity_step));
     var batch = Facet.bake(model, {
         position: position_function(world_position),
         color: final_color,
@@ -12976,8 +12982,6 @@ Facet.Text.texture_batch = function(opts) {
         draw: function() {
             if (_.isUndefined(batch.batch))
                 return;
-            // debugger;
-            // batch.batch.draw();
 
             batch.x_offset.set(this.alignment_offset(0));
             batch.y_offset.set(0);

@@ -602,6 +602,32 @@ var texture2D = builtin_glsl_function({
 });
 Shade.texture2D = texture2D;
 
+_.each(["dFdx", "dFdy", "fwidth"], function(cmd) {
+    var fun = builtin_glsl_function({
+        name: cmd,
+        type_resolving_list: [
+            [Shade.Types.float_t, Shade.Types.float_t],
+            [Shade.Types.vec2, Shade.Types.vec2],
+            [Shade.Types.vec3, Shade.Types.vec3],
+            [Shade.Types.vec4, Shade.Types.vec4]
+        ],
+
+        // This line below is necessary to prevent an infinite loop
+        // because we're expressing element_function as exp.at();
+        element_function: function(exp, i) { return exp.at(i); },
+
+        element_constant_evaluator: function(exp, i) { return false; },
+
+        evaluator: function(exp) {
+            throw "evaluate unsupported on " + cmd + " expressions";
+        }
+    });
+    Shade[cmd] = fun;
+    Shade.Exp[cmd] = function() {
+        return Shade[cmd](this);
+    };
+});
+
 Shade.equal = builtin_glsl_function({
     name: "equal", 
     type_resolving_list: [

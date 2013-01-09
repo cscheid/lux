@@ -155,6 +155,7 @@ Shade.CompilationContext = function(compile_type)
             args.push.apply(args, this.global_decls);
             this.strings.splice.apply(this.strings, args);
             this.strings.splice(0, 0, "precision",this.float_precision,"float;\n");
+            this.strings.splice(0, 0, "#extension GL_OES_standard_derivatives : enable\n");
             this.strings.push("void main() {\n");
             _.each(this.global_scope.initializations, function(exp) {
                 that.strings.push("    ", exp, ";\n");

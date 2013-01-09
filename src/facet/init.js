@@ -136,17 +136,18 @@ Facet.init = function(canvas, opts)
         };
 
         var ext;
-        var exts = _.map(gl.getSupportedExtensions(), function (x) { 
-            return x.toLowerCase();
+        var exts = gl.getSupportedExtensions(); // _.map(gl.getSupportedExtensions(), function (x) { 
+        //     return x.toLowerCase();
+        // });
+        _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
+            if (exts.indexOf(ext) === -1) {
+                alert(ext + " is not available on your browser/computer! " +
+                      "Facet will not work, sorry.");
+                throw "insufficient GPU support";
+            } else {
+                console.log(ext, gl.getExtension(ext));
+            }
         });
-        if (exts.indexOf("oes_texture_float") == -1) {
-            // FIXME design something like progressive enhancement for these cases. HARD!
-            alert("OES_texture_float is not available on your browser/computer! " +
-                  "Facet will not work, sorry.");
-            throw "insufficient GPU support";
-        } else {
-            gl.getExtension("oes_texture_float");
-        }
     } catch(e) {
         alert(e);
     }

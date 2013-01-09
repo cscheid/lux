@@ -119,7 +119,7 @@ test("Shade compilation", function() {
         var cc = Shade.CompilationContext(Shade.VERTEX_PROGRAM_COMPILE);
         cc.compile(root);
         // This optimization was making the GLSL compiler too slow, so I removed it.
-        // equal(cc.source(), "precision highp float;\n" +
+        // equal(cc.source(), "#extension GL_OES_standard_derivatives : enable\nprecision highp float;\n" +
         //       " uniform float _unique_name_2;\n" + 
         //       " uniform vec4 _unique_name_1;\n" + 
         //       " vec4 glsl_name_8 ;\n" + 
@@ -135,7 +135,7 @@ test("Shade compilation", function() {
         //       "      glsl_name_7() ;\n" + 
         //       " }\n");
 
-        equal(cc.source(), "precision highp float;\n" + 
+        equal(cc.source(), "#extension GL_OES_standard_derivatives : enable\n precision highp float;\n" + 
               " vec4 glsl_name_8 ;\n" +
               " uniform vec4 _unique_name_5;\n" +
               " uniform float _unique_name_6;\n" +
