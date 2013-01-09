@@ -30,7 +30,6 @@ $().ready(function () {
         var x_even = even_p(fc.x()), y_even = even_p(fc.y());
         return Shade.ifelse(xor(x_even, y_even), c1, c2);
     }
-
     Facet.Net.json("opensans.regular.json", function(font) {
         Facet.Scene.add(Facet.Text.string_batch({
             string: "The quick brown fox jumps\nover the lazy dog.\nFive boxing wizards\njump quickly.",
