@@ -256,11 +256,11 @@ Facet.bake = function(model, appearance, opts)
     } else {
         if (elements._shade_type === 'attribute_buffer') {
             draw_chunk = function() {
-                elements.draw(primitive_type);
+                model.elements.draw(primitive_type);
             };
         } else if (elements._shade_type === 'element_buffer') {
             draw_chunk = function() {
-                elements.bind_and_draw(primitive_type);
+                model.elements.bind_and_draw(primitive_type);
             };
         } else
             throw "model.elements must be a number, an element buffer or an attribute buffer";
