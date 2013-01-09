@@ -20,7 +20,13 @@ function internal_batch(opts, texture) {
     });
     var world_position = Shade.add(model.position, offset).div(opts.font.ascender).mul(opts.size);
     var opacity = Shade.texture2D(texture, model.uv).r();
-    var final_color = color_function(world_position).mul(Shade.vec(1,1,1,opacity));
+    var uv_gradmag = model.uv.x().mul(texture.width).dFdx().pow(2).add(model.uv.y().mul(texture.height).dFdy().pow(2)).sqrt();
+
+    var opacity_step = Shade.Scale.linear(
+        {domain: [Shade.max(Shade(0.5).sub(uv_gradmag), 0), Shade.min(Shade(0.5).add(uv_gradmag), 1)],
+         range: [0, 1]})(opacity).clamp(0, 1);
+
+    var final_color = color_function(world_position).mul(Shade.vec(1,1,1,opacity_step));
     var batch = Facet.bake(model, {
         position: position_function(world_position),
         color: final_color,
@@ -115,8 +121,6 @@ Facet.Text.texture_batch = function(opts) {
         draw: function() {
             if (_.isUndefined(batch.batch))
                 return;
-            // debugger;
-            // batch.batch.draw();
 
             batch.x_offset.set(this.alignment_offset(0));
             batch.y_offset.set(0);
