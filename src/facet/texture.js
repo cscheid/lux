@@ -188,34 +188,6 @@ Facet.texture = function(opts)
         delete this.buffer;
         delete this.image;
 
-        // if (opts.src) {
-        //     var image = new Image();
-        //     image.onload = function() {
-        //         that.width = image.width;
-        //         that.height = image.height;
-        //         handler();
-        //     };
-        //     this.image = image;
-        //     if (opts.crossOrigin)
-        //         image.crossOrigin = opts.crossOrigin; // CORS support
-        //     image.src = opts.src;
-        // } else if (opts.img) {
-        //     this.image = opts.img;
-        //     if (this.image.isComplete) {
-        //         this.width = this.image.width;
-        //         this.height = this.image.height;
-        //         handler();
-        //     } else {
-        //         this.image.onload = function() {
-        //             that.width = that.image.width;
-        //             that.height = that.image.height;
-        //             handler();
-        //         };
-        //     }
-        // } else {
-        //     this.buffer = opts.buffer || null;
-        //     handler();        
-        // }
         this.load(opts);
     });
     texture.init(opts);
