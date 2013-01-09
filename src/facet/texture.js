@@ -52,9 +52,16 @@ Facet.texture = function(opts)
          * 
          *     texture.load({
          *       src: "http://www.example.com/image.png",
-         *       onload: function() { alert("image has now loaded!") }
+         *       onload: function(image) { 
+         *         alert("image has now loaded into texture!");
+         *       }
          *     })
          * 
+         *     The parameter passed to the callback is the image, canvas 
+         *     or buffer loaded into the texture, and in
+         *     the callback, 'this' points to the texture. In other words,
+         *     the callback is called with "onload.call(texture, image)"
+         *        
          *   * Specify an offset:
          * 
          *     texture.load({
@@ -113,7 +120,7 @@ Facet.texture = function(opts)
                     ctx.generateMipmap(ctx.TEXTURE_2D);
                 Facet.unload_batch();
                 that.ready = true;
-                onload(image);
+                onload.call(texture, image);
             }
 
             function buffer_handler()
@@ -138,7 +145,7 @@ Facet.texture = function(opts)
                     ctx.generateMipmap(ctx.TEXTURE_2D);
                 that.ready = true;
                 Facet.unload_batch();
-                onload();
+                onload.call(texture, opts.buffer);
             }
 
             if (opts.src) {
