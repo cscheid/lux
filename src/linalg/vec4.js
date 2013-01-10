@@ -3,14 +3,14 @@ var vec4 = {};
 vec4.create = function()
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     return result;
 };
 
 vec4.copy = function(vec)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0];
     result[1] = vec[1];
     result[2] = vec[2];
@@ -50,7 +50,7 @@ vec4.set = function(dest, vec)
 vec4.plus = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     result[2] = v1[2] + v2[2];
@@ -70,7 +70,7 @@ vec4.add = function(dest, other)
 vec4.minus = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     result[2] = v1[2] - v2[2];
@@ -90,7 +90,7 @@ vec4.subtract = function(dest, other)
 vec4.negative = function(v)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = -v[0];
     result[1] = -v[1];
     result[2] = -v[2];
@@ -110,7 +110,7 @@ vec4.negate = function(dest)
 vec4.scaling = function(vec, val)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     result[2] = vec[2]*val;
@@ -130,7 +130,7 @@ vec4.scale = function(dest, val)
 vec4.schur_product = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     result[2] = v1[2] * v2[2];
@@ -150,7 +150,7 @@ vec4.schur_multiply = function(dest, other)
 vec4.normalized = function(vec)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     var len = Math.sqrt(x*x + y*y + z*z + w*w);
     if (!len)

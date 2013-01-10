@@ -123,6 +123,10 @@ Facet.init = function(canvas, opts)
             if (!_.isUndefined(listener)) {
                 (function(listener) {
                     function internal_listener(event) {
+                        if (_.isUndefined(event.offsetX)) {
+			    event.offsetX = event.pageX - event.target.offsetLeft;
+			    event.offsetY = event.pageY - event.target.offsetTop;
+                        }
                         event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
                         event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
                         return listener(event);
