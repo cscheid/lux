@@ -11,13 +11,13 @@ $().ready(function () {
     interactor = Facet.UI.center_zoom_interactor({
         width: canvas.width,
         height: canvas.height,
-        zoom: 0.01,
-        center: vec.make([100, -50]),
-        widest_zoom: 1e-6
+        center: vec.make([1, -0.2]) 
+       // zoom: 0.01,
+        // widest_zoom: 1e-6
     });
 
     gl = Facet.init(canvas, {
-        clearColor: [1,1,1,1], // 0,0,0,1],
+        clearColor: [1,1,1,1],
         interactor: interactor
     });
     function checkerboard_pattern(c1, c2) {
@@ -31,14 +31,19 @@ $().ready(function () {
         return Shade.ifelse(xor(x_even, y_even), c1, c2);
     }
     Facet.Net.json("opensans.regular.json", function(font) {
-        Facet.Scene.add(Facet.Text.string_batch({
+        Facet.Scene.add(Facet.Text.texture_batch({
             string: "The quick brown fox jumps\nover the lazy dog.\nFive boxing wizards\njump quickly.",
             font: font,
+            size: 0.1,
             position: function(p) { return interactor.camera(p); },
             color: function(p) { 
-                // return Shade.color("black");
                 return checkerboard_pattern(Shade.color("red"), Shade.color("black"));
             }
         }));
+        // var m = Facet.Models.square();
+        // Facet.Scene.add(Facet.bake(m, {
+        //     position: interactor.camera(m.vertex),
+        //     color: Shade.vec(m.tex_coord,0,1)
+        // }));
     });
 });

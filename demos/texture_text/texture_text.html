@@ -1,5 +1,5 @@
 <html>
-<head><title>Loop-Blinn TTF rendering</title>
+<head><title>Texture-Based Text rendering</title>
   <link rel="stylesheet" href="../css/bootstrap.css"/>
   <link rel="stylesheet" href="../css/style.css"/>
   <link rel="stylesheet" href="../css/mchighlight-javascript.css"/>
@@ -8,22 +8,15 @@
   <script src="../js/mclexer.js"></script>
   <script src="../js/mchighlight.js"></script>
   <script src="../js/mchighlight-javascript.js"></script>
-  <!-- <script src="typeface.js"></script> -->
-  <script src="gentilis_regular.typeface.js"></script>
-  <script src="opensans.regular.js"></script>
-  <script src="loopblinn.js"></script>
+  <script src="texture_text.js"></script>
 </head>
 <body>
 <div class="body">
 <div class="content">
-<h1>Loop-Blinn TTF rendering</h1>
+<h1>Texture-Based TTF rendering</h1>
 <canvas id="webgl" width="720" height="480"></canvas>
-<div style="text-align: right">View the <a href="loopblinn.js">full
+<div style="text-align: right">View the <a href="texture_text.js">full
     source</a>.</div>
-<p>This demo uses the technique from Loop and
-  Blinn's <a href="http://research.microsoft.com/en-us/um/people/cloop/loopblinn05.pdf">SIGGRAPH
-  2005</a> paper. Drag mouse to pan, mouse-wheel to zoom in and
-  out.</p>
 
 <p>Note that Facet's infrastructure allows per-pixel control of font
   appearance. Although in this example that capability is admittedly
