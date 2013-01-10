@@ -1,5 +1,7 @@
 The Big List of Facet TODOs
 
+* Text support
+** rename string_batch to outline_batch or something like that
 * etc
 ** TODO attribute and element buffers
 There currently is an API mismatch between attribute buffers and element
@@ -159,7 +161,6 @@ Now that I figured out a nice way to make aligned rects work, I should
 extend this to lines, etc. The main problem is interaction with
 attribute_buffer, but that's inevitable without geometry shaders. I'll
 need documentation.
-** TEXT SUPPORT
 ** WebGL FBOs are square?!
 According to the spec, they must be square. But I can create them in
 WebGL without any trouble. I wonder if things will break.

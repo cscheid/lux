@@ -3602,11 +3602,11 @@ Facet.bake = function(model, appearance, opts)
     } else {
         if (elements._shade_type === 'attribute_buffer') {
             draw_chunk = function() {
-                elements.draw(primitive_type);
+                model.elements.draw(primitive_type);
             };
         } else if (elements._shade_type === 'element_buffer') {
             draw_chunk = function() {
-                elements.bind_and_draw(primitive_type);
+                model.elements.bind_and_draw(primitive_type);
             };
         } else
             throw "model.elements must be a number, an element buffer or an attribute buffer";
@@ -3912,17 +3912,18 @@ Facet.init = function(canvas, opts)
         };
 
         var ext;
-        var exts = _.map(gl.getSupportedExtensions(), function (x) { 
-            return x.toLowerCase();
+        var exts = gl.getSupportedExtensions(); // _.map(gl.getSupportedExtensions(), function (x) { 
+        //     return x.toLowerCase();
+        // });
+        _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
+            if (exts.indexOf(ext) === -1) {
+                alert(ext + " is not available on your browser/computer! " +
+                      "Facet will not work, sorry.");
+                throw "insufficient GPU support";
+            } else {
+                console.log(ext, gl.getExtension(ext));
+            }
         });
-        if (exts.indexOf("oes_texture_float") == -1) {
-            // FIXME design something like progressive enhancement for these cases. HARD!
-            alert("OES_texture_float is not available on your browser/computer! " +
-                  "Facet will not work, sorry.");
-            throw "insufficient GPU support";
-        } else {
-            gl.getExtension("oes_texture_float");
-        }
     } catch(e) {
         alert(e);
     }
@@ -4410,9 +4411,16 @@ Facet.texture = function(opts)
          * 
          *     texture.load({
          *       src: "http://www.example.com/image.png",
-         *       onload: function() { alert("image has now loaded!") }
+         *       onload: function(image) { 
+         *         alert("image has now loaded into texture!");
+         *       }
          *     })
          * 
+         *     The parameter passed to the callback is the image, canvas 
+         *     or buffer loaded into the texture, and in
+         *     the callback, 'this' points to the texture. In other words,
+         *     the callback is called with "onload.call(texture, image)"
+         *        
          *   * Specify an offset:
          * 
          *     texture.load({
@@ -4471,7 +4479,7 @@ Facet.texture = function(opts)
                     ctx.generateMipmap(ctx.TEXTURE_2D);
                 Facet.unload_batch();
                 that.ready = true;
-                onload(image);
+                onload.call(texture, image);
             }
 
             function buffer_handler()
@@ -4496,7 +4504,7 @@ Facet.texture = function(opts)
                     ctx.generateMipmap(ctx.TEXTURE_2D);
                 that.ready = true;
                 Facet.unload_batch();
-                onload();
+                onload.call(texture, opts.buffer);
             }
 
             if (opts.src) {
@@ -4539,34 +4547,6 @@ Facet.texture = function(opts)
         delete this.buffer;
         delete this.image;
 
-        // if (opts.src) {
-        //     var image = new Image();
-        //     image.onload = function() {
-        //         that.width = image.width;
-        //         that.height = image.height;
-        //         handler();
-        //     };
-        //     this.image = image;
-        //     if (opts.crossOrigin)
-        //         image.crossOrigin = opts.crossOrigin; // CORS support
-        //     image.src = opts.src;
-        // } else if (opts.img) {
-        //     this.image = opts.img;
-        //     if (this.image.isComplete) {
-        //         this.width = this.image.width;
-        //         this.height = this.image.height;
-        //         handler();
-        //     } else {
-        //         this.image.onload = function() {
-        //             that.width = that.image.width;
-        //             that.height = that.image.height;
-        //             handler();
-        //         };
-        //     }
-        // } else {
-        //     this.buffer = opts.buffer || null;
-        //     handler();        
-        // }
         this.load(opts);
     });
     texture.init(opts);
@@ -6805,6 +6785,7 @@ Shade.CompilationContext = function(compile_type)
             args.push.apply(args, this.global_decls);
             this.strings.splice.apply(this.strings, args);
             this.strings.splice(0, 0, "precision",this.float_precision,"float;\n");
+            this.strings.splice(0, 0, "#extension GL_OES_standard_derivatives : enable\n");
             this.strings.push("void main() {\n");
             _.each(this.global_scope.initializations, function(exp) {
                 that.strings.push("    ", exp, ";\n");
@@ -9456,6 +9437,32 @@ var texture2D = builtin_glsl_function({
     }
 });
 Shade.texture2D = texture2D;
+
+_.each(["dFdx", "dFdy", "fwidth"], function(cmd) {
+    var fun = builtin_glsl_function({
+        name: cmd,
+        type_resolving_list: [
+            [Shade.Types.float_t, Shade.Types.float_t],
+            [Shade.Types.vec2, Shade.Types.vec2],
+            [Shade.Types.vec3, Shade.Types.vec3],
+            [Shade.Types.vec4, Shade.Types.vec4]
+        ],
+
+        // This line below is necessary to prevent an infinite loop
+        // because we're expressing element_function as exp.at();
+        element_function: function(exp, i) { return exp.at(i); },
+
+        element_constant_evaluator: function(exp, i) { return false; },
+
+        evaluator: function(exp) {
+            throw "evaluate unsupported on " + cmd + " expressions";
+        }
+    });
+    Shade[cmd] = fun;
+    Shade.Exp[cmd] = function() {
+        return Shade[cmd](this);
+    };
+});
 
 Shade.equal = builtin_glsl_function({
     name: "equal", 
@@ -12843,6 +12850,157 @@ Facet.Text.string_batch = function(opts) {
                     batch.internal_model.elements.set(model.internal_model.elements.array);
                     batch.ears_batch.draw();
                     batch.internal_batch.draw();
+                }
+                batch.x_offset.set(batch.x_offset.get() + glyph.ha);
+            }
+        }
+    };
+    return result;
+};
+
+})();
+(function() {
+
+function internal_batch(opts, texture) {
+    
+    var position_function = opts.position;
+    var color_function = opts.color;
+
+    var uv = Facet.attribute_buffer({vertex_array: [0,0, 1, 0, 1, 1], item_size: 2});
+    var position = Facet.attribute_buffer({vertex_array: [0,0, 1, 0, 1, 1], item_size: 2});
+    var elements = Facet.element_buffer([0, 1, 2]);
+
+    var x_offset = Shade.parameter("float", 0);
+    var y_offset = Shade.parameter("float", 0);
+    var offset = Shade.vec(x_offset, y_offset);
+    var model = Facet.model({
+        uv: uv,
+        position: position,
+        elements: elements,
+        type: "triangles"
+    });
+    var world_position = Shade.add(model.position, offset).div(opts.font.ascender).mul(opts.size);
+    var opacity = Shade.texture2D(texture, model.uv).r();
+    var uv_gradmag = model.uv.x().mul(texture.width).dFdx().pow(2).add(model.uv.y().mul(texture.height).dFdy().pow(2)).sqrt();
+
+    var opacity_step = Shade.Scale.linear(
+        {domain: [Shade.max(Shade(0.5).sub(uv_gradmag), 0), Shade.min(Shade(0.5).add(uv_gradmag), 1)],
+         range: [0, 1]})(opacity).clamp(0, 1);
+
+    var final_color = color_function(world_position).mul(Shade.vec(1,1,1,opacity_step));
+    var batch = Facet.bake(model, {
+        position: position_function(world_position),
+        color: final_color,
+        elements: model.elements,
+        mode: Facet.DrawingMode.over_with_depth
+    });
+    return {
+        batch: batch,
+        model: model,
+        x_offset: x_offset,
+        y_offset: y_offset
+    };
+}
+
+function glyph_to_model(glyph, font)
+{
+    if (_.isUndefined(glyph._model)) {
+        var elements = [0, 1, 2, 0, 2, 3];
+        var position = [glyph.left, glyph.top - glyph.glyph_height,
+                        glyph.left + glyph.glyph_width, glyph.top - glyph.glyph_height,
+                        glyph.left + glyph.glyph_width, glyph.top,
+                        glyph.left, glyph.top];
+        var uv = [glyph.xoff / font.texture_width, 1 - (glyph.yoff + glyph.glyph_height) / font.texture_height,
+                  (glyph.xoff + glyph.glyph_width) / font.texture_width, 1 - (glyph.yoff + glyph.glyph_height) / font.texture_height,
+                  (glyph.xoff + glyph.glyph_width) / font.texture_width, 1 - glyph.yoff/font.texture_height,
+                  glyph.xoff / font.texture_width, 1 - glyph.yoff/font.texture_height];
+        glyph._model = Facet.model({
+            type: "triangles",
+            uv: Facet.attribute_buffer({vertex_array: uv, item_size: 2, keep_array: true}),
+            position: Facet.attribute_buffer({vertex_array: position, item_size: 2, keep_array: true}),
+            elements: Facet.element_buffer(elements)
+        });
+    }
+    return glyph._model;
+}
+
+Facet.Text.texture_batch = function(opts) {
+    var old_opts = opts;
+    if (!_.isUndefined(opts.batch)) {
+        return opts.batch;
+    }
+    opts = _.defaults(opts, {
+        string: "",
+        size: 10,
+        align: "left",
+        position: function(pos) { return Shade.vec(pos, 0, 1); },
+        color: function(pos) { return Shade.color("white"); }
+    });
+
+    if (_.isUndefined(opts.font)) {
+        throw "texture_batch requires font parameter";
+    }
+
+    var batch = {};
+
+    if (!opts.font.texture) {
+        opts.font.texture = Facet.texture({
+            src: opts.font.image_url,
+            onload: function() { 
+                batch = internal_batch(opts, this);
+                old_opts.batch = batch;
+                Facet.Scene.invalidate(); 
+            }
+        });
+    }
+    old_opts.batch = batch;
+
+    var result = {
+        set: function(new_string) {
+            opts.string = new_string;
+        },
+        advance: function(char_offset) {
+            var result = 0;
+            while (char_offset < opts.string.length &&
+                   "\n\r".indexOf(opts.string[char_offset])) {
+                // oh god i need to fix this mess
+                var ix = String(opts.string[char_offset++].charCodeAt(0));
+                result += opts.font.glyphs[ix].ha;
+            }
+            return result;
+        },
+        alignment_offset: function(char_offset) {
+            var advance = this.advance(char_offset);
+            switch (opts.align) {
+            case "left": return 0;
+            case "right": return -advance;
+            case "center": return -advance/2;
+            default:
+                throw "Facet.Text.texture_batch.align must be one of 'left', 'center' or 'right'";
+            }
+        },
+        draw: function() {
+            if (_.isUndefined(batch.batch))
+                return;
+
+            batch.x_offset.set(this.alignment_offset(0));
+            batch.y_offset.set(0);
+            for (var i=0; i<opts.string.length; ++i) {
+                var c = opts.string[i];
+                if ("\n\r".indexOf(c) !== -1) {
+                    batch.x_offset.set(0);
+                    batch.y_offset.set(batch.y_offset.get() - opts.font.lineheight);
+                    continue;
+                }
+                var glyph = opts.font.glyphs[String(c.charCodeAt(0))];
+                if (_.isUndefined(glyph))
+                    glyph = opts.font.glyphs[String('?'.charCodeAt(0))];
+                var model = glyph_to_model(glyph, opts.font);
+                if (model) {
+                    batch.model.elements = model.elements;
+                    batch.model.uv.set(model.uv.get());
+                    batch.model.position.set(model.position.get());
+                    batch.batch.draw();
                 }
                 batch.x_offset.set(batch.x_offset.get() + glyph.ha);
             }
