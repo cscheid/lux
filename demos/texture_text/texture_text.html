@@ -18,14 +18,18 @@
 <div style="text-align: right">View the <a href="texture_text.js">full
     source</a>.</div>
 
-<p>Note that Facet's infrastructure allows per-pixel control of font
-  appearance. Although in this example that capability is admittedly
-  squandered with an ugly checkerboard effect, the feature is potentially
-  useful in "semantic level-of-detail" techniques, where important
-  parts of an underlying image might dynamically determine the desired
-  transparency level of portions of font glyphs.</p>
+<p>Facet's texture-based text rendering infrastructure includes an
+  adaptive antialiasing algorithm meant to produce better results at
+  very low resolutions (or very deep zooms). The left side of the
+  screen shows text rendering without it, and the right side of the
+  screen shows text rendering using it. This is controlled by
+  the <tt>compensate_blur</tt> option in the texture batch
+  parameters. Typically you'll set it to either true or false, but
+  here we're tying it to whether the fragment is to the left or right
+  of the screen.
+  </p>
 
-<h2>Acknowledgments</h2>
+  <h2>Acknowledgments</h2>
 
 <p>The font file and path information in this demo comes
   from <a href="http://typeface.neocracy.org">typeface.js</a>.</p>
