@@ -30,20 +30,20 @@ $().ready(function () {
         var x_even = even_p(fc.x()), y_even = even_p(fc.y());
         return Shade.ifelse(xor(x_even, y_even), c1, c2);
     }
+
+    var is_screen_left = Shade.fragCoord().x().gt(gl.parameters.width.div(2));
+
     Facet.Net.json("opensans.regular.json", function(font) {
         Facet.Scene.add(Facet.Text.texture_batch({
             string: "The quick brown fox jumps\nover the lazy dog.\nFive boxing wizards\njump quickly.",
             font: font,
             size: 0.1,
+            compensate_blur: is_screen_left,
             position: function(p) { return interactor.camera(p); },
-            color: function(p) { 
-                return checkerboard_pattern(Shade.color("red"), Shade.color("black"));
-            }
+            color: function(p) { return is_screen_left.ifelse(
+                checkerboard_pattern(Shade.color("red"), Shade.color("black")),
+                checkerboard_pattern(Shade.color("cyan"), Shade.color("black")));
+                               }
         }));
-        // var m = Facet.Models.square();
-        // Facet.Scene.add(Facet.bake(m, {
-        //     position: interactor.camera(m.vertex),
-        //     color: Shade.vec(m.tex_coord,0,1)
-        // }));
     });
 });
