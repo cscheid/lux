@@ -29,8 +29,13 @@ function facet_constant_type(obj)
     if (t === "boolean")         return "boolean";
     if (t === "number")          return "number";
     if (obj) {
-        t = obj._type;
-        if (!t)                      return "other";
+        var b = obj._type;
+        if (!_.isUndefined(b))
+            return b;
+        if (!_.isUndefined(obj.buffer) && obj.buffer._type)
+            return obj.buffer._type;
+        else
+            return "other";
     }
     return t;
 }

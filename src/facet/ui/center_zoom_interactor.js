@@ -30,6 +30,10 @@ Facet.UI.center_zoom_interactor = function(opts)
     var prev_mouse_pos;
 
     function mousedown(event) {
+        if (_.isUndefined(event.offsetX)) {
+	    event.offsetX = event.pageX - event.target.offsetLeft;
+	    event.offsetY = event.pageY - event.target.offsetTop;
+        }
         prev_mouse_pos = [event.offsetX, event.offsetY];
         opts.mousedown(event);
     }
@@ -49,6 +53,15 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     function mousemove(event) {
+        if (_.isUndefined(event.offsetX)) {
+	    event.offsetX = event.pageX - event.target.offsetLeft;
+	    event.offsetY = event.pageY - event.target.offsetTop;
+        }
+
+        // FIXME event.which vs event.buttons
+	// DAVID HACK
+	var button1 = ('buttons' in event) ? (event.buttons & 1): (event.which == 1);
+
         if ((event.which & 1) && !event.shiftKey) {
             internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
             Facet.Scene.invalidate();
@@ -60,9 +73,15 @@ Facet.UI.center_zoom_interactor = function(opts)
         opts.mousemove(event);
     }
 
-    function mousewheel(event) {
+    // FIXME mousewheel madness
+    function mousewheel(event,delta,deltaX,deltaY) {
+	if (!event.offsetX) {
+	    event.offsetX = event.pageX - event.target.offsetLeft;
+	    event.offsetY = event.pageY - event.target.offsetTop;
+	}
         internal_move(width/2-event.offsetX, height/2-event.offsetY);
-        var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
+	var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + deltaY/10));
+        // var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
         zoom.set(new_value);
         internal_move(event.offsetX-width/2, event.offsetY-height/2);
         opts.mousewheel(event);

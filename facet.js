@@ -246,7 +246,7 @@ var glValidEnumContexts = {
   // Culling
 
   'cullFace': { 0:true },
-  'frontFace': { 0:true },
+  'frontFace': { 0:true }
 };
 
 /**
@@ -1022,14 +1022,14 @@ var vec2 = {};
 vec2.create = function()
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     return result;
 };
 
 vec2.copy = function(vec)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0];
     result[1] = vec[1];
     return result;
@@ -1064,7 +1064,7 @@ vec2.set = function(dest, vec)
 vec2.plus = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     return result;
@@ -1080,7 +1080,7 @@ vec2.add = function(dest, other)
 vec2.minus = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     return result;
@@ -1096,7 +1096,7 @@ vec2.subtract = function(dest, other)
 vec2.negative = function(v)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = -v[0];
     result[1] = -v[1];
     return result;
@@ -1112,7 +1112,7 @@ vec2.negate = function(dest)
 vec2.scaling = function(vec, val)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     return result;
@@ -1128,7 +1128,7 @@ vec2.scale = function(dest, val)
 vec2.schur_product = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     return result;
@@ -1144,7 +1144,7 @@ vec2.schur_multiply = function(dest, other)
 vec2.normalized = function(vec)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1];
     var len = Math.sqrt(x*x + y*y);
     if (!len)
@@ -1202,14 +1202,14 @@ var vec3 = {};
 vec3.create = function()
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     return result;
 };
 
 vec3.copy = function(vec)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0];
     result[1] = vec[1];
     result[2] = vec[2];
@@ -1247,7 +1247,7 @@ vec3.set = function(dest, vec)
 vec3.plus = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     result[2] = v1[2] + v2[2];
@@ -1265,7 +1265,7 @@ vec3.add = function(dest, other)
 vec3.minus = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     result[2] = v1[2] - v2[2];
@@ -1283,7 +1283,7 @@ vec3.subtract = function(dest, other)
 vec3.negative = function(v)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = -v[0];
     result[1] = -v[1];
     result[2] = -v[2];
@@ -1301,7 +1301,7 @@ vec3.negate = function(dest)
 vec3.scaling = function(vec, val)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     result[2] = vec[2]*val;
@@ -1319,7 +1319,7 @@ vec3.scale = function(dest, val)
 vec3.schur_product = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     result[2] = v1[2] * v2[2];
@@ -1337,7 +1337,7 @@ vec3.schur_multiply = function(dest, other)
 vec3.normalized = function(vec)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1], z = vec[2];
     var len = Math.sqrt(x*x + y*y + z*z);
     if (!len)
@@ -1373,7 +1373,7 @@ vec3.cross = function(v1, v2)
     var x1 = v1[0], y1 = v1[1], z1 = v1[2];
     var x2 = v2[0], y2 = v2[1], z2 = v2[2];
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = y1 * z2 - z1 * y2;
     result[1] = z1 * x2 - x1 * z2;
     result[2] = x1 * y2 - y1 * x2;
@@ -1410,14 +1410,14 @@ var vec4 = {};
 vec4.create = function()
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     return result;
 };
 
 vec4.copy = function(vec)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0];
     result[1] = vec[1];
     result[2] = vec[2];
@@ -1457,7 +1457,7 @@ vec4.set = function(dest, vec)
 vec4.plus = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     result[2] = v1[2] + v2[2];
@@ -1477,7 +1477,7 @@ vec4.add = function(dest, other)
 vec4.minus = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     result[2] = v1[2] - v2[2];
@@ -1497,7 +1497,7 @@ vec4.subtract = function(dest, other)
 vec4.negative = function(v)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = -v[0];
     result[1] = -v[1];
     result[2] = -v[2];
@@ -1517,7 +1517,7 @@ vec4.negate = function(dest)
 vec4.scaling = function(vec, val)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     result[2] = vec[2]*val;
@@ -1537,7 +1537,7 @@ vec4.scale = function(dest, val)
 vec4.schur_product = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     result[2] = v1[2] * v2[2];
@@ -1557,7 +1557,7 @@ vec4.schur_multiply = function(dest, other)
 vec4.normalized = function(vec)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     var len = Math.sqrt(x*x + y*y + z*z + w*w);
     if (!len)
@@ -1618,15 +1618,16 @@ var mat2 = {};
 
 mat2.create = function()
 {
+    debugger;
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
 mat2.copy = function(mat)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -1646,7 +1647,7 @@ mat2.equal = function(v1, v2)
 mat2.random = function()
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = Math.random();
     result[1] = Math.random();
     result[2] = Math.random();
@@ -1669,7 +1670,7 @@ var _identity = new Float32Array([1,0,0,1]);
 mat2.identity = function()
 {
     var result = new Float32Array(_identity);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
@@ -1683,7 +1684,7 @@ mat2.set_identity = function(mat)
 mat2.transpose = function(mat)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[2];
     result[2] = mat[1];
@@ -1716,7 +1717,7 @@ mat2.determinant = function(mat)
 mat2.inverse = function(mat)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 	
     var a00 = mat[0], a01 = mat[1];
     var a10 = mat[2], a11 = mat[3];
@@ -1755,7 +1756,7 @@ mat2.invert = function(mat)
 mat2.as_mat4 = function(mat)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0]  = mat[0];
     result[1]  = mat[1];
     result[4]  = mat[2];
@@ -1766,7 +1767,7 @@ mat2.as_mat4 = function(mat)
 mat2.as_mat3 = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[3] = mat[2];
@@ -1778,7 +1779,7 @@ mat2.as_mat3 = function(mat)
 mat2.product = function(m1, m2)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1];
@@ -1816,7 +1817,7 @@ mat2.multiply = function(dest, other)
 mat2.product_vec = function(mat, vec)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1];
     result[0] = mat[0]*x + mat[2]*y;
     result[1] = mat[1]*x + mat[3]*y;
@@ -1856,14 +1857,14 @@ var mat3 = {};
 mat3.create = function()
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
 mat3.copy = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -1893,7 +1894,7 @@ mat3.equal = function(v1, v2)
 mat3.random = function()
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = Math.random();
     result[1] = Math.random();
     result[2] = Math.random();
@@ -1928,7 +1929,7 @@ var _identity = new Float32Array([1,0,0,
 mat3.identity = function()
 {
     var result = new Float32Array(_identity);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
@@ -1942,7 +1943,7 @@ mat3.set_identity = function(mat)
 mat3.transpose = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[3];
     result[2] = mat[6];
@@ -1995,7 +1996,7 @@ mat3.determinant = function(mat)
 mat3.inverse = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 
     var a00 = mat[0], a01 = mat[3], a02 = mat[6];
     var a10 = mat[1], a11 = mat[4], a12 = mat[7];
@@ -2050,7 +2051,7 @@ mat3.invert = function(mat)
 mat3.as_mat4 = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0]  = mat[0];
     result[1]  = mat[1];
     result[2]  = mat[2];
@@ -2066,7 +2067,7 @@ mat3.as_mat4 = function(mat)
 mat3.as_mat2 = function(mat)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[3];
@@ -2078,7 +2079,7 @@ mat3.as_mat2 = function(mat)
 mat3.product = function(m1, m2)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1],  a02 = m1[2];
@@ -2130,7 +2131,7 @@ mat3.multiply = function(dest, other)
 mat3.product_vec = function(mat, vec)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1], z = vec[2];
     result[0] = mat[0]*x + mat[3]*y + mat[6]*z;
     result[1] = mat[1]*x + mat[4]*y + mat[7]*z;
@@ -2178,14 +2179,14 @@ var mat4 = {};
 mat4.create = function(mat)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
 mat4.copy = function(mat)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -2265,7 +2266,7 @@ var _identity = new Float32Array([1,0,0,0,
 mat4.identity = function()
 {
     var result = new Float32Array(_identity);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
@@ -2279,7 +2280,7 @@ mat4.set_identity = function(mat)
 mat4.transpose = function(mat)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[4];
     result[2] = mat[8];
@@ -2359,7 +2360,7 @@ mat4.determinant = function(mat)
 mat4.inverse = function(mat)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 	
     var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3];
     var a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7];
@@ -2449,7 +2450,7 @@ mat4.invert = function(mat)
 mat4.as_mat3 = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -2465,7 +2466,7 @@ mat4.as_mat3 = function(mat)
 mat4.as_mat2 = function(mat)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[4];
@@ -2490,7 +2491,7 @@ mat4.as_inverse_transpose_mat3 = function(mat)
     if (!d) throw "singular matrix";
 
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 	
     result[0] = b01/d;
     result[1] = (-a22*a01 + a02*a21)/d;
@@ -2509,7 +2510,7 @@ mat4.as_inverse_transpose_mat3 = function(mat)
 mat4.product = function(m1, m2)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1],  a02 = m1[2],  a03 = m1[3];
@@ -2579,7 +2580,7 @@ mat4.multiply = function(dest, other)
 mat4.product_vec = function(mat, vec)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     result[0] = mat[0]*x + mat[4]*y + mat[8]*z  + mat[12]*w;
     result[1] = mat[1]*x + mat[5]*y + mat[9]*z  + mat[13]*w;
@@ -2611,7 +2612,7 @@ mat4.multiply_vec3 = function(mat, vec)
 mat4.translation_of = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     var x = vec[0], y = vec[1], z = vec[2];
     var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3];
     var a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7];
@@ -2638,7 +2639,7 @@ mat4.translation_of = function(mat, vec)
 mat4.translation = function(vec)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = result[5] = result[10] = result[15] = 1;    
     result[12] = vec[0];
     result[13] = vec[1];
@@ -2659,7 +2660,7 @@ mat4.translate = function(mat, vec)
 mat4.scaling_of = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     var x = vec[0], y = vec[1], z = vec[2];
     result[0] =  mat[0]  * x;
     result[1] =  mat[1]  * x;
@@ -2693,7 +2694,7 @@ mat4.scaling = function(mat, vec)
 mat4.scale = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     var x = vec[0], y = vec[1], z = vec[2];
     mat[0]  *= x;
     mat[1]  *= x;
@@ -2737,7 +2738,7 @@ mat4.rotation_of = function(mat, angle, axis)
     var b20 = x*z*t + y*s, b21 = y*z*t - x*s, b22 = z*z*t + c;
 
     var result = new Float32Array(16);    
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     
     // Perform rotation-specific matrix multiplication
     result[0]  = a00*b00 + a10*b01 + a20*b02;
@@ -2788,7 +2789,7 @@ mat4.rotation = function(angle, axis)
     var b20 = x*z*t + y*s, b21 = y*z*t - x*s, b22 = z*z*t + c;
 
     var result = new Float32Array(16);    
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     
     // Perform rotation-specific matrix multiplication
     result[0]  = x*x*t + c;
@@ -2856,7 +2857,7 @@ mat4.rotate = function(mat, angle, axis)
 mat4.frustum = function(left, right, bottom, top, near, far)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     var rl = (right - left);
     var tb = (top - bottom);
     var fn = (far - near);
@@ -2880,7 +2881,7 @@ mat4.perspective = function(fovy, aspect, near, far)
 mat4.ortho = function(left, right, bottom, top, near, far)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     var rl = (right - left);
     var tb = (top - bottom);
     var fn = (far - near);
@@ -2897,7 +2898,7 @@ mat4.ortho = function(left, right, bottom, top, near, far)
 mat4.lookAt = function(eye, center, up)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     
     var eyex = eye[0],
     eyey = eye[1],
@@ -3190,8 +3191,13 @@ function facet_constant_type(obj)
     if (t === "boolean")         return "boolean";
     if (t === "number")          return "number";
     if (obj) {
-        t = obj._type;
-        if (!t)                      return "other";
+        var b = obj._type;
+        if (!_.isUndefined(b))
+            return b;
+        if (!_.isUndefined(obj.buffer) && obj.buffer._type)
+            return obj.buffer._type;
+        else
+            return "other";
     }
     return t;
 }
@@ -3899,6 +3905,10 @@ Facet.init = function(canvas, opts)
             if (!_.isUndefined(listener)) {
                 (function(listener) {
                     function internal_listener(event) {
+                        if (_.isUndefined(event.offsetX)) {
+			    event.offsetX = event.pageX - event.target.offsetLeft;
+			    event.offsetY = event.pageY - event.target.offsetTop;
+                        }
                         event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
                         event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
                         return listener(event);
@@ -5281,6 +5291,10 @@ Facet.UI.center_zoom_interactor = function(opts)
     var prev_mouse_pos;
 
     function mousedown(event) {
+        if (_.isUndefined(event.offsetX)) {
+	    event.offsetX = event.pageX - event.target.offsetLeft;
+	    event.offsetY = event.pageY - event.target.offsetTop;
+        }
         prev_mouse_pos = [event.offsetX, event.offsetY];
         opts.mousedown(event);
     }
@@ -5300,6 +5314,15 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     function mousemove(event) {
+        if (_.isUndefined(event.offsetX)) {
+	    event.offsetX = event.pageX - event.target.offsetLeft;
+	    event.offsetY = event.pageY - event.target.offsetTop;
+        }
+
+        // FIXME event.which vs event.buttons
+	// DAVID HACK
+	var button1 = ('buttons' in event) ? (event.buttons & 1): (event.which == 1);
+
         if ((event.which & 1) && !event.shiftKey) {
             internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
             Facet.Scene.invalidate();
@@ -5311,9 +5334,15 @@ Facet.UI.center_zoom_interactor = function(opts)
         opts.mousemove(event);
     }
 
-    function mousewheel(event) {
+    // FIXME mousewheel madness
+    function mousewheel(event,delta,deltaX,deltaY) {
+	if (!event.offsetX) {
+	    event.offsetX = event.pageX - event.target.offsetLeft;
+	    event.offsetY = event.pageY - event.target.offsetTop;
+	}
         internal_move(width/2-event.offsetX, height/2-event.offsetY);
-        var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
+	var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + deltaY/10));
+        // var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
         zoom.set(new_value);
         internal_move(event.offsetX-width/2, event.offsetY-height/2);
         opts.mousewheel(event);
@@ -12883,11 +12912,13 @@ function internal_batch(opts, texture) {
     var opacity = Shade.texture2D(texture, model.uv).r();
     var uv_gradmag = model.uv.x().mul(texture.width).dFdx().pow(2).add(model.uv.y().mul(texture.height).dFdy().pow(2)).sqrt();
 
-    var opacity_step = Shade.Scale.linear(
+    var blur_compensation = Shade.Scale.linear(
         {domain: [Shade.max(Shade(0.5).sub(uv_gradmag), 0), Shade.min(Shade(0.5).add(uv_gradmag), 1)],
          range: [0, 1]})(opacity).clamp(0, 1);
 
-    var final_color = color_function(world_position).mul(Shade.vec(1,1,1,opacity_step));
+    var final_opacity = Shade.ifelse(opts.compensate_blur, blur_compensation, opacity);
+
+    var final_color = color_function(world_position).mul(Shade.vec(1,1,1, final_opacity));
     var batch = Facet.bake(model, {
         position: position_function(world_position),
         color: final_color,
@@ -12934,7 +12965,8 @@ Facet.Text.texture_batch = function(opts) {
         size: 10,
         align: "left",
         position: function(pos) { return Shade.vec(pos, 0, 1); },
-        color: function(pos) { return Shade.color("white"); }
+        color: function(pos) { return Shade.color("white"); },
+        compensate_blur: true
     });
 
     if (_.isUndefined(opts.font)) {

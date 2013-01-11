@@ -3,14 +3,14 @@ var vec2 = {};
 vec2.create = function()
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     return result;
 };
 
 vec2.copy = function(vec)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0];
     result[1] = vec[1];
     return result;
@@ -45,7 +45,7 @@ vec2.set = function(dest, vec)
 vec2.plus = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     return result;
@@ -61,7 +61,7 @@ vec2.add = function(dest, other)
 vec2.minus = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     return result;
@@ -77,7 +77,7 @@ vec2.subtract = function(dest, other)
 vec2.negative = function(v)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = -v[0];
     result[1] = -v[1];
     return result;
@@ -93,7 +93,7 @@ vec2.negate = function(dest)
 vec2.scaling = function(vec, val)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     return result;
@@ -109,7 +109,7 @@ vec2.scale = function(dest, val)
 vec2.schur_product = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     return result;
@@ -125,7 +125,7 @@ vec2.schur_multiply = function(dest, other)
 vec2.normalized = function(vec)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1];
     var len = Math.sqrt(x*x + y*y);
     if (!len)
