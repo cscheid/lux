@@ -161,8 +161,8 @@ facet.js:					\
 	src/facet/geometry/_begin.js		\
 	src/facet/geometry/triangulate.js	\
 	src/facet/text/_begin.js		\
-	src/facet/text/string_batch.js		\
-	src/facet/text/texture_batch.js		\
+	src/facet/text/outline.js		\
+	src/facet/text/texture.js		\
 	src/facet/debug/_begin.js		\
 	src/facet/debug/init.js			\
 	src/facet/debug/post.js			\

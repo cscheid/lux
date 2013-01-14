@@ -12807,7 +12807,7 @@ function glyph_to_model(glyph)
     return glyph._model;
 }
 
-Facet.Text.string_batch = function(opts) {
+Facet.Text.outline = function(opts) {
     var old_opts = opts;
     if (opts.batch) {
         return opts.batch;
@@ -12820,7 +12820,7 @@ Facet.Text.string_batch = function(opts) {
         color: function(pos) { return Shade.color("white"); }
     });
     if (_.isUndefined(opts.font)) {
-        throw "string_batch requires font parameter";
+        throw "outline requires font parameter";
     }
     var batch = loop_blinn_batch(opts);
     old_opts.batch = batch;
@@ -12844,7 +12844,7 @@ Facet.Text.string_batch = function(opts) {
             case "right": return -advance;
             case "center": return -advance/2;
             default:
-                throw "Facet.Text.string_batch.align must be one of 'left', 'center' or 'right'";
+                throw "align must be one of 'left', 'center' or 'right'";
             }
         },
         // vertical_alignment_offset: function() {
@@ -12853,7 +12853,7 @@ Facet.Text.string_batch = function(opts) {
         //     case "middle": return -opts.font.lineHeight/2;
         //     case "top": return -opts.font.lineHeight;
         //         default:
-        //         throw "Facet.Text.string_batch.vertical_align must be one of 'baseline', 'middle' or 'top'";
+        //         throw "vertical_align must be one of 'baseline', 'middle' or 'top'";
         //     };
         // },
         draw: function() {
