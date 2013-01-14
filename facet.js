@@ -3931,7 +3931,7 @@ Facet.init = function(canvas, opts)
                       "Facet will not work, sorry.");
                 throw "insufficient GPU support";
             } else {
-                console.log(ext, gl.getExtension(ext));
+                gl.getExtension(ext); // must call this to enable extension
             }
         });
     } catch(e) {
@@ -12955,7 +12955,7 @@ function glyph_to_model(glyph, font)
     return glyph._model;
 }
 
-Facet.Text.texture_batch = function(opts) {
+Facet.Text.texture = function(opts) {
     var old_opts = opts;
     if (!_.isUndefined(opts.batch)) {
         return opts.batch;
@@ -12970,7 +12970,7 @@ Facet.Text.texture_batch = function(opts) {
     });
 
     if (_.isUndefined(opts.font)) {
-        throw "texture_batch requires font parameter";
+        throw "Facet.Text.texture requires font parameter";
     }
 
     var batch = {};
@@ -13008,7 +13008,7 @@ Facet.Text.texture_batch = function(opts) {
             case "right": return -advance;
             case "center": return -advance/2;
             default:
-                throw "Facet.Text.texture_batch.align must be one of 'left', 'center' or 'right'";
+                throw "align must be one of 'left', 'center' or 'right'";
             }
         },
         draw: function() {

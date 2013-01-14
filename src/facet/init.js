@@ -149,7 +149,7 @@ Facet.init = function(canvas, opts)
                       "Facet will not work, sorry.");
                 throw "insufficient GPU support";
             } else {
-                console.log(ext, gl.getExtension(ext));
+                gl.getExtension(ext); // must call this to enable extension
             }
         });
     } catch(e) {
