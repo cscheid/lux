@@ -3235,6 +3235,75 @@ function facet_typeOf(value)
     }
     return s;
 }
+/*
+ * Facet.attribute_buffer creates the structures necessary for Facet to handle 
+ * per-vertex data.
+ * 
+ * Typically these will be vertex positions, normals, texture coordinates, 
+ * colors, etc.
+ * 
+ * options: 
+ * 
+ *   vertex_array is the data array to be used. It must be one of the following 
+ *     datatypes:
+ * 
+ *     - a javascript array of values, (which will be converted to a typed array
+ *     of the appropriate type)
+ * 
+ *     - a typed array whose type matches the passed type below
+ * 
+ *     - an ArrayBuffer of the appropriate size
+ * 
+ *   item_size is the number of elements to be associated with each vertex
+ * 
+ *   item_type is the data type of each element. Default is 'float', for
+ *     IEEE 754 32-bit floating point numbers.
+ * 
+ *   usage follows the WebGL bufferData call. From the man page for bufferData:
+ * 
+ *     Specifies the expected usage pattern of the data store. The symbolic 
+ *     constant must be STREAM_DRAW, STATIC_DRAW, or DYNAMIC_DRAW.
+ * 
+ *   keep_array tells Facet.attribute_buffer to keep a copy of the buffer in 
+ *   Javascript. This will be stored in the returned object, in the "array" 
+ *   property.
+ * 
+ *   stride: if stride is non-zero, WebGL will skip an arbitrary number of 
+ *   bytes per element. This is used to specify many different attributes which
+ *   share a single buffer (which gives memory locality advantages in some
+ *   GPU architectures). stride uses *bytes* as units, so be aware of datatype
+ *   conversions.
+ * 
+ *   offset: gives the offset into the buffer at which to access the data,
+ *   again used to specify different attributes sharing a single buffer.
+ *   offset uses *bytes* as units, so be aware of datatype conversions.
+ * 
+ * 
+ * Example usage:
+ * 
+ *   // associate three 32-bit floating-point values with each vertex
+ *   var position_attribute = Facet.attribute_buffer({
+ *       vertex_array: [1,0,0, 0,1,0, 1,0,0],
+ *       // item_size: 3 is the default
+ *       // item_type: 'float' is the default
+ *   })
+ * 
+ *   // associate four 8-bit unsigned bytes with each vertex
+ *   var color_attribute = Facet.attribute_buffer({
+ *       vertex_array: [1,0,0,1, 1,1,0,1, 1,1,1,1],
+ *       item_size: 4,
+ *       item_type: 'ubyte', // the default item_type is 'float'
+ *       normalized: true // when 
+ *   });
+ *   ...
+ * 
+ *   var triangle = Facet.model({
+ *       type: 'triangles',
+ *       position: position_attribute,
+ *       color: color_attribute
+ *   })
+ */
+
 Facet.attribute_buffer = function(opts)
 {
     var ctx = Facet._globals.ctx;
@@ -3281,36 +3350,61 @@ Facet.attribute_buffer = function(opts)
     }
 
     var result = ctx.createBuffer();
-    result._ctx = ctx;
-    result._shade_type = 'attribute_buffer';
     result.itemSize = itemSize;
     result.usage = usage;
     result.normalized = normalized;
+    result._ctx = ctx;
+    result._shade_type = 'attribute_buffer';
     result._webgl_type = itemType.webgl_enum;
     result._typed_array_ctor = itemType.typed_array_ctor;
     result._word_length = itemType.size;
+    result._item_byte_length = opts.stride || itemType.size * itemSize;
 
     result.set = function(vertex_array) {
+        var typedArray;
         Facet.set_context(ctx);
         if (vertex_array.length % itemSize !== 0) {
             throw "length of array must be multiple of item_size";
         }
-        var typedArray;
-        // FIXME this might be brittle, but I don't know a better way
-        if (vertex_array.constructor.name === 'Array') {
+        // FIXME this might be brittle, but I don't know of a better way
+
+        if (vertex_array.constructor === Array) {
+            if (vertex_array.length % itemSize) {
+                throw "set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + vertex_array.length + " instead.";
+            }
             typedArray = new this._typed_array_ctor(vertex_array);
-        } else {
-            if (vertex_array.constructor !== this._typed_array_ctor) {
-                throw "Facet.attribute_buffer.set requires either a plain list or a typed array of the right type";
+            ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+            ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+            this.numItems = vertex_array.length/itemSize;
+        } else if (vertex_array.constructor === ArrayBuffer) {
+            if (vertex_array.length % itemSize) {
+                throw "set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + vertex_array.length + " instead.";
             }
             typedArray = vertex_array;
-        }
+            ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+            ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+            this.numItems = vertex_array.length/itemSize;
+        } else if (vertex_array.constructor === this._typed_array_ctor) {
+            if (vertex_array.length % this._item_byte_length) {
+                throw "set: attribute_buffer expected length to be a multiple of " + 
+                    this._item_byte_length + ", got " + vertex_array.length + " instead.";
+            }
+            typedArray = vertex_array;
+            ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+            ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+            this.numItems = vertex_array.length/this._item_byte_length;
+        } else
+            throw "Facet.attribute_buffer.set requires a plain list, an ArrayBuffer, or a typed array of the right type";
+
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+        this.numItems = vertex_array.length/itemSize;
+
         if (opts.keep_array) {
             this.array = typedArray;
         }
-        this.numItems = vertex_array.length/itemSize;
     };
     result.set(vertex_array);
 
