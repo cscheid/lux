@@ -3817,6 +3817,20 @@ function initialize_context_globals(gl)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+function polyfill_event(event, gl)
+{
+    // polyfill event.offsetX and offsetY in Firefox,
+    // according to http://bugs.jquery.com/ticket/8523
+    if(typeof event.offsetX === "undefined" || typeof event.offsetY === "undefined") {
+        var targetOffset = $(event.target).offset();
+        event.offsetX = event.pageX - targetOffset.left;
+        event.offsetY = event.pageY - targetOffset.top;
+    }
+    
+    event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
+    event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
+}
+
 Facet.init = function(canvas, opts)
 {
     canvas.unselectable = true;
@@ -3905,20 +3919,19 @@ Facet.init = function(canvas, opts)
             if (!_.isUndefined(listener)) {
                 (function(listener) {
                     function internal_listener(event) {
-                        if (_.isUndefined(event.offsetX)) {
-			    event.offsetX = event.pageX - event.target.offsetLeft;
-			    event.offsetY = event.pageY - event.target.offsetTop;
-                        }
-                        event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
-                        event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
+                        polyfill_event(event, gl);
                         return listener(event);
                     }
                     canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
                 })(listener);
             }
         }
+        
         if (!_.isUndefined(opts.mousewheel)) {
-            $(canvas).bind('mousewheel', opts.mousewheel);
+            $(canvas).bind('mousewheel', function(event, delta, deltaX, deltaY) {
+                polyfill_event(event, gl);
+                return opts.mousewheel(event, delta, deltaX, deltaY);
+            });
         };
 
         var ext;
@@ -5277,6 +5290,7 @@ Facet.UI.center_zoom_interactor = function(opts)
 {
     opts = _.defaults(opts, {
         mousemove: function() {},
+        mouseup: function() {},
         mousedown: function() {},
         mousewheel: function() {},
         center: vec.make([0,0]),
@@ -5289,14 +5303,24 @@ Facet.UI.center_zoom_interactor = function(opts)
     var center = Shade.parameter("vec2", opts.center);
     var zoom = Shade.parameter("float", opts.zoom);
     var prev_mouse_pos;
+    var current_button = 0;
 
     function mousedown(event) {
-        if (_.isUndefined(event.offsetX)) {
-	    event.offsetX = event.pageX - event.target.offsetLeft;
-	    event.offsetY = event.pageY - event.target.offsetTop;
+        if (_.isUndefined(event.buttons)) {
+            // webkit
+            current_button = event.which;
+        } else {
+            // firefox
+            current_button = event.buttons;
         }
+
         prev_mouse_pos = [event.offsetX, event.offsetY];
         opts.mousedown(event);
+    }
+
+    function mouseup(event) {
+        current_button = 0;
+        opts.mouseup(event);
     }
 
     // c stores the compensation for the kahan compensated sum
@@ -5314,19 +5338,10 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     function mousemove(event) {
-        if (_.isUndefined(event.offsetX)) {
-	    event.offsetX = event.pageX - event.target.offsetLeft;
-	    event.offsetY = event.pageY - event.target.offsetTop;
-        }
-
-        // FIXME event.which vs event.buttons
-	// DAVID HACK
-	var button1 = ('buttons' in event) ? (event.buttons & 1): (event.which == 1);
-
-        if ((event.which & 1) && !event.shiftKey) {
+        if ((current_button & 1) && !event.shiftKey) {
             internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
             Facet.Scene.invalidate();
-        } else if ((event.which & 1) && event.shiftKey) {
+        } else if ((current_button & 1) && event.shiftKey) {
             zoom.set(Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240)));
             Facet.Scene.invalidate();
         }
@@ -5335,11 +5350,7 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     // FIXME mousewheel madness
-    function mousewheel(event,delta,deltaX,deltaY) {
-	if (!event.offsetX) {
-	    event.offsetX = event.pageX - event.target.offsetLeft;
-	    event.offsetY = event.pageY - event.target.offsetTop;
-	}
+    function mousewheel(event, delta, deltaX, deltaY) {
         internal_move(width/2-event.offsetX, height/2-event.offsetY);
 	var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + deltaY/10));
         // var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
@@ -5427,6 +5438,7 @@ Facet.UI.center_zoom_interactor = function(opts)
 
         events: {
             mousedown: mousedown,
+            mouseup: mouseup,
             mousemove: mousemove,
             mousewheel: mousewheel
         }
