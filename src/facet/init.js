@@ -35,6 +35,20 @@ function initialize_context_globals(gl)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+function polyfill_event(event, gl)
+{
+    // polyfill event.offsetX and offsetY in Firefox,
+    // according to http://bugs.jquery.com/ticket/8523
+    if(typeof event.offsetX === "undefined" || typeof event.offsetY === "undefined") {
+        var targetOffset = $(event.target).offset();
+        event.offsetX = event.pageX - targetOffset.left;
+        event.offsetY = event.pageY - targetOffset.top;
+    }
+    
+    event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
+    event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
+}
+
 Facet.init = function(canvas, opts)
 {
     canvas.unselectable = true;
@@ -123,20 +137,19 @@ Facet.init = function(canvas, opts)
             if (!_.isUndefined(listener)) {
                 (function(listener) {
                     function internal_listener(event) {
-                        if (_.isUndefined(event.offsetX)) {
-			    event.offsetX = event.pageX - event.target.offsetLeft;
-			    event.offsetY = event.pageY - event.target.offsetTop;
-                        }
-                        event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
-                        event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
+                        polyfill_event(event, gl);
                         return listener(event);
                     }
                     canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
                 })(listener);
             }
         }
+        
         if (!_.isUndefined(opts.mousewheel)) {
-            $(canvas).bind('mousewheel', opts.mousewheel);
+            $(canvas).bind('mousewheel', function(event, delta, deltaX, deltaY) {
+                polyfill_event(event, gl);
+                return opts.mousewheel(event, delta, deltaX, deltaY);
+            });
         };
 
         var ext;
