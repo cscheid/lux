@@ -31,12 +31,11 @@ $().ready(function () {
         return Shade.ifelse(xor(x_even, y_even), c1, c2);
     }
     Facet.Net.json("opensans.regular.json", function(font) {
-        Facet.Scene.add(Facet.Text.string_batch({
+        Facet.Scene.add(Facet.Text.outline({
             string: "The quick brown fox jumps\nover the lazy dog.\nFive boxing wizards\njump quickly.",
             font: font,
             position: function(p) { return interactor.camera(p); },
             color: function(p) { 
-                // return Shade.color("black");
                 return checkerboard_pattern(Shade.color("red"), Shade.color("black"));
             }
         }));

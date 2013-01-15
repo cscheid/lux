@@ -1,7 +1,5 @@
 The Big List of Facet TODOs
 
-* Text support
-** rename string_batch to outline_batch or something like that
 * etc
 ** TODO attribute and element buffers
 There currently is an API mismatch between attribute buffers and element
@@ -25,6 +23,10 @@ with the memoization infrastructure unless I am careful.
 ** Documentation fixes
 ** FIXME inconsistency translation facet shade
 * Optimizer
+** TODO ternary op performance fixes.
+Right now the algorithm in place is correct, but conservative. Ideally,
+I will want to propagate BDDs up the expression tree and check them
+
 ** TODO Common subexpression elimination
     
   Without relying on the AST, that is.
@@ -72,13 +74,8 @@ Shade.make when passing functions.
 
 * Documentation
 ** TODO NeHe Lessons
-** TODO Change lesson2.html to reflect camera class.
 ** TODO We need a "pitfalls". For example, zoom.get() vs. zoom...
 * Expressions
-** TODO ternary op performance fixes.
-Right now the algorithm in place is correct, but conservative. Ideally,
-I will want to propagate BDDs up the expression tree and check them
-
 ** TODO precision declarations
 
 * Rendering

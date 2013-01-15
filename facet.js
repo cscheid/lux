@@ -3235,6 +3235,75 @@ function facet_typeOf(value)
     }
     return s;
 }
+/*
+ * Facet.attribute_buffer creates the structures necessary for Facet to handle 
+ * per-vertex data.
+ * 
+ * Typically these will be vertex positions, normals, texture coordinates, 
+ * colors, etc.
+ * 
+ * options: 
+ * 
+ *   vertex_array is the data array to be used. It must be one of the following 
+ *     datatypes:
+ * 
+ *     - a javascript array of values, (which will be converted to a typed array
+ *     of the appropriate type)
+ * 
+ *     - a typed array whose type matches the passed type below
+ * 
+ *     - an ArrayBuffer of the appropriate size
+ * 
+ *   item_size is the number of elements to be associated with each vertex
+ * 
+ *   item_type is the data type of each element. Default is 'float', for
+ *     IEEE 754 32-bit floating point numbers.
+ * 
+ *   usage follows the WebGL bufferData call. From the man page for bufferData:
+ * 
+ *     Specifies the expected usage pattern of the data store. The symbolic 
+ *     constant must be STREAM_DRAW, STATIC_DRAW, or DYNAMIC_DRAW.
+ * 
+ *   keep_array tells Facet.attribute_buffer to keep a copy of the buffer in 
+ *   Javascript. This will be stored in the returned object, in the "array" 
+ *   property.
+ * 
+ *   stride: if stride is non-zero, WebGL will skip an arbitrary number of 
+ *   bytes per element. This is used to specify many different attributes which
+ *   share a single buffer (which gives memory locality advantages in some
+ *   GPU architectures). stride uses *bytes* as units, so be aware of datatype
+ *   conversions.
+ * 
+ *   offset: gives the offset into the buffer at which to access the data,
+ *   again used to specify different attributes sharing a single buffer.
+ *   offset uses *bytes* as units, so be aware of datatype conversions.
+ * 
+ * 
+ * Example usage:
+ * 
+ *   // associate three 32-bit floating-point values with each vertex
+ *   var position_attribute = Facet.attribute_buffer({
+ *       vertex_array: [1,0,0, 0,1,0, 1,0,0],
+ *       // item_size: 3 is the default
+ *       // item_type: 'float' is the default
+ *   })
+ * 
+ *   // associate four 8-bit unsigned bytes with each vertex
+ *   var color_attribute = Facet.attribute_buffer({
+ *       vertex_array: [1,0,0,1, 1,1,0,1, 1,1,1,1],
+ *       item_size: 4,
+ *       item_type: 'ubyte', // the default item_type is 'float'
+ *       normalized: true // when 
+ *   });
+ *   ...
+ * 
+ *   var triangle = Facet.model({
+ *       type: 'triangles',
+ *       position: position_attribute,
+ *       color: color_attribute
+ *   })
+ */
+
 Facet.attribute_buffer = function(opts)
 {
     var ctx = Facet._globals.ctx;
@@ -3281,36 +3350,61 @@ Facet.attribute_buffer = function(opts)
     }
 
     var result = ctx.createBuffer();
-    result._ctx = ctx;
-    result._shade_type = 'attribute_buffer';
     result.itemSize = itemSize;
     result.usage = usage;
     result.normalized = normalized;
+    result._ctx = ctx;
+    result._shade_type = 'attribute_buffer';
     result._webgl_type = itemType.webgl_enum;
     result._typed_array_ctor = itemType.typed_array_ctor;
     result._word_length = itemType.size;
+    result._item_byte_length = opts.stride || itemType.size * itemSize;
 
     result.set = function(vertex_array) {
+        var typedArray;
         Facet.set_context(ctx);
         if (vertex_array.length % itemSize !== 0) {
             throw "length of array must be multiple of item_size";
         }
-        var typedArray;
-        // FIXME this might be brittle, but I don't know a better way
-        if (vertex_array.constructor.name === 'Array') {
+        // FIXME this might be brittle, but I don't know of a better way
+
+        if (vertex_array.constructor === Array) {
+            if (vertex_array.length % itemSize) {
+                throw "set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + vertex_array.length + " instead.";
+            }
             typedArray = new this._typed_array_ctor(vertex_array);
-        } else {
-            if (vertex_array.constructor !== this._typed_array_ctor) {
-                throw "Facet.attribute_buffer.set requires either a plain list or a typed array of the right type";
+            ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+            ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+            this.numItems = vertex_array.length/itemSize;
+        } else if (vertex_array.constructor === ArrayBuffer) {
+            if (vertex_array.length % itemSize) {
+                throw "set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + vertex_array.length + " instead.";
             }
             typedArray = vertex_array;
-        }
+            ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+            ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+            this.numItems = vertex_array.length/itemSize;
+        } else if (vertex_array.constructor === this._typed_array_ctor) {
+            if (vertex_array.length % this._item_byte_length) {
+                throw "set: attribute_buffer expected length to be a multiple of " + 
+                    this._item_byte_length + ", got " + vertex_array.length + " instead.";
+            }
+            typedArray = vertex_array;
+            ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
+            ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+            this.numItems = vertex_array.length/this._item_byte_length;
+        } else
+            throw "Facet.attribute_buffer.set requires a plain list, an ArrayBuffer, or a typed array of the right type";
+
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+        this.numItems = vertex_array.length/itemSize;
+
         if (opts.keep_array) {
             this.array = typedArray;
         }
-        this.numItems = vertex_array.length/itemSize;
     };
     result.set(vertex_array);
 
@@ -3817,6 +3911,20 @@ function initialize_context_globals(gl)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+function polyfill_event(event, gl)
+{
+    // polyfill event.offsetX and offsetY in Firefox,
+    // according to http://bugs.jquery.com/ticket/8523
+    if(typeof event.offsetX === "undefined" || typeof event.offsetY === "undefined") {
+        var targetOffset = $(event.target).offset();
+        event.offsetX = event.pageX - targetOffset.left;
+        event.offsetY = event.pageY - targetOffset.top;
+    }
+    
+    event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
+    event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
+}
+
 Facet.init = function(canvas, opts)
 {
     canvas.unselectable = true;
@@ -3905,20 +4013,19 @@ Facet.init = function(canvas, opts)
             if (!_.isUndefined(listener)) {
                 (function(listener) {
                     function internal_listener(event) {
-                        if (_.isUndefined(event.offsetX)) {
-			    event.offsetX = event.pageX - event.target.offsetLeft;
-			    event.offsetY = event.pageY - event.target.offsetTop;
-                        }
-                        event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
-                        event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
+                        polyfill_event(event, gl);
                         return listener(event);
                     }
                     canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
                 })(listener);
             }
         }
+        
         if (!_.isUndefined(opts.mousewheel)) {
-            $(canvas).bind('mousewheel', opts.mousewheel);
+            $(canvas).bind('mousewheel', function(event, delta, deltaX, deltaY) {
+                polyfill_event(event, gl);
+                return opts.mousewheel(event, delta, deltaX, deltaY);
+            });
         };
 
         var ext;
@@ -3931,7 +4038,7 @@ Facet.init = function(canvas, opts)
                       "Facet will not work, sorry.");
                 throw "insufficient GPU support";
             } else {
-                console.log(ext, gl.getExtension(ext));
+                gl.getExtension(ext); // must call this to enable extension
             }
         });
     } catch(e) {
@@ -5277,6 +5384,7 @@ Facet.UI.center_zoom_interactor = function(opts)
 {
     opts = _.defaults(opts, {
         mousemove: function() {},
+        mouseup: function() {},
         mousedown: function() {},
         mousewheel: function() {},
         center: vec.make([0,0]),
@@ -5289,14 +5397,24 @@ Facet.UI.center_zoom_interactor = function(opts)
     var center = Shade.parameter("vec2", opts.center);
     var zoom = Shade.parameter("float", opts.zoom);
     var prev_mouse_pos;
+    var current_button = 0;
 
     function mousedown(event) {
-        if (_.isUndefined(event.offsetX)) {
-	    event.offsetX = event.pageX - event.target.offsetLeft;
-	    event.offsetY = event.pageY - event.target.offsetTop;
+        if (_.isUndefined(event.buttons)) {
+            // webkit
+            current_button = event.which;
+        } else {
+            // firefox
+            current_button = event.buttons;
         }
+
         prev_mouse_pos = [event.offsetX, event.offsetY];
         opts.mousedown(event);
+    }
+
+    function mouseup(event) {
+        current_button = 0;
+        opts.mouseup(event);
     }
 
     // c stores the compensation for the kahan compensated sum
@@ -5314,19 +5432,10 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     function mousemove(event) {
-        if (_.isUndefined(event.offsetX)) {
-	    event.offsetX = event.pageX - event.target.offsetLeft;
-	    event.offsetY = event.pageY - event.target.offsetTop;
-        }
-
-        // FIXME event.which vs event.buttons
-	// DAVID HACK
-	var button1 = ('buttons' in event) ? (event.buttons & 1): (event.which == 1);
-
-        if ((event.which & 1) && !event.shiftKey) {
+        if ((current_button & 1) && !event.shiftKey) {
             internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
             Facet.Scene.invalidate();
-        } else if ((event.which & 1) && event.shiftKey) {
+        } else if ((current_button & 1) && event.shiftKey) {
             zoom.set(Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240)));
             Facet.Scene.invalidate();
         }
@@ -5335,11 +5444,7 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     // FIXME mousewheel madness
-    function mousewheel(event,delta,deltaX,deltaY) {
-	if (!event.offsetX) {
-	    event.offsetX = event.pageX - event.target.offsetLeft;
-	    event.offsetY = event.pageY - event.target.offsetTop;
-	}
+    function mousewheel(event, delta, deltaX, deltaY) {
         internal_move(width/2-event.offsetX, height/2-event.offsetY);
 	var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + deltaY/10));
         // var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
@@ -5427,6 +5532,7 @@ Facet.UI.center_zoom_interactor = function(opts)
 
         events: {
             mousedown: mousedown,
+            mouseup: mouseup,
             mousemove: mousemove,
             mousewheel: mousewheel
         }
@@ -12807,7 +12913,7 @@ function glyph_to_model(glyph)
     return glyph._model;
 }
 
-Facet.Text.string_batch = function(opts) {
+Facet.Text.outline = function(opts) {
     var old_opts = opts;
     if (opts.batch) {
         return opts.batch;
@@ -12820,7 +12926,7 @@ Facet.Text.string_batch = function(opts) {
         color: function(pos) { return Shade.color("white"); }
     });
     if (_.isUndefined(opts.font)) {
-        throw "string_batch requires font parameter";
+        throw "outline requires font parameter";
     }
     var batch = loop_blinn_batch(opts);
     old_opts.batch = batch;
@@ -12844,7 +12950,7 @@ Facet.Text.string_batch = function(opts) {
             case "right": return -advance;
             case "center": return -advance/2;
             default:
-                throw "Facet.Text.string_batch.align must be one of 'left', 'center' or 'right'";
+                throw "align must be one of 'left', 'center' or 'right'";
             }
         },
         // vertical_alignment_offset: function() {
@@ -12853,7 +12959,7 @@ Facet.Text.string_batch = function(opts) {
         //     case "middle": return -opts.font.lineHeight/2;
         //     case "top": return -opts.font.lineHeight;
         //         default:
-        //         throw "Facet.Text.string_batch.vertical_align must be one of 'baseline', 'middle' or 'top'";
+        //         throw "vertical_align must be one of 'baseline', 'middle' or 'top'";
         //     };
         // },
         draw: function() {
@@ -12955,7 +13061,7 @@ function glyph_to_model(glyph, font)
     return glyph._model;
 }
 
-Facet.Text.texture_batch = function(opts) {
+Facet.Text.texture = function(opts) {
     var old_opts = opts;
     if (!_.isUndefined(opts.batch)) {
         return opts.batch;
@@ -12970,7 +13076,7 @@ Facet.Text.texture_batch = function(opts) {
     });
 
     if (_.isUndefined(opts.font)) {
-        throw "texture_batch requires font parameter";
+        throw "Facet.Text.texture requires font parameter";
     }
 
     var batch = {};
@@ -13008,7 +13114,7 @@ Facet.Text.texture_batch = function(opts) {
             case "right": return -advance;
             case "center": return -advance/2;
             default:
-                throw "Facet.Text.texture_batch.align must be one of 'left', 'center' or 'right'";
+                throw "align must be one of 'left', 'center' or 'right'";
             }
         },
         draw: function() {

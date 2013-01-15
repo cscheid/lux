@@ -16,6 +16,7 @@ Facet.UI.center_zoom_interactor = function(opts)
 {
     opts = _.defaults(opts, {
         mousemove: function() {},
+        mouseup: function() {},
         mousedown: function() {},
         mousewheel: function() {},
         center: vec.make([0,0]),
@@ -28,14 +29,24 @@ Facet.UI.center_zoom_interactor = function(opts)
     var center = Shade.parameter("vec2", opts.center);
     var zoom = Shade.parameter("float", opts.zoom);
     var prev_mouse_pos;
+    var current_button = 0;
 
     function mousedown(event) {
-        if (_.isUndefined(event.offsetX)) {
-	    event.offsetX = event.pageX - event.target.offsetLeft;
-	    event.offsetY = event.pageY - event.target.offsetTop;
+        if (_.isUndefined(event.buttons)) {
+            // webkit
+            current_button = event.which;
+        } else {
+            // firefox
+            current_button = event.buttons;
         }
+
         prev_mouse_pos = [event.offsetX, event.offsetY];
         opts.mousedown(event);
+    }
+
+    function mouseup(event) {
+        current_button = 0;
+        opts.mouseup(event);
     }
 
     // c stores the compensation for the kahan compensated sum
@@ -53,19 +64,10 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     function mousemove(event) {
-        if (_.isUndefined(event.offsetX)) {
-	    event.offsetX = event.pageX - event.target.offsetLeft;
-	    event.offsetY = event.pageY - event.target.offsetTop;
-        }
-
-        // FIXME event.which vs event.buttons
-	// DAVID HACK
-	var button1 = ('buttons' in event) ? (event.buttons & 1): (event.which == 1);
-
-        if ((event.which & 1) && !event.shiftKey) {
+        if ((current_button & 1) && !event.shiftKey) {
             internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
             Facet.Scene.invalidate();
-        } else if ((event.which & 1) && event.shiftKey) {
+        } else if ((current_button & 1) && event.shiftKey) {
             zoom.set(Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240)));
             Facet.Scene.invalidate();
         }
@@ -74,11 +76,7 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     // FIXME mousewheel madness
-    function mousewheel(event,delta,deltaX,deltaY) {
-	if (!event.offsetX) {
-	    event.offsetX = event.pageX - event.target.offsetLeft;
-	    event.offsetY = event.pageY - event.target.offsetTop;
-	}
+    function mousewheel(event, delta, deltaX, deltaY) {
         internal_move(width/2-event.offsetX, height/2-event.offsetY);
 	var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + deltaY/10));
         // var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
@@ -166,6 +164,7 @@ Facet.UI.center_zoom_interactor = function(opts)
 
         events: {
             mousedown: mousedown,
+            mouseup: mouseup,
             mousemove: mousemove,
             mousewheel: mousewheel
         }
