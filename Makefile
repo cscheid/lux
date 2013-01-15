@@ -34,7 +34,9 @@ facet.js:					\
 	src/linalg/mat.js			\
 	src/linalg/_end.js			\
 	src/typeinfo.js				\
+	src/facet/attribute_buffer_view.js	\
 	src/facet/attribute_buffer.js		\
+	src/facet/buffer.js			\
 	src/facet/bake.js			\
 	src/facet/batch_list.js			\
 	src/facet/conditional_batch.js		\
