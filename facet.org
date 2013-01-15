@@ -7,6 +7,7 @@ it's feasible and efficient to skip bind() calls for many
 attribute_buffer_views over the same Facet.buffer.
 
 * etc
+** TODO fix Fork me img on gh-pages
 ** TODO attribute and element buffers
 There currently is an API mismatch between attribute buffers and element
 buffers. I originally tried to make attribute and element buffers look
