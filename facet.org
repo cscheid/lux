@@ -1,5 +1,11 @@
 The Big List of Facet TODOs
 
+* TODO Reimplement set_region for the new attribute_buffer APIs
+* TODO bind() and attribute_buffer_view
+Now that Facet supports attribute_buffer_views, investigate whether
+it's feasible and efficient to skip bind() calls for many
+attribute_buffer_views over the same Facet.buffer.
+
 * etc
 ** TODO attribute and element buffers
 There currently is an API mismatch between attribute buffers and element
@@ -112,14 +118,6 @@ now)
 ** TODO Support for boolean vectors
 Part of it exists throughout Facet, but it's scattered and untested.
 ** TODO I really should have a matrix stack.
-** TODO There should be an API for strided attribute buffers.
-The advantage here is that I could get different attributes from a
-single bound array buffer. This would reduce the overhead of binding
-the different attributes when switching state.
-
-The main difficulty is that I currently
-assume a one-to-one relationship between array buffers and attributes
-throughout the API.
 ** TODO Fix inconsistent case conventions between Shade and GLSL
 The way to do this is to *add* underscore_equivalents of the GLSL ugly
 camelCase functions. This way, people familiar with GLSL can use them,
