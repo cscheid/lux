@@ -5,9 +5,6 @@
      n_rows (integer): number of rows in the 2D array of data
      elements (array, Float32Array): list of elements in the array
 
-s parameters a list of floating point elements
-   (or a Float32Array), the number of columns and rows in the implied 2D array of data
-
    and returns an object with four fields:
 
    n_cols (integer): number of columns in the data
