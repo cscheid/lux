@@ -4682,7 +4682,6 @@ Facet.texture = function(opts)
                 var ctx = texture._ctx;
                 Facet.set_context(texture._ctx);
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
-                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
                 if (_.isUndefined(opts.buffer)) {
                     if (x_offset !== 0 || y_offset !== 0) {
                         throw "texture.load cannot be called with nonzero offsets and no data";
@@ -5220,9 +5219,6 @@ Facet.Data.texture_table = function(table)
      n_cols (integer): number of columns in the 2D array of data
      n_rows (integer): number of rows in the 2D array of data
      elements (array, Float32Array): list of elements in the array
-
-s parameters a list of floating point elements
-   (or a Float32Array), the number of columns and rows in the implied 2D array of data
 
    and returns an object with four fields:
 
