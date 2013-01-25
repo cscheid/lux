@@ -5,7 +5,7 @@ Shade.Utils.fit = function(data) {
     // this makes float attribute buffers work, but it might be confusing to the
     // user that there exist values v for which Shade.Utils.fit(v) works,
     // but Shade.Utils.fit(Shade.make(v)) does not
-    var t = data._shade_type; 
+    var t = data._shade_type;
     if (t === 'attribute_buffer') {
         if (data.itemSize !== 1)
             throw "only dimension-1 attribute buffers are supported";
@@ -15,5 +15,6 @@ Shade.Utils.fit = function(data) {
     }
 
     var min = _.min(data), max = _.max(data);
-    return Shade.Utils.linear(min, max, 0, 1);
+    return Shade.Scale.linear({domain: [min, max]},
+                              {range: [0, 1]});
 };
