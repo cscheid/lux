@@ -128,7 +128,6 @@ Facet.texture = function(opts)
                 var ctx = texture._ctx;
                 Facet.set_context(texture._ctx);
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
-                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
                 if (_.isUndefined(opts.buffer)) {
                     if (x_offset !== 0 || y_offset !== 0) {
                         throw "texture.load cannot be called with nonzero offsets and no data";
