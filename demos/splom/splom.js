@@ -131,8 +131,9 @@ function init_webgl()
                     scatterplot_batch.draw();
                 }
             }
-            if (has_selection.get())
+            if (has_selection.get()) {
                 selection_rect.draw();
+            }
         }
     });
 }
