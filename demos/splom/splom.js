@@ -143,8 +143,8 @@ $().ready(function() {
         clearColor: [0, 0, 0, 0],
         mousemove: function(event) {
             if (is_selecting) {
-                var u = (event.facetX / 800 * 4);
-                var v = (event.facetY / 800 * 4);
+                var u = (event.facetX / gl.viewportWidth * 4);
+                var v = (event.facetY / gl.viewportHeight * 4);
                 var col = Math.floor(u);
                 var row = Math.floor(v);
 
@@ -161,8 +161,8 @@ $().ready(function() {
         },
         mousedown: function(event) {
             canvas.style.cursor = "crosshair";
-            var u = (event.facetX / 800 * 4);
-            var v = (event.facetY / 800 * 4);
+            var u = (event.facetX / gl.viewportWidth * 4);
+            var v = (event.facetY / gl.viewportHeight * 4);
             var col = Math.floor(u);
             var row = Math.floor(v);
 
