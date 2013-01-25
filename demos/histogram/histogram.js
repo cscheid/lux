@@ -43,8 +43,8 @@ function histo_buffer(opts)
         return Shade.vec(map(xy), 0, 1);
     }
 
-    var convert_batch = render_buffer.make_screen_batch(function(texel) {
-        return Shade.Bits.encode_float(texel.r());
+    var convert_batch = render_buffer.make_screen_batch(function(texel_accessor) {
+        return Shade.Bits.encode_float(texel_accessor().r());
     });
     
     var batch = Facet.bake({
