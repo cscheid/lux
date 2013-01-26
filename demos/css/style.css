@@ -100,7 +100,7 @@ p {
     margin: 0
 }
 .keyword {
-    font-size: 1.1em;
+    font-size: 15px;
     font-weight: 300;
 /*     color: rgb(255, 160, 100); */
     font-family: monospace;

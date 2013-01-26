@@ -34,13 +34,13 @@ $().ready(function () {
     var is_screen_right = Shade.fragCoord().x().gt(gl.parameters.width.div(2));
 
     Facet.Net.json("opensans.regular.json", function(font) {
-        Facet.Scene.add(Facet.Text.texture_batch({
+        Facet.Scene.add(Facet.Text.texture({
             string: "The quick brown fox jumps\nover the lazy dog.\nFive boxing wizards\njump quickly.",
             font: font,
             size: 0.1,
             compensate_blur: is_screen_right,
             position: function(p) { return interactor.camera(p); },
-            color: function(p) { return is_screen_right.ifelse(Shade.color("red"), Shade.color("cyan")); }
+            color: function(p) { return is_screen_right.ifelse(Shade.color("teal"), Shade.color("#ff8080")); }
         }));
     });
 });

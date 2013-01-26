@@ -246,7 +246,7 @@ var glValidEnumContexts = {
   // Culling
 
   'cullFace': { 0:true },
-  'frontFace': { 0:true },
+  'frontFace': { 0:true }
 };
 
 /**
@@ -1022,14 +1022,14 @@ var vec2 = {};
 vec2.create = function()
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     return result;
 };
 
 vec2.copy = function(vec)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0];
     result[1] = vec[1];
     return result;
@@ -1064,7 +1064,7 @@ vec2.set = function(dest, vec)
 vec2.plus = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     return result;
@@ -1080,7 +1080,7 @@ vec2.add = function(dest, other)
 vec2.minus = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     return result;
@@ -1096,7 +1096,7 @@ vec2.subtract = function(dest, other)
 vec2.negative = function(v)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = -v[0];
     result[1] = -v[1];
     return result;
@@ -1112,7 +1112,7 @@ vec2.negate = function(dest)
 vec2.scaling = function(vec, val)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     return result;
@@ -1128,7 +1128,7 @@ vec2.scale = function(dest, val)
 vec2.schur_product = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     return result;
@@ -1144,7 +1144,7 @@ vec2.schur_multiply = function(dest, other)
 vec2.normalized = function(vec)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1];
     var len = Math.sqrt(x*x + y*y);
     if (!len)
@@ -1202,14 +1202,14 @@ var vec3 = {};
 vec3.create = function()
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     return result;
 };
 
 vec3.copy = function(vec)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0];
     result[1] = vec[1];
     result[2] = vec[2];
@@ -1247,7 +1247,7 @@ vec3.set = function(dest, vec)
 vec3.plus = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     result[2] = v1[2] + v2[2];
@@ -1265,7 +1265,7 @@ vec3.add = function(dest, other)
 vec3.minus = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     result[2] = v1[2] - v2[2];
@@ -1283,7 +1283,7 @@ vec3.subtract = function(dest, other)
 vec3.negative = function(v)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = -v[0];
     result[1] = -v[1];
     result[2] = -v[2];
@@ -1301,7 +1301,7 @@ vec3.negate = function(dest)
 vec3.scaling = function(vec, val)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     result[2] = vec[2]*val;
@@ -1319,7 +1319,7 @@ vec3.scale = function(dest, val)
 vec3.schur_product = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     result[2] = v1[2] * v2[2];
@@ -1337,7 +1337,7 @@ vec3.schur_multiply = function(dest, other)
 vec3.normalized = function(vec)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1], z = vec[2];
     var len = Math.sqrt(x*x + y*y + z*z);
     if (!len)
@@ -1373,7 +1373,7 @@ vec3.cross = function(v1, v2)
     var x1 = v1[0], y1 = v1[1], z1 = v1[2];
     var x2 = v2[0], y2 = v2[1], z2 = v2[2];
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = y1 * z2 - z1 * y2;
     result[1] = z1 * x2 - x1 * z2;
     result[2] = x1 * y2 - y1 * x2;
@@ -1410,14 +1410,14 @@ var vec4 = {};
 vec4.create = function()
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     return result;
 };
 
 vec4.copy = function(vec)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0];
     result[1] = vec[1];
     result[2] = vec[2];
@@ -1457,7 +1457,7 @@ vec4.set = function(dest, vec)
 vec4.plus = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     result[2] = v1[2] + v2[2];
@@ -1477,7 +1477,7 @@ vec4.add = function(dest, other)
 vec4.minus = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     result[2] = v1[2] - v2[2];
@@ -1497,7 +1497,7 @@ vec4.subtract = function(dest, other)
 vec4.negative = function(v)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = -v[0];
     result[1] = -v[1];
     result[2] = -v[2];
@@ -1517,7 +1517,7 @@ vec4.negate = function(dest)
 vec4.scaling = function(vec, val)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     result[2] = vec[2]*val;
@@ -1537,7 +1537,7 @@ vec4.scale = function(dest, val)
 vec4.schur_product = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     result[2] = v1[2] * v2[2];
@@ -1557,7 +1557,7 @@ vec4.schur_multiply = function(dest, other)
 vec4.normalized = function(vec)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     var len = Math.sqrt(x*x + y*y + z*z + w*w);
     if (!len)
@@ -1618,15 +1618,16 @@ var mat2 = {};
 
 mat2.create = function()
 {
+    debugger;
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
 mat2.copy = function(mat)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -1646,7 +1647,7 @@ mat2.equal = function(v1, v2)
 mat2.random = function()
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = Math.random();
     result[1] = Math.random();
     result[2] = Math.random();
@@ -1669,7 +1670,7 @@ var _identity = new Float32Array([1,0,0,1]);
 mat2.identity = function()
 {
     var result = new Float32Array(_identity);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
@@ -1683,7 +1684,7 @@ mat2.set_identity = function(mat)
 mat2.transpose = function(mat)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[2];
     result[2] = mat[1];
@@ -1716,7 +1717,7 @@ mat2.determinant = function(mat)
 mat2.inverse = function(mat)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 	
     var a00 = mat[0], a01 = mat[1];
     var a10 = mat[2], a11 = mat[3];
@@ -1755,7 +1756,7 @@ mat2.invert = function(mat)
 mat2.as_mat4 = function(mat)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0]  = mat[0];
     result[1]  = mat[1];
     result[4]  = mat[2];
@@ -1766,7 +1767,7 @@ mat2.as_mat4 = function(mat)
 mat2.as_mat3 = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[3] = mat[2];
@@ -1778,7 +1779,7 @@ mat2.as_mat3 = function(mat)
 mat2.product = function(m1, m2)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1];
@@ -1816,7 +1817,7 @@ mat2.multiply = function(dest, other)
 mat2.product_vec = function(mat, vec)
 {
     var result = new Float32Array(2);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1];
     result[0] = mat[0]*x + mat[2]*y;
     result[1] = mat[1]*x + mat[3]*y;
@@ -1856,14 +1857,14 @@ var mat3 = {};
 mat3.create = function()
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
 mat3.copy = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -1893,7 +1894,7 @@ mat3.equal = function(v1, v2)
 mat3.random = function()
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = Math.random();
     result[1] = Math.random();
     result[2] = Math.random();
@@ -1928,7 +1929,7 @@ var _identity = new Float32Array([1,0,0,
 mat3.identity = function()
 {
     var result = new Float32Array(_identity);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
@@ -1942,7 +1943,7 @@ mat3.set_identity = function(mat)
 mat3.transpose = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[3];
     result[2] = mat[6];
@@ -1995,7 +1996,7 @@ mat3.determinant = function(mat)
 mat3.inverse = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 
     var a00 = mat[0], a01 = mat[3], a02 = mat[6];
     var a10 = mat[1], a11 = mat[4], a12 = mat[7];
@@ -2050,7 +2051,7 @@ mat3.invert = function(mat)
 mat3.as_mat4 = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0]  = mat[0];
     result[1]  = mat[1];
     result[2]  = mat[2];
@@ -2066,7 +2067,7 @@ mat3.as_mat4 = function(mat)
 mat3.as_mat2 = function(mat)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[3];
@@ -2078,7 +2079,7 @@ mat3.as_mat2 = function(mat)
 mat3.product = function(m1, m2)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1],  a02 = m1[2];
@@ -2130,7 +2131,7 @@ mat3.multiply = function(dest, other)
 mat3.product_vec = function(mat, vec)
 {
     var result = new Float32Array(3);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1], z = vec[2];
     result[0] = mat[0]*x + mat[3]*y + mat[6]*z;
     result[1] = mat[1]*x + mat[4]*y + mat[7]*z;
@@ -2178,14 +2179,14 @@ var mat4 = {};
 mat4.create = function(mat)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
 mat4.copy = function(mat)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -2265,7 +2266,7 @@ var _identity = new Float32Array([1,0,0,0,
 mat4.identity = function()
 {
     var result = new Float32Array(_identity);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     return result;
 };
 
@@ -2279,7 +2280,7 @@ mat4.set_identity = function(mat)
 mat4.transpose = function(mat)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[4];
     result[2] = mat[8];
@@ -2359,7 +2360,7 @@ mat4.determinant = function(mat)
 mat4.inverse = function(mat)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 	
     var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3];
     var a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7];
@@ -2449,7 +2450,7 @@ mat4.invert = function(mat)
 mat4.as_mat3 = function(mat)
 {
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -2465,7 +2466,7 @@ mat4.as_mat3 = function(mat)
 mat4.as_mat2 = function(mat)
 {
     var result = new Float32Array(4);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[4];
@@ -2490,7 +2491,7 @@ mat4.as_inverse_transpose_mat3 = function(mat)
     if (!d) throw "singular matrix";
 
     var result = new Float32Array(9);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 	
     result[0] = b01/d;
     result[1] = (-a22*a01 + a02*a21)/d;
@@ -2509,7 +2510,7 @@ mat4.as_inverse_transpose_mat3 = function(mat)
 mat4.product = function(m1, m2)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1],  a02 = m1[2],  a03 = m1[3];
@@ -2579,7 +2580,7 @@ mat4.multiply = function(dest, other)
 mat4.product_vec = function(mat, vec)
 {
     var result = new Float32Array(4);
-    result._type = 'vector';
+    result.buffer._type = 'vector';
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     result[0] = mat[0]*x + mat[4]*y + mat[8]*z  + mat[12]*w;
     result[1] = mat[1]*x + mat[5]*y + mat[9]*z  + mat[13]*w;
@@ -2611,7 +2612,7 @@ mat4.multiply_vec3 = function(mat, vec)
 mat4.translation_of = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     var x = vec[0], y = vec[1], z = vec[2];
     var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3];
     var a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7];
@@ -2638,7 +2639,7 @@ mat4.translation_of = function(mat, vec)
 mat4.translation = function(vec)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     result[0] = result[5] = result[10] = result[15] = 1;    
     result[12] = vec[0];
     result[13] = vec[1];
@@ -2659,7 +2660,7 @@ mat4.translate = function(mat, vec)
 mat4.scaling_of = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     var x = vec[0], y = vec[1], z = vec[2];
     result[0] =  mat[0]  * x;
     result[1] =  mat[1]  * x;
@@ -2693,7 +2694,7 @@ mat4.scaling = function(mat, vec)
 mat4.scale = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     var x = vec[0], y = vec[1], z = vec[2];
     mat[0]  *= x;
     mat[1]  *= x;
@@ -2737,7 +2738,7 @@ mat4.rotation_of = function(mat, angle, axis)
     var b20 = x*z*t + y*s, b21 = y*z*t - x*s, b22 = z*z*t + c;
 
     var result = new Float32Array(16);    
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     
     // Perform rotation-specific matrix multiplication
     result[0]  = a00*b00 + a10*b01 + a20*b02;
@@ -2788,7 +2789,7 @@ mat4.rotation = function(angle, axis)
     var b20 = x*z*t + y*s, b21 = y*z*t - x*s, b22 = z*z*t + c;
 
     var result = new Float32Array(16);    
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     
     // Perform rotation-specific matrix multiplication
     result[0]  = x*x*t + c;
@@ -2856,7 +2857,7 @@ mat4.rotate = function(mat, angle, axis)
 mat4.frustum = function(left, right, bottom, top, near, far)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     var rl = (right - left);
     var tb = (top - bottom);
     var fn = (far - near);
@@ -2880,7 +2881,7 @@ mat4.perspective = function(fovy, aspect, near, far)
 mat4.ortho = function(left, right, bottom, top, near, far)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     var rl = (right - left);
     var tb = (top - bottom);
     var fn = (far - near);
@@ -2897,7 +2898,7 @@ mat4.ortho = function(left, right, bottom, top, near, far)
 mat4.lookAt = function(eye, center, up)
 {
     var result = new Float32Array(16);
-    result._type = 'matrix';
+    result.buffer._type = 'matrix';
     
     var eyex = eye[0],
     eyey = eye[1],
@@ -3190,8 +3191,13 @@ function facet_constant_type(obj)
     if (t === "boolean")         return "boolean";
     if (t === "number")          return "number";
     if (obj) {
-        t = obj._type;
-        if (!t)                      return "other";
+        var b = obj._type;
+        if (!_.isUndefined(b))
+            return b;
+        if (!_.isUndefined(obj.buffer) && obj.buffer._type)
+            return obj.buffer._type;
+        else
+            return "other";
     }
     return t;
 }
@@ -3229,27 +3235,33 @@ function facet_typeOf(value)
     }
     return s;
 }
-Facet.attribute_buffer = function(opts)
+/*
+ * Facet.attribute_buffer_view builds an attribute_buffer object from an
+ * Facet.buffer object, instead of an array (or typed array). The main
+ * use case for attribute_buffer_view is to allow one to build
+ * several attribute_buffer_views over the same Facet.buffer, for efficient
+ * strided attribute buffers (which share the same buffer)
+ * 
+ * The main difference between calling Facet.attribute_buffer_view and
+ * Facet.attribute_buffer is that attribute_buffer_view takes a "buffer"
+ * parameter instead of an "array" parameter.
+ * 
+ */
+
+Facet.attribute_buffer_view = function(opts)
 {
     var ctx = Facet._globals.ctx;
     opts = _.defaults(opts, {
         item_size: 3,
         item_type: 'float',
-        usage: ctx.STATIC_DRAW,
         normalized: false,
         keep_array: false,
         stride: 0,
         offset: 0
     });
 
-    var vertex_array = opts.vertex_array;
-    if (_.isUndefined(vertex_array)) {
-        throw "opts.vertex_array must be defined";
-    }
-
-    var usage = opts.usage;
-    if ([ctx.STATIC_DRAW, ctx.DYNAMIC_DRAW, ctx.STREAM_DRAW].indexOf(usage) === -1) {
-        throw "opts.usage must be one of STATIC_DRAW, DYNAMIC_DRAW, STREAM_DRAW";
+    if (_.isUndefined(opts.buffer)) {
+        throw "opts.buffer must be defined";
     }
 
     var itemSize = opts.item_size;
@@ -3269,79 +3281,245 @@ Facet.attribute_buffer = function(opts)
         'byte': { webgl_enum: ctx.BYTE, typed_array_ctor: Int8Array, size: 1 },
         'ubyte': { webgl_enum: ctx.UNSIGNED_BYTE, typed_array_ctor: Uint8Array, size: 1 }
     };
+
     var itemType = gl_enum_typed_array_map[opts.item_type];
     if (_.isUndefined(itemType)) {
         throw "opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'";
     }
 
+    function convert_array(array) {
+        var numItems;
+        if (array.constructor === Array) {
+            if (array.length % itemSize) {
+                throw "set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.";
+            }
+            array = new itemType.typed_array_ctor(array);
+        } else if (array.constructor === itemType._typed_array_ctor) {
+            if (array.length % itemSize) {
+                throw "set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.";
+            }
+        } else if (opts.vertex_array.constructor === ArrayBuffer) {
+            array = opts.vertex_array;
+        }
+        return array;
+    }
+
+    var result = {
+        buffer: opts.buffer,
+        itemSize: itemSize,
+        normalized: normalized,
+        numItems: opts.buffer.byteLength / (opts.stride || itemSize * itemType.size),
+        stride: opts.stride,
+        offset: opts.offset,
+        _ctx: ctx,
+        _shade_type: 'attribute_buffer',
+        _webgl_type: itemType.webgl_enum,
+        _typed_array_ctor: itemType.typed_array_ctor,
+        _word_length: itemType.size,
+        _item_byte_length: opts.stride || itemType.size * itemSize,
+        set: function(vertex_array) {
+            vertex_array = convert_array(vertex_array);
+            this.buffer.set(vertex_array);
+            this.numItems = this.buffer.byteLength / (this.stride || this.itemSize * this._word_length);
+            if (opts.keep_array) {
+                this.array = this.buffer.array;
+            }
+        },
+        set_region: function() {
+            throw "currently unimplemented";
+        },
+        //////////////////////////////////////////////////////////////////////
+        // These methods are only for internal use within Facet
+        bind: function(attribute) {
+            Facet.set_context(ctx);
+            ctx.bindBuffer(ctx.ARRAY_BUFFER, this.buffer);
+            ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, this.stride, this.offset);
+        },
+        draw: function(primitive) {
+            Facet.set_context(ctx);
+            ctx.drawArrays(primitive, 0, this.numItems);
+        },
+        bind_and_draw: function(attribute, primitive) {
+            // here we inline the calls to bind and draw to shave a redundant set_context.
+            Facet.set_context(ctx);
+            ctx.bindBuffer(ctx.ARRAY_BUFFER, this.buffer);
+            ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, this.stride, this.offset);
+            ctx.drawArrays(primitive, 0, this.numItems);
+        }
+    };
+    if (opts.keep_array)
+        result.array = result.buffer.array;
+    return result;
+};
+// /*
+//  * Facet.attribute_buffer creates the structures necessary for Facet to handle 
+//  * per-vertex data.
+//  * 
+//  * Typically these will be vertex positions, normals, texture coordinates, 
+//  * colors, etc.
+//  * 
+//  * options: 
+//  * 
+//  *   vertex_array is the data array to be used. It must be one of the following 
+//  *     datatypes:
+//  * 
+//  *     - a javascript array of values, (which will be converted to a typed array
+//  *     of the appropriate type)
+//  * 
+//  *     - a typed array whose type matches the passed type below
+//  * 
+//  *     - an ArrayBuffer of the appropriate size
+//  * 
+//  *   item_size is the number of elements to be associated with each vertex
+//  * 
+//  *   item_type is the data type of each element. Default is 'float', for
+//  *     IEEE 754 32-bit floating point numbers.
+//  * 
+//  *   usage follows the WebGL bufferData call. From the man page for bufferData:
+//  * 
+//  *     Specifies the expected usage pattern of the data store. The symbolic 
+//  *     constant must be STREAM_DRAW, STATIC_DRAW, or DYNAMIC_DRAW.
+//  * 
+//  *   keep_array tells Facet.attribute_buffer to keep a copy of the buffer in 
+//  *   Javascript. This will be stored in the returned object, in the "array" 
+//  *   property. It is useful for javascript-side inspection, or as a convenient
+//  *   place to keep the array stashed in case you need it.
+//  * 
+//  *   stride: if stride is non-zero, WebGL will skip an arbitrary number of 
+//  *   bytes per element. This is used to specify many different attributes which
+//  *   share a single buffer (which gives memory locality advantages in some
+//  *   GPU architectures). stride uses *bytes* as units, so be aware of datatype
+//  *   conversions.
+//  * 
+//  *   offset: gives the offset into the buffer at which to access the data,
+//  *   again used to specify different attributes sharing a single buffer.
+//  *   offset uses *bytes* as units, so be aware of datatype conversions.
+//  * 
+//  * 
+//  * Example usage:
+//  * 
+//  *   // associate three 32-bit floating-point values with each vertex
+//  *   var position_attribute = Facet.attribute_buffer({
+//  *       vertex_array: [1,0,0, 0,1,0, 1,0,0],
+//  *       // item_size: 3 is the default
+//  *       // item_type: 'float' is the default
+//  *   })
+//  * 
+//  *   // associate four 8-bit unsigned bytes with each vertex
+//  *   var color_attribute = Facet.attribute_buffer({
+//  *       vertex_array: [1,0,0,1, 1,1,0,1, 1,1,1,1],
+//  *       item_size: 4,
+//  *       item_type: 'ubyte', // the default item_type is 'float'
+//  *       normalized: true // when 
+//  *   });
+//  *   ...
+//  * 
+//  *   var triangle = Facet.model({
+//  *       type: 'triangles',
+//  *       position: position_attribute,
+//  *       color: color_attribute
+//  *   })
+//  */
+
+Facet.attribute_buffer = function(opts)
+{
+    var ctx = Facet._globals.ctx;
+    opts = _.defaults(opts, {
+        item_size: 3,
+        item_type: 'float',
+        usage: ctx.STATIC_DRAW,
+        normalized: false,
+        keep_array: false,
+        stride: 0,
+        offset: 0
+    });
+
+    var itemSize = opts.item_size;
+    if ([1,2,3,4].indexOf(itemSize) === -1) {
+        throw "opts.item_size must be one of 1, 2, 3, or 4";
+    }
+
+    var gl_enum_typed_array_map = {
+        'float': { webgl_enum: ctx.FLOAT, typed_array_ctor: Float32Array, size: 4 },
+        'short': { webgl_enum: ctx.SHORT, typed_array_ctor: Int16Array, size: 2 },
+        'ushort': { webgl_enum: ctx.UNSIGNED_SHORT, typed_array_ctor: Uint16Array, size: 2 },
+        'byte': { webgl_enum: ctx.BYTE, typed_array_ctor: Int8Array, size: 1 },
+        'ubyte': { webgl_enum: ctx.UNSIGNED_BYTE, typed_array_ctor: Uint8Array, size: 1 }
+    };
+
+    var itemType = gl_enum_typed_array_map[opts.item_type];
+    if (_.isUndefined(itemType)) {
+        throw "opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'";
+    }
+
+    if (_.isUndefined(opts.vertex_array)) {
+        throw "opts.vertex_array must be defined";
+    }
+
+    function convert_array(array) {
+        var numItems;
+        if (array.constructor === Array) {
+            if (array.length % itemSize) {
+                throw "set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.";
+            }
+            array = new itemType.typed_array_ctor(array);
+        } else if (array.constructor === itemType._typed_array_ctor) {
+            if (array.length % itemSize) {
+                throw "set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.";
+            }
+        } else if (opts.vertex_array.constructor === ArrayBuffer) {
+            array = opts.vertex_array;
+        }
+        return array;
+    }
+
+    var array = convert_array(opts.vertex_array);
+    var buffer = Facet.buffer({
+        usage: opts.usage,
+        array: array,
+        keep_array: opts.keep_array
+    });
+
+    return Facet.attribute_buffer_view(_.defaults(opts, {
+        buffer: buffer
+    }));
+};
+Facet.buffer = function(opts)
+{
+    var ctx = Facet._globals.ctx;
+    opts = _.defaults(opts, {
+        usage: ctx.STATIC_DRAW,
+        keep_array: false
+    });
+
+    if (_.isUndefined(opts.array)) {
+        throw "opts.array must be defined";
+    }
+
+    var usage = opts.usage;
+    if ([ctx.STATIC_DRAW, ctx.DYNAMIC_DRAW, ctx.STREAM_DRAW].indexOf(usage) === -1) {
+        throw "opts.usage must be one of STATIC_DRAW, DYNAMIC_DRAW, STREAM_DRAW";
+    }
+
     var result = ctx.createBuffer();
-    result._ctx = ctx;
-    result._shade_type = 'attribute_buffer';
-    result.itemSize = itemSize;
     result.usage = usage;
-    result.normalized = normalized;
-    result._webgl_type = itemType.webgl_enum;
-    result._typed_array_ctor = itemType.typed_array_ctor;
-    result._word_length = itemType.size;
-
-    result.set = function(vertex_array) {
-        Facet.set_context(ctx);
-        if (vertex_array.length % itemSize !== 0) {
-            throw "length of array must be multiple of item_size";
-        }
-        var typedArray;
-        // FIXME this might be brittle, but I don't know a better way
-        if (vertex_array.constructor.name === 'Array') {
-            typedArray = new this._typed_array_ctor(vertex_array);
-        } else {
-            if (vertex_array.constructor !== this._typed_array_ctor) {
-                throw "Facet.attribute_buffer.set requires either a plain list or a typed array of the right type";
-            }
-            typedArray = vertex_array;
-        }
+    result.set = function(array) {
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-        ctx.bufferData(ctx.ARRAY_BUFFER, typedArray, this.usage);
+        ctx.bufferData(ctx.ARRAY_BUFFER, array, this.usage);
         if (opts.keep_array) {
-            this.array = typedArray;
+            this.array = array;
         }
-        this.numItems = vertex_array.length/itemSize;
+        this.byteLength = array.byteLength;
     };
-    result.set(vertex_array);
-
-    result.set_region = function(index, array) {
-        Facet.set_context(ctx);
-        if ((index + array.length) > (this.numItems * this.itemSize) || (index < 0))
-            throw "set_region index out of bounds";
-        var typedArray = new this._typed_array_ctor(array);
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-        ctx.bufferSubData(ctx.ARRAY_BUFFER, index * this._word_length, typedArray);
-        if (opts.keep_array) {
-            for (var i=0; i<array.length; ++i) {
-                this.array[index+i] = array[i];
-            }
-        }
+    result.set(opts.array);
+    result.set_region = function() {
+        throw "currently unimplemented";
     };
 
-    //////////////////////////////////////////////////////////////////////////
-    // These methods are only for internal use within Facet
-
-    result.bind = function(attribute) {
-        Facet.set_context(ctx);
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-        ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, opts.stride, opts.offset);
-    };
-
-    result.draw = function(primitive) {
-        Facet.set_context(ctx);
-        ctx.drawArrays(primitive, 0, this.numItems);
-    };
-    result.bind_and_draw = function(attribute, primitive) {
-        // here we inline the calls to bind and draw to shave a redundant set_context.
-        Facet.set_context(ctx);
-        ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
-        ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, opts.stride, opts.offset);
-        ctx.drawArrays(primitive, 0, this.numItems);
-    };
     return result;
 };
 (function() {
@@ -3811,6 +3989,20 @@ function initialize_context_globals(gl)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+function polyfill_event(event, gl)
+{
+    // polyfill event.offsetX and offsetY in Firefox,
+    // according to http://bugs.jquery.com/ticket/8523
+    if(typeof event.offsetX === "undefined" || typeof event.offsetY === "undefined") {
+        var targetOffset = $(event.target).offset();
+        event.offsetX = event.pageX - targetOffset.left;
+        event.offsetY = event.pageY - targetOffset.top;
+    }
+    
+    event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
+    event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
+}
+
 Facet.init = function(canvas, opts)
 {
     canvas.unselectable = true;
@@ -3899,16 +4091,19 @@ Facet.init = function(canvas, opts)
             if (!_.isUndefined(listener)) {
                 (function(listener) {
                     function internal_listener(event) {
-                        event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
-                        event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
+                        polyfill_event(event, gl);
                         return listener(event);
                     }
                     canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
                 })(listener);
             }
         }
+        
         if (!_.isUndefined(opts.mousewheel)) {
-            $(canvas).bind('mousewheel', opts.mousewheel);
+            $(canvas).bind('mousewheel', function(event, delta, deltaX, deltaY) {
+                polyfill_event(event, gl);
+                return opts.mousewheel(event, delta, deltaX, deltaY);
+            });
         };
 
         var ext;
@@ -3921,7 +4116,7 @@ Facet.init = function(canvas, opts)
                       "Facet will not work, sorry.");
                 throw "insufficient GPU support";
             } else {
-                console.log(ext, gl.getExtension(ext));
+                gl.getExtension(ext); // must call this to enable extension
             }
         });
     } catch(e) {
@@ -4439,7 +4634,7 @@ Facet.texture = function(opts)
          *       canvas: document.getElementById("canvas-element")
          *     });
          * 
-         *   * Load an image from a TypedArray buffer (currently only supports 8-bit RGBA):
+         *   * Load an image from a TypedArray buffer (currently only supports 8-bit RGBA or 32-bit float RGBA):
          * 
          *     Facet.load({
          *       width: 128,
@@ -4487,7 +4682,6 @@ Facet.texture = function(opts)
                 var ctx = texture._ctx;
                 Facet.set_context(texture._ctx);
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
-                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
                 if (_.isUndefined(opts.buffer)) {
                     if (x_offset !== 0 || y_offset !== 0) {
                         throw "texture.load cannot be called with nonzero offsets and no data";
@@ -4496,9 +4690,18 @@ Facet.texture = function(opts)
                                    that.width, that.height,
                                    0, opts.format, opts.type, null);
                 } else {
-                    ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset,
+                    var type;
+                    var ctor = opts.buffer.constructor.name;
+                    var map = {
+                        "Uint8Array": ctx.UNSIGNED_BYTE,
+                        "Float32Array": ctx.FLOAT
+                    };
+                    if (_.isUndefined(map[ctor])) {
+                        throw "opts.buffer must be either Uint8Array or Float32Array";
+                    }
+                    ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset, 
                                       opts.width, opts.height,
-                                      ctx.RGBA, ctx.UNSIGNED_BYTE, opts.buffer);
+                                      ctx.RGBA, map[ctor], opts.buffer);
                 }
                 if (opts.mipmaps)
                     ctx.generateMipmap(ctx.TEXTURE_2D);
@@ -5017,9 +5220,6 @@ Facet.Data.texture_table = function(table)
      n_rows (integer): number of rows in the 2D array of data
      elements (array, Float32Array): list of elements in the array
 
-s parameters a list of floating point elements
-   (or a Float32Array), the number of columns and rows in the implied 2D array of data
-
    and returns an object with four fields:
 
    n_cols (integer): number of columns in the data
@@ -5267,6 +5467,7 @@ Facet.UI.center_zoom_interactor = function(opts)
 {
     opts = _.defaults(opts, {
         mousemove: function() {},
+        mouseup: function() {},
         mousedown: function() {},
         mousewheel: function() {},
         center: vec.make([0,0]),
@@ -5279,10 +5480,24 @@ Facet.UI.center_zoom_interactor = function(opts)
     var center = Shade.parameter("vec2", opts.center);
     var zoom = Shade.parameter("float", opts.zoom);
     var prev_mouse_pos;
+    var current_button = 0;
 
     function mousedown(event) {
+        if (_.isUndefined(event.buttons)) {
+            // webkit
+            current_button = event.which;
+        } else {
+            // firefox
+            current_button = event.buttons;
+        }
+
         prev_mouse_pos = [event.offsetX, event.offsetY];
         opts.mousedown(event);
+    }
+
+    function mouseup(event) {
+        current_button = 0;
+        opts.mouseup(event);
     }
 
     // c stores the compensation for the kahan compensated sum
@@ -5300,10 +5515,10 @@ Facet.UI.center_zoom_interactor = function(opts)
     }
 
     function mousemove(event) {
-        if ((event.which & 1) && !event.shiftKey) {
+        if ((current_button & 1) && !event.shiftKey) {
             internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
             Facet.Scene.invalidate();
-        } else if ((event.which & 1) && event.shiftKey) {
+        } else if ((current_button & 1) && event.shiftKey) {
             zoom.set(Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240)));
             Facet.Scene.invalidate();
         }
@@ -5311,9 +5526,11 @@ Facet.UI.center_zoom_interactor = function(opts)
         opts.mousemove(event);
     }
 
-    function mousewheel(event) {
+    // FIXME mousewheel madness
+    function mousewheel(event, delta, deltaX, deltaY) {
         internal_move(width/2-event.offsetX, height/2-event.offsetY);
-        var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
+	var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + deltaY/10));
+        // var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
         zoom.set(new_value);
         internal_move(event.offsetX-width/2, event.offsetY-height/2);
         opts.mousewheel(event);
@@ -5398,6 +5615,7 @@ Facet.UI.center_zoom_interactor = function(opts)
 
         events: {
             mousedown: mousedown,
+            mouseup: mouseup,
             mousemove: mousemove,
             mousewheel: mousewheel
         }
@@ -10159,7 +10377,7 @@ Shade.Utils.fit = function(data) {
     // this makes float attribute buffers work, but it might be confusing to the
     // user that there exist values v for which Shade.Utils.fit(v) works,
     // but Shade.Utils.fit(Shade.make(v)) does not
-    var t = data._shade_type; 
+    var t = data._shade_type;
     if (t === 'attribute_buffer') {
         if (data.itemSize !== 1)
             throw "only dimension-1 attribute buffers are supported";
@@ -10169,7 +10387,8 @@ Shade.Utils.fit = function(data) {
     }
 
     var min = _.min(data), max = _.max(data);
-    return Shade.Utils.linear(min, max, 0, 1);
+    return Shade.Scale.linear({domain: [min, max]},
+                              {range: [0, 1]});
 };
 
 // replicates something like an opengl light. 
@@ -12778,7 +12997,7 @@ function glyph_to_model(glyph)
     return glyph._model;
 }
 
-Facet.Text.string_batch = function(opts) {
+Facet.Text.outline = function(opts) {
     var old_opts = opts;
     if (opts.batch) {
         return opts.batch;
@@ -12791,7 +13010,7 @@ Facet.Text.string_batch = function(opts) {
         color: function(pos) { return Shade.color("white"); }
     });
     if (_.isUndefined(opts.font)) {
-        throw "string_batch requires font parameter";
+        throw "outline requires font parameter";
     }
     var batch = loop_blinn_batch(opts);
     old_opts.batch = batch;
@@ -12815,7 +13034,7 @@ Facet.Text.string_batch = function(opts) {
             case "right": return -advance;
             case "center": return -advance/2;
             default:
-                throw "Facet.Text.string_batch.align must be one of 'left', 'center' or 'right'";
+                throw "align must be one of 'left', 'center' or 'right'";
             }
         },
         // vertical_alignment_offset: function() {
@@ -12824,7 +13043,7 @@ Facet.Text.string_batch = function(opts) {
         //     case "middle": return -opts.font.lineHeight/2;
         //     case "top": return -opts.font.lineHeight;
         //         default:
-        //         throw "Facet.Text.string_batch.vertical_align must be one of 'baseline', 'middle' or 'top'";
+        //         throw "vertical_align must be one of 'baseline', 'middle' or 'top'";
         //     };
         // },
         draw: function() {
@@ -12926,7 +13145,7 @@ function glyph_to_model(glyph, font)
     return glyph._model;
 }
 
-Facet.Text.texture_batch = function(opts) {
+Facet.Text.texture = function(opts) {
     var old_opts = opts;
     if (!_.isUndefined(opts.batch)) {
         return opts.batch;
@@ -12941,7 +13160,7 @@ Facet.Text.texture_batch = function(opts) {
     });
 
     if (_.isUndefined(opts.font)) {
-        throw "texture_batch requires font parameter";
+        throw "Facet.Text.texture requires font parameter";
     }
 
     var batch = {};
@@ -12979,7 +13198,7 @@ Facet.Text.texture_batch = function(opts) {
             case "right": return -advance;
             case "center": return -advance/2;
             default:
-                throw "Facet.Text.texture_batch.align must be one of 'left', 'center' or 'right'";
+                throw "align must be one of 'left', 'center' or 'right'";
             }
         },
         draw: function() {

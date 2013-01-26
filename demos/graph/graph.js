@@ -70,7 +70,7 @@ $().ready(function () {
     var prev_mouse_pos;
     
     interactor = Facet.UI.center_zoom_interactor({
-        width: 720, height: 480, zoom: 1/450, center: vec.make([450, 450])
+        width: 720, height: 480, zoom: 1/450, center: vec.make([450, 450]), widest_zoom: 1/450
     });
 
     jQuery.getJSON("graph_extras/1138_bus.graph",
