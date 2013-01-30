@@ -312,6 +312,7 @@ Facet.bake = function(model, appearance, opts)
     var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {
+        model: model,
         batch_id: batch_id,
         draw: function() {
             draw_it(which_opts[ctx._facet_globals.batch_render_mode]);
