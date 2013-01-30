@@ -14,7 +14,7 @@
 
 Facet.UI.center_zoom_interactor = function(opts)
 {
-    opts = _.defaults(opts, {
+    opts = _.defaults(opts || {}, {
         mousemove: function() {},
         mouseup: function() {},
         mousedown: function() {},
@@ -26,6 +26,14 @@ Facet.UI.center_zoom_interactor = function(opts)
 
     var height = opts.height;
     var width = opts.width;
+
+    if (_.isUndefined(width)) {
+        throw "Facet.UI.center_zoom_interactor requires width parameter";
+    }
+    if (_.isUndefined(height)) {
+        throw "Facet.UI.center_zoom_interactor requires height parameter";
+    }
+
     var center = Shade.parameter("vec2", opts.center);
     var zoom = Shade.parameter("float", opts.zoom);
     var prev_mouse_pos;
