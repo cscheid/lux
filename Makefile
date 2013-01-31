@@ -140,6 +140,7 @@ facet.js:					\
 	src/shade/_end.js			\
 	src/shade/colors/_begin.js		\
 	src/shade/colors/alpha.js		\
+	src/shade/colors/brewer.js		\
 	src/shade/colors/convert.js		\
 	src/shade/colors/convert_shade.js	\
 	src/shade/bits/_begin.js		\
