@@ -3836,6 +3836,7 @@ Facet.bake = function(model, appearance, opts)
     var which_opts = [ draw_opts, pick_opts, unproject_opts ];
 
     var result = {
+        model: model,
         batch_id: batch_id,
         draw: function() {
             draw_it(which_opts[ctx._facet_globals.batch_render_mode]);
@@ -5460,7 +5461,7 @@ Facet.UI.parameter_checkbox = function(opts)
 
 Facet.UI.center_zoom_interactor = function(opts)
 {
-    opts = _.defaults(opts, {
+    opts = _.defaults(opts || {}, {
         mousemove: function() {},
         mouseup: function() {},
         mousedown: function() {},
@@ -5472,6 +5473,14 @@ Facet.UI.center_zoom_interactor = function(opts)
 
     var height = opts.height;
     var width = opts.width;
+
+    if (_.isUndefined(width)) {
+        throw "Facet.UI.center_zoom_interactor requires width parameter";
+    }
+    if (_.isUndefined(height)) {
+        throw "Facet.UI.center_zoom_interactor requires height parameter";
+    }
+
     var center = Shade.parameter("vec2", opts.center);
     var zoom = Shade.parameter("float", opts.zoom);
     var prev_mouse_pos;
@@ -11906,12 +11915,12 @@ Shade.Scale.ordinal = function(opts)
     if (!(opts.range.length >= 2)) { 
         throw "Shade.Scale.ordinal requires arrays of length at least 2";
     }
-    opts.range = _.map(opts.range, Shade.make);
-    var range_types = _.map(opts.range,  function(v) { return v.type; });
+    var range = _.map(opts.range, Shade.make);
+    var range_types = _.map(range,  function(v) { return v.type; });
     if (!all_same(range_types))
         throw "Shade.Scale.linear requires range elements to have the same type";
 
-    var choose = Shade.Utils.choose(range_types);
+    var choose = Shade.Utils.choose(range);
 
     return function(v) {
         return choose(v.as_float().add(0.5));
