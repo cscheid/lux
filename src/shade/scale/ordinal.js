@@ -10,12 +10,12 @@ Shade.Scale.ordinal = function(opts)
     if (!(opts.range.length >= 2)) { 
         throw "Shade.Scale.ordinal requires arrays of length at least 2";
     }
-    opts.range = _.map(opts.range, Shade.make);
-    var range_types = _.map(opts.range,  function(v) { return v.type; });
+    var range = _.map(opts.range, Shade.make);
+    var range_types = _.map(range,  function(v) { return v.type; });
     if (!all_same(range_types))
         throw "Shade.Scale.linear requires range elements to have the same type";
 
-    var choose = Shade.Utils.choose(range_types);
+    var choose = Shade.Utils.choose(range);
 
     return function(v) {
         return choose(v.as_float().add(0.5));

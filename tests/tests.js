@@ -872,6 +872,15 @@ test("Shade.evaluate()", function() {
     equal(Shade(v1).sin().cos().evaluate(), Math.cos(Math.sin(6)));
 });
 
+test("Shade.scale.*", function() {
+    var t1 = Shade.Scale.ordinal({ 
+        range: [Shade.color("green"),
+                Shade.color("red"),
+                Shade.color("blue"),
+                Shade.color("black"),
+                Shade.color("yellow")]});
+});
+
 module("Facet tests");
 test("Facet.attribute_buffer", function() {
     ok(Facet.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 1}));
