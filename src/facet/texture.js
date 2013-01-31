@@ -80,7 +80,7 @@ Facet.texture = function(opts)
          *       canvas: document.getElementById("canvas-element")
          *     });
          * 
-         *   * Load an image from a TypedArray buffer (currently only supports 8-bit RGBA):
+         *   * Load an image from a TypedArray buffer (currently only supports 8-bit RGBA or 32-bit float RGBA):
          * 
          *     Facet.load({
          *       width: 128,
@@ -128,7 +128,6 @@ Facet.texture = function(opts)
                 var ctx = texture._ctx;
                 Facet.set_context(texture._ctx);
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
-                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
                 if (_.isUndefined(opts.buffer)) {
                     if (x_offset !== 0 || y_offset !== 0) {
                         throw "texture.load cannot be called with nonzero offsets and no data";
@@ -137,9 +136,18 @@ Facet.texture = function(opts)
                                    that.width, that.height,
                                    0, opts.format, opts.type, null);
                 } else {
-                    ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset,
+                    var type;
+                    var ctor = opts.buffer.constructor.name;
+                    var map = {
+                        "Uint8Array": ctx.UNSIGNED_BYTE,
+                        "Float32Array": ctx.FLOAT
+                    };
+                    if (_.isUndefined(map[ctor])) {
+                        throw "opts.buffer must be either Uint8Array or Float32Array";
+                    }
+                    ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset, 
                                       opts.width, opts.height,
-                                      ctx.RGBA, ctx.UNSIGNED_BYTE, opts.buffer);
+                                      ctx.RGBA, map[ctor], opts.buffer);
                 }
                 if (opts.mipmaps)
                     ctx.generateMipmap(ctx.TEXTURE_2D);

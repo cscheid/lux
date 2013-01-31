@@ -18,116 +18,57 @@
 <canvas id="webgl" width="720" height="480"></canvas>
 <div style="text-align: right">View the <a href="lesson2.js">full source</a>.</div>
 
-<!-- <p>In WebGL, pictures are created by drawing points, lines, triangles, -->
-<!--   etc. on the screen. With Facet, these are packaged -->
-<!--   in <em>models</em>, which are created -->
-<!--   with <span class="keyword">Facet.model</span>. Each model is created by specifying the type of -->
-<!--   primitive being drawn (<span class="keyword">type</span>), a -->
-<!--   list of vertex coordinates and their dimension (<span class="keyword">vertex</span>), and -->
-<!--   the sequence in which these vertices are drawn -->
-<!--   (<span class="keyword">elements</span>):</p> -->
+<p>We start with the very basics. First, we set up some scaffolding:</p>
 
-<!-- <pre class="highlight"> -->
-<!-- var square = Facet.model({ -->
-<!--     type: "triangles", -->
-<!--     elements: [0, 1, 2, 0, 2, 3], -->
-<!--     vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2] -->
-<!-- }), triangle = Facet.model({ -->
-<!--     type: "triangles", -->
-<!--     elements: 3, // this is equivalent to [0, 1, 2] -->
-<!--     vertex: [[0,1, -1,-1, 1,-1], 2] -->
-<!-- }); -->
-<!-- </pre> -->
+<pre class="highlight">
+var gl = Facet.init(document.getElementById("webgl"), {
+    clearColor: [0, 0, 0, 0.2]
+});
+</pre>
 
-<p>Forgive the mess as we remodel the place a bit.</p>
+<p>In WebGL, pictures are created by drawing points, lines, triangles,
+  etc. on the screen. With Facet, these are packaged
+  in <em>models</em>, which are created
+  with <span class="keyword">Facet.model</span>. Each model is created by specifying the type of
+  primitive being drawn (<span class="keyword">type</span>), a
+  list of vertex coordinates and their dimension (<span class="keyword">vertex</span>), and
+  the sequence in which these vertices are drawn
+  (<span class="keyword">elements</span>):</p>
 
-<!-- <p>To draw each model, we need to tell WebGL how to give -->
-<!--   a <em>position</em> to each vertex, and a <em>color</em> to each -->
-<!--   pixel that gets drawn on the screen. These are created in Facet -->
-<!--   with <span class="keyword">Shade</span>, and the expressions -->
-<!--   are <span class="keyword">bake</span>d into <em>batches</em>.</p> -->
+<pre class="highlight">
+var square = Facet.model({
+    type: "triangles",
+    elements: [0, 1, 2, 0, 2, 3],
+    vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2]
+}), triangle = Facet.model({
+    type: "triangles",
+    elements: 3, // this is equivalent to [0, 1, 2]
+    vertex: [[0,1, -1,-1, 1,-1], 2]
+});
+</pre>
 
-<!-- <p>In WebGL and OpenGL, vertices in three-dimensional space are given -->
-<!-- in 4 dimensions, in -->
-<!--   <a href="http://en.wikipedia.org/wiki/Homogeneous_coordinates">homogeneous -->
-<!--   coordinates</a>. We put -->
-<!--   the square and triangle in 3D homogeneous space by picking x and y from their -->
-<!--   <span class="keyword">vertex</span> attribute, setting z to be zero -->
-<!--   and the fourth coordinate to be 1. Variables with values that do not -->
-<!--   change as the batch is drawn are -->
-<!--   called <span class="keyword">uniform</span>s, and here we specify -->
-<!--   a uniform <span class="keyword">mvp</span> which will store a 4x4 matrix. -->
+<p>To take the three-dimensional positions of the vertices and put
+  them in the two-dimensional screen, we use a camera class. A camera
+  can be called like a function, and will return the transformed
+  version of the parameter. Here, we are also translating the
+  models (the square to the right, and the triangle to the left):</p>
 
-<!--   This variable stores -->
-<!--   the <em>model-view-projection</em> matrix, the transformation -->
-<!--   of a vertex from its position "in the world" to the position "inside -->
-<!--   the camera".  -->
+<pre class="highlight">
+var camera = Shade.Camera.perspective();
+var square_position = camera(Shade.translation( 1.5, 0, -6)(square_model.vertex));
+var triangle_position = camera(Shade.translation(-1.5, 0, -6)(triangle_model.vertex));
+</pre>
 
-<!--   The final vertex -->
-<!--   <span class="keyword">position</span> is given by -->
-<!--   multiplying the vertex coordinates by that matrix:</p> -->
+<p>The variables <span class="keyword">square_position</span> and <span class="keyword">triangle_position</span> now store a value representing the transformed vertices of the square and triangle model, respectively. All that's left to do is to actually tell Facet to draw the models on the screen. We <span class="keyword">bake</a> the model's positions into batches, and add them into the Facet scene:</p>
 
-<!-- <pre class="highlight"> -->
-<!-- square_batch = Facet.bake(square, { -->
-<!--     position: mvp.mul(Shade.vec(square.vertex, 0, 1)), -->
-<!--     color: Shade.color('white') -->
-<!-- }); -->
+<pre class="highlight">
+var square = Facet.bake(square_model, { position: square_position }),
+    triangle = Facet.bake(triangle_model, { position: triangle_position });
+Facet.Scene.add(square);
+Facet.Scene.add(triangle);
+</pre>
 
-<!-- triangle_batch = Facet.bake(triangle, { -->
-<!--     position: mvp.mul(Shade.vec(triangle.vertex, 0, 1)), -->
-<!--     color: Shade.color('white') -->
-<!-- }); -->
-<!-- </pre> -->
-
-<!-- <p>We are almost done. We now create -->
-<!--   a <span class="keyword">display</span> function. Batches have a method -->
-<!--   named <span class="keyword">draw</span>, which -->
-<!--   draws the models using the given positions and colors. The camera -->
-<!--   transformation is computed -->
-<!--   by <span class="keyword">Facet.perspective</span>, -->
-<!--   and the models are positioned -->
-<!--   using <span class="keyword">Facet.translation</span>: -->
-<!-- </p> -->
-
-<!-- <pre class="highlight"> -->
-<!-- function draw_it() -->
-<!-- { -->
-<!--     var proj = Facet.perspective(45, 720/480, 0.1, 100.0); -->
-
-<!--     mvp.set(mat4.product(proj, Facet.translation( 1.5, 0.0, -6.0))); -->
-<!--     square_drawable.draw(); -->
-
-<!--     mvp.set(mat4.product(proj, Facet.translation(-1.5, 0.0, -6.0))); -->
-<!--     triangle_drawable.draw(); -->
-<!-- } -->
-<!-- </pre> -->
-
-<!-- <p>In this last snippet of code we create the required WebGL -->
-<!--   scaffolding, using <span class="keyword">Facet.init</span>.  -->
-<!--   Notice that Facet -->
-<!--   populates the WebGL context with an extra -->
-<!--   function, <span class="keyword">display</span>. This function -->
-<!--   does a few convenient things such as clearing the -->
-<!--   color and depth buffers, and then calls the display function you give it, in -->
-<!--   this case <span class="keyword">draw_it</span>. -->
-<!-- </p> -->
-
-<!-- <pre class="highlight"> -->
-<!-- var canvas = document.getElementById("webgl"); -->
-<!-- gl = Facet.init(canvas, { -->
-<!--                     clearDepth: 1.0, -->
-<!--                     clearColor: [0,0,0,1], -->
-<!--                     display: draw_it, -->
-<!--                     attributes: { -->
-<!--                         alpha: true, -->
-<!--                         depth: true -->
-<!--                     }, -->
-<!--                     debugging: true -->
-<!--                 }); -->
-<!-- gl.display(); -->
-<!-- </pre> -->
-
-<!-- <p>That's it! Your full-fledged WebGL app is up and running.</p> -->
+<p>Voila!</p>
 
 <p>Back to the <a href="index.html">index</a>.</p>
 <script>
