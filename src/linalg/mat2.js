@@ -2,7 +2,6 @@ var mat2 = {};
 
 mat2.create = function()
 {
-    debugger;
     var result = new Float32Array(4);
     result.buffer._type = 'matrix';
     return result;
