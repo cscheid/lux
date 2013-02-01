@@ -11915,9 +11915,9 @@ Shade.Scale.ordinal = function(opts)
 
     var choose = Shade.Utils.choose(range);
 
-    return function(v) {
+    return Shade(function(v) {
         return choose(v.as_float().add(0.5));
-    };
+    });
 };
 Shade.Scale.linear = function(opts)
 {
