@@ -59,7 +59,8 @@ Facet.init = function(canvas, opts)
                                     clearDepth: 1.0,
                                     attributes: {
                                         alpha: true,
-                                        depth: true
+                                        depth: true,
+                                        preserveDrawingBuffer: true
                                     },
                                     highDPS: true
                                   });
