@@ -1,0 +1,45 @@
+<html>
+<head><title>Texture-Based Text rendering</title>
+  <link rel="stylesheet" href="../css/bootstrap.css"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <link rel="stylesheet" href="../css/mchighlight-javascript.css"/>
+  <script src="../../lib/jquery-1.6.2.min.js"></script>
+  <script src="../../lib/jquery.mousewheel.js"></script>
+  <script src="../../facet.js"></script>
+  <script src="../js/mclexer.js"></script>
+  <script src="../js/mchighlight.js"></script>
+  <script src="../js/mchighlight-javascript.js"></script>
+  <script src="texture_text.js"></script>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>Texture-Based TTF rendering</h1>
+<canvas id="webgl" width="720" height="480"></canvas>
+<div style="text-align: right">View the <a href="texture_text.js">full
+    source</a>.</div>
+
+<p>Facet's texture-based text rendering infrastructure includes an
+  adaptive antialiasing algorithm meant to produce better results at
+  very low resolutions (or very deep zooms). The left side of the
+  screen shows text rendering without it, and the right side of the
+  screen shows text rendering using it. This is controlled by
+  the <tt>compensate_blur</tt> option in the texture batch
+  parameters. Typically you'll set it to either true or false, but
+  here we're tying it to whether the fragment is to the left or right
+  of the screen.
+  </p>
+
+  <h2>Acknowledgments</h2>
+
+<p>The font file in this demo is Open Sans,
+  from Google's Web Fonts project. It's processed with a tool we're going to release <i>real soon now</i>.</p>
+
+<p>Back to the <a href="index.html">index</a>.</p>
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</body>
+</html>
+
