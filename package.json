@@ -4,6 +4,6 @@
   "description": "Facet is the DSEL for WebGL graphics",
   "keywords": [ "webgl", "graphics", "visualization", "edsl" ],
   "dependencies": {
-    "uglify-js": "2.2.1"
+    "uglify-js": "2.2.4"
   }
 }
