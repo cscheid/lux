@@ -111,13 +111,15 @@ Facet.attribute_buffer = function(opts)
                     itemSize + ", got " + array.length + " instead.";
             }
             array = new itemType.typed_array_ctor(array);
-        } else if (array.constructor === itemType._typed_array_ctor) {
+        } else if (array.constructor === itemType.typed_array_ctor) {
             if (array.length % itemSize) {
                 throw "set: attribute_buffer expected length to be a multiple of " + 
                     itemSize + ", got " + array.length + " instead.";
             }
         } else if (opts.vertex_array.constructor === ArrayBuffer) {
             array = opts.vertex_array;
+        } else {
+            throw "Unrecognized array type for attribute_buffer";
         }
         return array;
     }

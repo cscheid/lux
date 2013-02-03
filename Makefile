@@ -19,9 +19,15 @@ facet.js:					\
 	src/copyright-notice.js			\
 	src/facet/_begin.js			\
 	src/facet/_globals.js			\
+	lib/_begin.js				\
 	lib/underscore-min.js			\
 	lib/webgl-debug.js			\
 	lib/webgl-utils.js			\
+	lib/pre-tessellate.js			\
+	lib/_tessellate.js			\
+	lib/post-tessellate-1.js		\
+	lib/tessellate.js			\
+	lib/post-tessellate-2.js		\
 	src/underscore_mixins.js		\
 	src/linalg/_begin.js			\
 	src/linalg/vec2.js			\
@@ -176,15 +182,12 @@ facet.js:					\
 	src/facet/marks/scatterplot.js		\
 	src/facet/marks/globe.js		\
 	src/facet/marks/globe_2d.js		\
-	src/facet/marks/polygon.js		\
 	src/facet/models/_begin.js		\
 	src/facet/models/flat_cube.js		\
 	src/facet/models/mesh.js		\
 	src/facet/models/sphere.js		\
 	src/facet/models/square.js		\
 	src/facet/models/teapot.js		\
-	src/facet/models/polygon.js		\
-	src/facet/models/polygon2.js		\
 	src/facet/mesh/_begin.js		\
 	src/facet/mesh/indexed.js		\
 	src/facet/scene/_begin.js		\

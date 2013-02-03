@@ -18,15 +18,18 @@ Facet.model = function(input)
                 // example: 'type: "triangles"'
                 result.type = v;
             else if (k === 'elements') {
-                if (v._shade_type === 'element_buffer')
+                if (v._shade_type === 'element_buffer') {
                     // example: 'elements: Facet.element_buffer(...)'
                     result.elements = v;
-                else if (facet_typeOf(v) === 'array')
-                    // example: 'elements: [0, 1, 2, 3]'
-                    result.elements = Facet.element_buffer(v);
-                else
+                } else if (facet_typeOf(v) === 'number') {
                     // example: 'elements: 4'
                     result.elements = v;
+                } else { // if (facet_typeOf(v) === 'array') {
+                    // example: 'elements: [0, 1, 2, 3]'
+                    // example: 'elements: new Int16Array([0, 1, 2, 3])'
+                    // example: 'elements: new Int32Array([0, 1, 2, 3])' (WebGL only supports 16-bit elements, so Facet converts this to a 16-bit element array)
+                    result.elements = Facet.element_buffer(v);
+                } 
             }
             // Then we handle the model attributes. They can be ...
             else if (v._shade_type === 'attribute_buffer') { // ... attribute buffers,
