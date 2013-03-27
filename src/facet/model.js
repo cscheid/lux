@@ -35,6 +35,7 @@ Facet.model = function(input)
             else if (v._shade_type === 'attribute_buffer') { // ... attribute buffers,
                 // example: 'vertex: Facet.attribute_buffer(...)'
                 result[k] = Shade(v);
+                result.attributes[k] = result[k];
                 n_elements = v.numItems;
             } else if (facet_typeOf(v) === "array") { // ... or a list of per-vertex things
                 var buffer;
@@ -51,6 +52,7 @@ Facet.model = function(input)
                         item_size: dimension
                     });
                     result[k] = Shade(buffer);
+                    result.attributes[k] = result[k];
                     n_elements = buffer.numItems;
                 } else {
                     // Or they can be a single list of plain numbers, in which case we're passed 
@@ -62,6 +64,7 @@ Facet.model = function(input)
                         item_size: v[1]
                     });
                     result[k] = Shade(buffer);
+                    result.attributes[k] = result[k];
                     n_elements = buffer.numItems;
                 }
             } else {
@@ -70,7 +73,8 @@ Facet.model = function(input)
                 // and leave the user to fend for his poor self.
                 result[k] = v;
             }
-        }
+        },
+        attributes: {}
     };
 
     for (var k in input) {
