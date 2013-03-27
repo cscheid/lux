@@ -365,4 +365,16 @@ Shade.Colors.desaturate = Shade(function(amount) {
     };
 });
 
+Shade.Colors.brighten = Shade(function(amount) {
+    function flip(v) { return Shade(1).sub(v); }
+    return function(color) {
+        var rgb = table.rgb.create(color.r(), color.g(), color.b());
+        var hls = table.rgb.hls(rgb);
+        var darkness = flip(hls.l);
+        amount = flip(amount);
+        var resulting_darkness = darkness.mul(amount);
+        return table.hls.create(hls.h, flip(resulting_darkness), hls.s);
+    };
+});
+
 })();
