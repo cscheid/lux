@@ -107,6 +107,14 @@ Facet.UI.center_zoom_interactor = function(opts)
         center: center,
         zoom: zoom,
 
+        project: function(pt) {
+            return this.camera.project(pt);
+        },
+
+        unproject: function(pt) {
+            return this.camera.unproject(pt);
+        },
+
         resize: function(w, h) {
             aspect_ratio.set(w/h);
             width = w;
