@@ -4334,6 +4334,7 @@ Facet.model = function(input)
             else if (v._shade_type === 'attribute_buffer') { // ... attribute buffers,
                 // example: 'vertex: Facet.attribute_buffer(...)'
                 result[k] = Shade(v);
+                result.attributes[k] = result[k];
                 n_elements = v.numItems;
             } else if (facet_typeOf(v) === "array") { // ... or a list of per-vertex things
                 var buffer;
@@ -4350,6 +4351,7 @@ Facet.model = function(input)
                         item_size: dimension
                     });
                     result[k] = Shade(buffer);
+                    result.attributes[k] = result[k];
                     n_elements = buffer.numItems;
                 } else {
                     // Or they can be a single list of plain numbers, in which case we're passed 
@@ -4361,6 +4363,7 @@ Facet.model = function(input)
                         item_size: v[1]
                     });
                     result[k] = Shade(buffer);
+                    result.attributes[k] = result[k];
                     n_elements = buffer.numItems;
                 }
             } else {
@@ -4369,7 +4372,8 @@ Facet.model = function(input)
                 // and leave the user to fend for his poor self.
                 result[k] = v;
             }
-        }
+        },
+        attributes: {}
     };
 
     for (var k in input) {
@@ -5621,6 +5625,14 @@ Facet.UI.center_zoom_interactor = function(opts)
         center: center,
         zoom: zoom,
 
+        project: function(pt) {
+            return this.camera.project(pt);
+        },
+
+        unproject: function(pt) {
+            return this.camera.unproject(pt);
+        },
+
         resize: function(w, h) {
             aspect_ratio.set(w/h);
             width = w;
@@ -5868,7 +5880,9 @@ Shade.Camera.ortho = function(opts)
         bottom: -1,
         top: 1,
         near: -1,
-        far: 1
+        far: 1,
+        center: Shade.vec(0,0),
+        zoom: Shade(1)
     });
 
     var viewport_ratio;
@@ -5887,43 +5901,31 @@ Shade.Camera.ortho = function(opts)
     var near = opts.near;
     var far = opts.far;
 
-    if (!_.isUndefined(opts.center) && !_.isUndefined(opts.zoom)) {
-        var viewport_width = Shade.div(1, opts.zoom);
-        left   = opts.center.at(0).sub(viewport_width);
-        right  = opts.center.at(0).add(viewport_width);
-        bottom = opts.center.at(1).sub(viewport_width);
-        top    = opts.center.at(1).add(viewport_width);
-    } else {
-        left = opts.left;
-        right = opts.right;
-        bottom = opts.bottom;
-        top = opts.top;
-    }
+    left = opts.left;
+    right = opts.right;
+    bottom = opts.bottom;
+    top = opts.top;
 
-    // function letterbox_projection() {
-    //     var cy = Shade.add(top, bottom).div(2);
-    //     var half_width = Shade.sub(right, left).div(2);
-    //     var corrected_half_height = half_width.div(viewport_ratio);
-    //     var l = left;
-    //     var r = right;
-    //     var t = cy.add(corrected_half_height);
-    //     var b = cy.sub(corrected_half_height);
-    //     return Shade.ortho(l, r, b, t, near, far);
-    // }
-
-    // function pillarbox_projection() {
-    //     var cx = Shade.add(right, left).div(2);
-    //     var half_height = Shade.sub(top, bottom).div(2);
-    //     var corrected_half_width = corrected_half_height.mul(viewport_ratio);
-    //     var l = cx.sub(corrected_half_width);
-    //     var r = cx.add(corrected_half_width);
-    //     var t = top;
-    //     var b = bottom;
-    //     return Shade.ortho(l, r, b, t, near, far);
-    // }
+    var view_xform = Shade(function(model_vertex) {
+        if (model_vertex.type === Shade.Types.vec2) {
+            return model_vertex.sub(opts.center).mul(opts.zoom);
+        } else if (model_vertex.type === Shade.Types.vec3) {
+            return Shade.vec(
+                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
+                model_vertex.z());
+        } else if (model_vertex.type === Shade.Types.vec4) {
+            return Shade.vec(
+                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
+                model_vertex.z());
+        } else 
+            throw "Shade.ortho requires vec2, vec3, or vec4s";
+    });
+    var view_xform_invert = Shade(function(view_vertex) {
+        return Shade.vec(view_vertex.swizzle("xy").div(opts.zoom).add(opts.center));
+    });
 
     var view_ratio = Shade.sub(right, left).div(Shade.sub(top, bottom));
-    var l_or_p = view_ratio.gt(viewport_ratio);
+    var l_or_p = view_ratio.gt(viewport_ratio); // letterbox or pillarbox
 
     var cx = Shade.add(right, left).div(2);
     var cy = Shade.add(top, bottom).div(2);
@@ -5938,22 +5940,19 @@ Shade.Camera.ortho = function(opts)
     var t = l_or_p.ifelse(cy.add(corrected_half_height), top);
     var m = Shade.ortho(l, r, b, t, near, far);
     
-    // var m = view_ratio.gt(viewport_ratio)
-    //     .ifelse(letterbox_projection(),
-    //             pillarbox_projection());
-
     function result(obj) {
         return result.project(obj);
     }
     result.project = function(model_vertex) {
-        return m.mul(model_vertex);
+        return m.mul(view_xform(model_vertex));
     };
     result.unproject = function(screen_pos) {
         var ctx = Facet._globals.ctx;
         var screen_size = Shade.vec(ctx.parameters.width, ctx.parameters.height);
         var min = Shade.vec(l, b);
         var max = Shade.vec(r, t);
-        return min.add(max.sub(min).mul(screen_pos.div(screen_size)));
+        var view_vtx = min.add(max.sub(min).mul(screen_pos.div(screen_size)));
+        return view_xform_invert(view_vtx);
     };
     return result;
 };
@@ -11869,6 +11868,18 @@ Shade.Colors.desaturate = Shade(function(amount) {
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
         var hsv = table.rgb.hsv(rgb);
         return table.hsv.create(hsv.h, hsv.s.mul(Shade(1).sub(amount)), hsv.v).as_shade(color.a());
+    };
+});
+
+Shade.Colors.brighten = Shade(function(amount) {
+    function flip(v) { return Shade(1).sub(v); }
+    return function(color) {
+        var rgb = table.rgb.create(color.r(), color.g(), color.b());
+        var hls = table.rgb.hls(rgb);
+        var darkness = flip(hls.l);
+        amount = flip(amount);
+        var resulting_darkness = darkness.mul(amount);
+        return table.hls.create(hls.h, flip(resulting_darkness), hls.s).as_shade(color.a());
     };
 });
 
