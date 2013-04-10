@@ -30,7 +30,7 @@ function make_graph_batch(model, center, zoom)
 {
     var dots_batch = Facet.Marks.dots({
         elements: model.node_elements,
-        position: interactor.camera(model.position),
+        position: interactor.project(model.position),
         stroke_color: Shade.color("white", 0.9),
         fill_color: Shade.color("slategray", 0.9),
         point_diameter: zoom.mul(2000),
@@ -41,27 +41,17 @@ function make_graph_batch(model, center, zoom)
         type: 'lines',
         elements: model.edge_elements
     }, {
-        position: interactor.camera(Shade(model.position, -0.1)),
+        position: interactor.project(Shade(model.position, -0.1)),
         color: Shade.vec(0, 0, 0, 0.2),
-        mode: Facet.DrawingMode.over
+        mode: Facet.DrawingMode.pass
     });
 
     return {
         draw: function() {
-            dots_batch.draw();
             lines_batch.draw();
+            dots_batch.draw();
         }
     };
-}
-
-var graph_batch;
-
-function draw_it()
-{
-    gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-    if (graph_batch) {
-        graph_batch.draw();
-    }
 }
 
 $().ready(function () {
@@ -77,13 +67,11 @@ $().ready(function () {
                    function (data) {
                        var graph = data;
                        var model = make_graph_model(graph);
-                       graph_batch = make_graph_batch(model, center, interactor.zoom);
-                       gl.display();
+                       Facet.Scene.add(make_graph_batch(model, center, interactor.zoom));
                    });
     gl = Facet.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0, 0, 0, 0.05],
-        display: draw_it,
         interactor: interactor
     });
     gl.display();

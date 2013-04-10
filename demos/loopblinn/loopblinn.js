@@ -34,7 +34,7 @@ $().ready(function () {
         Facet.Scene.add(Facet.Text.outline({
             string: "The quick brown fox jumps\nover the lazy dog.\nFive boxing wizards\njump quickly.",
             font: font,
-            position: function(p) { return interactor.camera(p); },
+            position: function(p) { return interactor.project(p); },
             color: function(p) { 
                 return checkerboard_pattern(Shade.color("red"), Shade.color("black"));
             }

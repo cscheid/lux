@@ -18,14 +18,15 @@ function make_points_batch(x, y, width, height)
     rb = Facet.render_buffer({ width: width, height: height, type: gl.FLOAT });
     var rb_batch = rb.make_screen_batch(function(texel_accessor) {
         return Shade.vec(1,1,1,2)
-            .sub(Shade.Utils.lerp([Shade.color("white"),
-                                   Shade.color("#d29152"),
-                                   Shade.color("sienna"),
-                                   Shade.color("black")])(texel_accessor().at(0).add(1).log()));
+            .sub(Shade.Utils.lerp([
+                Shade.color("white"),
+                Shade.color("#d29152"),
+                Shade.color("sienna"),
+                Shade.color("black")])(texel_accessor().at(0).add(1).log()));
     });
 
     var batch = Facet.bake(points_model, {
-        position: interactor.camera(pt),
+        position: interactor.project(pt),
         mode: Facet.DrawingMode.additive,
         color: Shade.pointCoord().sub(Shade.vec(0.5, 0.5))
             .norm().pow(2).neg()

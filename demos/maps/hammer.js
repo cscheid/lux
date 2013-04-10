@@ -66,7 +66,7 @@ $().ready(function () {
         });
 
     var sphere_drawable = Facet.bake(sphere, {
-        position: interactor.camera.project(sphere.vertex()),
+        position: interactor.project(sphere.vertex()),
         color: Shade.texture2D(texture, sphere.tex_coord)
     });
     Facet.Scene.add(sphere_drawable);

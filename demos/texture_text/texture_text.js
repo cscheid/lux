@@ -9,6 +9,7 @@ var interactor;
 $().ready(function () {
     var canvas = document.getElementById("webgl");
     interactor = Facet.UI.center_zoom_interactor({
+        highDPS: true,
         width: canvas.width,
         height: canvas.height,
         center: vec.make([1, -0.2]) 
@@ -39,7 +40,7 @@ $().ready(function () {
             font: font,
             size: 0.1,
             compensate_blur: is_screen_right,
-            position: function(p) { return interactor.camera(p); },
+            position: function(p) { return interactor.project(p); },
             color: function(p) { return is_screen_right.ifelse(Shade.color("teal"), Shade.color("#ff8080")); }
         }));
     });
