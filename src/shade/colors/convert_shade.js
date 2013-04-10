@@ -373,7 +373,7 @@ Shade.Colors.brighten = Shade(function(amount) {
         var darkness = flip(hls.l);
         amount = flip(amount);
         var resulting_darkness = darkness.mul(amount);
-        return table.hls.create(hls.h, flip(resulting_darkness), hls.s);
+        return table.hls.create(hls.h, flip(resulting_darkness), hls.s).as_shade(color.a());
     };
 });
 
