@@ -34,8 +34,19 @@ Facet.UI.center_zoom_interactor = function(opts)
         throw "Facet.UI.center_zoom_interactor requires height parameter";
     }
 
+    var aspect_ratio = Shade.parameter("float", width/height);
     var center = Shade.parameter("vec2", opts.center);
     var zoom = Shade.parameter("float", opts.zoom);
+    var camera = Shade.Camera.ortho({
+        left: opts.left,
+        right: opts.right,
+        top: opts.top,
+        bottom: opts.bottom,
+        center: center,
+        zoom: zoom,
+        aspect_ratio: aspect_ratio
+    });
+
     var prev_mouse_pos;
     var current_button = 0;
 
@@ -57,23 +68,34 @@ Facet.UI.center_zoom_interactor = function(opts)
         opts.mouseup(event);
     }
 
+    // FIXME: wow, these eval-Shade-in-Javascript functions get UGLY
+
     // c stores the compensation for the kahan compensated sum
     var c = vec.make([0, 0]);
-    function internal_move(dx, dy) {
-        var negdelta = vec.make([-dx / (height * zoom.get() / 2), 
-                                  dy / (height * zoom.get() / 2)]);
-        // we use a kahan compensated sum here:
-        // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
-        // to accumulate minute changes in the center that come from deep zooms.
-        var y = vec.minus(negdelta, c);
-        var t = vec.plus(center.get(), y);
-        c = vec.minus(vec.minus(t, center.get()), y);
-        center.set(t);
-    }
+    var internal_move = (function() {
+        var param = Shade.parameter("vec2"), t2;
+        return function(dx, dy) {
+            param.set(vec.make([dx, dy]));
+            if (_.isUndefined(t2)) {
+                t2 = result.camera.unproject(Shade.vec(0,0))
+                    .sub(result.camera.unproject(param));
+            }
+            var v = t2.evaluate();
+            var negdelta = v;
+            // we use a kahan compensated sum here:
+            // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+            // to accumulate minute changes in the center that come from deep zooms.
+            var y = vec.minus(negdelta, c);
+            var t = vec.plus(center.get(), y);
+            c = vec.minus(vec.minus(t, center.get()), y);
+            center.set(t);
+        };
+    })();
 
     function mousemove(event) {
         if ((current_button & 1) && !event.shiftKey) {
-            internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
+            internal_move(event.offsetX - prev_mouse_pos[0], 
+                        -(event.offsetY - prev_mouse_pos[1]));
             Facet.Scene.invalidate();
         } else if ((current_button & 1) && event.shiftKey) {
             zoom.set(Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240)));
@@ -85,27 +107,26 @@ Facet.UI.center_zoom_interactor = function(opts)
 
     // FIXME mousewheel madness
     function mousewheel(event, delta, deltaX, deltaY) {
-        internal_move(width/2-event.offsetX, height/2-event.offsetY);
+        internal_move(result.width/2-event.offsetX, event.offsetY-result.height/2);
 	var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + deltaY/10));
         // var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
         zoom.set(new_value);
-        internal_move(event.offsetX-width/2, event.offsetY-height/2);
-        opts.mousewheel(event);
+        internal_move(event.offsetX-result.width/2, result.height/2-event.offsetY);
+        // opts.mousewheel(event);
         Facet.Scene.invalidate();
         return false;
     }
 
-    var aspect_ratio = Shade.parameter("float", width/height);
-    var camera = Shade.Camera.ortho({
-        center: center,
-        zoom: zoom,
-        aspect_ratio: aspect_ratio
-    });
+    function resize(w, h) {
+        result.resize(w, h);
+    }
 
-    return {
+    var result = {
         camera: camera,
         center: center,
         zoom: zoom,
+        width: width,
+        height: height,
 
         project: function(pt) {
             return this.camera.project(pt);
@@ -117,9 +138,8 @@ Facet.UI.center_zoom_interactor = function(opts)
 
         resize: function(w, h) {
             aspect_ratio.set(w/h);
-            width = w;
-            height = h;
-            Facet.Scene.invalidate();
+            this.width = w;
+            this.height = h;
         },
 
         // Transitions between two projections using van Wijk and Nuij's scale-space geodesics
@@ -182,7 +202,10 @@ Facet.UI.center_zoom_interactor = function(opts)
             mousedown: mousedown,
             mouseup: mouseup,
             mousemove: mousemove,
-            mousewheel: mousewheel
+            mousewheel: mousewheel,
+            resize: resize
         }
     };
+
+    return result;
 };
