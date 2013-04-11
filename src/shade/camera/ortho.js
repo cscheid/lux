@@ -32,24 +32,6 @@ Shade.Camera.ortho = function(opts)
     bottom = opts.bottom;
     top = opts.top;
 
-    var view_xform = Shade(function(model_vertex) {
-        if (model_vertex.type === Shade.Types.vec2) {
-            return model_vertex.sub(opts.center).mul(opts.zoom);
-        } else if (model_vertex.type === Shade.Types.vec3) {
-            return Shade.vec(
-                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
-                model_vertex.z());
-        } else if (model_vertex.type === Shade.Types.vec4) {
-            return Shade.vec(
-                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
-                model_vertex.z());
-        } else 
-            throw "Shade.ortho requires vec2, vec3, or vec4s";
-    });
-    var view_xform_invert = Shade(function(view_vertex) {
-        return Shade.vec(view_vertex.swizzle("xy").div(opts.zoom).add(opts.center));
-    });
-
     var view_ratio = Shade.sub(right, left).div(Shade.sub(top, bottom));
     var l_or_p = view_ratio.gt(viewport_ratio); // letterbox or pillarbox
 
@@ -66,6 +48,24 @@ Shade.Camera.ortho = function(opts)
     var t = l_or_p.ifelse(cy.add(corrected_half_height), top);
     var m = Shade.ortho(l, r, b, t, near, far);
     
+    var view_xform = Shade(function(model_vertex) {
+        if (model_vertex.type === Shade.Types.vec2) {
+            return model_vertex.sub(opts.center).mul(opts.zoom);
+        } else if (model_vertex.type === Shade.Types.vec3) {
+            return Shade.vec(
+                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
+                model_vertex.z());
+        } else if (model_vertex.type === Shade.Types.vec4) {
+            return Shade.vec(
+                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
+                model_vertex.z());
+        } else 
+            throw "Shade.ortho requires vec2, vec3, or vec4s";
+    });
+    var view_xform_invert = Shade(function(view_vertex) {
+        return view_vertex.swizzle("xy").div(opts.zoom).add(opts.center);
+    });
+
     function result(obj) {
         return result.project(obj);
     }
