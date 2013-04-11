@@ -84,6 +84,7 @@ Facet.init = function(canvas, opts)
         clearDepth = opts.clearDepth;
 
     var devicePixelRatio = 1;
+
     if (opts.highDPS) {
         devicePixelRatio = window.devicePixelRatio || 1;
         canvas.style.width = canvas.width;
@@ -129,22 +130,21 @@ Facet.init = function(canvas, opts)
             };
             gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
+
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
+
         var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", "mouseup"];
-        for (var i=0; i<canvas_events.length; ++i) {
-            var ename = canvas_events[i];
+        _.each(canvas_events, function(ename) {
             var listener = opts[ename];
             if (!_.isUndefined(listener)) {
-                (function(listener) {
-                    function internal_listener(event) {
-                        polyfill_event(event, gl);
-                        return listener(event);
-                    }
-                    canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
-                })(listener);
+                function internal_listener(event) {
+                    polyfill_event(event, gl);
+                    return listener(event);
+                }
+                canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
             }
-        }
+        });
         
         if (!_.isUndefined(opts.mousewheel)) {
             $(canvas).bind('mousewheel', function(event, delta, deltaX, deltaY) {
@@ -196,17 +196,35 @@ Facet.init = function(canvas, opts)
         this._facet_globals.display_callback();
     };
     gl.resize = function(width, height) {
-        this.viewportWidth = width;
-        this.viewportHeight = height;
         this.parameters.width.set(width);
         this.parameters.height.set(height);
-        this.canvas.width = width;
-        this.canvas.height = height;
-        this.display();
+        if (opts.highDPS) {
+            this.viewportWidth = width * devicePixelRatio;
+            this.viewportHeight = height * devicePixelRatio;
+            this.canvas.style.width = width;
+            this.canvas.style.height = height;
+            this.canvas.width = this.canvas.clientWidth * devicePixelRatio;
+            this.canvas.height = this.canvas.clientHeight * devicePixelRatio;
+            if (opts.resize)
+                opts.resize(width, height);
+        } else {
+            this.viewportWidth = width;
+            this.viewportHeight = height;
+            this.canvas.width = width;
+            this.canvas.height = height;
+            if (opts.resize)
+                opts.resize(width, height);
+        }
+        Facet.Scene.invalidate();
     };
     gl.parameters = {};
-    gl.parameters.width = Shade.parameter("float", gl.viewportWidth);
-    gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
+    if (opts.highDPS) {
+        gl.parameters.width = Shade.parameter("float", gl.viewportWidth / devicePixelRatio);
+        gl.parameters.height = Shade.parameter("float", gl.viewportHeight / devicePixelRatio);
+    } else {
+        gl.parameters.width = Shade.parameter("float", gl.viewportWidth);
+        gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
+    }
     gl.parameters.now = Shade.parameter("float", gl._facet_globals.epoch);
     gl.parameters.frame_duration = Shade.parameter("float", 0);
 
