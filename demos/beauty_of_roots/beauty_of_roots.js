@@ -69,7 +69,7 @@ function init_gui()
             return;
         var w = window.innerWidth;
         var h = window.innerHeight;
-        interactor.resize(w, h);
+
         gl.resize(w, h);
         rb.resize(w, h);
         Facet.Scene.invalidate();
