@@ -67,16 +67,16 @@ ColorBrewer.qualitative = function(opts) {
     });
     if (_.isUndefined(opts.name))
         throw "'name' is a required option";
-    var a = schemes.sequential[opts.name];
+    var a = schemes.qualitative[opts.name];
     if (_.isUndefined(a))
         throw "Unknown qualitative colormap " + opts.name;
     function lookup(i) {
         if (_.isUndefined(opts.domain)) {
-            return i;
+            return a[i];
         }
-        return opts.domain[i];
+        return a[opts.domain[i]];
     }
-    var range = _.map(a, function(lst, i) {
+    var range = _.map(a, function(unused, i) {
         lst = lookup(i);
         return Shade.vec(lst[0] / 255, lst[1]/255, lst[2]/255, opts.alpha);
     });
@@ -92,7 +92,7 @@ ColorBrewer.diverging = function(opts) {
     });
     if (_.isUndefined(opts.name))
         throw "'name' is a required option";
-    var a = schemes.sequential[opts.name];
+    var a = schemes.diverging[opts.name];
     if (_.isUndefined(a))
         throw "Unknown diverging colormap " + opts.name;
     var range = _.map(a, function(lst) {

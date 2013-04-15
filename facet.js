@@ -4099,6 +4099,7 @@ Facet.init = function(canvas, opts)
         clearDepth = opts.clearDepth;
 
     var devicePixelRatio = 1;
+
     if (opts.highDPS) {
         devicePixelRatio = window.devicePixelRatio || 1;
         canvas.style.width = canvas.width;
@@ -4144,22 +4145,21 @@ Facet.init = function(canvas, opts)
             };
             gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
+
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
+
         var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", "mouseup"];
-        for (var i=0; i<canvas_events.length; ++i) {
-            var ename = canvas_events[i];
+        _.each(canvas_events, function(ename) {
             var listener = opts[ename];
             if (!_.isUndefined(listener)) {
-                (function(listener) {
-                    function internal_listener(event) {
-                        polyfill_event(event, gl);
-                        return listener(event);
-                    }
-                    canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
-                })(listener);
+                function internal_listener(event) {
+                    polyfill_event(event, gl);
+                    return listener(event);
+                }
+                canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
             }
-        }
+        });
         
         if (!_.isUndefined(opts.mousewheel)) {
             $(canvas).bind('mousewheel', function(event, delta, deltaX, deltaY) {
@@ -4211,17 +4211,35 @@ Facet.init = function(canvas, opts)
         this._facet_globals.display_callback();
     };
     gl.resize = function(width, height) {
-        this.viewportWidth = width;
-        this.viewportHeight = height;
         this.parameters.width.set(width);
         this.parameters.height.set(height);
-        this.canvas.width = width;
-        this.canvas.height = height;
-        this.display();
+        if (opts.highDPS) {
+            this.viewportWidth = width * devicePixelRatio;
+            this.viewportHeight = height * devicePixelRatio;
+            this.canvas.style.width = width;
+            this.canvas.style.height = height;
+            this.canvas.width = this.canvas.clientWidth * devicePixelRatio;
+            this.canvas.height = this.canvas.clientHeight * devicePixelRatio;
+            if (opts.resize)
+                opts.resize(width, height);
+        } else {
+            this.viewportWidth = width;
+            this.viewportHeight = height;
+            this.canvas.width = width;
+            this.canvas.height = height;
+            if (opts.resize)
+                opts.resize(width, height);
+        }
+        Facet.Scene.invalidate();
     };
     gl.parameters = {};
-    gl.parameters.width = Shade.parameter("float", gl.viewportWidth);
-    gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
+    if (opts.highDPS) {
+        gl.parameters.width = Shade.parameter("float", gl.viewportWidth / devicePixelRatio);
+        gl.parameters.height = Shade.parameter("float", gl.viewportHeight / devicePixelRatio);
+    } else {
+        gl.parameters.width = Shade.parameter("float", gl.viewportWidth);
+        gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
+    }
     gl.parameters.now = Shade.parameter("float", gl._facet_globals.epoch);
     gl.parameters.frame_duration = Shade.parameter("float", 0);
 
@@ -5552,8 +5570,19 @@ Facet.UI.center_zoom_interactor = function(opts)
         throw "Facet.UI.center_zoom_interactor requires height parameter";
     }
 
+    var aspect_ratio = Shade.parameter("float", width/height);
     var center = Shade.parameter("vec2", opts.center);
     var zoom = Shade.parameter("float", opts.zoom);
+    var camera = Shade.Camera.ortho({
+        left: opts.left,
+        right: opts.right,
+        top: opts.top,
+        bottom: opts.bottom,
+        center: center,
+        zoom: zoom,
+        aspect_ratio: aspect_ratio
+    });
+
     var prev_mouse_pos;
     var current_button = 0;
 
@@ -5575,23 +5604,34 @@ Facet.UI.center_zoom_interactor = function(opts)
         opts.mouseup(event);
     }
 
+    // FIXME: wow, these eval-Shade-in-Javascript functions get UGLY
+
     // c stores the compensation for the kahan compensated sum
     var c = vec.make([0, 0]);
-    function internal_move(dx, dy) {
-        var negdelta = vec.make([-dx / (height * zoom.get() / 2), 
-                                  dy / (height * zoom.get() / 2)]);
-        // we use a kahan compensated sum here:
-        // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
-        // to accumulate minute changes in the center that come from deep zooms.
-        var y = vec.minus(negdelta, c);
-        var t = vec.plus(center.get(), y);
-        c = vec.minus(vec.minus(t, center.get()), y);
-        center.set(t);
-    }
+    var internal_move = (function() {
+        var param = Shade.parameter("vec2"), t2;
+        return function(dx, dy) {
+            param.set(vec.make([dx, dy]));
+            if (_.isUndefined(t2)) {
+                t2 = result.camera.unproject(Shade.vec(0,0))
+                    .sub(result.camera.unproject(param));
+            }
+            var v = t2.evaluate();
+            var negdelta = v;
+            // we use a kahan compensated sum here:
+            // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+            // to accumulate minute changes in the center that come from deep zooms.
+            var y = vec.minus(negdelta, c);
+            var t = vec.plus(center.get(), y);
+            c = vec.minus(vec.minus(t, center.get()), y);
+            center.set(t);
+        };
+    })();
 
     function mousemove(event) {
         if ((current_button & 1) && !event.shiftKey) {
-            internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
+            internal_move(event.offsetX - prev_mouse_pos[0], 
+                        -(event.offsetY - prev_mouse_pos[1]));
             Facet.Scene.invalidate();
         } else if ((current_button & 1) && event.shiftKey) {
             zoom.set(Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240)));
@@ -5603,27 +5643,26 @@ Facet.UI.center_zoom_interactor = function(opts)
 
     // FIXME mousewheel madness
     function mousewheel(event, delta, deltaX, deltaY) {
-        internal_move(width/2-event.offsetX, height/2-event.offsetY);
+        internal_move(result.width/2-event.offsetX, event.offsetY-result.height/2);
 	var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + deltaY/10));
         // var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
         zoom.set(new_value);
-        internal_move(event.offsetX-width/2, event.offsetY-height/2);
-        opts.mousewheel(event);
+        internal_move(event.offsetX-result.width/2, result.height/2-event.offsetY);
+        // opts.mousewheel(event);
         Facet.Scene.invalidate();
         return false;
     }
 
-    var aspect_ratio = Shade.parameter("float", width/height);
-    var camera = Shade.Camera.ortho({
-        center: center,
-        zoom: zoom,
-        aspect_ratio: aspect_ratio
-    });
+    function resize(w, h) {
+        result.resize(w, h);
+    }
 
-    return {
+    var result = {
         camera: camera,
         center: center,
         zoom: zoom,
+        width: width,
+        height: height,
 
         project: function(pt) {
             return this.camera.project(pt);
@@ -5635,9 +5674,8 @@ Facet.UI.center_zoom_interactor = function(opts)
 
         resize: function(w, h) {
             aspect_ratio.set(w/h);
-            width = w;
-            height = h;
-            Facet.Scene.invalidate();
+            this.width = w;
+            this.height = h;
         },
 
         // Transitions between two projections using van Wijk and Nuij's scale-space geodesics
@@ -5700,9 +5738,12 @@ Facet.UI.center_zoom_interactor = function(opts)
             mousedown: mousedown,
             mouseup: mouseup,
             mousemove: mousemove,
-            mousewheel: mousewheel
+            mousewheel: mousewheel,
+            resize: resize
         }
     };
+
+    return result;
 };
 /*
  * Shade is the javascript DSL for writing GLSL shaders, part of Facet.
@@ -5906,24 +5947,6 @@ Shade.Camera.ortho = function(opts)
     bottom = opts.bottom;
     top = opts.top;
 
-    var view_xform = Shade(function(model_vertex) {
-        if (model_vertex.type === Shade.Types.vec2) {
-            return model_vertex.sub(opts.center).mul(opts.zoom);
-        } else if (model_vertex.type === Shade.Types.vec3) {
-            return Shade.vec(
-                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
-                model_vertex.z());
-        } else if (model_vertex.type === Shade.Types.vec4) {
-            return Shade.vec(
-                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
-                model_vertex.z());
-        } else 
-            throw "Shade.ortho requires vec2, vec3, or vec4s";
-    });
-    var view_xform_invert = Shade(function(view_vertex) {
-        return Shade.vec(view_vertex.swizzle("xy").div(opts.zoom).add(opts.center));
-    });
-
     var view_ratio = Shade.sub(right, left).div(Shade.sub(top, bottom));
     var l_or_p = view_ratio.gt(viewport_ratio); // letterbox or pillarbox
 
@@ -5940,6 +5963,24 @@ Shade.Camera.ortho = function(opts)
     var t = l_or_p.ifelse(cy.add(corrected_half_height), top);
     var m = Shade.ortho(l, r, b, t, near, far);
     
+    var view_xform = Shade(function(model_vertex) {
+        if (model_vertex.type === Shade.Types.vec2) {
+            return model_vertex.sub(opts.center).mul(opts.zoom);
+        } else if (model_vertex.type === Shade.Types.vec3) {
+            return Shade.vec(
+                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
+                model_vertex.z());
+        } else if (model_vertex.type === Shade.Types.vec4) {
+            return Shade.vec(
+                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
+                model_vertex.z());
+        } else 
+            throw "Shade.ortho requires vec2, vec3, or vec4s";
+    });
+    var view_xform_invert = Shade(function(view_vertex) {
+        return view_vertex.swizzle("xy").div(opts.zoom).add(opts.center);
+    });
+
     function result(obj) {
         return result.project(obj);
     }
@@ -10007,7 +10048,7 @@ Shade.Optimizer.transform_expression = function(operations)
 
 Shade.Optimizer.is_constant = function(exp)
 {
-    return exp.is_constant();
+    return exp.is_constant() && (exp.expression_type.substring(0,8) !== "constant");
 };
 
 Shade.Optimizer.replace_with_constant = function(exp)
@@ -11863,16 +11904,23 @@ var white_point_uv = xyz_to_uv(white_point);
 
 Shade.Colors.shadetable = table;
 
+//////////////////////////////////////////////////////////////////////////////
+// Color utility functions
+
+// FIXME Ideally, I would like these to not depend on the 'table' variable,
+// which is a gigantic mess. But for now, they do.
+
+function flip(v) { return Shade(1).sub(v); }
+
 Shade.Colors.desaturate = Shade(function(amount) {
     return function(color) {
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
         var hsv = table.rgb.hsv(rgb);
-        return table.hsv.create(hsv.h, hsv.s.mul(Shade(1).sub(amount)), hsv.v).as_shade(color.a());
+        return table.hsv.create(hsv.h, hsv.s.mul(flip(amount)), hsv.v).as_shade(color.a());
     };
 });
 
 Shade.Colors.brighten = Shade(function(amount) {
-    function flip(v) { return Shade(1).sub(v); }
     return function(color) {
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
         var hls = table.rgb.hls(rgb);
@@ -11880,6 +11928,17 @@ Shade.Colors.brighten = Shade(function(amount) {
         amount = flip(amount);
         var resulting_darkness = darkness.mul(amount);
         return table.hls.create(hls.h, flip(resulting_darkness), hls.s).as_shade(color.a());
+    };
+});
+
+Shade.Colors.darken = Shade(function(amount) {
+    return function(color) {
+        var rgb = table.rgb.create(color.r(), color.g(), color.b());
+        var hls = table.rgb.hls(rgb);
+        var darkness = flip(hls.l);
+        amount = flip(amount);
+        var resulting_darkness = darkness.mul(amount);
+        return table.hls.create(hls.h, resulting_darkness, hls.s).as_shade(color.a());
     };
 });
 
