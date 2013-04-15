@@ -5,10 +5,6 @@ JS_COMPILER = ./node_modules/uglify-js/bin/uglifyjs
 
 all: facet.js facet.min.js data.js colorbrewer.js
 
-colorbrewer.js:					\
-	src/brewcolor/_begin.js			\
-	src/brewcolor/brewer.js
-
 data.js:					\
 	src/data/_begin.js			\
 	src/data/iris.js			\
@@ -213,11 +209,6 @@ endif
 	chmod -w $@ 
 
 data.js: Makefile
-	@rm -f $@
-	cat $(filter %.js,$^) > $@
-	chmod -w $@
-
-colorbrewer.js: Makefile
 	@rm -f $@
 	cat $(filter %.js,$^) > $@
 	chmod -w $@
