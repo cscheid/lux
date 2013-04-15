@@ -42,9 +42,18 @@ Shade.ifelse = function(condition, if_true, if_false)
             }
         },
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
-            return this.parents[0].evaluate(cache)?
-                this.parents[1].evaluate(cache):
-                this.parents[2].evaluate(cache);
+            if (this.parents[1].is_constant() &&
+                this.parents[2].is_constant() &&
+                this.type.constant_equal(this.parents[1].constant_value(),
+                                         this.parents[2].constant_value())) {
+                // if both sides of the branch have the same value, then
+                // this evaluates to the constant, regardless of the condition.
+                return this.parents[1].constant_value();
+            } else {
+                return this.parents[0].evaluate(cache)?
+                    this.parents[1].evaluate(cache):
+                    this.parents[2].evaluate(cache);
+            };
         }),
         is_constant: function() {
             if (!this.parents[0].is_constant()) {
