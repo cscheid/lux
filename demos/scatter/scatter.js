@@ -68,7 +68,7 @@ $().ready(function() {
         x_scale: S.Utils.fit(data.sepalLength),
         y_scale: S.Utils.fit(data.petalLength),
         fill_color: species_color,
-        stroke_color: Shade.Colors.darken(0.25)(species_color),
+        stroke_color: Shade.Colors.darken(0.8)(species_color),
         stroke_width: stroke_width,
         point_diameter: point_diameter,
         mode: Facet.DrawingMode.over

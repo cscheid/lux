@@ -7157,39 +7157,6 @@ Shade.CompilationContext = function(compile_type)
     };
 };
 Shade.Exp = {
-    debug_print: function(do_what) {
-        var lst = [];
-        var refs = {};
-        function _debug_print(which, indent) {
-            var i;
-            var str = new Array(indent+2).join(" "); // This is python's '" " * indent'
-            // var str = "";
-            // for (var i=0; i<indent; ++i) { str = str + ' '; }
-            if (which.parents.length === 0) 
-                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
-                            // + "[is_constant: " + which.is_constant() + "]"
-                            + " ()");
-            else {
-                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
-                            // + "[is_constant: " + which.is_constant() + "]"
-                            + " (");
-                for (i=0; i<which.parents.length; ++i) {
-                    if (refs[which.parents[i].guid])
-                        lst.push(str + "  {{" + which.parents[i].guid + "}}");
-                    else {
-                        _debug_print(which.parents[i], indent + 2);
-                        refs[which.parents[i].guid] = 1;
-                    }
-                }
-                lst.push(str + ')');
-            }
-        };
-        _debug_print(this, 0);
-        do_what = do_what || function(l) {
-            return l.join("\n");
-        };
-        return do_what(lst);
-    },
     glsl_expression: function() {
         return this.glsl_name + "()";
     },
@@ -7223,8 +7190,6 @@ Shade.Exp = {
             while (i--) {
                 topological_sort_internal(parents[i]);
             }
-            // for (var i=0; i<l; ++i) {
-            // }
             so_far.push(exp);
             visited_guids[guid] = true;
         };
@@ -7667,6 +7632,52 @@ Shade.Exp = {
             }
         }
         return latest_replacement;
+    },
+
+    //////////////////////////////////////////////////////////////////////////
+    // debugging infrastructure
+    
+    debug_print: function(do_what) {
+        var lst = [];
+        var refs = {};
+        function _debug_print(which, indent) {
+            var i;
+            var str = new Array(indent+2).join(" "); // This is python's '" " * indent'
+            // var str = "";
+            // for (var i=0; i<indent; ++i) { str = str + ' '; }
+            if (which.parents.length === 0) 
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " ()");
+            else {
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " (");
+                for (i=0; i<which.parents.length; ++i) {
+                    if (refs[which.parents[i].guid])
+                        lst.push(str + "  {{" + which.parents[i].guid + "}}");
+                    else {
+                        _debug_print(which.parents[i], indent + 2);
+                        refs[which.parents[i].guid] = 1;
+                    }
+                }
+                lst.push(str + ')');
+            }
+        };
+        _debug_print(this, 0);
+        do_what = do_what || function(l) {
+            return l.join("\n");
+        };
+        return do_what(lst);
+    },
+
+    locate: function(predicate) {
+        var sub_exprs = this.sorted_sub_expressions();
+        for (var i=0; i<sub_exprs.length; ++i) {
+            if (predicate(sub_exprs[i]))
+                return sub_exprs[i];
+        }
+        return undefined;
     },
 
     //////////////////////////////////////////////////////////////////////////
@@ -10835,9 +10846,18 @@ Shade.ifelse = function(condition, if_true, if_false)
             }
         },
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
-            return this.parents[0].evaluate(cache)?
-                this.parents[1].evaluate(cache):
-                this.parents[2].evaluate(cache);
+            if (this.parents[1].is_constant() &&
+                this.parents[2].is_constant() &&
+                this.type.constant_equal(this.parents[1].constant_value(),
+                                         this.parents[2].constant_value())) {
+                // if both sides of the branch have the same value, then
+                // this evaluates to the constant, regardless of the condition.
+                return this.parents[1].constant_value();
+            } else {
+                return this.parents[0].evaluate(cache)?
+                    this.parents[1].evaluate(cache):
+                    this.parents[2].evaluate(cache);
+            };
         }),
         is_constant: function() {
             if (!this.parents[0].is_constant()) {
