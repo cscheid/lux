@@ -51,10 +51,15 @@ $().ready(function() {
 
     var data = data_buffers();
 
-    var species_color = S.vec(S.Utils.choose(
-        [S.vec(1, 0, 0),
-         S.vec(0, 1, 0),
-         S.vec(0, 0, 1)])(data.species), point_alpha);
+    var species_color = Shade.Colors.Brewer.qualitative({
+        name: "Set1",
+        alpha: point_alpha
+    })(data.species);
+
+    // var species_color = S.vec(S.Utils.choose(
+    //     [S.vec(1, 0, 0),
+    //      S.vec(0, 1, 0),
+    //      S.vec(0, 0, 1)])(data.species), point_alpha);
 
     Facet.Scene.add(Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
@@ -63,7 +68,7 @@ $().ready(function() {
         x_scale: S.Utils.fit(data.sepalLength),
         y_scale: S.Utils.fit(data.petalLength),
         fill_color: species_color,
-        stroke_color: species_color.mul(0.75),
+        stroke_color: Shade.Colors.darken(0.25)(species_color),
         stroke_width: stroke_width,
         point_diameter: point_diameter,
         mode: Facet.DrawingMode.over
