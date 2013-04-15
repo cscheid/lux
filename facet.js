@@ -10048,7 +10048,7 @@ Shade.Optimizer.transform_expression = function(operations)
 
 Shade.Optimizer.is_constant = function(exp)
 {
-    return exp.is_constant() && (exp.expression_type.substring(0,8) !== "constant");
+    return exp.is_constant();
 };
 
 Shade.Optimizer.replace_with_constant = function(exp)
@@ -12871,10 +12871,11 @@ Facet.Marks.dots = function(opts)
         throw "missing required parameter 'elements'";
 
     var S = Shade;
+    var ctx = Facet._globals.ctx;
 
     var fill_color     = Shade(opts.fill_color);
     var stroke_color   = Shade(opts.stroke_color);
-    var point_diameter = Shade(opts.point_diameter);
+    var point_diameter = Shade(opts.point_diameter).mul(ctx._facet_globals.devicePixelRatio);
     var stroke_width   = Shade(opts.stroke_width).add(1);
     var use_alpha      = Shade(opts.alpha);
     opts.plain = Shade(opts.plain);

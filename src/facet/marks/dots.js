@@ -16,10 +16,11 @@ Facet.Marks.dots = function(opts)
         throw "missing required parameter 'elements'";
 
     var S = Shade;
+    var ctx = Facet._globals.ctx;
 
     var fill_color     = Shade(opts.fill_color);
     var stroke_color   = Shade(opts.stroke_color);
-    var point_diameter = Shade(opts.point_diameter);
+    var point_diameter = Shade(opts.point_diameter).mul(ctx._facet_globals.devicePixelRatio);
     var stroke_width   = Shade(opts.stroke_width).add(1);
     var use_alpha      = Shade(opts.alpha);
     opts.plain = Shade(opts.plain);
