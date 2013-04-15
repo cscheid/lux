@@ -357,16 +357,23 @@ var white_point_uv = xyz_to_uv(white_point);
 
 Shade.Colors.shadetable = table;
 
+//////////////////////////////////////////////////////////////////////////////
+// Color utility functions
+
+// FIXME Ideally, I would like these to not depend on the 'table' variable,
+// which is a gigantic mess. But for now, they do.
+
+function flip(v) { return Shade(1).sub(v); }
+
 Shade.Colors.desaturate = Shade(function(amount) {
     return function(color) {
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
         var hsv = table.rgb.hsv(rgb);
-        return table.hsv.create(hsv.h, hsv.s.mul(Shade(1).sub(amount)), hsv.v).as_shade(color.a());
+        return table.hsv.create(hsv.h, hsv.s.mul(flip(amount)), hsv.v).as_shade(color.a());
     };
 });
 
 Shade.Colors.brighten = Shade(function(amount) {
-    function flip(v) { return Shade(1).sub(v); }
     return function(color) {
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
         var hls = table.rgb.hls(rgb);
@@ -374,6 +381,17 @@ Shade.Colors.brighten = Shade(function(amount) {
         amount = flip(amount);
         var resulting_darkness = darkness.mul(amount);
         return table.hls.create(hls.h, flip(resulting_darkness), hls.s).as_shade(color.a());
+    };
+});
+
+Shade.Colors.darken = Shade(function(amount) {
+    return function(color) {
+        var rgb = table.rgb.create(color.r(), color.g(), color.b());
+        var hls = table.rgb.hls(rgb);
+        var darkness = flip(hls.l);
+        amount = flip(amount);
+        var resulting_darkness = darkness.mul(amount);
+        return table.hls.create(hls.h, resulting_darkness, hls.s).as_shade(color.a());
     };
 });
 
