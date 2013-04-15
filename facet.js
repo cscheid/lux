@@ -7342,7 +7342,7 @@ Shade.Exp = {
             value: function() { return "int(" + this.parents[0].glsl_expression() + ")"; },
             is_constant: function() { return this.parents[0].is_constant(); },
             evaluate: Shade.memoize_on_guid_dict(function(cache) {
-                var v = parent.evaluate(cache);
+                var v = this.parents[0].evaluate(cache);
                 return Math.floor(v);
             }),
             expression_type: "cast(int)"
