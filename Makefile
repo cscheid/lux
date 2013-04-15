@@ -3,7 +3,7 @@
 
 JS_COMPILER = ./node_modules/uglify-js/bin/uglifyjs
 
-all: facet.js facet.min.js data.js colorbrewer.js
+all: facet.js facet.min.js data.js
 
 data.js:					\
 	src/data/_begin.js			\
