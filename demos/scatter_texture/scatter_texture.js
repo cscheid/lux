@@ -45,10 +45,14 @@ function init_webgl()
     stroke_width   = S.parameter("float", 2.5);
     point_alpha    = S.parameter("float", 1.0);
 
-    var species_color = S.Utils.choose(
-        [S.vec(1, 0, 0, point_alpha),
-         S.vec(0, 1, 0, point_alpha),
-         S.vec(0, 0, 1, point_alpha)])(data.species);
+    var species_color = Shade.Colors.Brewer.qualitative({
+        name: "Set1",
+        alpha: point_alpha
+    })(data.species);
+    // var species_color = S.Utils.choose(
+    //     [S.vec(1, 0, 0, point_alpha),
+    //      S.vec(0, 1, 0, point_alpha),
+    //      S.vec(0, 0, 1, point_alpha)])(data.species);
 
     // Shade.debug = true;
     scatterplot_batch = Facet.Marks.scatterplot({

@@ -101,10 +101,9 @@ function init_webgl()
         xy_distance = xy_distance.add(axes.mul(column_center - column_min).abs());
     };
 
-    var species_color = S.Utils.choose(
-        [S.vec(1, 0, 0, point_alpha),
-         S.vec(0, 1, 0, point_alpha),
-         S.vec(0, 0, 1, point_alpha)])(data.species);
+    var species_color = Shade.Colors.Brewer.qualitative({
+        name: "Set1"
+    })(data.species);
 
     tour_batch = Facet.Marks.scatterplot({
         elements: data.sepalWidth.numItems,

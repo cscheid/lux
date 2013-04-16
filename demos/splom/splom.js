@@ -39,11 +39,10 @@ function init_webgl()
 {
     data = data_buffers();
 
-    var species_color = Shade.vec(Shade.Utils.choose(
-        [Shade.vec(1, 0, 0),
-         Shade.vec(0, 1, 0),
-         Shade.vec(0, 0, 1)])(data.species), 0.5);
-
+    var species_color = Shade.Colors.Brewer.qualitative({
+        name: "Set1",
+        alpha: 0.5
+    })(data.species);
     var min_range = Shade.array([4.3, 2.0, 1.0, 0.1]);
     var max_range = Shade.array([7.9, 4.4, 6.9, 2.5]);
 
@@ -108,7 +107,8 @@ function init_webgl()
         bottom:  function(index) { return scale(el_row(index).add(padding).div(4)); },
         color:   Shade.vec(0,0,0,0.3),
         z:       0.1,
-        pick_id: Shade.shade_id(0)
+        pick_id: Shade.shade_id(0),
+        mode:    Facet.DrawingMode.over
     });
 
     var selection_rect = Facet.Marks.aligned_rects({

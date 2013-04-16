@@ -40,11 +40,11 @@ function create_parallel_coords_batch()
     var color_from_index = function(primitive_index, vertex_in_primitive) {
         var which_column = primitive_index.div(table.n_rows).floor(),
             which_row    = primitive_index.mod(table.n_rows).floor();
-        var u = Shade.Scale.linear({domain: [0, table.n_rows], 
-                                    range: [0, 1]})(which_row);
-        var h = u.mul(1.5).add(3),
-            l = Shade.sub(95, u.mul(30));
-        return Shade.Colors.shadetable.hcl.create(h, 20, l).as_shade();
+        return Shade.Colors.Brewer.sequential({
+            name: "Reds",
+            min: 0,
+            max: table.n_rows
+        })(which_row);
     };
 
     return Facet.Marks.lines({

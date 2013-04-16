@@ -32,7 +32,7 @@ $().ready(function () {
         return Shade.ifelse(xor(x_even, y_even), c1, c2);
     }
 
-    var is_screen_right = Shade.fragCoord().x().gt(gl.parameters.width.div(2));
+    var is_screen_right = Shade.fragCoord().x().div(gl._facet_globals.devicePixelRatio).gt(gl.parameters.width.div(2));
 
     Facet.Net.json("opensans.regular.json", function(font) {
         Facet.Scene.add(Facet.Text.texture({

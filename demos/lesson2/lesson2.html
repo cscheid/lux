@@ -59,7 +59,7 @@ var square_position = camera(Shade.translation( 1.5, 0, -6)(square_model.vertex)
 var triangle_position = camera(Shade.translation(-1.5, 0, -6)(triangle_model.vertex));
 </pre>
 
-<p>The variables <span class="keyword">square_position</span> and <span class="keyword">triangle_position</span> now store a value representing the transformed vertices of the square and triangle model, respectively. All that's left to do is to actually tell Facet to draw the models on the screen. We <span class="keyword">bake</a> the model's positions into batches, and add them into the Facet scene:</p>
+<p>The variables <span class="keyword">square_position</span> and <span class="keyword">triangle_position</span> now store a value representing the transformed vertices of the square and triangle model, respectively. All that's left to do is to actually tell Facet to draw the models on the screen. We <span class="keyword">bake</span> the model's positions into batches, and add them into the Facet scene:</p>
 
 <pre class="highlight">
 var square = Facet.bake(square_model, { position: square_position }),
