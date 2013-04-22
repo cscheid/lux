@@ -1,5 +1,5 @@
 /*
- * Facet: An EDSL for WebGL graphics
+ * Lux: An EDSL for WebGL graphics
  * By Carlos Scheidegger, cscheid@research.att.com
  * 
  * Copyright (c) 2011, 2012 AT&T Intellectual Property
@@ -13,7 +13,7 @@
  *
  */
 
-// Facet depends, at least partially, on the following software libraries:
+// Lux depends, at least partially, on the following software libraries:
 // - underscore.js
 // - webgl-debug
 // - webgl-utils

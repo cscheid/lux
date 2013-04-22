@@ -63,14 +63,14 @@ Shade.parameter = function(type, v)
         set: function(v) {
             // Ideally, we'd like to do type checking here, but I'm concerned about
             // performance implications. setting a uniform might be a hot path
-            // then again, facet_constant_type is unlikely to be particularly fast.
+            // then again, lux_constant_type is unlikely to be particularly fast.
             // FIXME check performance
-            var t = facet_constant_type(v);
+            var t = lux_constant_type(v);
             if (t === "shade_expression")
                 v = v.evaluate();
             value = v;
-            if (this._facet_active_uniform) {
-                this._facet_active_uniform(v);
+            if (this._lux_active_uniform) {
+                this._lux_active_uniform(v);
             }
             _.each(this.watchers, function(f) { f(v); });
         },

@@ -8,7 +8,7 @@ Shade.make = function(exp)
     if (_.isUndefined(exp)) {
         throw "expected a value, got undefined instead";
     }
-    var t = facet_typeOf(exp);
+    var t = lux_typeOf(exp);
     if (t === 'string') {
         // Did you accidentally say exp1 + exp2 when you meant
         // exp1.add(exp2)?
@@ -41,7 +41,7 @@ Shade.make = function(exp)
             return Shade.make(exp.apply(this, wrapped_arguments));
         };
     }
-    t = facet_constant_type(exp);
+    t = lux_constant_type(exp);
     if (t === 'vector' || t === 'matrix') {
         return Shade.constant(exp);
     } else if (exp._shade_type === 'attribute_buffer') {

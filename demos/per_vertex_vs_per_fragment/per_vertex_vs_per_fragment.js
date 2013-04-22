@@ -4,7 +4,7 @@ var sphere, sphere_prog, sphere_drawable;
 var current_mode;
 var current_rotation = 0;
 var mvp;
-var Models = Facet.Models;
+var Models = Lux.Models;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -31,16 +31,16 @@ function display()
     gl.enable(gl.DEPTH_TEST);
 
     // ortho(-5, 5, -5, 5, -5, 5);
-    var pMatrix = Facet.perspective(45, 720/480, 1.0, 100.0);
-    var mvMatrix = mat4.product(Facet.translation(0, 0, -5),
-                                Facet.rotation(current_rotation, [0,1,0]));
+    var pMatrix = Lux.perspective(45, 720/480, 1.0, 100.0);
+    var mvMatrix = mat4.product(Lux.translation(0, 0, -5),
+                                Lux.rotation(current_rotation, [0,1,0]));
     mvp.set(mat4.product(pMatrix, mvMatrix));
     sphere_drawable[current_mode].draw();
 }
 
 function init_webgl()
 {
-    Facet.set_context(gl);
+    Lux.set_context(gl);
     mvp = S.parameter("mat4");
 
     sphere = Models.sphere(10, 10);
@@ -49,12 +49,12 @@ function init_webgl()
     var position = mvp.mul(sphere_model_vertex);
     var vVal = S.per_vertex(sphere_model_vertex.swizzle("x").add(1).mul(0.5));
 
-    var p1 = Facet.bake(sphere, { 
+    var p1 = Lux.bake(sphere, { 
         position: position,
         color: S.vec(S.per_vertex(brewer_colormap(vVal)), 1)
     });
 
-    var p2 = Facet.bake(sphere, {
+    var p2 = Lux.bake(sphere, {
         position: position,
         color: S.vec(brewer_colormap(S.per_vertex(vVal)), 1)
     });
@@ -74,7 +74,7 @@ $().ready(function() {
     $("#fp_button").click(function() {
         current_mode = "per_fragment";
     });
-    gl = Facet.init(canvas,
+    gl = Lux.init(canvas,
                 {
                     attributes: {
                         alpha: true,

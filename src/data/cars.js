@@ -1,5 +1,5 @@
 Data.cars = function() {
-    return Facet.Data.table({
+    return Lux.Data.table({
         columns: ["mpg", "cyl", "dsp", "hp", "lbs", "acc", "year", "origin", "name"],
         number_columns: [0, 1, 2, 3, 4, 5, 6, 7],
         data: [

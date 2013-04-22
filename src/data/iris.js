@@ -1,5 +1,5 @@
 Data.flowers = function() {
-    return Facet.Data.table({
+    return Lux.Data.table({
         species_names: ["setosa", "versicolor", "virginica"],
         traits: ["sepalLength", "sepalWidth", "petalLength", "petalWidth"],
 

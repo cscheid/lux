@@ -1,7 +1,7 @@
 module("Shade tests");
 
 var canvas = document.getElementById("webgl");
-var gl = Facet.init(canvas);
+var gl = Lux.init(canvas);
 $(canvas).hide();
 
 // returns a uniformly distributed random integer x such mn <= x < mx
@@ -156,7 +156,7 @@ test("Shade compilation", function() {
         });
     }, function(e) {
         return e === "gl_* are reserved GLSL names";
-    }, "reserved GLSL names in Facet");
+    }, "reserved GLSL names in Lux");
     
     (function () {
         Shade.program({
@@ -688,7 +688,7 @@ test("Texture tables", function() {
                 { 0: 3, 1: 4, 2: 5 },
                 { 0: 6, 1: 7, 2: 8 } ]
     };
-    var table = Facet.Data.texture_table(Facet.Data.table(simple_data));
+    var table = Lux.Data.texture_table(Lux.Data.table(simple_data));
 
     for (var row_ix=0; row_ix<3; ++row_ix) {
         for (var col_ix=0; col_ix<3; ++col_ix) {
@@ -881,15 +881,15 @@ test("Shade.scale.*", function() {
                 Shade.color("yellow")]});
 });
 
-module("Facet tests");
-test("Facet.attribute_buffer", function() {
-    ok(Facet.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 1}));
-    ok(Facet.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 2}));
-    ok(Facet.attribute_buffer({ vertex_array: [1,2,3,4,5], item_size: 1}));
+module("Lux tests");
+test("Lux.attribute_buffer", function() {
+    ok(Lux.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 1}));
+    ok(Lux.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 2}));
+    ok(Lux.attribute_buffer({ vertex_array: [1,2,3,4,5], item_size: 1}));
     raises(function() {
-        Facet.attribute_buffer({ vertex_array: [1,2,3,4,5], item_size: 2});
+        Lux.attribute_buffer({ vertex_array: [1,2,3,4,5], item_size: 2});
     });
-    var x = Facet.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 1});
+    var x = Lux.attribute_buffer({ vertex_array: [1,2,3,4], item_size: 1});
     ok((function() {
         x.set_region(1, [1]);
         return true;

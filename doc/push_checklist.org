@@ -1,4 +1,4 @@
-Facet checklists
+Lux checklists
 
 * before you push to master:
 ** does it pass the test suite?

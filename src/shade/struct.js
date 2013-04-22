@@ -1,4 +1,4 @@
-// Shade.struct denotes a heterogeneous structure of Facet values:
+// Shade.struct denotes a heterogeneous structure of Shade values:
 //   Shade.struct({foo: Shade.vec(1,2,3), bar: Shade.struct({baz: 1, bah: false})});
 
 Shade.struct = function(obj)

@@ -157,35 +157,35 @@ Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (facet_typeOf(a) === 'number' ||
-            facet_typeOf(a) === 'boolean')
+        if (lux_typeOf(a) === 'number' ||
+            lux_typeOf(a) === 'boolean')
             return a === b;
-        if (facet_typeOf(a) === 'array')
+        if (lux_typeOf(a) === 'array')
             return _.all(_.map(_.zip(a, b),
                                function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
-        if (facet_constant_type(a) === 'vector') {
+        if (lux_constant_type(a) === 'vector') {
             return vec.equal(a, b);
         }
-        if (facet_constant_type(a) === 'matrix') {
+        if (lux_constant_type(a) === 'matrix') {
             return mat.equal(a, b);
         }
-        throw "internal error: unrecognized type " + facet_typeOf(a) + 
-            " " + facet_constant_type(a);
+        throw "internal error: unrecognized type " + lux_typeOf(a) + 
+            " " + lux_constant_type(a);
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (facet_typeOf(a) === 'number' ||
-            facet_typeOf(a) === 'boolean')
+        if (lux_typeOf(a) === 'number' ||
+            lux_typeOf(a) === 'boolean')
             return a !== b;
-        if (facet_typeOf(a) === 'array')
+        if (lux_typeOf(a) === 'array')
             return _.any(_.map(_.zip(a, b),
                                function(v) { return v[0] !== v[1]; } ),
                          function (x) { return x; });
-        throw "internal error: unrecognized type " + facet_typeOf(a) + 
-            " " + facet_constant_type(a);
+        throw "internal error: unrecognized type " + lux_typeOf(a) + 
+            " " + lux_constant_type(a);
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 

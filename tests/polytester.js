@@ -6,7 +6,7 @@ function point_2d(x, y) {
 	}
 
 function init_webgl(){
-	return Facet.init(document.getElementById("webgl"), {
+	return Lux.init(document.getElementById("webgl"), {
         clearColor: [0, 0, 0, 0.2],
         mousedown: function(event) {
 		pick(event.offsetX,event.offsetY);	
@@ -15,7 +15,7 @@ function init_webgl(){
    
 
   function refresh_webgl(){
-    gl = Facet.init(document.getElementById("webgl"), {
+    gl = Lux.init(document.getElementById("webgl"), {
         clearColor: [0, 0, 0, 0.2],
    })
     genPoly(numPoints,reduction,cntr,style);
@@ -148,16 +148,16 @@ var xCoord, yCoord, vertexColor = [],model;
 		yCoord = vertices.map(function(v) { return v.y; });
     }
 
-	model = Facet.Marks.polygon({
+	model = Lux.Marks.polygon({
         elements: vertices.length,
         x: xCoord,
         y: yCoord,
 		style: style,
         fill_color: vertexColor,
-        mode: Facet.DrawingMode.over
+        mode: Lux.DrawingMode.over
     });
 
-    Facet.Scene.add(Facet.bake(model, {
+    Lux.Scene.add(Lux.bake(model, {
         position: model.vertex,
 		color: model.color
     }));
@@ -189,7 +189,7 @@ stroke_width   = Shade.parameter("float", 2.5);
 point_alpha    = Shade.parameter("float", 1.0);
 
 var species_color = Shade.vec(Shade.vec(1, 0, 0), point_alpha);
-Facet.Scene.add(Facet.Marks.scatterplot({
+Lux.Scene.add(Lux.Marks.scatterplot({
         elements: 1,
         x: Shade.parameter("float",xcoord),
         y: Shade.parameter("float",ycoord),
@@ -197,7 +197,7 @@ Facet.Scene.add(Facet.Marks.scatterplot({
         stroke_color: species_color.mul(0.75),
         stroke_width: stroke_width,
         point_diameter: point_diameter,
-        mode: Facet.DrawingMode.over
+        mode: Lux.DrawingMode.over
 }));
 
 }
@@ -375,7 +375,7 @@ $().ready(function() {
 
 
 
-gl = Facet.init(document.getElementById("webgl"), {
+gl = Lux.init(document.getElementById("webgl"), {
         clearColor: [0, 0, 0, 0.2],
    });
 viewportWidth = gl.viewportWidth;

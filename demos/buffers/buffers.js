@@ -11,18 +11,18 @@ function get_buffers(urls, alldone)
     var done = _.after(urls.length, alldone);
 
     function handler(buffer, url) {
-        obj[url] = Facet.attribute_buffer({ vertex_array: new Float32Array(buffer), item_size: 1 });
+        obj[url] = Lux.attribute_buffer({ vertex_array: new Float32Array(buffer), item_size: 1 });
         done(obj);
     };
     _.each(urls, function(url) {
-        Facet.Net.buffer_ajax(url, handler);
+        Lux.Net.buffer_ajax(url, handler);
     });
 };
 
 function draw_it()
 {
-    view_proj.set(mat4.product(Facet.perspective(20 / globe.zoom, 720/480, 0.1, 100.0),
-                               Facet.translation(0, 0, -6)));
+    view_proj.set(mat4.product(Lux.perspective(20 / globe.zoom, 720/480, 0.1, 100.0),
+                               Lux.translation(0, 0, -6)));
     globe.draw();
     gl.clear(gl.DEPTH_BUFFER_BIT);
                   
@@ -31,7 +31,7 @@ function draw_it()
 
 $().ready(function() {
     var canvas = document.getElementById("webgl");
-    gl = Facet.init(canvas, {
+    gl = Lux.init(canvas, {
         clearDepth: 1.0,
         clearColor: [1,1,1,1],
         display: draw_it,
@@ -52,7 +52,7 @@ $().ready(function() {
 
     view_proj = Shade.parameter("mat4");
 
-    globe = Facet.Marks.globe({
+    globe = Lux.Marks.globe({
         view_proj: view_proj
     });
 
@@ -62,7 +62,7 @@ $().ready(function() {
                     var lats = obj["/demos/data/lats.raw"];
                     var lons = obj["/demos/data/lons.raw"];
                     
-                    var points_model = Facet.model({
+                    var points_model = Lux.model({
                         x: lats,
                         y: lons,
                         incident_type: type,
@@ -77,7 +77,7 @@ $().ready(function() {
                                                        Shade.color("cyan"),
                                                        Shade.color("cyan")]);
 
-                    points_batch = Facet.bake(points_model, {
+                    points_batch = Lux.bake(points_model, {
                         position: view_proj
                             .mul(globe.model_matrix)
                             .mul(Shade.Scale.Geo.latlong_to_spherical(Shade.radians(lats),

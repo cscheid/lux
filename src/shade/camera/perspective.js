@@ -16,9 +16,9 @@ Shade.Camera.perspective = function(opts)
     if (opts.aspect_ratio)
         aspect_ratio = opts.aspect_ratio;
     else {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         if (_.isUndefined(ctx)) {
-            throw "aspect_ratio is only optional with an active Facet context";
+            throw "aspect_ratio is only optional with an active Lux context";
         }
         aspect_ratio = ctx.viewportWidth / ctx.viewportHeight;
     }

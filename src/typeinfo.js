@@ -11,15 +11,15 @@
 // For example, in some instances it is useful to know whether the
 // float value comes from a constant or a GLSL uniform or an attribute 
 // buffer.
-Facet.is_shade_expression = function(obj)
+Lux.is_shade_expression = function(obj)
 {
-    return typeof obj === 'function' && obj._facet_expression && obj.expression_type;
+    return typeof obj === 'function' && obj._lux_expression && obj.expression_type;
 };
 
 //////////////////////////////////////////////////////////////////////////////
 
 // FIXME Can I make these two the same function call?
-function facet_constant_type(obj)
+function lux_constant_type(obj)
 // it is convenient in many places to accept as a parameter a scalar,
 // a vector or a matrix. This function tries to
 // tell them apart. Functions such as vec.make and mat.make populate
@@ -43,11 +43,11 @@ function facet_constant_type(obj)
 //////////////////////////////////////////////////////////////////////////////
 // http://javascript.crockford.com/remedial.html
 
-// Notice that facet_typeOf is NOT EXACTLY equal to
+// Notice that lux_typeOf is NOT EXACTLY equal to
 // 
 //   http://javascript.crockford.com/remedial.html
 //
-// In particular, facet_typeOf will return "object" if given Shade expressions.
+// In particular, lux_typeOf will return "object" if given Shade expressions.
 // 
 // Shade expressions are actually functions with a bunch of extra methods.
 // 
@@ -55,10 +55,10 @@ function facet_constant_type(obj)
 // operator() overloading, which turns out to be notationally quite powerful.
 //
 
-function facet_typeOf(value) 
+function lux_typeOf(value) 
 {
     var s = typeof value;
-    if (s === 'function' && value._facet_expression)
+    if (s === 'function' && value._lux_expression)
         return 'object';
     if (s === 'object') {
         if (value) {

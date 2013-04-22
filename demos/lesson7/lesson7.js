@@ -5,7 +5,7 @@ var sampler;
 function create_cube_batch(opts)
 {
     opts = opts || {};
-    var model = Facet.Models.flat_cube();
+    var model = Lux.Models.flat_cube();
     var material_color = Shade.texture2D(sampler, model.tex_coord);
     var final_color;
     var model_mat = Shade.rotation(angle, Shade.vec(1, 1, 1));
@@ -32,41 +32,41 @@ function create_cube_batch(opts)
         final_color = material_color;
     }
 
-    return Facet.bake(model, {
+    return Lux.bake(model, {
         position: camera(model_mat(model.vertex)),
         color: final_color
     });
 }
 
 $().ready(function () {
-    var gl = Facet.init(document.getElementById("webgl"), {
+    var gl = Lux.init(document.getElementById("webgl"), {
         clearColor: [0,0,0,0.2]
     });
 
-    var cube_model = Facet.Models.flat_cube();
+    var cube_model = Lux.Models.flat_cube();
 
     $("#linear").click (function() { sampler.set(texture[0]); });
     $("#nearest").click(function() { sampler.set(texture[1]); });
     $("#mipmap").click (function() { sampler.set(texture[2]); });
     $("#per_vertex").click(function(obj) {
-        Facet.Scene.remove(cube_batch[false]);
-        Facet.Scene.remove(cube_batch[true]);
-        Facet.Scene.add(cube_batch[$(this).is(":checked")]);
+        Lux.Scene.remove(cube_batch[false]);
+        Lux.Scene.remove(cube_batch[true]);
+        Lux.Scene.add(cube_batch[$(this).is(":checked")]);
     });
 
     angle = gl.parameters.now.mul(50).radians();
 
-    texture[0] = Facet.texture({ 
+    texture[0] = Lux.texture({ 
         src: "../img/crate.jpg",
         mag_filter: gl.LINEAR,
         min_filter: gl.LINEAR
     });
-    texture[1] = Facet.texture({ 
+    texture[1] = Lux.texture({ 
         src: "../img/crate.jpg",
         mag_filter: gl.NEAREST,
         min_filter: gl.NEAREST
     });
-    texture[2] = Facet.texture({ 
+    texture[2] = Lux.texture({ 
         src: "../img/crate.jpg",
         mag_filter: gl.LINEAR,
         min_filter: gl.LINEAR_MIPMAP_NEAREST,
@@ -80,9 +80,9 @@ $().ready(function () {
         false: cube_batch_per_fragment,
         true: cube_batch_per_vertex
     };
-    Facet.Scene.add(Facet.conditional_batch(
+    Lux.Scene.add(Lux.conditional_batch(
         cube_batch_per_vertex, function() {
             return texture[0].ready && texture[1].ready && texture[2].ready;
         }));
-    Facet.Scene.animate();
+    Lux.Scene.animate();
 });

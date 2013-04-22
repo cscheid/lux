@@ -13,7 +13,7 @@ function sphere_coords(tess, B)
             elements.push(ix, ix+1, ix+tess+2, ix, ix+tess+2, ix+tess+1);
         };
 
-    return Facet.model({
+    return Lux.model({
         type: "triangles",
         tex_coord: [tex_coord, 2],
         elements: elements,
@@ -35,11 +35,11 @@ function sphere_coords(tess, B)
 $().ready(function () {
     var canvas = document.getElementById("webgl");
     var width = canvas.width, height = canvas.height;
-    var interactor = Facet.UI.center_zoom_interactor({
+    var interactor = Lux.UI.center_zoom_interactor({
         width: width, height: height, zoom: 2/3
     });
 
-    var gl = Facet.init(canvas, {
+    var gl = Lux.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.5],
         interactor: interactor
@@ -47,13 +47,13 @@ $().ready(function () {
 
     var B = Shade.parameter("float", 2);
 
-    $("#azimuthal").click(function() { B.set(1); Facet.Scene.invalidate(); });
-    $("#hammer").click(function() { B.set(2); Facet.Scene.invalidate(); });
-    $("#eckert-greifendorff").click(function() { B.set(4); Facet.Scene.invalidate(); });
-    $("#siemon").click(function() { B.set(10000); Facet.Scene.invalidate(); });
+    $("#azimuthal").click(function() { B.set(1); Lux.Scene.invalidate(); });
+    $("#hammer").click(function() { B.set(2); Lux.Scene.invalidate(); });
+    $("#eckert-greifendorff").click(function() { B.set(4); Lux.Scene.invalidate(); });
+    $("#siemon").click(function() { B.set(10000); Lux.Scene.invalidate(); });
 
     var sphere = sphere_coords(200, B);
-    var texture = Facet.texture({ width: 2048, height: 2048 });
+    var texture = Lux.texture({ width: 2048, height: 2048 });
 
     for (var i=0; i<8; ++i)
     for (var j=0; j<8; ++j)
@@ -65,9 +65,9 @@ $().ready(function () {
             onload: function() { gl.display(); }
         });
 
-    var sphere_drawable = Facet.bake(sphere, {
+    var sphere_drawable = Lux.bake(sphere, {
         position: interactor.project(sphere.vertex()),
         color: Shade.texture2D(texture, sphere.tex_coord)
     });
-    Facet.Scene.add(sphere_drawable);
+    Lux.Scene.add(sphere_drawable);
 });

@@ -1,7 +1,7 @@
 $().ready(function() {
 
     function handle_mouse(event) {
-        var r = Facet.Picker.pick(event.offsetX, gl.viewportHeight - event.offsetY);
+        var r = Lux.Picker.pick(event.offsetX, gl.viewportHeight - event.offsetY);
         $("#pickresult").html(strings[r]);
         var r_id = Shade.id(r);
         if (!vec.equal(r_id, current_pick_id.get())) {
@@ -10,20 +10,20 @@ $().ready(function() {
         }
     }
 
-    var pick_id_val = Facet.fresh_pick_id(3);
+    var pick_id_val = Lux.fresh_pick_id(3);
     var strings = {};
     strings[0] = "Miss";
     strings[pick_id_val]   = "Wedge 0";
     strings[pick_id_val+1] = "Wedge 1";
     strings[pick_id_val+2] = "Wedge 2";
 
-    var gl = Facet.init(document.getElementById("webgl"), {
+    var gl = Lux.init(document.getElementById("webgl"), {
         clearColor: [0,0,0,0.2],
         mousedown: handle_mouse,
         mousemove: handle_mouse
     });
 
-    var square = Facet.Models.square();
+    var square = Lux.Models.square();
     var vertex = square.vertex.mul(2).sub(1);
 
     var distance_from_origin = Shade.norm(vertex);
@@ -59,7 +59,7 @@ $().ready(function() {
         [  2, 5, Shade.id(pick_id_val+2), 4]
     ];
 
-    var wedge_batch = Facet.bake(square, {
+    var wedge_batch = Lux.bake(square, {
         position: camera(vertex),
         color: hcl(wedge_hue, intensity, intensity)
             .discard_if(distance_from_origin.gt(1).or(hit.not())),
@@ -75,6 +75,6 @@ $().ready(function() {
         }
     };
 
-    Facet.Scene.add(wedge_set_batch);
-    Facet.Picker.draw_pick_scene();
+    Lux.Scene.add(wedge_set_batch);
+    Lux.Picker.draw_pick_scene();
 });

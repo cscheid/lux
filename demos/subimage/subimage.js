@@ -13,7 +13,7 @@ function sphere_mercator_coords(tess)
             elements.push(ix, ix+1, ix+tess+2, ix, ix+tess+2, ix+tess+1);
         };
 
-    return Facet.model({
+    return Lux.model({
         type: "triangles",
         tex_coord: [tex_coord, 2],
         elements: elements,
@@ -37,17 +37,17 @@ $().ready(function () {
     var prev_mouse_pos;
     var mv = Shade.parameter("mat4");
     var proj = Shade.parameter("mat4");
-    var gl = Facet.init(canvas, {
+    var gl = Lux.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,1],
         display: function() {
-            var r1 = Facet.rotation(latitude_center * (Math.PI/180), [1, 0, 0]);
-            var r2 = Facet.rotation((longitude_center + 180) * (Math.PI/180), [0,-1, 0]);
+            var r1 = Lux.rotation(latitude_center * (Math.PI/180), [1, 0, 0]);
+            var r2 = Lux.rotation((longitude_center + 180) * (Math.PI/180), [0,-1, 0]);
             var earth_model = mat4.product(r1, r2);
-            var view = Facet.translation(0.0, 0.0, -6.0);
+            var view = Lux.translation(0.0, 0.0, -6.0);
             gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
             mv.set(mat4.product(view, earth_model));
-            proj.set(Facet.perspective(22.5 / zoom, 720/480, 4.0, 8.0));
+            proj.set(Lux.perspective(22.5 / zoom, 720/480, 4.0, 8.0));
             sphere_drawable.draw();
         },
         attributes: {
@@ -75,7 +75,7 @@ $().ready(function () {
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LESS);
     var sphere = sphere_mercator_coords(20);
-    var texture = Facet.texture({ width: 2048, height: 2048 });
+    var texture = Lux.texture({ width: 2048, height: 2048 });
 
     for (var i=0; i<8; ++i)
     for (var j=0; j<8; ++j)
@@ -87,7 +87,7 @@ $().ready(function () {
             onload: function() { gl.display(); }
         });
 
-    var sphere_drawable = Facet.bake(sphere, {
+    var sphere_drawable = Lux.bake(sphere, {
         position: proj.mul(mv).mul(sphere.vertex()),
         color: Shade.texture2D(texture, sphere.tex_coord)
     });

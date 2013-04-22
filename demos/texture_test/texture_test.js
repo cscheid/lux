@@ -1,5 +1,5 @@
 var S = Shade;
-var Models = Facet.Models;
+var Models = Lux.Models;
 
 var gl;
 var drawable;
@@ -18,9 +18,9 @@ function display()
 
 function init_webgl()
 {
-    Facet.set_context(gl);
+    Lux.set_context(gl);
 
-    var tex = Facet.texture({ 
+    var tex = Lux.texture({ 
         src: "image.png",
         onload: function() {
             display();
@@ -28,7 +28,7 @@ function init_webgl()
     });
 
     var square_model = Models.square();
-    drawable = Facet.bake(square_model, {
+    drawable = Lux.bake(square_model, {
         position: square_model.vertex,
         color: S.texture2D(tex, square_model.tex_coord)
     });
@@ -36,7 +36,7 @@ function init_webgl()
 
 $().ready(function() {
     var canvas = document.getElementById("foo");
-    gl = Facet.init(canvas,
+    gl = Lux.init(canvas,
                 {
                     attributes: {
                         alpha: true,

@@ -2,7 +2,7 @@
 
 \section{\_shade\_type and WebGL objects}
 
-Some \facet objects are WebGL objects with extra slots associated with
+Some \lux objects are WebGL objects with extra slots associated with
 them. Originally, this let me use them directly in WebGL calls while
 storing additional information about them. It is no longer clear this
 is a good idea, but they're here for now.
@@ -10,7 +10,7 @@ is a good idea, but they're here for now.
 These objects store a \texttt{\_shade\_type} slot which currently can
 take the values ``attribute\_buffer'', ``element\_buffer'', ``render\_buffer'' and
 ``texture''. Right now, the main use for these is to be able to create
-a texture with Facet.texture and use it directly in a Shade
+a texture with Lux.texture and use it directly in a Shade
 expression, without having to go through creating a sampler
 object. This is a good thing.
 

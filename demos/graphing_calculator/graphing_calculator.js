@@ -7,7 +7,7 @@ var mesh;
 
 $().ready(function () {
     var prev_mouse_pos;
-    gl = Facet.init(document.getElementById("webgl"), {
+    gl = Lux.init(document.getElementById("webgl"), {
         clearColor: [0,0,0,0.2],
         mousedown: function(event) {
             prev_mouse_pos = [event.offsetX, event.offsetY];
@@ -18,7 +18,7 @@ $().ready(function () {
                 angle_x.set(angle_x.get() + delta_x); 
                 angle_y.set(angle_y.get() + delta_y); 
                 prev_mouse_pos = [event.offsetX, event.offsetY];
-                Facet.Scene.invalidate();
+                Lux.Scene.invalidate();
             }
         }
     });
@@ -29,7 +29,7 @@ $().ready(function () {
        (Shade.rotation(angle_y, Shade.vec(1,0,0)));
     view_xform = Shade.translation(0, 0, -10);
 
-    mesh = Facet.Models.mesh(100, 100);
+    mesh = Lux.Models.mesh(100, 100);
     t_parameter = Shade.parameter("float", 0);
 
     update_mesh();
@@ -49,7 +49,7 @@ var current_batch;
 function create_mesh(position, normal, color)
 {
     if (current_batch) {
-        Facet.Scene.remove(current_batch);
+        Lux.Scene.remove(current_batch);
     }
 
     var final_color = Shade.gl_light({
@@ -61,11 +61,11 @@ function create_mesh(position, normal, color)
         normal: model_xform(normal),
         two_sided: true
     });
-    current_batch = Facet.bake(mesh, {
+    current_batch = Lux.bake(mesh, {
         position: camera(view_xform)(model_xform)(position),
         color: final_color
     });
-    Facet.Scene.add(current_batch);
+    Lux.Scene.add(current_batch);
 }
 
 function parse_expression(v)

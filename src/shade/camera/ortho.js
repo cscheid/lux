@@ -21,9 +21,9 @@ Shade.Camera.ortho = function(opts)
     if (opts.aspect_ratio)
         viewport_ratio = opts.aspect_ratio;
     else {
-        ctx = Facet._globals.ctx;
+        ctx = Lux._globals.ctx;
         if (_.isUndefined(ctx)) {
-            throw "aspect_ratio is only optional with an active Facet context";
+            throw "aspect_ratio is only optional with an active Lux context";
         }
         viewport_ratio = ctx.viewportWidth / ctx.viewportHeight;
     };
@@ -82,7 +82,7 @@ Shade.Camera.ortho = function(opts)
         return m.mul(view_xform(model_vertex));
     };
     result.unproject = function(screen_pos) {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         var screen_size = Shade.vec(ctx.parameters.width, ctx.parameters.height);
         var min = Shade.vec(l, b);
         var max = Shade.vec(r, t);

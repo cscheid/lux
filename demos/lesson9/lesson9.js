@@ -1,7 +1,7 @@
 /*
- * FIXME THIS LESSON USES REALLY ANCIENT FACET STYLE
+ * FIXME THIS LESSON USES REALLY ANCIENT LUX STYLE
  * 
- * It works, but it reflects in no way how you should write Facet code.
+ * It works, but it reflects in no way how you should write Lux code.
  */
 
 var gl;
@@ -17,7 +17,7 @@ var tilt = 90, spin = 0, twinkle = false;
 
 function square_model()
 {
-    return Facet.model({
+    return Lux.model({
         type: "triangle_strip",
         // type: "points",
         elements: 4,
@@ -29,12 +29,12 @@ function square_model()
 function star_drawable()
 {
     var model = square_model();
-    return Facet.bake(model, {
+    return Lux.bake(model, {
         position: proj.mul(mv).mul(Shade.vec(model.vertex, 0, 1)),
-        color: Shade.texture2D(Facet.texture({
+        color: Shade.texture2D(Lux.texture({
             src: "../img/star.gif"
         }), model.tex_coord).swizzle("rgbr").mul(Shade.vec(color, 1.0)),
-        mode: Facet.DrawingMode.additive
+        mode: Lux.DrawingMode.additive
     });
 }
 
@@ -94,7 +94,7 @@ function init_star_list()
 
 function draw_it()
 {
-    proj.set(Facet.perspective(45, 720/480, 0.1, 100));
+    proj.set(Lux.perspective(45, 720/480, 0.1, 100));
     _.each(star_list, function(x) {
         x.draw(tilt, spin, twinkle);
     });
@@ -105,7 +105,7 @@ var counter = 0;
 $().ready(function () {
     var canvas = document.getElementById("webgl");
 
-    gl = Facet.init(canvas, {
+    gl = Lux.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0, 0, 0, 1],
         display: draw_it,

@@ -1,10 +1,10 @@
 <html>
-<head><title>NeHe lesson 3 in Facet</title>
+<head><title>NeHe lesson 3 in Lux</title>
   <link rel="stylesheet" href="../css/bootstrap.css"/>
   <link rel="stylesheet" href="../css/style.css"/>
   <link rel="stylesheet" href="../css/mchighlight-javascript.css"/>
   <script src="../../lib/jquery-1.6.2.min.js"></script>
-  <script src="../../facet.js"></script>
+  <script src="../../lux.js"></script>
   <script src="../js/mclexer.js"></script>
   <script src="../js/mchighlight.js"></script>
   <script src="../js/mchighlight-javascript.js"></script>
@@ -23,12 +23,12 @@ specified directly at the site of
 the <span class="keyword">bake</span> call:</p>
 
 <pre class="highlight">
-var square = Facet.model({
+var square = Lux.model({
     type: "triangles",
     elements: [0, 1, 2, 0, 2, 3],
     vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2]
 });
-Facet.Scene.add(Facet.bake(square, {
+Lux.Scene.add(Lux.bake(square, {
     position: camera(Shade.translation( 1.5, 0, -6)(square.vertex)),
     color: Shade.color('#88f')
 }));
@@ -37,7 +37,7 @@ Facet.Scene.add(Facet.bake(square, {
 <p>Colors can also be specified on a vertex per vertex basis:</p>
 
 <pre class="highlight">
-var triangle = Facet.model({
+var triangle = Lux.model({
     type: "triangles",
     elements: [0, 1, 2],
     vertex: [[0,1, -1,-1, 1,-1], 2],
@@ -47,11 +47,11 @@ var triangle = Facet.model({
 });
 </pre>
 
-<p>Facet accepts all <a href="https://developer.mozilla.org/en-US/docs/CSS/color_value">CSS
+<p>Lux accepts all <a href="https://developer.mozilla.org/en-US/docs/CSS/color_value">CSS
 color names</a>. Color attributes can also be specified as an array of values. This snippet is exactly equivalent to the above:</p>
 
 <pre class="highlight">
-var triangle = Facet.model({
+var triangle = Lux.model({
     type: "triangles",
     elements: [0, 1, 2],
     vertex: [[0,1, -1,-1, 1,-1], 2],

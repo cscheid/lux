@@ -3,8 +3,8 @@ var angle;
 function create_cube_batch(opts)
 {
     var ready = false;
-    var model = Facet.Models.flat_cube();
-    var texture = Facet.texture({ 
+    var model = Lux.Models.flat_cube();
+    var texture = Lux.texture({ 
         src: "../img/glass.jpg",
         onload: function() { 
             ready = true;
@@ -33,22 +33,22 @@ function create_cube_batch(opts)
         look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
     });
     
-    return Facet.conditional_batch(
-        Facet.bake(model, {
+    return Lux.conditional_batch(
+        Lux.bake(model, {
             position: camera(model_mat(model.vertex)),
             color: final_color,
-            mode: Facet.DrawingMode.additive
+            mode: Lux.DrawingMode.additive
         }), 
         function() { return texture.ready; });
 }
 
 $().ready(function () {
-    var gl = Facet.init(document.getElementById("webgl"), {
+    var gl = Lux.init(document.getElementById("webgl"), {
         clearColor: [0,0,0,0.2]
     });
 
     angle = gl.parameters.now.mul(50).radians();
 
-    Facet.Scene.add(create_cube_batch({ lighting: true, per_vertex: true }));
-    Facet.Scene.animate();
+    Lux.Scene.add(create_cube_batch({ lighting: true, per_vertex: true }));
+    Lux.Scene.animate();
 });

@@ -1,14 +1,14 @@
 $().ready(function () {
-    var gl = Facet.init(document.getElementById("webgl"), {
+    var gl = Lux.init(document.getElementById("webgl"), {
         clearColor: [0,0,0,0.2]
     });
 
-    var square = Facet.model({
+    var square = Lux.model({
         type: "triangles",
         elements: [0, 1, 2, 0, 2, 3],
         vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2]
     });
-    var triangle = Facet.model({
+    var triangle = Lux.model({
         type: "triangles",
         elements: [0, 1, 2],
         vertex: [[0,1, -1,-1, 1,-1], 2],
@@ -21,18 +21,18 @@ $().ready(function () {
     // rotate the objects at 50 degrees/second.
     var angle = gl.parameters.now.mul(50).radians();
 
-    Facet.Scene.add(Facet.bake(square, {
+    Lux.Scene.add(Lux.bake(square, {
         position: camera(Shade.translation( 1.5, 0, -6))
                         (Shade.rotation(angle, Shade.vec(1, 0, 0)))
                         (square.vertex),
         color: Shade.color('#88f')
     }));
-    Facet.Scene.add(Facet.bake(triangle, {
+    Lux.Scene.add(Lux.bake(triangle, {
         position: camera(Shade.translation(-1.5, 0, -6))
                         (Shade.rotation(angle, Shade.vec(0, 1, 0)))
                         (triangle.vertex),
         color: triangle.color
     }));
 
-    Facet.Scene.animate();
+    Lux.Scene.animate();
 });

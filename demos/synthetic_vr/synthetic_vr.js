@@ -1,9 +1,9 @@
 $().ready(function () {
-    var gl = Facet.init(document.getElementById("webgl"), {
+    var gl = Lux.init(document.getElementById("webgl"), {
         clearColor: [0, 0, 0, 1]
     });
 
-    var square_model = Facet.model({
+    var square_model = Lux.model({
         type: "triangles",
         elements: [0, 1, 2, 0, 2, 3],
         vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2]
@@ -39,19 +39,19 @@ $().ready(function () {
 
     var color = Shade.vec(Shade.vec(1,1,1).mul(volume_samples.average().mul(2)), 1);
     
-    var square = Facet.bake(square_model, {
+    var square = Lux.bake(square_model, {
         position: vertex_pos,
         color: color, // Shade.vec(vertex_pos.swizzle("xy").add(1).div(2), rerange.average(), 1),
-        mode: Facet.DrawingMode.over
+        mode: Lux.DrawingMode.over
     });
 
-    Facet.Scene.add(square);
+    Lux.Scene.add(square);
     var start = new Date().getTime();
     var f = function() {
         window.requestAnimFrame(f);
         var elapsed = new Date().getTime() - start;
         angle_y.set((elapsed / 40) * (Math.PI/180));
-        Facet.Scene.invalidate();
+        Lux.Scene.invalidate();
     };
     f();
 });

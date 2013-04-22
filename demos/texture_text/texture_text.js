@@ -8,7 +8,7 @@ var interactor;
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    interactor = Facet.UI.center_zoom_interactor({
+    interactor = Lux.UI.center_zoom_interactor({
         highDPS: true,
         width: canvas.width,
         height: canvas.height,
@@ -17,7 +17,7 @@ $().ready(function () {
         // widest_zoom: 1e-6
     });
 
-    gl = Facet.init(canvas, {
+    gl = Lux.init(canvas, {
         clearColor: [1,1,1,1],
         interactor: interactor
     });
@@ -32,10 +32,10 @@ $().ready(function () {
         return Shade.ifelse(xor(x_even, y_even), c1, c2);
     }
 
-    var is_screen_right = Shade.fragCoord().x().div(gl._facet_globals.devicePixelRatio).gt(gl.parameters.width.div(2));
+    var is_screen_right = Shade.fragCoord().x().div(gl._lux_globals.devicePixelRatio).gt(gl.parameters.width.div(2));
 
-    Facet.Net.json("opensans.regular.json", function(font) {
-        Facet.Scene.add(Facet.Text.texture({
+    Lux.Net.json("opensans.regular.json", function(font) {
+        Lux.Scene.add(Lux.Text.texture({
             string: "The quick brown fox jumps\nover the lazy dog.\nFive boxing wizards\njump quickly.",
             font: font,
             size: 0.1,

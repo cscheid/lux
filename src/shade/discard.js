@@ -19,7 +19,7 @@ How do I implement discard in a vertex shader?
 **** Possibilities:
 ***** Disallow it to happen in the vertex shader
 Good: Simplest
-Bad: Breaks the model in Facet programs where we don't care much about
+Bad: Breaks the model in Lux programs where we don't care much about
 what happens in vertex expressions vs fragment expressions
 Ugly: The error messages would be really opaque, unless I specifically
 detect where the discard statement would appear.

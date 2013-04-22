@@ -1,7 +1,7 @@
 {
-  "name": "facet",
+  "name": "lux",
   "version": "0.0.1",
-  "description": "Facet is the DSEL for WebGL graphics",
+  "description": "Lux is a DSEL for WebGL graphics",
   "keywords": [ "webgl", "graphics", "visualization", "edsl" ],
   "dependencies": {
     "uglify-js": "2.2.4"

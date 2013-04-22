@@ -311,7 +311,7 @@ Shade.div = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         }
-        var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
+        var t1 = lux_constant_type(v1), t2 = lux_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { 
                                   if (exp1.type.equals(Shade.Types.int_t))
@@ -440,7 +440,7 @@ Shade.mul = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         }
-        var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
+        var t1 = lux_constant_type(v1), t2 = lux_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },

@@ -1,10 +1,10 @@
 
-// Shade.array denotes an array of Facet values of the same type:
+// Shade.array denotes an array of Lux values of the same type:
 //    Shade.array([2, 3, 4, 5, 6]);
 
 Shade.array = function(v)
 {
-    var t = facet_typeOf(v);
+    var t = lux_typeOf(v);
     if (t === 'array') {
         var new_v = v.map(Shade.make);
         var array_size = new_v.length;

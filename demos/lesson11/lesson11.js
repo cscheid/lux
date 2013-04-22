@@ -1,7 +1,7 @@
 /*
- * FIXME THIS LESSON USES REALLY ANCIENT FACET STYLE
+ * FIXME THIS LESSON USES REALLY ANCIENT LUX STYLE
  * 
- * It works, but it reflects in no way how you should write Facet code.
+ * It works, but it reflects in no way how you should write Lux code.
  */
 
 var gl;
@@ -14,12 +14,12 @@ var current_mouse_y = 0;
 
 //////////////////////////////////////////////////////////////////////////////
 
-var model = mat4.product(Facet.translation(0.0, 0.0, -4.0),
-                         Facet.rotation(-40 * Math.PI / 180, [1, 0, 0]));
+var model = mat4.product(Lux.translation(0.0, 0.0, -4.0),
+                         Lux.rotation(-40 * Math.PI / 180, [1, 0, 0]));
 
 function draw_it()
 {
-    var proj = Facet.perspective(45, 720/480, 0.1, 100.0);
+    var proj = Lux.perspective(45, 720/480, 0.1, 100.0);
     var view = mat4.lookAt([current_mouse_x, current_mouse_y, 0], 
                            [0, 0, -3], [0,1,0]);
     mvp.set(mat4.product(proj, mat4.product(view, model)));
@@ -29,7 +29,7 @@ function draw_it()
 $().ready(function () {
     var canvas = document.getElementById("webgl");
 
-    gl = Facet.init(canvas, {
+    gl = Lux.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
         display: draw_it,
@@ -44,14 +44,14 @@ $().ready(function () {
         }
     });
 
-    var mesh = Facet.Models.mesh(50, 2);
+    var mesh = Lux.Models.mesh(50, 2);
 
     mvp = Shade.parameter("mat4");
     phase = Shade.parameter("float");
-    var texture = Facet.texture({ src: "../img/sunflower.jpg" });
+    var texture = Lux.texture({ src: "../img/sunflower.jpg" });
 
-    flag = Facet.conditional_batch(
-        Facet.bake(mesh, {
+    flag = Lux.conditional_batch(
+        Lux.bake(mesh, {
             position: mvp.mul(Shade.vec(mesh.vertex, Shade.sin(mesh.tex_coord.at(0).mul(20).add(phase)).mul(0.08), 1)),
             color: Shade.texture2D(texture, mesh.tex_coord)
         }), function() {

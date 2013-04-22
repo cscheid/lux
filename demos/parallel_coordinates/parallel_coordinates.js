@@ -6,7 +6,7 @@ var pc_batch;
 function create_parallel_coords_batch()
 {
     var raw_table = Data.cars();
-    var table = Facet.Data.texture_table(raw_table);
+    var table = Lux.Data.texture_table(raw_table);
     var elements = [];
 
     function column_f(f) {
@@ -47,7 +47,7 @@ function create_parallel_coords_batch()
         })(which_row);
     };
 
-    return Facet.Marks.lines({
+    return Lux.Marks.lines({
         position: position,
         elements: table.n_rows * (table.n_cols - 1),
         color: color_from_index
@@ -62,7 +62,7 @@ function draw_it()
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    gl = Facet.init(canvas, {
+    gl = Lux.init(canvas, {
         display: draw_it,
         attributes: { alpha: true,
                       depth: true

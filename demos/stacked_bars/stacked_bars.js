@@ -52,23 +52,22 @@ function data_buffers()
 function init_webgl()
 {
     var canvas = document.getElementById("canvas");
-    gl = Facet.init(canvas, { 
+    gl = Lux.init(canvas, { 
         clearColor: [0, 0, 0, 0.2]
     });
-    Facet.set_context(gl);
+    Lux.set_context(gl);
     var data = data_buffers();
     var mx = data[2];
 
     var project = Shade(function(x) { return x.mul(2).sub(1); });
-    console.log(data[0].length, data[0][0].length);
 
     t = Shade.parameter("float", 0.0);
     var this_t = t.mul(64);
 
     for (var i=0; i<data[0].length; ++i) {
-        var left = Facet.Data.array_1d(data[0][i]);
-        var top = Facet.Data.array_1d(data[1][i]);
-        Facet.Scene.add(Facet.Marks.aligned_rects({
+        var left = Lux.Data.array_1d(data[0][i]);
+        var top = Lux.Data.array_1d(data[1][i]);
+        Lux.Scene.add(Lux.Marks.aligned_rects({
             elements: left.length,
             bottom: _.compose(project, function(i) { return 0; }),
             top:    _.compose(project, function(i) { 

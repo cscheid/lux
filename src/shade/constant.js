@@ -10,7 +10,7 @@
 //    Shade.constant(false);
 // - a GLSL vec2, vec3 or vec4 (of floating point values):
 //    Shade.constant(2, vec.make([1, 2]));
-// - a GLSL matrix of dimensions 2x2, 3x3, 4x4 (Facet currently does not support GLSL rectangular matrices):
+// - a GLSL matrix of dimensions 2x2, 3x3, 4x4 (Lux currently does not support GLSL rectangular matrices):
 //    Shade.constant(2, mat.make([1, 0, 0, 1]));
 // - an array
 // - a struct
@@ -28,7 +28,7 @@ Shade.constant = function(v, type)
 
             var string_args = _.map(args, function(arg) {
                 var v = String(arg);
-                if (facet_typeOf(arg) === "number" && v.indexOf(".") === -1) {
+                if (lux_typeOf(arg) === "number" && v.indexOf(".") === -1) {
                     return v + ".0";
                 } else
                     return v;
@@ -98,7 +98,7 @@ Shade.constant = function(v, type)
         });
     };
 
-    var t = facet_constant_type(v);
+    var t = lux_constant_type(v);
     var d, computed_t;
     if (t === 'number') {
         if (type && !(type.equals(Shade.Types.float_t) ||
@@ -116,7 +116,7 @@ Shade.constant = function(v, type)
         d = v.length;
         if (d < 2 && d > 4)
             throw "invalid length for constant vector: " + v;
-        var el_ts = _.map(v, function(t) { return facet_typeOf(t); });
+        var el_ts = _.map(v, function(t) { return lux_typeOf(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
             throw "not all constant params have the same types";
         }
@@ -150,7 +150,7 @@ Shade.constant = function(v, type)
         throw "type error: constant should be bool, number, vector, matrix, array or struct. got " + t
             + " instead";
     }
-    throw "internal error: facet_constant_type returned bogus value";
+    throw "internal error: lux_constant_type returned bogus value";
 };
 
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };

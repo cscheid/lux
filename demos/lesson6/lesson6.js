@@ -1,5 +1,5 @@
 $().ready(function () {
-    var gl = Facet.init(document.getElementById("webgl"), {
+    var gl = Lux.init(document.getElementById("webgl"), {
         clearColor: [0,0,0,0.2]
     });
 
@@ -8,15 +8,15 @@ $().ready(function () {
     });
     var angle = gl.parameters.now.mul(50).radians();
 
-    var cube = Facet.Models.flat_cube();
-    var texture = Facet.texture({ src: "../img/nehe.jpg" });
-    Facet.Scene.add(Facet.conditional_batch(
-        Facet.bake(cube, {
+    var cube = Lux.Models.flat_cube();
+    var texture = Lux.texture({ src: "../img/nehe.jpg" });
+    Lux.Scene.add(Lux.conditional_batch(
+        Lux.bake(cube, {
             position: camera(Shade.rotation(angle, Shade.vec(1,1,1))
                              (cube.vertex)),
             color: Shade.texture2D(texture, cube.tex_coord)
         }), function() {
             return texture.ready;
         }));
-    Facet.Scene.animate();
+    Lux.Scene.animate();
 });

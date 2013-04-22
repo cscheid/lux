@@ -26,7 +26,7 @@ function data_buffers()
     var result = {};
     var fields = ["sepalLength", "sepalWidth", "petalLength", "petalWidth", "species"];
     _.each(fields, function(field) {
-        result[field] = Facet.attribute_buffer({
+        result[field] = Lux.attribute_buffer({
             vertex_array: d.data.map(function(v) { return v[field]; }),
             item_size: 1,
             keep_array: true
@@ -74,7 +74,7 @@ function random_2d_frame(dimension)
 
 function init_webgl()
 {
-    Facet.set_context(gl);
+    Lux.set_context(gl);
     data = data_buffers();
 
     point_diameter = S.parameter("float", 10);
@@ -105,7 +105,7 @@ function init_webgl()
         name: "Set1"
     })(data.species);
 
-    tour_batch = Facet.Marks.scatterplot({
+    tour_batch = Lux.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
         xy: xy_expression,
         xy_scale: S.Scale.linear({ domain: [xy_center.sub(xy_distance),
@@ -160,10 +160,10 @@ $().ready(function() {
         change: change_stroke_width
     });
     var canvas = document.getElementById("scatterplot");
-    gl = Facet.init(canvas, { attributes: { alpha: true,
-                                             depth: true
-                                           }
-                             });
+    gl = Lux.init(canvas, { attributes: { alpha: true,
+                                          depth: true
+                                        }
+                          });
     init_webgl();
     var frame_1 = random_2d_frame(4);
     var frame_2 = random_2d_frame(4);

@@ -6,7 +6,7 @@ $().ready(function () {
     init_ui();
 
     show_out_of_gamut = Shade.parameter("bool", true);
-    var gl = Facet.init(document.getElementById("webgl"));
+    var gl = Lux.init(document.getElementById("webgl"));
 
     function max3(v) {
         return Shade.max(v.r(), Shade.max(v.g(), v.b()));
@@ -30,13 +30,13 @@ $().ready(function () {
                             rgb,
                             rgb.clamp(0, 1).alpha(0.1));
     }
-    var hcl_mesh = Facet.Models.mesh(1, 1);
+    var hcl_mesh = Lux.Models.mesh(1, 1);
     var color = Shade.Colors.hcl(
         hcl_mesh.tex_coord.r().mul(Math.PI*2),
         hcl_mesh.tex_coord.g().mul(100),
         luminance_parameter);
-    Facet.Scene.add(Facet.bake(hcl_mesh, {
-        mode: Facet.DrawingMode.over,
+    Lux.Scene.add(Lux.bake(hcl_mesh, {
+        mode: Lux.DrawingMode.over,
         position: hcl_mesh.vertex,
         color: Shade.ifelse(out_of_gamut(color).and(show_out_of_gamut),
                             out_of_gamut_pattern(color),
@@ -47,7 +47,7 @@ $().ready(function () {
 function switch_gamut()
 {
     show_out_of_gamut.set(!show_out_of_gamut.get());
-    Facet.Scene.invalidate();
+    Lux.Scene.invalidate();
 }
 
 function init_ui()
@@ -57,7 +57,7 @@ function init_ui()
     function change_luminance() {
         var new_value = $("#luminance").slider("value") / 10.0;
         luminance_parameter.set(new_value);
-        Facet.Scene.invalidate();
+        Lux.Scene.invalidate();
     };
     $("#luminance").slider({
         min: 0,
