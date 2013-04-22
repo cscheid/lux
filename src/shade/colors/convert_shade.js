@@ -395,4 +395,10 @@ Shade.Colors.darken = Shade(function(amount) {
     };
 });
 
+Shade.Colors.invert = Shade(function(c) {
+    var rgb = table.rgb.create(c.r(), c.g(), c.b());
+    var hls = table.rgb.hls(rgb);
+    return table.hls.create(hls.h, flip(hls.l), hls.s).as_shade(c.a()); 
+});
+
 })();

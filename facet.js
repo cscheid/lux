@@ -5913,6 +5913,11 @@ Shade.Camera.perspective = function(opts)
     };
     return result;
 };
+/*
+ * FIXME Shade.Camera.ortho currently mixes a view matrix
+ * with the projection matrix. This must be factored out.
+ */
+
 Shade.Camera.ortho = function(opts)
 {
     opts = _.defaults(opts || {}, {
@@ -5984,6 +5989,10 @@ Shade.Camera.ortho = function(opts)
     function result(obj) {
         return result.project(obj);
     }
+    result.model_to_view = view_xform;
+    result.view_to_device = function(view_vertex) {
+        return m.mul(view_vertex);
+    };
     result.project = function(model_vertex) {
         return m.mul(view_xform(model_vertex));
     };
@@ -12061,6 +12070,19 @@ Shade.Colors.darken = Shade(function(amount) {
     };
 });
 
+Shade.Colors.invert = Shade(function(c) {
+    var rgb = table.rgb.create(c.r(), c.g(), c.b());
+    var hls = table.rgb.hls(rgb);
+    return table.hls.create(hls.h, Shade.sub(1,hls.l), hls.s).as_shade(c.a()); 
+    //hsv.s, Shade.sub(1, hsv.v)).as_shade(c.a());
+});
+
+// Shade.Colors.invert = Shade(function(c) {
+//     var rgb = table.rgb.create(c.r(), c.g(), c.b());
+//     var hsv = table.rgb.hsv(rgb);
+//     return table.hsv.create(hsv.h, hsv.s, Shade.sub(1,hsv.v)).as_shade(c.a());
+// });
+
 })();
 /* These are all pretty sketchily dependent on the underlying
  precision of the FP units.
@@ -13560,19 +13582,13 @@ Facet.Marks.globe_2d = function(opts)
         },
         resolution_bias: opts.resolution_bias,
         new_center: function(center_x, center_y, center_zoom) {
-            var w = ctx.viewportWidth;
-            var zoom_divider = 63.6396;
-            var base_zoom = Math.log(w / zoom_divider) / Math.log(2);
-
-            var zoom = this.resolution_bias + base_zoom + (Math.log(center_zoom) / Math.log(2));
+            var screen_resolution_bias = Math.log(ctx.viewportHeight / 256) / Math.log(2);
+            var zoom = this.resolution_bias + screen_resolution_bias + (Math.log(center_zoom) / Math.log(2));
             zoom = ~~zoom;
             this.current_osm_zoom = zoom;
-            var y = (center_y / (Math.PI * 2) + 0.5) * (1 << zoom);
-            var x = (center_x / (Math.PI * 2) + 0.5) * (1 << zoom);
-            // var y = (center_lat + 90) / 180 * (1 << zoom);
-            // var x = center_lon / 360 * (1 << zoom);
+            var y = center_y * (1 << zoom);
+            var x = center_x * (1 << zoom);
             y = (1 << zoom) - y - 1;
-            // x = (x + (1 << (zoom - 1))) & ((1 << zoom) - 1);
 
             for (var i=-2; i<=2; ++i) {
                 for (var j=-2; j<=2; ++j) {
@@ -13728,10 +13744,11 @@ Facet.Marks.globe_2d = function(opts)
                 var t = tiles[lst[i]];
                 if (t.active !== 2)
                     continue;
-                min_x.set((t.x / (1 << t.zoom))           * Math.PI*2 - Math.PI);
-                min_y.set((1 - (t.y + 1) / (1 << t.zoom)) * Math.PI*2 - Math.PI);
-                max_x.set(((t.x + 1) / (1 << t.zoom))     * Math.PI*2 - Math.PI);
-                max_y.set((1 - t.y / (1 << t.zoom))       * Math.PI*2 - Math.PI);
+                var z = (1 << t.zoom);
+                min_x.set(t.x / z);
+                min_y.set(1 - (t.y + 1) / z);
+                max_x.set((t.x + 1) / z);
+                max_y.set(1 - t.y / z);
                 offset_x.set(t.offset_x);
                 offset_y.set(t.offset_y);
                 tile_batch.draw();

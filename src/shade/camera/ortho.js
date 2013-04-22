@@ -1,3 +1,8 @@
+/*
+ * FIXME Shade.Camera.ortho currently mixes a view matrix
+ * with the projection matrix. This must be factored out.
+ */
+
 Shade.Camera.ortho = function(opts)
 {
     opts = _.defaults(opts || {}, {
@@ -69,6 +74,10 @@ Shade.Camera.ortho = function(opts)
     function result(obj) {
         return result.project(obj);
     }
+    result.model_to_view = view_xform;
+    result.view_to_device = function(view_vertex) {
+        return m.mul(view_vertex);
+    };
     result.project = function(model_vertex) {
         return m.mul(view_xform(model_vertex));
     };
