@@ -7,7 +7,7 @@
   <script src="../../lib/jquery-1.6.2.min.js"></script>
   <script src="../../lib/jquery.mousewheel.js"></script>
   <script src="../../lib/jquery-ui-1.8.21.custom.js"></script>
-  <script src="../../facet.js"></script>
+  <script src="../../lux.js"></script>
   <script src="fractal_flame.js"></script>
   <script src="flame_parse.js"></script>
 <style>
@@ -32,7 +32,7 @@
 <div class="body">
 <div class="content">
 <h1><a href="http://scottdraves.com/flame.html">fractal flames</a> on
-  the gpu via facet and webgl</h1>
+  the gpu via lux and webgl</h1>
 <canvas id="webgl" width="720" height="600"></canvas>
 
 <div>
@@ -76,7 +76,7 @@
   <p>
     This is a rough attempt at implementing Scott
     Draves's <a href="http://scottdraves.com/flame.html">Fractal
-    Flames</a> algorithm in Facet. Although the full algorithm
+    Flames</a> algorithm in Lux. Although the full algorithm
     contains many more parameters than what I'm showing here, this 
     version picks a random set of four variations and lets you interact with the parameters of the affine
     projection and see the results on the iterated function system. If
@@ -111,7 +111,7 @@
     creating a GPU program that applies a constant number of
     iterations of the flame's function,
     currently 10. This would be a fairly ugly problem with other
-    libraries, but it is trivial in Facet (you
+    libraries, but it is trivial in Lux (you
     can <a href="fractal_flame.js">inspect the source</a> to see how
     that's done). Then this GPU program
     is used to with a large batch of points, currently 250k at a time,
@@ -124,7 +124,7 @@
 
   <p>
     The original algorithm asks for a minimum of 20 iterations, and although
-    Facet can do that without a problem, for some reason I find the
+    Lux can do that without a problem, for some reason I find the
     quality of the resulting drawings to be inferior in this case
     (GPU precision issues?).
   </p>
@@ -132,14 +132,14 @@
   <p>
     <b>Future work</b> The right way to do this would be
     to <a href="http://www.google.com/search?aq=1&oq=gpu+ping-&sugexp=chrome,mod=1&sourceid=chrome&ie=UTF-8&q=gpu+ping-pong+technique">ping-pong</a>
-    a pair of textures for indefinitely long iterations. Since Facet
+    a pair of textures for indefinitely long iterations. Since Lux
     could use an explicit API for ping-ponging, this is probably a
     good opportunity. 
     
   </p>
 
   <p><b>Not working for you?</b> Chances are your GPU does not support
-  the mad trickery Facet is pulling behind the scenes... Sorry! At the
+  the mad trickery Lux  is pulling behind the scenes... Sorry! At the
   very least, you'll need a GPU that can render to a floating-point
   frame buffer. Anything bought later than 2007 which does not have
   "Intel" stamped on it should work.

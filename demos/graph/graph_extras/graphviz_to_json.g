@@ -1,4 +1,4 @@
-/* outputs parts of a graph to a json format Facet understands */
+/* outputs parts of a graph to a json format Lux understands */
 
 BEG_G {
     printf("{\n");

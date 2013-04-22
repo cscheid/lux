@@ -1,7 +1,7 @@
 /*
- * FIXME THIS LESSON USES REALLY ANCIENT FACET STYLE
+ * FIXME THIS LESSON USES REALLY ANCIENT LUX STYLE
  * 
- * It works, but it reflects in no way how you should write Facet code.
+ * It works, but it reflects in no way how you should write Lux code.
  */
 
 var gl;
@@ -13,7 +13,7 @@ var cube_model;
 var light_ambient = Shade.color('gray');
 var light_diffuse = Shade.color('white');
 var light_position = Shade.vec(0, 0, 2);
-var Models = Facet.Models;
+var Models = Lux.Models;
 
 var mat_ambient = Shade.vec(0.2, 0.2, 0.2, 1);
 var background_color = Shade.vec(0.5, 0.5, 0.5, 1).mul(0.5);
@@ -59,7 +59,7 @@ function make_fogger(kind)
 
 function create_cube_drawable(opts)
 {
-    var material_color = Shade.texture2D(Facet.texture({ 
+    var material_color = Shade.texture2D(Lux.texture({ 
         src: "../img/crate.jpg",
         mag_filter: gl.LINEAR,
         min_filter: gl.LINEAR_MIPMAP_NEAREST,
@@ -88,7 +88,7 @@ function create_cube_drawable(opts)
 
     var mvp = proj.mul(mv);
     var eye_vertex = mv.mul(Shade.vec(cube_model.vertex, 1));
-    return Facet.bake(cube_model, {
+    return Lux.bake(cube_model, {
         position: proj.mul(eye_vertex),
         color: opts.fogger(final_color, eye_vertex)
     });
@@ -96,20 +96,20 @@ function create_cube_drawable(opts)
 
 function draw_it()
 {
-    var model_cube = Facet.rotation(angle, [1,1,1]);
-    var view       = Facet.translation(0.0, 0.0, -6.0);
+    var model_cube = Lux.rotation(angle, [1,1,1]);
+    var view       = Lux.translation(0.0, 0.0, -6.0);
     gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LESS);
     mv.set(mat4.product(view, model_cube));
-    proj.set(Facet.perspective(45, 720/480, 0.1, 100.0));
+    proj.set(Lux.perspective(45, 720/480, 0.1, 100.0));
     cube_drawable.draw();
 }
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
 
-    gl = Facet.init(canvas,
+    gl = Lux.init(canvas,
                       {
                           clearDepth: 1.0,
                           clearColor: background_color,

@@ -143,11 +143,11 @@ function make_points_batch()
             }
     }
     update_random();
-    var bx     = Facet.attribute_buffer({ vertex_array: x, item_size: 1 });
-    var by     = Facet.attribute_buffer({ vertex_array: y, item_size: 1 });
-    var b_seed = Facet.attribute_buffer({ vertex_array: r, item_size: 1 });
+    var bx     = Lux.attribute_buffer({ vertex_array: x, item_size: 1 });
+    var by     = Lux.attribute_buffer({ vertex_array: y, item_size: 1 });
+    var b_seed = Lux.attribute_buffer({ vertex_array: r, item_size: 1 });
 
-    var model = Facet.model({
+    var model = Lux.model({
         x: bx, y: by, seed: b_seed, type: "points"
     });
     
@@ -159,8 +159,8 @@ function make_points_batch()
         it_state = sheep.iteration(it_state);
     }
 
-    var batch = Facet.bake(model, {
-        mode: Facet.DrawingMode.additive,
+    var batch = Lux.bake(model, {
+        mode: Lux.DrawingMode.additive,
         position: interactor.camera(it_state.pos().swizzle("xy")),
         color: Shade.vec(sheep.colormap(it_state.color()), 1)
     }, {
@@ -187,7 +187,7 @@ function offscreen_batch()
     var count_scale = Shade.parameter("float", 1);
     var vibrancy = 1.0;
     var gamma_value = Shade.div(1.0, gamma);
-    var rb = Facet.render_buffer({ width: 720, height: 600, type: gl.FLOAT });
+    var rb = Lux.render_buffer({ width: 720, height: 600, type: gl.FLOAT });
     function clear() {
         rb.with_bound_buffer(function() {
             // ugly...
@@ -241,7 +241,7 @@ $().ready(function() {
     function change_global_scale(evt, obj)
     {
         global_scale.set(obj.value / 100);
-        Facet.Scene.invalidate();
+        Lux.Scene.invalidate();
     }
     function change_hue(evt, obj)
     {
@@ -256,10 +256,10 @@ $().ready(function() {
     function change_gamma(evt, obj)
     {
         gamma.set(obj.value / 100);
-        Facet.Scene.invalidate();
+        Lux.Scene.invalidate();
     }
     var canvas = document.getElementById("webgl");
-    interactor = Facet.UI.center_zoom_interactor({
+    interactor = Lux.UI.center_zoom_interactor({
         width: 640, height: 480, zoom: 1,
         mousemove: function(event) { 
             if (event.which & 1)
@@ -272,9 +272,9 @@ $().ready(function() {
         interactor.center.set(vec.make(d.center));
         interactor.zoom.set(1.0/d.scale);
         main_batch = offscreen_batch();
-        Facet.Scene.add(main_batch);
+        Lux.Scene.add(main_batch);
     });
-    gl = Facet.init(canvas, {
+    gl = Lux.init(canvas, {
         interactor: interactor
     });
     for (var i=0; i<4; ++i) {
@@ -323,7 +323,7 @@ $().ready(function() {
     });
     global_seed_offset = Shade.parameter("float", 0);
     // var main_batch = offscreen_batch();
-    // Facet.Scene.add(main_batch);
+    // Lux.Scene.add(main_batch);
     var frame_count = 0;
     var main_loop = function() {
         if (is_running) {
@@ -337,7 +337,7 @@ $().ready(function() {
             main_batch.update_random();
         }
         global_seed_offset.set(offset+1);
-        Facet.Scene.invalidate();
+        Lux.Scene.invalidate();
     };
     is_running = true;
     main_loop();

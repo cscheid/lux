@@ -1,6 +1,6 @@
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    var gl = Facet.init(canvas, {
+    var gl = Lux.init(canvas, {
         clearColor: [0,0,0,0.1],
         mousedown: function(event) {
             var result = globe.mousedown(event);
@@ -24,7 +24,7 @@ $().ready(function () {
         field_of_view_y: Shade.div(20, globe_zoom)
     });
 
-    var globe = Facet.Marks.globe({ 
+    var globe = Lux.Marks.globe({ 
         view_proj: view_proj,
         zoom: globe_zoom
         ,
@@ -33,5 +33,5 @@ $().ready(function () {
         }
     });
 
-    Facet.Scene.add(globe);
+    Lux.Scene.add(globe);
 });

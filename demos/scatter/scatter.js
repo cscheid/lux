@@ -12,11 +12,11 @@ function data_buffers()
 {
     var d = Data.flowers();
     return {
-        sepalLength: Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalLength; }), item_size: 1, keep_array: true }),
-        sepalWidth:  Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalWidth; }), item_size: 1, keep_array: true}),
-        petalLength: Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalLength; }), item_size: 1, keep_array: true}),
-        petalWidth:  Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalWidth; }), item_size: 1, keep_array: true}),
-        species:     Facet.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.species; }), item_size: 1, item_type: 'ubyte', keep_array: true}),
+        sepalLength: Lux.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalLength; }), item_size: 1, keep_array: true }),
+        sepalWidth:  Lux.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalWidth; }), item_size: 1, keep_array: true}),
+        petalLength: Lux.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalLength; }), item_size: 1, keep_array: true}),
+        petalWidth:  Lux.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalWidth; }), item_size: 1, keep_array: true}),
+        species:     Lux.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.species; }), item_size: 1, item_type: 'ubyte', keep_array: true}),
         columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species']
     };
 }
@@ -26,46 +26,46 @@ $().ready(function() {
     point_diameter = S.parameter("float", 10);
     stroke_width   = S.parameter("float", 2.5);
     point_alpha    = S.parameter("float", 1.0);
-    Facet.UI.parameter_slider({
+    Lux.UI.parameter_slider({
         element: "#pointsize",
         parameter: point_diameter,
         min: 0, 
         max: 100
     });
-    Facet.UI.parameter_slider({
+    Lux.UI.parameter_slider({
         element: "#pointalpha",
         parameter: point_alpha,
         min: 0,
         max: 1
     });
-    Facet.UI.parameter_slider({
+    Lux.UI.parameter_slider({
         element: "#strokewidth",
         parameter: stroke_width,
         min: 0,
         max: 100
     });
 
-    gl = Facet.init(document.getElementById("scatterplot"), {
+    gl = Lux.init(document.getElementById("scatterplot"), {
         clearColor: [0, 0, 0, 0.2]
     });
 
     var data = data_buffers();
 
-    var species_color = S.vec(S.Utils.choose(
-        [S.vec(1, 0, 0),
-         S.vec(0, 1, 0),
-         S.vec(0, 0, 1)])(data.species), point_alpha);
+    var species_color = Shade.Colors.Brewer.qualitative({
+        name: "Set1",
+        alpha: point_alpha
+    })(data.species);
 
-    Facet.Scene.add(Facet.Marks.scatterplot({
+    Lux.Scene.add(Lux.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
         x: data.sepalLength,
         y: data.petalLength,
         x_scale: S.Utils.fit(data.sepalLength),
         y_scale: S.Utils.fit(data.petalLength),
         fill_color: species_color,
-        stroke_color: species_color.mul(0.75),
+        stroke_color: Shade.Colors.darken(0.8)(species_color),
         stroke_width: stroke_width,
         point_diameter: point_diameter,
-        mode: Facet.DrawingMode.over
+        mode: Lux.DrawingMode.over
     }));
 });

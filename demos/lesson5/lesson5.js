@@ -1,5 +1,5 @@
 $().ready(function () {
-    var gl = Facet.init(document.getElementById("webgl"), {
+    var gl = Lux.init(document.getElementById("webgl"), {
         clearColor: [0,0,0,0.2]
     });
 
@@ -15,7 +15,7 @@ $().ready(function () {
     // only 8 vertices in a cube, we end up with 24 vertices in the
     // model, since we need three colors per corner.
 
-    var cube_model = Facet.model({
+    var cube_model = Lux.model({
         type: "triangles",
         elements: [0,  1,  2,  0,  2,  3,
                    4,  5,  6,  4,  6,  7,
@@ -36,7 +36,7 @@ $().ready(function () {
     // For the pyramid, however, each vertex has only one color 
     // associated with it, so we can reuse the information.
 
-    var pyramid_model = Facet.model({
+    var pyramid_model = Lux.model({
         type: "triangles",
         elements: [0, 1, 2,
                    0, 2, 3,
@@ -62,15 +62,15 @@ $().ready(function () {
         (Shade.rotation(angle, Shade.vec(0,1,0)))
         (pyramid_model.vertex);
 
-    Facet.Scene.add(Facet.bake(cube_model, {
+    Lux.Scene.add(Lux.bake(cube_model, {
         position: camera(cube_xformed_vertex),
         color: cube_model.color
     }));
-    Facet.Scene.add(Facet.bake(pyramid_model, {
+    Lux.Scene.add(Lux.bake(pyramid_model, {
         position: camera(pyramid_xformed_vertex),
         color: pyramid_model.color
     }));
 
     // Start scene animation
-    Facet.Scene.animate();
+    Lux.Scene.animate();
 });

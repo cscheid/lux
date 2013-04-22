@@ -18,8 +18,8 @@ function display()
 function data_buffers()
 {
     var d = Data.flowers();
-    var tt = Facet.Data.texture_table(d);
-    var point_index = Facet.attribute_buffer({ 
+    var tt = Lux.Data.texture_table(d);
+    var point_index = Lux.attribute_buffer({ 
         vertex_array: _.range(tt.n_rows), 
         item_size: 1
     });
@@ -38,20 +38,24 @@ function data_buffers()
 
 function init_webgl()
 {
-    Facet.set_context(gl);
+    Lux.set_context(gl);
     data = data_buffers();
 
     point_diameter = S.parameter("float", 10);
     stroke_width   = S.parameter("float", 2.5);
     point_alpha    = S.parameter("float", 1.0);
 
-    var species_color = S.Utils.choose(
-        [S.vec(1, 0, 0, point_alpha),
-         S.vec(0, 1, 0, point_alpha),
-         S.vec(0, 0, 1, point_alpha)])(data.species);
+    var species_color = Shade.Colors.Brewer.qualitative({
+        name: "Set1",
+        alpha: point_alpha
+    })(data.species);
+    // var species_color = S.Utils.choose(
+    //     [S.vec(1, 0, 0, point_alpha),
+    //      S.vec(0, 1, 0, point_alpha),
+    //      S.vec(0, 0, 1, point_alpha)])(data.species);
 
     // Shade.debug = true;
-    scatterplot_batch = Facet.Marks.scatterplot({
+    scatterplot_batch = Lux.Marks.scatterplot({
         elements: data.n_rows,
         x: data.sepalLength,
         y: data.petalLength,
@@ -61,7 +65,7 @@ function init_webgl()
         stroke_width: stroke_width,
         stroke_color: S.mix(species_color, S.color("black", point_alpha), 0.5),
         point_diameter: point_diameter,
-        mode: Facet.DrawingMode.over
+        mode: Lux.DrawingMode.over
     });
 }
 
@@ -106,7 +110,7 @@ $().ready(function() {
         change: change_stroke_width
     });
     var canvas = document.getElementById("scatterplot");
-    gl = Facet.init(canvas, { attributes: { alpha: true,
+    gl = Lux.init(canvas, { attributes: { alpha: true,
                                             depth: true
                                           },
                               display: display,

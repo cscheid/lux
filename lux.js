@@ -1,5 +1,5 @@
 /*
- * Facet: An EDSL for WebGL graphics
+ * Lux: An EDSL for WebGL graphics
  * By Carlos Scheidegger, cscheid@research.att.com
  * 
  * Copyright (c) 2011, 2012 AT&T Intellectual Property
@@ -13,7 +13,7 @@
  *
  */
 
-// Facet depends, at least partially, on the following software libraries:
+// Lux depends, at least partially, on the following software libraries:
 // - underscore.js
 // - webgl-debug
 // - webgl-utils
@@ -111,21 +111,21 @@ OTHER DEALINGS IN THE SOFTWARE.
  */
 // END TYPEFACE.JS NOTICE
 ////////////////////////////////////////////////////////////////////////////////
-Facet = {};
-// yucky globals used throughout Facet. I guess this means I lost.
+Lux = {};
+// yucky globals used throughout Lux. I guess this means I lost.
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-Facet._globals = {
+Lux._globals = {
     // stores the active webgl context
     ctx: undefined
 
-    // In addition, Facet stores per-context globals inside the
-    // WebGL context variable itself, on the field _facet_globals.
+    // In addition, Lux stores per-context globals inside the
+    // WebGL context variable itself, on the field _lux_globals.
 };
 // stores references to external libraries to avoid namespace pollution
 
-Facet.Lib = {};
+Lux.Lib = {};
 (function(){var n=this,t=n._,r={},e=Array.prototype,u=Object.prototype,i=Function.prototype,a=e.push,o=e.slice,c=e.concat,l=u.toString,f=u.hasOwnProperty,s=e.forEach,p=e.map,h=e.reduce,v=e.reduceRight,d=e.filter,g=e.every,m=e.some,y=e.indexOf,b=e.lastIndexOf,x=Array.isArray,_=Object.keys,j=i.bind,w=function(n){return n instanceof w?n:this instanceof w?(this._wrapped=n,void 0):new w(n)};"undefined"!=typeof exports?("undefined"!=typeof module&&module.exports&&(exports=module.exports=w),exports._=w):n._=w,w.VERSION="1.4.4";var A=w.each=w.forEach=function(n,t,e){if(null!=n)if(s&&n.forEach===s)n.forEach(t,e);else if(n.length===+n.length){for(var u=0,i=n.length;i>u;u++)if(t.call(e,n[u],u,n)===r)return}else for(var a in n)if(w.has(n,a)&&t.call(e,n[a],a,n)===r)return};w.map=w.collect=function(n,t,r){var e=[];return null==n?e:p&&n.map===p?n.map(t,r):(A(n,function(n,u,i){e[e.length]=t.call(r,n,u,i)}),e)};var O="Reduce of empty array with no initial value";w.reduce=w.foldl=w.inject=function(n,t,r,e){var u=arguments.length>2;if(null==n&&(n=[]),h&&n.reduce===h)return e&&(t=w.bind(t,e)),u?n.reduce(t,r):n.reduce(t);if(A(n,function(n,i,a){u?r=t.call(e,r,n,i,a):(r=n,u=!0)}),!u)throw new TypeError(O);return r},w.reduceRight=w.foldr=function(n,t,r,e){var u=arguments.length>2;if(null==n&&(n=[]),v&&n.reduceRight===v)return e&&(t=w.bind(t,e)),u?n.reduceRight(t,r):n.reduceRight(t);var i=n.length;if(i!==+i){var a=w.keys(n);i=a.length}if(A(n,function(o,c,l){c=a?a[--i]:--i,u?r=t.call(e,r,n[c],c,l):(r=n[c],u=!0)}),!u)throw new TypeError(O);return r},w.find=w.detect=function(n,t,r){var e;return E(n,function(n,u,i){return t.call(r,n,u,i)?(e=n,!0):void 0}),e},w.filter=w.select=function(n,t,r){var e=[];return null==n?e:d&&n.filter===d?n.filter(t,r):(A(n,function(n,u,i){t.call(r,n,u,i)&&(e[e.length]=n)}),e)},w.reject=function(n,t,r){return w.filter(n,function(n,e,u){return!t.call(r,n,e,u)},r)},w.every=w.all=function(n,t,e){t||(t=w.identity);var u=!0;return null==n?u:g&&n.every===g?n.every(t,e):(A(n,function(n,i,a){return(u=u&&t.call(e,n,i,a))?void 0:r}),!!u)};var E=w.some=w.any=function(n,t,e){t||(t=w.identity);var u=!1;return null==n?u:m&&n.some===m?n.some(t,e):(A(n,function(n,i,a){return u||(u=t.call(e,n,i,a))?r:void 0}),!!u)};w.contains=w.include=function(n,t){return null==n?!1:y&&n.indexOf===y?n.indexOf(t)!=-1:E(n,function(n){return n===t})},w.invoke=function(n,t){var r=o.call(arguments,2),e=w.isFunction(t);return w.map(n,function(n){return(e?t:n[t]).apply(n,r)})},w.pluck=function(n,t){return w.map(n,function(n){return n[t]})},w.where=function(n,t,r){return w.isEmpty(t)?r?null:[]:w[r?"find":"filter"](n,function(n){for(var r in t)if(t[r]!==n[r])return!1;return!0})},w.findWhere=function(n,t){return w.where(n,t,!0)},w.max=function(n,t,r){if(!t&&w.isArray(n)&&n[0]===+n[0]&&65535>n.length)return Math.max.apply(Math,n);if(!t&&w.isEmpty(n))return-1/0;var e={computed:-1/0,value:-1/0};return A(n,function(n,u,i){var a=t?t.call(r,n,u,i):n;a>=e.computed&&(e={value:n,computed:a})}),e.value},w.min=function(n,t,r){if(!t&&w.isArray(n)&&n[0]===+n[0]&&65535>n.length)return Math.min.apply(Math,n);if(!t&&w.isEmpty(n))return 1/0;var e={computed:1/0,value:1/0};return A(n,function(n,u,i){var a=t?t.call(r,n,u,i):n;e.computed>a&&(e={value:n,computed:a})}),e.value},w.shuffle=function(n){var t,r=0,e=[];return A(n,function(n){t=w.random(r++),e[r-1]=e[t],e[t]=n}),e};var k=function(n){return w.isFunction(n)?n:function(t){return t[n]}};w.sortBy=function(n,t,r){var e=k(t);return w.pluck(w.map(n,function(n,t,u){return{value:n,index:t,criteria:e.call(r,n,t,u)}}).sort(function(n,t){var r=n.criteria,e=t.criteria;if(r!==e){if(r>e||r===void 0)return 1;if(e>r||e===void 0)return-1}return n.index<t.index?-1:1}),"value")};var F=function(n,t,r,e){var u={},i=k(t||w.identity);return A(n,function(t,a){var o=i.call(r,t,a,n);e(u,o,t)}),u};w.groupBy=function(n,t,r){return F(n,t,r,function(n,t,r){(w.has(n,t)?n[t]:n[t]=[]).push(r)})},w.countBy=function(n,t,r){return F(n,t,r,function(n,t){w.has(n,t)||(n[t]=0),n[t]++})},w.sortedIndex=function(n,t,r,e){r=null==r?w.identity:k(r);for(var u=r.call(e,t),i=0,a=n.length;a>i;){var o=i+a>>>1;u>r.call(e,n[o])?i=o+1:a=o}return i},w.toArray=function(n){return n?w.isArray(n)?o.call(n):n.length===+n.length?w.map(n,w.identity):w.values(n):[]},w.size=function(n){return null==n?0:n.length===+n.length?n.length:w.keys(n).length},w.first=w.head=w.take=function(n,t,r){return null==n?void 0:null==t||r?n[0]:o.call(n,0,t)},w.initial=function(n,t,r){return o.call(n,0,n.length-(null==t||r?1:t))},w.last=function(n,t,r){return null==n?void 0:null==t||r?n[n.length-1]:o.call(n,Math.max(n.length-t,0))},w.rest=w.tail=w.drop=function(n,t,r){return o.call(n,null==t||r?1:t)},w.compact=function(n){return w.filter(n,w.identity)};var R=function(n,t,r){return A(n,function(n){w.isArray(n)?t?a.apply(r,n):R(n,t,r):r.push(n)}),r};w.flatten=function(n,t){return R(n,t,[])},w.without=function(n){return w.difference(n,o.call(arguments,1))},w.uniq=w.unique=function(n,t,r,e){w.isFunction(t)&&(e=r,r=t,t=!1);var u=r?w.map(n,r,e):n,i=[],a=[];return A(u,function(r,e){(t?e&&a[a.length-1]===r:w.contains(a,r))||(a.push(r),i.push(n[e]))}),i},w.union=function(){return w.uniq(c.apply(e,arguments))},w.intersection=function(n){var t=o.call(arguments,1);return w.filter(w.uniq(n),function(n){return w.every(t,function(t){return w.indexOf(t,n)>=0})})},w.difference=function(n){var t=c.apply(e,o.call(arguments,1));return w.filter(n,function(n){return!w.contains(t,n)})},w.zip=function(){for(var n=o.call(arguments),t=w.max(w.pluck(n,"length")),r=Array(t),e=0;t>e;e++)r[e]=w.pluck(n,""+e);return r},w.object=function(n,t){if(null==n)return{};for(var r={},e=0,u=n.length;u>e;e++)t?r[n[e]]=t[e]:r[n[e][0]]=n[e][1];return r},w.indexOf=function(n,t,r){if(null==n)return-1;var e=0,u=n.length;if(r){if("number"!=typeof r)return e=w.sortedIndex(n,t),n[e]===t?e:-1;e=0>r?Math.max(0,u+r):r}if(y&&n.indexOf===y)return n.indexOf(t,r);for(;u>e;e++)if(n[e]===t)return e;return-1},w.lastIndexOf=function(n,t,r){if(null==n)return-1;var e=null!=r;if(b&&n.lastIndexOf===b)return e?n.lastIndexOf(t,r):n.lastIndexOf(t);for(var u=e?r:n.length;u--;)if(n[u]===t)return u;return-1},w.range=function(n,t,r){1>=arguments.length&&(t=n||0,n=0),r=arguments[2]||1;for(var e=Math.max(Math.ceil((t-n)/r),0),u=0,i=Array(e);e>u;)i[u++]=n,n+=r;return i},w.bind=function(n,t){if(n.bind===j&&j)return j.apply(n,o.call(arguments,1));var r=o.call(arguments,2);return function(){return n.apply(t,r.concat(o.call(arguments)))}},w.partial=function(n){var t=o.call(arguments,1);return function(){return n.apply(this,t.concat(o.call(arguments)))}},w.bindAll=function(n){var t=o.call(arguments,1);return 0===t.length&&(t=w.functions(n)),A(t,function(t){n[t]=w.bind(n[t],n)}),n},w.memoize=function(n,t){var r={};return t||(t=w.identity),function(){var e=t.apply(this,arguments);return w.has(r,e)?r[e]:r[e]=n.apply(this,arguments)}},w.delay=function(n,t){var r=o.call(arguments,2);return setTimeout(function(){return n.apply(null,r)},t)},w.defer=function(n){return w.delay.apply(w,[n,1].concat(o.call(arguments,1)))},w.throttle=function(n,t){var r,e,u,i,a=0,o=function(){a=new Date,u=null,i=n.apply(r,e)};return function(){var c=new Date,l=t-(c-a);return r=this,e=arguments,0>=l?(clearTimeout(u),u=null,a=c,i=n.apply(r,e)):u||(u=setTimeout(o,l)),i}},w.debounce=function(n,t,r){var e,u;return function(){var i=this,a=arguments,o=function(){e=null,r||(u=n.apply(i,a))},c=r&&!e;return clearTimeout(e),e=setTimeout(o,t),c&&(u=n.apply(i,a)),u}},w.once=function(n){var t,r=!1;return function(){return r?t:(r=!0,t=n.apply(this,arguments),n=null,t)}},w.wrap=function(n,t){return function(){var r=[n];return a.apply(r,arguments),t.apply(this,r)}},w.compose=function(){var n=arguments;return function(){for(var t=arguments,r=n.length-1;r>=0;r--)t=[n[r].apply(this,t)];return t[0]}},w.after=function(n,t){return 0>=n?t():function(){return 1>--n?t.apply(this,arguments):void 0}},w.keys=_||function(n){if(n!==Object(n))throw new TypeError("Invalid object");var t=[];for(var r in n)w.has(n,r)&&(t[t.length]=r);return t},w.values=function(n){var t=[];for(var r in n)w.has(n,r)&&t.push(n[r]);return t},w.pairs=function(n){var t=[];for(var r in n)w.has(n,r)&&t.push([r,n[r]]);return t},w.invert=function(n){var t={};for(var r in n)w.has(n,r)&&(t[n[r]]=r);return t},w.functions=w.methods=function(n){var t=[];for(var r in n)w.isFunction(n[r])&&t.push(r);return t.sort()},w.extend=function(n){return A(o.call(arguments,1),function(t){if(t)for(var r in t)n[r]=t[r]}),n},w.pick=function(n){var t={},r=c.apply(e,o.call(arguments,1));return A(r,function(r){r in n&&(t[r]=n[r])}),t},w.omit=function(n){var t={},r=c.apply(e,o.call(arguments,1));for(var u in n)w.contains(r,u)||(t[u]=n[u]);return t},w.defaults=function(n){return A(o.call(arguments,1),function(t){if(t)for(var r in t)null==n[r]&&(n[r]=t[r])}),n},w.clone=function(n){return w.isObject(n)?w.isArray(n)?n.slice():w.extend({},n):n},w.tap=function(n,t){return t(n),n};var I=function(n,t,r,e){if(n===t)return 0!==n||1/n==1/t;if(null==n||null==t)return n===t;n instanceof w&&(n=n._wrapped),t instanceof w&&(t=t._wrapped);var u=l.call(n);if(u!=l.call(t))return!1;switch(u){case"[object String]":return n==t+"";case"[object Number]":return n!=+n?t!=+t:0==n?1/n==1/t:n==+t;case"[object Date]":case"[object Boolean]":return+n==+t;case"[object RegExp]":return n.source==t.source&&n.global==t.global&&n.multiline==t.multiline&&n.ignoreCase==t.ignoreCase}if("object"!=typeof n||"object"!=typeof t)return!1;for(var i=r.length;i--;)if(r[i]==n)return e[i]==t;r.push(n),e.push(t);var a=0,o=!0;if("[object Array]"==u){if(a=n.length,o=a==t.length)for(;a--&&(o=I(n[a],t[a],r,e)););}else{var c=n.constructor,f=t.constructor;if(c!==f&&!(w.isFunction(c)&&c instanceof c&&w.isFunction(f)&&f instanceof f))return!1;for(var s in n)if(w.has(n,s)&&(a++,!(o=w.has(t,s)&&I(n[s],t[s],r,e))))break;if(o){for(s in t)if(w.has(t,s)&&!a--)break;o=!a}}return r.pop(),e.pop(),o};w.isEqual=function(n,t){return I(n,t,[],[])},w.isEmpty=function(n){if(null==n)return!0;if(w.isArray(n)||w.isString(n))return 0===n.length;for(var t in n)if(w.has(n,t))return!1;return!0},w.isElement=function(n){return!(!n||1!==n.nodeType)},w.isArray=x||function(n){return"[object Array]"==l.call(n)},w.isObject=function(n){return n===Object(n)},A(["Arguments","Function","String","Number","Date","RegExp"],function(n){w["is"+n]=function(t){return l.call(t)=="[object "+n+"]"}}),w.isArguments(arguments)||(w.isArguments=function(n){return!(!n||!w.has(n,"callee"))}),"function"!=typeof/./&&(w.isFunction=function(n){return"function"==typeof n}),w.isFinite=function(n){return isFinite(n)&&!isNaN(parseFloat(n))},w.isNaN=function(n){return w.isNumber(n)&&n!=+n},w.isBoolean=function(n){return n===!0||n===!1||"[object Boolean]"==l.call(n)},w.isNull=function(n){return null===n},w.isUndefined=function(n){return n===void 0},w.has=function(n,t){return f.call(n,t)},w.noConflict=function(){return n._=t,this},w.identity=function(n){return n},w.times=function(n,t,r){for(var e=Array(n),u=0;n>u;u++)e[u]=t.call(r,u);return e},w.random=function(n,t){return null==t&&(t=n,n=0),n+Math.floor(Math.random()*(t-n+1))};var M={escape:{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#x27;","/":"&#x2F;"}};M.unescape=w.invert(M.escape);var S={escape:RegExp("["+w.keys(M.escape).join("")+"]","g"),unescape:RegExp("("+w.keys(M.unescape).join("|")+")","g")};w.each(["escape","unescape"],function(n){w[n]=function(t){return null==t?"":(""+t).replace(S[n],function(t){return M[n][t]})}}),w.result=function(n,t){if(null==n)return null;var r=n[t];return w.isFunction(r)?r.call(n):r},w.mixin=function(n){A(w.functions(n),function(t){var r=w[t]=n[t];w.prototype[t]=function(){var n=[this._wrapped];return a.apply(n,arguments),D.call(this,r.apply(w,n))}})};var N=0;w.uniqueId=function(n){var t=++N+"";return n?n+t:t},w.templateSettings={evaluate:/<%([\s\S]+?)%>/g,interpolate:/<%=([\s\S]+?)%>/g,escape:/<%-([\s\S]+?)%>/g};var T=/(.)^/,q={"'":"'","\\":"\\","\r":"r","\n":"n","	":"t","\u2028":"u2028","\u2029":"u2029"},B=/\\|'|\r|\n|\t|\u2028|\u2029/g;w.template=function(n,t,r){var e;r=w.defaults({},r,w.templateSettings);var u=RegExp([(r.escape||T).source,(r.interpolate||T).source,(r.evaluate||T).source].join("|")+"|$","g"),i=0,a="__p+='";n.replace(u,function(t,r,e,u,o){return a+=n.slice(i,o).replace(B,function(n){return"\\"+q[n]}),r&&(a+="'+\n((__t=("+r+"))==null?'':_.escape(__t))+\n'"),e&&(a+="'+\n((__t=("+e+"))==null?'':__t)+\n'"),u&&(a+="';\n"+u+"\n__p+='"),i=o+t.length,t}),a+="';\n",r.variable||(a="with(obj||{}){\n"+a+"}\n"),a="var __t,__p='',__j=Array.prototype.join,"+"print=function(){__p+=__j.call(arguments,'');};\n"+a+"return __p;\n";try{e=Function(r.variable||"obj","_",a)}catch(o){throw o.source=a,o}if(t)return e(t,w);var c=function(n){return e.call(this,n,w)};return c.source="function("+(r.variable||"obj")+"){\n"+a+"}",c},w.chain=function(n){return w(n).chain()};var D=function(n){return this._chain?w(n).chain():n};w.mixin(w),A(["pop","push","reverse","shift","sort","splice","unshift"],function(n){var t=e[n];w.prototype[n]=function(){var r=this._wrapped;return t.apply(r,arguments),"shift"!=n&&"splice"!=n||0!==r.length||delete r[0],D.call(this,r)}}),A(["concat","join","slice"],function(n){var t=e[n];w.prototype[n]=function(){return D.call(this,t.apply(this._wrapped,arguments))}}),w.extend(w.prototype,{chain:function(){return this._chain=!0,this},value:function(){return this._wrapped}})}).call(this);//Copyright (c) 2009 The Chromium Authors. All rights reserved.
 //Use of this source code is governed by a BSD-style license that can be
 //found in the LICENSE file.
@@ -966,7 +966,7 @@ window.requestAnimFrame = (function() {
 })();
 
 
-Facet.Lib.tessellate = (function() {
+Lux.Lib.tessellate = (function() {
 
 var Module = {};
 // var CompiledModule = (function() {
@@ -3231,15 +3231,15 @@ mat.str = function(m1)
 // For example, in some instances it is useful to know whether the
 // float value comes from a constant or a GLSL uniform or an attribute 
 // buffer.
-Facet.is_shade_expression = function(obj)
+Lux.is_shade_expression = function(obj)
 {
-    return typeof obj === 'function' && obj._facet_expression && obj.expression_type;
+    return typeof obj === 'function' && obj._lux_expression && obj.expression_type;
 };
 
 //////////////////////////////////////////////////////////////////////////////
 
 // FIXME Can I make these two the same function call?
-function facet_constant_type(obj)
+function lux_constant_type(obj)
 // it is convenient in many places to accept as a parameter a scalar,
 // a vector or a matrix. This function tries to
 // tell them apart. Functions such as vec.make and mat.make populate
@@ -3263,11 +3263,11 @@ function facet_constant_type(obj)
 //////////////////////////////////////////////////////////////////////////////
 // http://javascript.crockford.com/remedial.html
 
-// Notice that facet_typeOf is NOT EXACTLY equal to
+// Notice that lux_typeOf is NOT EXACTLY equal to
 // 
 //   http://javascript.crockford.com/remedial.html
 //
-// In particular, facet_typeOf will return "object" if given Shade expressions.
+// In particular, lux_typeOf will return "object" if given Shade expressions.
 // 
 // Shade expressions are actually functions with a bunch of extra methods.
 // 
@@ -3275,10 +3275,10 @@ function facet_constant_type(obj)
 // operator() overloading, which turns out to be notationally quite powerful.
 //
 
-function facet_typeOf(value) 
+function lux_typeOf(value) 
 {
     var s = typeof value;
-    if (s === 'function' && value._facet_expression)
+    if (s === 'function' && value._lux_expression)
         return 'object';
     if (s === 'object') {
         if (value) {
@@ -3294,21 +3294,21 @@ function facet_typeOf(value)
     return s;
 }
 /*
- * Facet.attribute_buffer_view builds an attribute_buffer object from an
- * Facet.buffer object, instead of an array (or typed array). The main
+ * Lux.attribute_buffer_view builds an attribute_buffer object from an
+ * Lux.buffer object, instead of an array (or typed array). The main
  * use case for attribute_buffer_view is to allow one to build
- * several attribute_buffer_views over the same Facet.buffer, for efficient
+ * several attribute_buffer_views over the same Lux.buffer, for efficient
  * strided attribute buffers (which share the same buffer)
  * 
- * The main difference between calling Facet.attribute_buffer_view and
- * Facet.attribute_buffer is that attribute_buffer_view takes a "buffer"
+ * The main difference between calling Lux.attribute_buffer_view and
+ * Lux.attribute_buffer is that attribute_buffer_view takes a "buffer"
  * parameter instead of an "array" parameter.
  * 
  */
 
-Facet.attribute_buffer_view = function(opts)
+Lux.attribute_buffer_view = function(opts)
 {
-    var ctx = Facet._globals.ctx;
+    var ctx = Lux._globals.ctx;
     opts = _.defaults(opts, {
         item_size: 3,
         item_type: 'float',
@@ -3328,7 +3328,7 @@ Facet.attribute_buffer_view = function(opts)
     }
 
     var normalized = opts.normalized;
-    if (facet_typeOf(normalized) !== "boolean") {
+    if (lux_typeOf(normalized) !== "boolean") {
         throw "opts.normalized must be boolean";
     }
 
@@ -3389,19 +3389,19 @@ Facet.attribute_buffer_view = function(opts)
             throw "currently unimplemented";
         },
         //////////////////////////////////////////////////////////////////////
-        // These methods are only for internal use within Facet
+        // These methods are only for internal use within Lux
         bind: function(attribute) {
-            Facet.set_context(ctx);
+            Lux.set_context(ctx);
             ctx.bindBuffer(ctx.ARRAY_BUFFER, this.buffer);
             ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, this.stride, this.offset);
         },
         draw: function(primitive) {
-            Facet.set_context(ctx);
+            Lux.set_context(ctx);
             ctx.drawArrays(primitive, 0, this.numItems);
         },
         bind_and_draw: function(attribute, primitive) {
             // here we inline the calls to bind and draw to shave a redundant set_context.
-            Facet.set_context(ctx);
+            Lux.set_context(ctx);
             ctx.bindBuffer(ctx.ARRAY_BUFFER, this.buffer);
             ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, this.stride, this.offset);
             ctx.drawArrays(primitive, 0, this.numItems);
@@ -3411,79 +3411,79 @@ Facet.attribute_buffer_view = function(opts)
         result.array = result.buffer.array;
     return result;
 };
-// /*
-//  * Facet.attribute_buffer creates the structures necessary for Facet to handle 
-//  * per-vertex data.
-//  * 
-//  * Typically these will be vertex positions, normals, texture coordinates, 
-//  * colors, etc.
-//  * 
-//  * options: 
-//  * 
-//  *   vertex_array is the data array to be used. It must be one of the following 
-//  *     datatypes:
-//  * 
-//  *     - a javascript array of values, (which will be converted to a typed array
-//  *     of the appropriate type)
-//  * 
-//  *     - a typed array whose type matches the passed type below
-//  * 
-//  *     - an ArrayBuffer of the appropriate size
-//  * 
-//  *   item_size is the number of elements to be associated with each vertex
-//  * 
-//  *   item_type is the data type of each element. Default is 'float', for
-//  *     IEEE 754 32-bit floating point numbers.
-//  * 
-//  *   usage follows the WebGL bufferData call. From the man page for bufferData:
-//  * 
-//  *     Specifies the expected usage pattern of the data store. The symbolic 
-//  *     constant must be STREAM_DRAW, STATIC_DRAW, or DYNAMIC_DRAW.
-//  * 
-//  *   keep_array tells Facet.attribute_buffer to keep a copy of the buffer in 
-//  *   Javascript. This will be stored in the returned object, in the "array" 
-//  *   property. It is useful for javascript-side inspection, or as a convenient
-//  *   place to keep the array stashed in case you need it.
-//  * 
-//  *   stride: if stride is non-zero, WebGL will skip an arbitrary number of 
-//  *   bytes per element. This is used to specify many different attributes which
-//  *   share a single buffer (which gives memory locality advantages in some
-//  *   GPU architectures). stride uses *bytes* as units, so be aware of datatype
-//  *   conversions.
-//  * 
-//  *   offset: gives the offset into the buffer at which to access the data,
-//  *   again used to specify different attributes sharing a single buffer.
-//  *   offset uses *bytes* as units, so be aware of datatype conversions.
-//  * 
-//  * 
-//  * Example usage:
-//  * 
-//  *   // associate three 32-bit floating-point values with each vertex
-//  *   var position_attribute = Facet.attribute_buffer({
-//  *       vertex_array: [1,0,0, 0,1,0, 1,0,0],
-//  *       // item_size: 3 is the default
-//  *       // item_type: 'float' is the default
-//  *   })
-//  * 
-//  *   // associate four 8-bit unsigned bytes with each vertex
-//  *   var color_attribute = Facet.attribute_buffer({
-//  *       vertex_array: [1,0,0,1, 1,1,0,1, 1,1,1,1],
-//  *       item_size: 4,
-//  *       item_type: 'ubyte', // the default item_type is 'float'
-//  *       normalized: true // when 
-//  *   });
-//  *   ...
-//  * 
-//  *   var triangle = Facet.model({
-//  *       type: 'triangles',
-//  *       position: position_attribute,
-//  *       color: color_attribute
-//  *   })
-//  */
+/*
+ * Lux.attribute_buffer creates the structures necessary for Lux to handle 
+ * per-vertex data.
+ * 
+ * Typically these will be vertex positions, normals, texture coordinates, 
+ * colors, etc.
+ * 
+ * options: 
+ * 
+ *   vertex_array is the data array to be used. It must be one of the following 
+ *     datatypes:
+ * 
+ *     - a javascript array of values, (which will be converted to a typed array
+ *     of the appropriate type)
+ * 
+ *     - a typed array whose type matches the passed type below
+ * 
+ *     - an ArrayBuffer of the appropriate size
+ * 
+ *   item_size is the number of elements to be associated with each vertex
+ * 
+ *   item_type is the data type of each element. Default is 'float', for
+ *     IEEE 754 32-bit floating point numbers.
+ * 
+ *   usage follows the WebGL bufferData call. From the man page for bufferData:
+ * 
+ *     Specifies the expected usage pattern of the data store. The symbolic 
+ *     constant must be STREAM_DRAW, STATIC_DRAW, or DYNAMIC_DRAW.
+ * 
+ *   keep_array tells Lux.attribute_buffer to keep a copy of the buffer in 
+ *   Javascript. This will be stored in the returned object, in the "array" 
+ *   property. It is useful for javascript-side inspection, or as a convenient
+ *   place to keep the array stashed in case you need it.
+ * 
+ *   stride: if stride is non-zero, WebGL will skip an arbitrary number of 
+ *   bytes per element. This is used to specify many different attributes which
+ *   share a single buffer (which gives memory locality advantages in some
+ *   GPU architectures). stride uses *bytes* as units, so be aware of datatype
+ *   conversions.
+ * 
+ *   offset: gives the offset into the buffer at which to access the data,
+ *   again used to specify different attributes sharing a single buffer.
+ *   offset uses *bytes* as units, so be aware of datatype conversions.
+ * 
+ * 
+ * Example usage:
+ * 
+ *   // associate three 32-bit floating-point values with each vertex
+ *   var position_attribute = Lux.attribute_buffer({
+ *       vertex_array: [1,0,0, 0,1,0, 1,0,0],
+ *       // item_size: 3 is the default
+ *       // item_type: 'float' is the default
+ *   })
+ * 
+ *   // associate four 8-bit unsigned bytes with each vertex
+ *   var color_attribute = Lux.attribute_buffer({
+ *       vertex_array: [1,0,0,1, 1,1,0,1, 1,1,1,1],
+ *       item_size: 4,
+ *       item_type: 'ubyte', // the default item_type is 'float'
+ *       normalized: true // when 
+ *   });
+ *   ...
+ * 
+ *   var triangle = Lux.model({
+ *       type: 'triangles',
+ *       position: position_attribute,
+ *       color: color_attribute
+ *   })
+ */
 
-Facet.attribute_buffer = function(opts)
+Lux.attribute_buffer = function(opts)
 {
-    var ctx = Facet._globals.ctx;
+    var ctx = Lux._globals.ctx;
     opts = _.defaults(opts, {
         item_size: 3,
         item_type: 'float',
@@ -3538,19 +3538,19 @@ Facet.attribute_buffer = function(opts)
     }
 
     var array = convert_array(opts.vertex_array);
-    var buffer = Facet.buffer({
+    var buffer = Lux.buffer({
         usage: opts.usage,
         array: array,
         keep_array: opts.keep_array
     });
 
-    return Facet.attribute_buffer_view(_.defaults(opts, {
+    return Lux.attribute_buffer_view(_.defaults(opts, {
         buffer: buffer
     }));
 };
-Facet.buffer = function(opts)
+Lux.buffer = function(opts)
 {
-    var ctx = Facet._globals.ctx;
+    var ctx = Lux._globals.ctx;
     opts = _.defaults(opts, {
         usage: ctx.STATIC_DRAW,
         keep_array: false
@@ -3585,12 +3585,12 @@ Facet.buffer = function(opts)
 (function() {
 
 var previous_batch_opts = {};
-Facet.get_current_batch_opts = function()
+Lux.get_current_batch_opts = function()
 {
     return previous_batch_opts;
 };
 
-Facet.unload_batch = function()
+Lux.unload_batch = function()
 {
     if (!previous_batch_opts._ctx)
         return;
@@ -3600,7 +3600,7 @@ Facet.unload_batch = function()
             ctx.disableVertexAttribArray(previous_batch_opts.program[key]);
         }
         _.each(previous_batch_opts.program.uniforms, function (uniform) {
-            delete uniform._facet_active_uniform;
+            delete uniform._lux_active_uniform;
         });
     }
     // FIXME setting line width belongs somewhere else, but I'm not quite sure where.
@@ -3609,7 +3609,7 @@ Facet.unload_batch = function()
         ctx.lineWidth(1.0);
 
     // reset the opengl capabilities which are determined by
-    // Facet.DrawingMode.*
+    // Lux.DrawingMode.*
     ctx.disable(ctx.DEPTH_TEST);
     ctx.disable(ctx.BLEND);
     ctx.depthMask(true);
@@ -3630,7 +3630,7 @@ function draw_it(batch_opts)
         var program = batch_opts.program;
         var key;
 
-        Facet.unload_batch();
+        Lux.unload_batch();
         previous_batch_opts = batch_opts;
         batch_opts.set_caps();
 
@@ -3657,9 +3657,9 @@ function draw_it(batch_opts)
             if (_.isUndefined(value)) {
                 throw "parameter " + key + " has not been set.";
             }
-            var t = facet_constant_type(value);
+            var t = lux_constant_type(value);
             if (t === "other") {
-                uniform._facet_active_uniform = (function(uid, cat) {
+                uniform._lux_active_uniform = (function(uid, cat) {
                     return function(v) {
                         ctx.activeTexture(ctx.TEXTURE0 + cat);
                         ctx.bindTexture(ctx.TEXTURE_2D, v);
@@ -3668,13 +3668,13 @@ function draw_it(batch_opts)
                 })(program[key], currentActiveTexture);
                 currentActiveTexture++;
             } else if (t === "number" || t === "vector" || t === "boolean") {
-                uniform._facet_active_uniform = (function(call, uid) {
+                uniform._lux_active_uniform = (function(call, uid) {
                     return function(v) {
                         call.call(ctx, uid, v);
                     };
                 })(ctx[call], program[key]);
             } else if (t === "matrix") {
-                uniform._facet_active_uniform = (function(call, uid) {
+                uniform._lux_active_uniform = (function(call, uid) {
                     return function(v) {
                         ctx[call](uid, false, v);
                     };
@@ -3682,7 +3682,7 @@ function draw_it(batch_opts)
             } else {
                 throw "could not figure out parameter type! " + t;
             }
-            uniform._facet_active_uniform(value);
+            uniform._lux_active_uniform(value);
         });
     }
 
@@ -3691,7 +3691,7 @@ function draw_it(batch_opts)
 
 var largest_batch_id = 1;
 
-Facet.bake = function(model, appearance, opts)
+Lux.bake = function(model, appearance, opts)
 {
     opts = _.defaults(opts || {}, {
         force_no_draw: false,
@@ -3720,9 +3720,9 @@ Facet.bake = function(model, appearance, opts)
         throw "position appearance attribute must be vec2, vec3 or vec4";
     }
 
-    var ctx = model._ctx || Facet._globals.ctx;
+    var ctx = model._ctx || Lux._globals.ctx;
 
-    var batch_id = Facet.fresh_pick_id();
+    var batch_id = Lux.fresh_pick_id();
 
     function build_attribute_arrays_obj(prog) {
         return _.build(_.map(
@@ -3763,7 +3763,7 @@ Facet.bake = function(model, appearance, opts)
         });
     }
 
-    /* Facet unprojecting uses the render-as-depth technique suggested
+    /* Lux unprojecting uses the render-as-depth technique suggested
      by Benedetto et al. in the SpiderGL paper in the context of
      shadow mapping:
 
@@ -3828,7 +3828,7 @@ Facet.bake = function(model, appearance, opts)
     var primitive_type = primitive_types[model.type];
     var elements = model.elements;
     var draw_chunk;
-    if (facet_typeOf(elements) === 'number') {
+    if (lux_typeOf(elements) === 'number') {
         draw_chunk = function() {
             // it's important to use "model.elements" here instead of "elements" because
             // the indirection captures the fact that the model might have been updated with
@@ -3866,9 +3866,9 @@ Facet.bake = function(model, appearance, opts)
             program: program,
             attributes: build_attribute_arrays_obj(program),
             set_caps: function() {
-                var ctx = Facet._globals.ctx;
+                var ctx = Lux._globals.ctx;
                 var mode_caps = ((appearance.mode && appearance.mode[caps_name]) ||
-                       Facet.DrawingMode.standard[caps_name]);
+                       Lux.DrawingMode.standard[caps_name]);
                 mode_caps();
                 if (this.line_width) {
                     ctx.lineWidth(this.line_width);
@@ -3899,7 +3899,7 @@ Facet.bake = function(model, appearance, opts)
         model: model,
         batch_id: batch_id,
         draw: function() {
-            draw_it(which_opts[ctx._facet_globals.batch_render_mode]);
+            draw_it(which_opts[ctx._lux_globals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.
@@ -3915,7 +3915,7 @@ Facet.bake = function(model, appearance, opts)
     return result;
 };
 })();
-Facet.batch_list = function(lst)
+Lux.batch_list = function(lst)
 {
     lst = lst.slice().reverse();
     return {
@@ -3929,7 +3929,7 @@ Facet.batch_list = function(lst)
         }
     };
 };
-Facet.conditional_batch = function(batch, condition)
+Lux.conditional_batch = function(batch, condition)
 {
     return {
         draw: function() {
@@ -3937,13 +3937,10 @@ Facet.conditional_batch = function(batch, condition)
         }
     };
 };
-(function() {
-
-})();
-// FIXME make API similar to Facet.attribute_buffer
-Facet.element_buffer = function(vertex_array)
+// FIXME make API similar to Lux.attribute_buffer
+Lux.element_buffer = function(vertex_array)
 {
-    var ctx = Facet._globals.ctx;
+    var ctx = Lux._globals.ctx;
     var result = ctx.createBuffer();
     var typedArray = new Uint16Array(vertex_array);
     result._ctx = ctx;
@@ -3951,16 +3948,16 @@ Facet.element_buffer = function(vertex_array)
     result.itemSize = 1;
 
     //////////////////////////////////////////////////////////////////////////
-    // These methods are only for internal use within Facet
+    // These methods are only for internal use within Lux
 
     result.set = function(vertex_array) {
-        Facet.set_context(ctx);
+        Lux.set_context(ctx);
         var typedArray;
         if (vertex_array.constructor.name === 'Array') {
             typedArray = new Uint16Array(vertex_array);
         } else {
             if (vertex_array.constructor !== Uint16Array) {
-                throw "Facet.element_buffer.set requires either a plain list or a Uint16Array";
+                throw "Lux.element_buffer.set requires either a plain list or a Uint16Array";
             }
             typedArray = vertex_array;
         }
@@ -3991,7 +3988,7 @@ Facet.element_buffer = function(vertex_array)
 
 var latest_pick_id = 1;
 
-Facet.fresh_pick_id = function(quantity)
+Lux.fresh_pick_id = function(quantity)
 {
     quantity = quantity || 1;
     var result = latest_pick_id;
@@ -4000,13 +3997,13 @@ Facet.fresh_pick_id = function(quantity)
 };
 
 })();
-Facet.id_buffer = function(vertex_array)
+Lux.id_buffer = function(vertex_array)
 {
-    if (facet_typeOf(vertex_array) !== 'array')
+    if (lux_typeOf(vertex_array) !== 'array')
         throw "id_buffer expects array of integers";
     var typedArray = new Int32Array(vertex_array);
     var byteArray = new Uint8Array(typedArray.buffer);
-    return Facet.attribute_buffer({
+    return Lux.attribute_buffer({
         vertex_array: byteArray, 
         item_size: 4, 
         item_type: 'ubyte', 
@@ -4017,35 +4014,34 @@ Facet.id_buffer = function(vertex_array)
 
 function initialize_context_globals(gl)
 {
-    gl._facet_globals = {};
+    gl._lux_globals = {};
 
-    // when Facet.init is called with a display callback, that gets stored in
+    // when Lux.init is called with a display callback, that gets stored in
     // gl._globals.display_callback
-    gl._facet_globals.display_callback = Facet.Scene.render;
+    gl._lux_globals.display_callback = Lux.Scene.render;
 
     // Objects stored in the scene are automatically drawn
-    gl._facet_globals.scene = [];
+    gl._lux_globals.scene = [];
 
     // batches can currently be rendered in "draw" or "pick" mode.
     // draw: 0
     // pick: 1
-    // these are indices into an array defined inside Facet.bake
+    // these are indices into an array defined inside Lux.bake
     // For legibility, they should be strings, but for speed, they'll be integers.
-    gl._facet_globals.batch_render_mode = 0;
+    gl._lux_globals.batch_render_mode = 0;
 
     // epoch is the initial time being tracked by the context.
-    // It's updated every time the scene draws.
-    gl._facet_globals.epoch = new Date().getTime() / 1000;
+    gl._lux_globals.epoch = new Date().getTime() / 1000;
 
-    // pre and post_display_list are callback lists managed by Facet.Scene.invalidate
+    // pre and post_display_list are callback lists managed by Lux.Scene.invalidate
     // to avoid multiple invocations of requestAnimFrame in the same frame (which will
-    // guarantee that multiple invocations of Facet.Scene.invalidate will be triggered
+    // guarantee that multiple invocations of Lux.Scene.invalidate will be triggered
     // on the very next requestAnimFrame issued)
 
-    gl._facet_globals.pre_display_list = [];
-    gl._facet_globals.post_display_list = [];
+    gl._lux_globals.pre_display_list = [];
+    gl._lux_globals.post_display_list = [];
 
-    gl._facet_globals.devicePixelRatio = undefined;
+    gl._lux_globals.devicePixelRatio = undefined;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4060,11 +4056,11 @@ function polyfill_event(event, gl)
         event.offsetY = event.pageY - targetOffset.top;
     }
     
-    event.facetX = event.offsetX * gl._facet_globals.devicePixelRatio;
-    event.facetY = gl.viewportHeight - event.offsetY * gl._facet_globals.devicePixelRatio;
+    event.luxX = event.offsetX * gl._lux_globals.devicePixelRatio;
+    event.luxY = gl.viewportHeight - event.offsetY * gl._lux_globals.devicePixelRatio;
 }
 
-Facet.init = function(canvas, opts)
+Lux.init = function(canvas, opts)
 {
     canvas.unselectable = true;
     canvas.onselectstart = function() { return false; };
@@ -4079,7 +4075,7 @@ Facet.init = function(canvas, opts)
                                     },
                                     highDPS: true
                                   });
-    if (Facet.is_shade_expression(opts.clearColor)) {
+    if (Lux.is_shade_expression(opts.clearColor)) {
         if (!opts.clearColor.is_constant())
             throw "clearColor must be constant expression";
         if (!opts.clearColor.type.equals(Shade.Types.vec4))
@@ -4089,7 +4085,7 @@ Facet.init = function(canvas, opts)
         clearColor = opts.clearColor;
 
     // FIXME This should be a "is Shade expression" check
-    if (Facet.is_shade_expression(opts.clearDepth)) {
+    if (Lux.is_shade_expression(opts.clearDepth)) {
         if (!opts.clearDepth.is_constant())
             throw "clearDepth must be constant expression";
         if (!opts.clearDepth.type.equals(Shade.Types.float_t))
@@ -4099,6 +4095,7 @@ Facet.init = function(canvas, opts)
         clearDepth = opts.clearDepth;
 
     var devicePixelRatio = 1;
+
     if (opts.highDPS) {
         devicePixelRatio = window.devicePixelRatio || 1;
         canvas.style.width = canvas.width;
@@ -4144,22 +4141,21 @@ Facet.init = function(canvas, opts)
             };
             gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
+
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
+
         var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", "mouseup"];
-        for (var i=0; i<canvas_events.length; ++i) {
-            var ename = canvas_events[i];
+        _.each(canvas_events, function(ename) {
             var listener = opts[ename];
             if (!_.isUndefined(listener)) {
-                (function(listener) {
-                    function internal_listener(event) {
-                        polyfill_event(event, gl);
-                        return listener(event);
-                    }
-                    canvas.addEventListener(ename, Facet.on_context(gl, internal_listener), false);
-                })(listener);
+                function internal_listener(event) {
+                    polyfill_event(event, gl);
+                    return listener(event);
+                }
+                canvas.addEventListener(ename, Lux.on_context(gl, internal_listener), false);
             }
-        }
+        });
         
         if (!_.isUndefined(opts.mousewheel)) {
             $(canvas).bind('mousewheel', function(event, delta, deltaX, deltaY) {
@@ -4175,7 +4171,7 @@ Facet.init = function(canvas, opts)
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
             if (exts.indexOf(ext) === -1) {
                 alert(ext + " is not available on your browser/computer! " +
-                      "Facet will not work, sorry.");
+                      "Lux will not work, sorry.");
                 throw "insufficient GPU support";
             } else {
                 gl.getExtension(ext); // must call this to enable extension
@@ -4190,12 +4186,12 @@ Facet.init = function(canvas, opts)
     }
 
     initialize_context_globals(gl);
-    gl._facet_globals.devicePixelRatio = devicePixelRatio;
+    gl._lux_globals.devicePixelRatio = devicePixelRatio;
 
-    Facet.set_context(gl);
+    Lux.set_context(gl);
 
     if (opts.display) {
-        gl._facet_globals.display_callback = opts.display;
+        gl._lux_globals.display_callback = opts.display;
     }
 
     gl.display = function() {
@@ -4204,37 +4200,55 @@ Facet.init = function(canvas, opts)
         this.clearColor.apply(this, clearColor);
         this.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         var raw_t = new Date().getTime() / 1000;
-        var new_t = raw_t - this._facet_globals.epoch;
+        var new_t = raw_t - this._lux_globals.epoch;
         var old_t = this.parameters.now.get();
         this.parameters.frame_duration.set(new_t - old_t);
         this.parameters.now.set(new_t);
-        this._facet_globals.display_callback();
+        this._lux_globals.display_callback();
     };
     gl.resize = function(width, height) {
-        this.viewportWidth = width;
-        this.viewportHeight = height;
         this.parameters.width.set(width);
         this.parameters.height.set(height);
-        this.canvas.width = width;
-        this.canvas.height = height;
-        this.display();
+        if (opts.highDPS) {
+            this.viewportWidth = width * devicePixelRatio;
+            this.viewportHeight = height * devicePixelRatio;
+            this.canvas.style.width = width;
+            this.canvas.style.height = height;
+            this.canvas.width = this.canvas.clientWidth * devicePixelRatio;
+            this.canvas.height = this.canvas.clientHeight * devicePixelRatio;
+            if (opts.resize)
+                opts.resize(width, height);
+        } else {
+            this.viewportWidth = width;
+            this.viewportHeight = height;
+            this.canvas.width = width;
+            this.canvas.height = height;
+            if (opts.resize)
+                opts.resize(width, height);
+        }
+        Lux.Scene.invalidate();
     };
     gl.parameters = {};
-    gl.parameters.width = Shade.parameter("float", gl.viewportWidth);
-    gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
-    gl.parameters.now = Shade.parameter("float", gl._facet_globals.epoch);
+    if (opts.highDPS) {
+        gl.parameters.width = Shade.parameter("float", gl.viewportWidth / devicePixelRatio);
+        gl.parameters.height = Shade.parameter("float", gl.viewportHeight / devicePixelRatio);
+    } else {
+        gl.parameters.width = Shade.parameter("float", gl.viewportWidth);
+        gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
+    }
+    gl.parameters.now = Shade.parameter("float", gl._lux_globals.epoch);
     gl.parameters.frame_duration = Shade.parameter("float", 0);
 
     return gl;
 };
 
 })();
-Facet.identity = function()
+Lux.identity = function()
 {
     return mat4.identity();
 };
 
-Facet.translation = function(v)
+Lux.translation = function(v)
 {
     function t_3x3(ar) {
         var r = mat3.create();
@@ -4253,7 +4267,7 @@ Facet.translation = function(v)
     throw "invalid vector size for translation";
 };
 
-Facet.scaling = function (v)
+Lux.scaling = function (v)
 {
     var ar;
     function s_3x3(ar) {
@@ -4274,23 +4288,23 @@ Facet.scaling = function (v)
     throw "invalid size for scale";
 };
 
-Facet.rotation = function(angle, axis)
+Lux.rotation = function(angle, axis)
 {
     return mat4.rotation(angle, axis);
 };
 
-Facet.look_at = function(ex, ey, ez, cx, cy, cz, ux, uy, uz)
+Lux.look_at = function(ex, ey, ez, cx, cy, cz, ux, uy, uz)
 {
     return mat4.lookAt([ex, ey, ez], [cx, cy, cz], [ux, uy, uz]);
 };
 
-Facet.perspective = mat4.perspective;
+Lux.perspective = mat4.perspective;
 
-Facet.frustum = mat4.frustum;
+Lux.frustum = mat4.frustum;
 
-Facet.ortho = mat4.ortho;
+Lux.ortho = mat4.ortho;
 
-Facet.shear = function(xf, yf)
+Lux.shear = function(xf, yf)
 {
     return mat4.create([1, 0, xf, 0,
                         0, 1, yf, 0,
@@ -4299,7 +4313,7 @@ Facet.shear = function(xf, yf)
 };
 // This function is fairly ugly, but I'd rather this function be ugly
 // than the code which calls it be ugly.
-Facet.model = function(input)
+Lux.model = function(input)
 {
     var n_elements;
     function push_into(array, dimension) {
@@ -4318,49 +4332,52 @@ Facet.model = function(input)
                 result.type = v;
             else if (k === 'elements') {
                 if (v._shade_type === 'element_buffer') {
-                    // example: 'elements: Facet.element_buffer(...)'
+                    // example: 'elements: Lux.element_buffer(...)'
                     result.elements = v;
-                } else if (facet_typeOf(v) === 'number') {
+                } else if (lux_typeOf(v) === 'number') {
                     // example: 'elements: 4'
                     result.elements = v;
-                } else { // if (facet_typeOf(v) === 'array') {
+                } else { // if (lux_typeOf(v) === 'array') {
                     // example: 'elements: [0, 1, 2, 3]'
                     // example: 'elements: new Int16Array([0, 1, 2, 3])'
-                    // example: 'elements: new Int32Array([0, 1, 2, 3])' (WebGL only supports 16-bit elements, so Facet converts this to a 16-bit element array)
-                    result.elements = Facet.element_buffer(v);
+                    // example: 'elements: new Int32Array([0, 1, 2, 3])' (WebGL only supports 16-bit elements, so Lux converts this to a 16-bit element array)
+                    result.elements = Lux.element_buffer(v);
                 } 
             }
             // Then we handle the model attributes. They can be ...
             else if (v._shade_type === 'attribute_buffer') { // ... attribute buffers,
-                // example: 'vertex: Facet.attribute_buffer(...)'
+                // example: 'vertex: Lux.attribute_buffer(...)'
                 result[k] = Shade(v);
+                result.attributes[k] = result[k];
                 n_elements = v.numItems;
-            } else if (facet_typeOf(v) === "array") { // ... or a list of per-vertex things
+            } else if (lux_typeOf(v) === "array") { // ... or a list of per-vertex things
                 var buffer;
                 // These things can be shade vecs
-                if (facet_typeOf(v[0]) !== "array" && v[0]._facet_expression) {
+                if (lux_typeOf(v[0]) !== "array" && v[0]._lux_expression) {
                     // example: 'color: [Shade.color('white'), Shade.color('blue'), ...]
                     // assume it's a list of shade vecs, assume they all have the same dimension
                     // FIXME: check this
                     var dimension = v[0].type.vec_dimension();
                     var new_v = [];
                     _.each(v, push_into(new_v, dimension));
-                    buffer = Facet.attribute_buffer({
+                    buffer = Lux.attribute_buffer({
                         vertex_array: new_v, 
                         item_size: dimension
                     });
                     result[k] = Shade(buffer);
+                    result.attributes[k] = result[k];
                     n_elements = buffer.numItems;
                 } else {
                     // Or they can be a single list of plain numbers, in which case we're passed 
                     // a pair, the first element being the list, the second 
                     // being the per-element size
                     // example: 'color: [[1,0,0, 0,1,0, 0,0,1], 3]'
-                    buffer = Facet.attribute_buffer({
+                    buffer = Lux.attribute_buffer({
                         vertex_array: v[0], 
                         item_size: v[1]
                     });
                     result[k] = Shade(buffer);
+                    result.attributes[k] = result[k];
                     n_elements = buffer.numItems;
                 }
             } else {
@@ -4369,7 +4386,8 @@ Facet.model = function(input)
                 // and leave the user to fend for his poor self.
                 result[k] = v;
             }
-        }
+        },
+        attributes: {}
     };
 
     for (var k in input) {
@@ -4388,18 +4406,18 @@ Facet.model = function(input)
     if (!("type" in result)) {
         result.add("type", "triangles");
     }
-    result._ctx = Facet._globals.ctx;
+    result._ctx = Lux._globals.ctx;
     return result;
 };
 (function() {
 
 var rb;
 
-Facet.Picker = {
+Lux.Picker = {
     draw_pick_scene: function(callback) {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         if (!rb) {
-            rb = Facet.render_buffer({
+            rb = Lux.render_buffer({
                 width: ctx.viewportWidth,
                 height: ctx.viewportHeight,
                 mag_filter: ctx.NEAREST,
@@ -4407,9 +4425,9 @@ Facet.Picker = {
             });
         }
 
-        callback = callback || ctx._facet_globals.display_callback;
-        var old_scene_render_mode = ctx._facet_globals.batch_render_mode;
-        ctx._facet_globals.batch_render_mode = 1;
+        callback = callback || ctx._lux_globals.display_callback;
+        var old_scene_render_mode = ctx._lux_globals.batch_render_mode;
+        ctx._lux_globals.batch_render_mode = 1;
         try {
             rb.with_bound_buffer(function() {
                 ctx.clearColor(0,0,0,0);
@@ -4417,11 +4435,11 @@ Facet.Picker = {
                 callback();
             });
         } finally {
-            ctx._facet_globals.batch_render_mode = old_scene_render_mode;
+            ctx._lux_globals.batch_render_mode = old_scene_render_mode;
         }
     },
     pick: function(x, y) {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         var buf = new ArrayBuffer(4);
         var result_bytes = new Uint8Array(4);
         rb.with_bound_buffer(function() {
@@ -4434,7 +4452,7 @@ Facet.Picker = {
 };
 
 })();
-Facet.profile = function(name, seconds, onstart, onend) {
+Lux.profile = function(name, seconds, onstart, onend) {
     if (onstart) onstart();
     console.profile(name);
     setTimeout(function() {
@@ -4442,9 +4460,9 @@ Facet.profile = function(name, seconds, onstart, onend) {
         if (onend) onend();
     }, seconds * 1000);
 };
-Facet.program = function(vs_src, fs_src)
+Lux.program = function(vs_src, fs_src)
 {
-    var ctx = Facet._globals.ctx;
+    var ctx = Lux._globals.ctx;
     function getShader(shader_type, str)
     {
         var shader = ctx.createShader(shader_type);
@@ -4500,9 +4518,9 @@ Facet.program = function(vs_src, fs_src)
     }
     return shaderProgram;    
 };
-Facet.render_buffer = function(opts)
+Lux.render_buffer = function(opts)
 {
-    var ctx = Facet._globals.ctx;
+    var ctx = Lux._globals.ctx;
     var frame_buffer = ctx.createFramebuffer();
     opts = _.defaults(opts || {}, {
         width: 512,
@@ -4523,10 +4541,10 @@ Facet.render_buffer = function(opts)
     // if (opts.width != opts.height)
     //     throw "renderbuffers must be square (blame GLSL ES!)";
 
-    var rttTexture = Facet.texture(opts);
+    var rttTexture = Lux.texture(opts);
 
     frame_buffer.init = function(width, height) {
-        Facet.set_context(ctx);
+        Lux.set_context(ctx);
         this.width  = opts.width;
         this.height = opts.height;
         ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
@@ -4581,9 +4599,9 @@ Facet.render_buffer = function(opts)
     };
     frame_buffer.make_screen_batch = function(with_texel_at_uv, mode) {
         var that = this;
-        mode = mode || Facet.DrawingMode.standard;
-        var sq = Facet.Models.square();
-        return Facet.bake(sq, {
+        mode = mode || Lux.DrawingMode.standard;
+        var sq = Lux.Models.square();
+        return Lux.bake(sq, {
             position: sq.vertex.mul(2).sub(1),
             color: with_texel_at_uv(function(offset) { 
                 var texcoord = sq.tex_coord;
@@ -4596,22 +4614,22 @@ Facet.render_buffer = function(opts)
     };
     return frame_buffer;
 };
-Facet.set_context = function(the_ctx)
+Lux.set_context = function(the_ctx)
 {
-    Facet._globals.ctx = the_ctx;
+    Lux._globals.ctx = the_ctx;
     // Shade.set_context(the_ctx);
 };
 /*
- * Facet.on_context returns a wrapped callback that guarantees that the passed
+ * Lux.on_context returns a wrapped callback that guarantees that the passed
  * callback will be invoked with the given current context. 
  * 
  * This is primarily used to safeguard pieces of code that need to work under
  * multiple active WebGL contexts.
  */
-Facet.on_context = function(the_ctx, f)
+Lux.on_context = function(the_ctx, f)
 {
     return function() {
-        Facet.set_context(the_ctx);
+        Lux.set_context(the_ctx);
         f.apply(this, arguments);
     };
 };
@@ -4619,11 +4637,11 @@ Facet.on_context = function(the_ctx, f)
 // load texture from DOM element or URL. 
 // BEWARE SAME-DOMAIN POLICY!
 
-// FIXME: replace all this with the code from Facet.load_image_into_texture
+// FIXME: replace all this with the code from Lux.load_image_into_texture
 
-Facet.texture = function(opts)
+Lux.texture = function(opts)
 {
-    var ctx = Facet._globals.ctx;
+    var ctx = Lux._globals.ctx;
     var texture = ctx.createTexture();
 
     texture._shade_type = 'texture';
@@ -4632,8 +4650,8 @@ Facet.texture = function(opts)
     // FIXME: This must be true for other WebGL resources as well. Are we checking them?
     texture._ctx = ctx;
 
-    texture.init = Facet.on_context(ctx, function(opts) {
-        var ctx = Facet._globals.ctx;
+    texture.init = Lux.on_context(ctx, function(opts) {
+        var ctx = Lux._globals.ctx;
         opts = _.defaults(opts, {
             onload: function() {},
             mipmaps: false,
@@ -4653,7 +4671,7 @@ Facet.texture = function(opts)
         /*
          * Texture.load:
          * 
-         *   Replaces a rectangle of a Facet texture with a given image.
+         *   Replaces a rectangle of a Lux texture with a given image.
          * 
          *   This is useful to store a large set of rectangular images into a single texture, for example.
          * 
@@ -4699,7 +4717,7 @@ Facet.texture = function(opts)
          * 
          *   * Load an image from a TypedArray buffer (currently only supports 8-bit RGBA or 32-bit float RGBA):
          * 
-         *     Facet.load({
+         *     Lux.load({
          *       width: 128,
          *       height: 128,
          *       buffer: new Uint8Array(128 * 128 * 4)
@@ -4721,7 +4739,7 @@ Facet.texture = function(opts)
             function image_handler(image) {
                 image = opts.transform_image(image);
                 var ctx = texture._ctx;
-                Facet.set_context(texture._ctx);
+                Lux.set_context(texture._ctx);
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
                 ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
                 if (_.isUndefined(that.width)) {
@@ -4735,7 +4753,7 @@ Facet.texture = function(opts)
                                   ctx.RGBA, ctx.UNSIGNED_BYTE, image);
                 if (opts.mipmaps)
                     ctx.generateMipmap(ctx.TEXTURE_2D);
-                Facet.unload_batch();
+                Lux.unload_batch();
                 that.ready = true;
                 onload.call(texture, image);
             }
@@ -4743,7 +4761,7 @@ Facet.texture = function(opts)
             function buffer_handler()
             {
                 var ctx = texture._ctx;
-                Facet.set_context(texture._ctx);
+                Lux.set_context(texture._ctx);
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
                 if (_.isUndefined(opts.buffer)) {
                     if (x_offset !== 0 || y_offset !== 0) {
@@ -4769,7 +4787,7 @@ Facet.texture = function(opts)
                 if (opts.mipmaps)
                     ctx.generateMipmap(ctx.TEXTURE_2D);
                 that.ready = true;
-                Facet.unload_batch();
+                Lux.unload_batch();
                 onload.call(texture, opts.buffer);
             }
 
@@ -4799,7 +4817,7 @@ Facet.texture = function(opts)
             }
         };
         
-        Facet.set_context(ctx);
+        Lux.set_context(ctx);
         ctx.bindTexture(ctx.TEXTURE_2D, that);
         ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
         ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
@@ -4825,11 +4843,11 @@ var rb;
 var depth_value;
 var clear_batch;
     
-Facet.Unprojector = {
+Lux.Unprojector = {
     draw_unproject_scene: function(callback) {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         if (!rb) {
-            rb = Facet.render_buffer({
+            rb = Lux.render_buffer({
                 width: ctx.viewportWidth,
                 height: ctx.viewportHeight,
                 TEXTURE_MAG_FILTER: ctx.NEAREST,
@@ -4841,24 +4859,24 @@ Facet.Unprojector = {
         // the right depth value. We do it via the batch below.
 
         if (!clear_batch) {
-            var xy = Shade(Facet.attribute_buffer({
+            var xy = Shade(Lux.attribute_buffer({
                 vertex_array: [-1, -1,   1, -1,   -1,  1,   1,  1], 
                 item_size: 2}));
-            var model = Facet.model({
+            var model = Lux.model({
                 type: "triangle_strip",
                 elements: 4,
                 vertex: xy
             });
             depth_value = Shade.parameter("float");
-            clear_batch = Facet.bake(model, {
+            clear_batch = Lux.bake(model, {
                 position: Shade.vec(xy, depth_value),
                 color: Shade.vec(1,1,1,1)
             });
         }
 
-        callback = callback || ctx._facet_globals.display_callback;
-        var old_scene_render_mode = ctx._facet_globals.batch_render_mode;
-        ctx._facet_globals.batch_render_mode = 2;
+        callback = callback || ctx._lux_globals.display_callback;
+        var old_scene_render_mode = ctx._lux_globals.batch_render_mode;
+        ctx._lux_globals.batch_render_mode = 2;
         rb.with_bound_buffer(function() {
             var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
             var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
@@ -4874,13 +4892,13 @@ Facet.Unprojector = {
                                old_clear_color[1],
                                old_clear_color[2],
                                old_clear_color[3]);
-                ctx._facet_globals.batch_render_mode = old_scene_render_mode;
+                ctx._lux_globals.batch_render_mode = old_scene_render_mode;
             }
         });
     },
 
     unproject: function(x, y) {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         var buf = new ArrayBuffer(4);
         var result_bytes = new Uint8Array(4);
         ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
@@ -4897,7 +4915,7 @@ Facet.Unprojector = {
 };
 
 })();
-Facet.Net = {};
+Lux.Net = {};
 
 (function() {
 
@@ -4915,7 +4933,7 @@ var handle_many = function(url, handler, self_call) {
 
 
 /*
- * Facet.Net.ajax issues AJAX requests.
+ * Lux.Net.ajax issues AJAX requests.
  * 
  * It takes as parameters
  * 
@@ -4927,15 +4945,15 @@ var handle_many = function(url, handler, self_call) {
  *  were passed, then an object is returned, mapping the URLs as passed to
  *  the responses.
  *  
- * FIXME Facet.Net.ajax has no error handling.
+ * FIXME Lux.Net.ajax has no error handling.
  */
 
-Facet.Net.ajax = function(url, handler)
+Lux.Net.ajax = function(url, handler)
 {
-    var current_context = Facet._globals.ctx;
+    var current_context = Lux._globals.ctx;
 
-    if (facet_typeOf(url) === "array")
-        return handle_many(url, handler, Facet.Net.ajax);
+    if (lux_typeOf(url) === "array")
+        return handle_many(url, handler, Lux.Net.ajax);
 
     var xhr = new XMLHttpRequest;
 
@@ -4944,15 +4962,16 @@ Facet.Net.ajax = function(url, handler)
     var ready = false;
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200 && !ready) {
-            Facet.set_context(current_context);
+            Lux.set_context(current_context);
             handler(xhr.response, url);
             ready = true;
         }
     };
     xhr.send(null);
+    return undefined;
 };
 /*
- * Facet.Net.json issues JSON AJAX requests.
+ * Lux.Net.json issues JSON AJAX requests.
  * 
  * It takes as parameters
  * 
@@ -4964,13 +4983,13 @@ Facet.Net.ajax = function(url, handler)
  *  were passed, then an object is returned, mapping the URLs as passed to
  *  the responses.
  *  
- * FIXME Facet.Net.json has no error handling.
+ * FIXME Lux.Net.json has no error handling.
  */
 
-Facet.Net.json = function(url, handler)
+Lux.Net.json = function(url, handler)
 {
-    if (facet_typeOf(url) === "array")
-        return handle_many(url, handler, Facet.Net.json);
+    if (lux_typeOf(url) === "array")
+        return handle_many(url, handler, Lux.Net.json);
 
     var xhr = new XMLHttpRequest;
 
@@ -4986,8 +5005,8 @@ Facet.Net.json = function(url, handler)
     xhr.send(null);
 };
 /*
- * Facet.Net.binary issues binary AJAX requests, which can be
- * used to load data into Facet more efficiently than through the
+ * Lux.Net.binary issues binary AJAX requests, which can be
+ * used to load data into Lux more efficiently than through the
  * regular text or JSON AJAX interfaces. It returns ArrayBuffer objects.
  * 
  * It takes as parameters
@@ -5000,21 +5019,21 @@ Facet.Net.json = function(url, handler)
  *  were passed, then an object is returned, mapping the URLs as passed to
  *  the buffers.
  *  
- * FIXME Facet.Net.binary has no error handling.
+ * FIXME Lux.Net.binary has no error handling.
  */
 
 // based on http://calumnymmo.wordpress.com/2010/12/22/so-i-decided-to-wait/
-Facet.Net.binary = function(url, handler)
+Lux.Net.binary = function(url, handler)
 {
-    var current_context = Facet._globals.ctx;
+    var current_context = Lux._globals.ctx;
 
-    if (facet_typeOf(url) === "array")
-        return handle_many(url, handler, Facet.Net.binary);
+    if (lux_typeOf(url) === "array")
+        return handle_many(url, handler, Lux.Net.binary);
 
     var xhr = new window.XMLHttpRequest();
     var ready = false;
     xhr.onreadystatechange = function() {
-        Facet.set_context(current_context);
+        Lux.set_context(current_context);
         if (xhr.readyState === 4 && xhr.status === 200
             && ready !== true) {
             if (xhr.responseType === "arraybuffer") {
@@ -5043,17 +5062,17 @@ Facet.Net.binary = function(url, handler)
 };
 })();
 // drawing mode objects can be part of the parameters passed to 
-// Facet.bake, in order for the batch to automatically set the capabilities.
+// Lux.bake, in order for the batch to automatically set the capabilities.
 // This lets us specify blending, depth-testing, etc. at bake time.
 
-/* FIXME This is double dispatch done wrong. See facet.org for details.
+/* FIXME This is double dispatch done wrong. See lux.org for details.
  */
 
-Facet.DrawingMode = {};
-Facet.DrawingMode.additive = {
+Lux.DrawingMode = {};
+Lux.DrawingMode.additive = {
     set_draw_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.BLEND);
         ctx.blendFunc(ctx.SRC_ALPHA, ctx.ONE);
         ctx.enable(ctx.DEPTH_TEST);
@@ -5062,14 +5081,14 @@ Facet.DrawingMode.additive = {
     },
     set_pick_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
     },
     set_unproject_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
@@ -5094,12 +5113,12 @@ Facet.DrawingMode.additive = {
 // objects get)
 //
 // These two behaviors correspond respectively to 
-// Facet.DrawingMode.over_with_depth and Facet.DrawingMode.over
+// Lux.DrawingMode.over_with_depth and Lux.DrawingMode.over
 
-Facet.DrawingMode.over = {
+Lux.DrawingMode.over = {
     set_draw_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.BLEND);
         ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
                               ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
@@ -5109,24 +5128,24 @@ Facet.DrawingMode.over = {
     },
     set_pick_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
     },
     set_unproject_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
     }
 };
 
-Facet.DrawingMode.over_with_depth = {
+Lux.DrawingMode.over_with_depth = {
     set_draw_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.BLEND);
         ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
                               ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
@@ -5135,22 +5154,22 @@ Facet.DrawingMode.over_with_depth = {
     },
     set_pick_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LEQUAL);
     },
     set_unproject_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LEQUAL);
     }
 };
 
-Facet.DrawingMode.over_no_depth = {
+Lux.DrawingMode.over_no_depth = {
     set_draw_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.BLEND);
         ctx.blendFuncSeparate(ctx.SRC_ALPHA, ctx.ONE_MINUS_SRC_ALPHA, 
                               ctx.ONE, ctx.ONE_MINUS_SRC_ALPHA);
@@ -5159,72 +5178,72 @@ Facet.DrawingMode.over_no_depth = {
     },
     set_pick_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.disable(ctx.DEPTH_TEST);
         ctx.depthMask(false);
     },
     set_unproject_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.disable(ctx.DEPTH_TEST);
         ctx.depthMask(false);
     }
 };
-Facet.DrawingMode.standard = {
+Lux.DrawingMode.standard = {
     set_draw_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.disable(ctx.BLEND);
     },
     set_pick_caps: function()
     { 
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.disable(ctx.BLEND);
    },
     set_unproject_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.disable(ctx.BLEND);
     }
 };
 /*
- * Facet.DrawingMode.pass is used whenever depth testing needs to be off;
+ * Lux.DrawingMode.pass is used whenever depth testing needs to be off;
  * 
- * Facet.DrawingMode.pass disables *writing* to the depth test as well
+ * Lux.DrawingMode.pass disables *writing* to the depth test as well
  * 
  */
 
-Facet.DrawingMode.pass = {
+Lux.DrawingMode.pass = {
     set_draw_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.disable(ctx.DEPTH_TEST);
         ctx.depthMask(false);
         ctx.disable(ctx.BLEND);
     },
     set_pick_caps: function()
     { 
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.disable(ctx.DEPTH_TEST);
         ctx.depthMask(false);
         ctx.disable(ctx.BLEND);
     },
     set_unproject_caps: function()
     {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         ctx.disable(ctx.DEPTH_TEST);
         ctx.depthMask(false);
         ctx.disable(ctx.BLEND);
     }
 };
-Facet.Data = {};
-Facet.Data.table = function(obj) {
+Lux.Data = {};
+Lux.Data.table = function(obj) {
     obj = _.defaults(obj || {}, {
         number_columns: []
     });
@@ -5249,7 +5268,7 @@ Facet.Data.table = function(obj) {
     }
     return result;
 };
-Facet.Data.texture_table = function(table)
+Lux.Data.texture_table = function(table)
 {
     var elements = [];
     for (var row_ix = 0; row_ix < table.data.length; ++row_ix) {
@@ -5270,7 +5289,7 @@ Facet.Data.texture_table = function(table)
     var table_nrows = elements.length / table.number_columns.length;
     var texture_width = 1;
 
-    return Facet.Data.texture_array({
+    return Lux.Data.texture_array({
         n_rows: table_nrows,
         n_cols: table_ncols,
         elements: elements
@@ -5304,9 +5323,9 @@ Facet.Data.texture_table = function(table)
 
  */
 
-Facet.Data.texture_array = function(opts)
+Lux.Data.texture_array = function(opts)
 {
-    var ctx = Facet._globals.ctx;
+    var ctx = Lux._globals.ctx;
     var elements = opts.elements;
     var n_cols = opts.n_cols;
     var n_rows = opts.n_rows;
@@ -5321,7 +5340,7 @@ Facet.Data.texture_array = function(opts)
     if (texture_width * texture_height === elements.length) {
         // no chance this will ever happen in practice, but hey, 
         // a man can dream
-        if (facet_typeOf(elements) === "array") {
+        if (lux_typeOf(elements) === "array") {
             new_elements = new Float32Array(elements);
         } else
             new_elements = elements;
@@ -5331,7 +5350,7 @@ Facet.Data.texture_array = function(opts)
             new_elements[i] = elements[i];
     }
 
-    var texture = Facet.texture({
+    var texture = Lux.texture({
         width: texture_width,
         height: texture_height,
         buffer: new_elements,
@@ -5367,9 +5386,9 @@ Facet.Data.texture_array = function(opts)
         index: index
     };
 };
-Facet.Data.array_1d = function(array)
+Lux.Data.array_1d = function(array)
 {
-    var ctx = Facet._globals.ctx;
+    var ctx = Lux._globals.ctx;
 
     var elements = array;
     var texture_width = 1;
@@ -5379,7 +5398,7 @@ Facet.Data.array_1d = function(array)
     var texture_height = Math.ceil(elements.length / (4 * texture_width));
     var new_elements;
     if (texture_width * texture_height === elements.length) {
-        if (facet_typeOf(elements) === "array") {
+        if (lux_typeOf(elements) === "array") {
             new_elements = new Float32Array(elements);
         } else
             new_elements = elements;
@@ -5389,7 +5408,7 @@ Facet.Data.array_1d = function(array)
             new_elements[i] = elements[i];
     }
 
-    var texture = Facet.texture({
+    var texture = Lux.texture({
         width: texture_width,
         height: texture_height,
         buffer: new_elements,
@@ -5422,9 +5441,9 @@ Facet.Data.array_1d = function(array)
         index: index
     };
 };
-Facet.UI = {};
+Lux.UI = {};
 /*
- * Facet.UI.parameter_slider is a function to help create UI elements
+ * Lux.UI.parameter_slider is a function to help create UI elements
  * that control Shade.parameter objects. 
  * 
  * It uses jquery-ui sliders, and so assumes jquery-ui in addition to jquery.
@@ -5435,7 +5454,7 @@ Facet.UI = {};
  */
 
 /*
- * Facet.UI.parameter_slider requires "element" and "parameter" options.
+ * Lux.UI.parameter_slider requires "element" and "parameter" options.
  * 
  * opts.element is the HTML element used by jquery-ui to create the slider. That
  *   object needs to have the correct CSS class assigned to it ahead of calling
@@ -5454,7 +5473,7 @@ Facet.UI = {};
  * opts.orientation is the slider's orientation, either "horizontal" or "vertical"
  */
 
-Facet.UI.parameter_slider = function(opts)
+Lux.UI.parameter_slider = function(opts)
 {
     opts = _.defaults(opts, {
         min: 0,
@@ -5485,17 +5504,17 @@ Facet.UI.parameter_slider = function(opts)
             var v = to_parameter($(element).slider("value"));
             parameter.set(v);
             opts.slide(element, parameter, v);
-            Facet.Scene.invalidate();
+            Lux.Scene.invalidate();
         },
         change: function() {
             var v = to_parameter($(element).slider("value"));
             parameter.set(v);
             opts.change(element, parameter, v);
-            Facet.Scene.invalidate();
+            Lux.Scene.invalidate();
         }
     });
 };
-Facet.UI.parameter_checkbox = function(opts)
+Lux.UI.parameter_checkbox = function(opts)
 {
     opts = _.defaults(opts, {
         toggle: function() {}
@@ -5507,16 +5526,16 @@ Facet.UI.parameter_checkbox = function(opts)
         parameter.set(~~event.target.checked);
         console.log(parameter.get());
         opts.toggle(event);
-        Facet.Scene.invalidate();
+        Lux.Scene.invalidate();
     }
 
     $(element).button().click(on_click);
 };
 /*
- * A Facet interactor is an object that exposes a list of events that
- * Facet.init uses to hook up to canvas event handlers.
+ * A Lux interactor is an object that exposes a list of events that
+ * Lux.init uses to hook up to canvas event handlers.
  * 
- * Facet.UI.center_zoom_interactor provides event handlers for the
+ * Lux.UI.center_zoom_interactor provides event handlers for the
  * common interaction mode of zooming and panning. Its main visible variables
  * are center and zoom Shade.parameter objects, together with a Shade.camera
  * that computes the appropriate projection matrix.
@@ -5526,7 +5545,7 @@ Facet.UI.parameter_checkbox = function(opts)
  * 
  */
 
-Facet.UI.center_zoom_interactor = function(opts)
+Lux.UI.center_zoom_interactor = function(opts)
 {
     opts = _.defaults(opts || {}, {
         mousemove: function() {},
@@ -5542,14 +5561,25 @@ Facet.UI.center_zoom_interactor = function(opts)
     var width = opts.width;
 
     if (_.isUndefined(width)) {
-        throw "Facet.UI.center_zoom_interactor requires width parameter";
+        throw "Lux.UI.center_zoom_interactor requires width parameter";
     }
     if (_.isUndefined(height)) {
-        throw "Facet.UI.center_zoom_interactor requires height parameter";
+        throw "Lux.UI.center_zoom_interactor requires height parameter";
     }
 
+    var aspect_ratio = Shade.parameter("float", width/height);
     var center = Shade.parameter("vec2", opts.center);
     var zoom = Shade.parameter("float", opts.zoom);
+    var camera = Shade.Camera.ortho({
+        left: opts.left,
+        right: opts.right,
+        top: opts.top,
+        bottom: opts.bottom,
+        center: center,
+        zoom: zoom,
+        aspect_ratio: aspect_ratio
+    });
+
     var prev_mouse_pos;
     var current_button = 0;
 
@@ -5571,27 +5601,38 @@ Facet.UI.center_zoom_interactor = function(opts)
         opts.mouseup(event);
     }
 
+    // FIXME: wow, these eval-Shade-in-Javascript functions get UGLY
+
     // c stores the compensation for the kahan compensated sum
     var c = vec.make([0, 0]);
-    function internal_move(dx, dy) {
-        var negdelta = vec.make([-dx / (height * zoom.get() / 2), 
-                                  dy / (height * zoom.get() / 2)]);
-        // we use a kahan compensated sum here:
-        // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
-        // to accumulate minute changes in the center that come from deep zooms.
-        var y = vec.minus(negdelta, c);
-        var t = vec.plus(center.get(), y);
-        c = vec.minus(vec.minus(t, center.get()), y);
-        center.set(t);
-    }
+    var internal_move = (function() {
+        var param = Shade.parameter("vec2"), t2;
+        return function(dx, dy) {
+            param.set(vec.make([dx, dy]));
+            if (_.isUndefined(t2)) {
+                t2 = result.camera.unproject(Shade.vec(0,0))
+                    .sub(result.camera.unproject(param));
+            }
+            var v = t2.evaluate();
+            var negdelta = v;
+            // we use a kahan compensated sum here:
+            // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+            // to accumulate minute changes in the center that come from deep zooms.
+            var y = vec.minus(negdelta, c);
+            var t = vec.plus(center.get(), y);
+            c = vec.minus(vec.minus(t, center.get()), y);
+            center.set(t);
+        };
+    })();
 
     function mousemove(event) {
         if ((current_button & 1) && !event.shiftKey) {
-            internal_move(event.offsetX - prev_mouse_pos[0], event.offsetY - prev_mouse_pos[1]);
-            Facet.Scene.invalidate();
+            internal_move(event.offsetX - prev_mouse_pos[0], 
+                        -(event.offsetY - prev_mouse_pos[1]));
+            Lux.Scene.invalidate();
         } else if ((current_button & 1) && event.shiftKey) {
             zoom.set(Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240)));
-            Facet.Scene.invalidate();
+            Lux.Scene.invalidate();
         }
         prev_mouse_pos = [ event.offsetX, event.offsetY ];
         opts.mousemove(event);
@@ -5599,33 +5640,39 @@ Facet.UI.center_zoom_interactor = function(opts)
 
     // FIXME mousewheel madness
     function mousewheel(event, delta, deltaX, deltaY) {
-        internal_move(width/2-event.offsetX, height/2-event.offsetY);
+        internal_move(result.width/2-event.offsetX, event.offsetY-result.height/2);
 	var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + deltaY/10));
         // var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
         zoom.set(new_value);
-        internal_move(event.offsetX-width/2, event.offsetY-height/2);
-        opts.mousewheel(event);
-        Facet.Scene.invalidate();
+        internal_move(event.offsetX-result.width/2, result.height/2-event.offsetY);
+        // opts.mousewheel(event);
+        Lux.Scene.invalidate();
         return false;
     }
 
-    var aspect_ratio = Shade.parameter("float", width/height);
-    var camera = Shade.Camera.ortho({
-        center: center,
-        zoom: zoom,
-        aspect_ratio: aspect_ratio
-    });
+    function resize(w, h) {
+        result.resize(w, h);
+    }
 
-    return {
+    var result = {
         camera: camera,
         center: center,
         zoom: zoom,
+        width: width,
+        height: height,
+
+        project: function(pt) {
+            return this.camera.project(pt);
+        },
+
+        unproject: function(pt) {
+            return this.camera.unproject(pt);
+        },
 
         resize: function(w, h) {
             aspect_ratio.set(w/h);
-            width = w;
-            height = h;
-            Facet.Scene.invalidate();
+            this.width = w;
+            this.height = h;
         },
 
         // Transitions between two projections using van Wijk and Nuij's scale-space geodesics
@@ -5666,7 +5713,7 @@ Facet.UI.center_zoom_interactor = function(opts)
 
             var that = this;
 
-            var ticker = Facet.Scene.animate(function() {
+            var ticker = Lux.Scene.animate(function() {
                 var now = Date.now() / 1000.0;
                 var s = (now - start) / seconds * S;
                 var u_s = (w[0] / (rho * rho)) * (cosh(r[0]) * tanh(rho * s + r[0]) - sinh(r[0])) + u[0];
@@ -5688,19 +5735,22 @@ Facet.UI.center_zoom_interactor = function(opts)
             mousedown: mousedown,
             mouseup: mouseup,
             mousemove: mousemove,
-            mousewheel: mousewheel
+            mousewheel: mousewheel,
+            resize: resize
         }
     };
+
+    return result;
 };
 /*
- * Shade is the javascript DSL for writing GLSL shaders, part of Facet.
+ * Shade is the javascript DSL for writing GLSL shaders, part of Lux.
  * 
  */
 
 // FIXME: fix the constant-index-expression hack I've been using to get around
 // restrictions. This will eventually be plugged by webgl implementors.
 
-// FIXME: Move this object inside Facet's main object.
+// FIXME: Move this object inside Lux's main object.
 
 var Shade = function(exp)
 {
@@ -5720,7 +5770,7 @@ Shade.make = function(exp)
     if (_.isUndefined(exp)) {
         throw "expected a value, got undefined instead";
     }
-    var t = facet_typeOf(exp);
+    var t = lux_typeOf(exp);
     if (t === 'string') {
         // Did you accidentally say exp1 + exp2 when you meant
         // exp1.add(exp2)?
@@ -5753,7 +5803,7 @@ Shade.make = function(exp)
             return Shade.make(exp.apply(this, wrapped_arguments));
         };
     }
-    t = facet_constant_type(exp);
+    t = lux_constant_type(exp);
     if (t === 'vector' || t === 'matrix') {
         return Shade.constant(exp);
     } else if (exp._shade_type === 'attribute_buffer') {
@@ -5838,9 +5888,9 @@ Shade.Camera.perspective = function(opts)
     if (opts.aspect_ratio)
         aspect_ratio = opts.aspect_ratio;
     else {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         if (_.isUndefined(ctx)) {
-            throw "aspect_ratio is only optional with an active Facet context";
+            throw "aspect_ratio is only optional with an active Lux context";
         }
         aspect_ratio = ctx.viewportWidth / ctx.viewportHeight;
     }
@@ -5860,6 +5910,11 @@ Shade.Camera.perspective = function(opts)
     };
     return result;
 };
+/*
+ * FIXME Shade.Camera.ortho currently mixes a view matrix
+ * with the projection matrix. This must be factored out.
+ */
+
 Shade.Camera.ortho = function(opts)
 {
     opts = _.defaults(opts || {}, {
@@ -5868,7 +5923,9 @@ Shade.Camera.ortho = function(opts)
         bottom: -1,
         top: 1,
         near: -1,
-        far: 1
+        far: 1,
+        center: Shade.vec(0,0),
+        zoom: Shade(1)
     });
 
     var viewport_ratio;
@@ -5876,9 +5933,9 @@ Shade.Camera.ortho = function(opts)
     if (opts.aspect_ratio)
         viewport_ratio = opts.aspect_ratio;
     else {
-        ctx = Facet._globals.ctx;
+        ctx = Lux._globals.ctx;
         if (_.isUndefined(ctx)) {
-            throw "aspect_ratio is only optional with an active Facet context";
+            throw "aspect_ratio is only optional with an active Lux context";
         }
         viewport_ratio = ctx.viewportWidth / ctx.viewportHeight;
     };
@@ -5887,43 +5944,13 @@ Shade.Camera.ortho = function(opts)
     var near = opts.near;
     var far = opts.far;
 
-    if (!_.isUndefined(opts.center) && !_.isUndefined(opts.zoom)) {
-        var viewport_width = Shade.div(1, opts.zoom);
-        left   = opts.center.at(0).sub(viewport_width);
-        right  = opts.center.at(0).add(viewport_width);
-        bottom = opts.center.at(1).sub(viewport_width);
-        top    = opts.center.at(1).add(viewport_width);
-    } else {
-        left = opts.left;
-        right = opts.right;
-        bottom = opts.bottom;
-        top = opts.top;
-    }
-
-    // function letterbox_projection() {
-    //     var cy = Shade.add(top, bottom).div(2);
-    //     var half_width = Shade.sub(right, left).div(2);
-    //     var corrected_half_height = half_width.div(viewport_ratio);
-    //     var l = left;
-    //     var r = right;
-    //     var t = cy.add(corrected_half_height);
-    //     var b = cy.sub(corrected_half_height);
-    //     return Shade.ortho(l, r, b, t, near, far);
-    // }
-
-    // function pillarbox_projection() {
-    //     var cx = Shade.add(right, left).div(2);
-    //     var half_height = Shade.sub(top, bottom).div(2);
-    //     var corrected_half_width = corrected_half_height.mul(viewport_ratio);
-    //     var l = cx.sub(corrected_half_width);
-    //     var r = cx.add(corrected_half_width);
-    //     var t = top;
-    //     var b = bottom;
-    //     return Shade.ortho(l, r, b, t, near, far);
-    // }
+    left = opts.left;
+    right = opts.right;
+    bottom = opts.bottom;
+    top = opts.top;
 
     var view_ratio = Shade.sub(right, left).div(Shade.sub(top, bottom));
-    var l_or_p = view_ratio.gt(viewport_ratio);
+    var l_or_p = view_ratio.gt(viewport_ratio); // letterbox or pillarbox
 
     var cx = Shade.add(right, left).div(2);
     var cy = Shade.add(top, bottom).div(2);
@@ -5938,22 +5965,41 @@ Shade.Camera.ortho = function(opts)
     var t = l_or_p.ifelse(cy.add(corrected_half_height), top);
     var m = Shade.ortho(l, r, b, t, near, far);
     
-    // var m = view_ratio.gt(viewport_ratio)
-    //     .ifelse(letterbox_projection(),
-    //             pillarbox_projection());
+    var view_xform = Shade(function(model_vertex) {
+        if (model_vertex.type === Shade.Types.vec2) {
+            return model_vertex.sub(opts.center).mul(opts.zoom);
+        } else if (model_vertex.type === Shade.Types.vec3) {
+            return Shade.vec(
+                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
+                model_vertex.z());
+        } else if (model_vertex.type === Shade.Types.vec4) {
+            return Shade.vec(
+                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
+                model_vertex.z());
+        } else 
+            throw "Shade.ortho requires vec2, vec3, or vec4s";
+    });
+    var view_xform_invert = Shade(function(view_vertex) {
+        return view_vertex.swizzle("xy").div(opts.zoom).add(opts.center);
+    });
 
     function result(obj) {
         return result.project(obj);
     }
+    result.model_to_view = view_xform;
+    result.view_to_device = function(view_vertex) {
+        return m.mul(view_vertex);
+    };
     result.project = function(model_vertex) {
-        return m.mul(model_vertex);
+        return m.mul(view_xform(model_vertex));
     };
     result.unproject = function(screen_pos) {
-        var ctx = Facet._globals.ctx;
+        var ctx = Lux._globals.ctx;
         var screen_size = Shade.vec(ctx.parameters.width, ctx.parameters.height);
         var min = Shade.vec(l, b);
         var max = Shade.vec(r, t);
-        return min.add(max.sub(min).mul(screen_pos.div(screen_size)));
+        var view_vtx = min.add(max.sub(min).mul(screen_pos.div(screen_size)));
+        return view_xform_invert(view_vtx);
     };
     return result;
 };
@@ -7117,39 +7163,6 @@ Shade.CompilationContext = function(compile_type)
     };
 };
 Shade.Exp = {
-    debug_print: function(do_what) {
-        var lst = [];
-        var refs = {};
-        function _debug_print(which, indent) {
-            var i;
-            var str = new Array(indent+2).join(" "); // This is python's '" " * indent'
-            // var str = "";
-            // for (var i=0; i<indent; ++i) { str = str + ' '; }
-            if (which.parents.length === 0) 
-                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
-                            // + "[is_constant: " + which.is_constant() + "]"
-                            + " ()");
-            else {
-                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
-                            // + "[is_constant: " + which.is_constant() + "]"
-                            + " (");
-                for (i=0; i<which.parents.length; ++i) {
-                    if (refs[which.parents[i].guid])
-                        lst.push(str + "  {{" + which.parents[i].guid + "}}");
-                    else {
-                        _debug_print(which.parents[i], indent + 2);
-                        refs[which.parents[i].guid] = 1;
-                    }
-                }
-                lst.push(str + ')');
-            }
-        };
-        _debug_print(this, 0);
-        do_what = do_what || function(l) {
-            return l.join("\n");
-        };
-        return do_what(lst);
-    },
     glsl_expression: function() {
         return this.glsl_name + "()";
     },
@@ -7183,8 +7196,6 @@ Shade.Exp = {
             while (i--) {
                 topological_sort_internal(parents[i]);
             }
-            // for (var i=0; i<l; ++i) {
-            // }
             so_far.push(exp);
             visited_guids[guid] = true;
         };
@@ -7302,7 +7313,7 @@ Shade.Exp = {
             value: function() { return "int(" + this.parents[0].glsl_expression() + ")"; },
             is_constant: function() { return this.parents[0].is_constant(); },
             evaluate: Shade.memoize_on_guid_dict(function(cache) {
-                var v = parent.evaluate(cache);
+                var v = this.parents[0].evaluate(cache);
                 return Math.floor(v);
             }),
             expression_type: "cast(int)"
@@ -7561,7 +7572,7 @@ Shade.Exp = {
             }
         });
     },
-    _facet_expression: true, // used by facet_typeOf
+    _lux_expression: true, // used by lux_typeOf
     expression_type: "other",
     _type: "shade_expression",
     _uniforms: [],
@@ -7627,6 +7638,52 @@ Shade.Exp = {
             }
         }
         return latest_replacement;
+    },
+
+    //////////////////////////////////////////////////////////////////////////
+    // debugging infrastructure
+    
+    debug_print: function(do_what) {
+        var lst = [];
+        var refs = {};
+        function _debug_print(which, indent) {
+            var i;
+            var str = new Array(indent+2).join(" "); // This is python's '" " * indent'
+            // var str = "";
+            // for (var i=0; i<indent; ++i) { str = str + ' '; }
+            if (which.parents.length === 0) 
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " ()");
+            else {
+                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
+                            // + "[is_constant: " + which.is_constant() + "]"
+                            + " (");
+                for (i=0; i<which.parents.length; ++i) {
+                    if (refs[which.parents[i].guid])
+                        lst.push(str + "  {{" + which.parents[i].guid + "}}");
+                    else {
+                        _debug_print(which.parents[i], indent + 2);
+                        refs[which.parents[i].guid] = 1;
+                    }
+                }
+                lst.push(str + ')');
+            }
+        };
+        _debug_print(this, 0);
+        do_what = do_what || function(l) {
+            return l.join("\n");
+        };
+        return do_what(lst);
+    },
+
+    locate: function(predicate) {
+        var sub_exprs = this.sorted_sub_expressions();
+        for (var i=0; i<sub_exprs.length; ++i) {
+            if (predicate(sub_exprs[i]))
+                return sub_exprs[i];
+        }
+        return undefined;
     },
 
     //////////////////////////////////////////////////////////////////////////
@@ -7797,7 +7854,7 @@ Shade.swizzle = function(exp, pattern)
 //    Shade.constant(false);
 // - a GLSL vec2, vec3 or vec4 (of floating point values):
 //    Shade.constant(2, vec.make([1, 2]));
-// - a GLSL matrix of dimensions 2x2, 3x3, 4x4 (Facet currently does not support GLSL rectangular matrices):
+// - a GLSL matrix of dimensions 2x2, 3x3, 4x4 (Lux currently does not support GLSL rectangular matrices):
 //    Shade.constant(2, mat.make([1, 0, 0, 1]));
 // - an array
 // - a struct
@@ -7815,7 +7872,7 @@ Shade.constant = function(v, type)
 
             var string_args = _.map(args, function(arg) {
                 var v = String(arg);
-                if (facet_typeOf(arg) === "number" && v.indexOf(".") === -1) {
+                if (lux_typeOf(arg) === "number" && v.indexOf(".") === -1) {
                     return v + ".0";
                 } else
                     return v;
@@ -7885,7 +7942,7 @@ Shade.constant = function(v, type)
         });
     };
 
-    var t = facet_constant_type(v);
+    var t = lux_constant_type(v);
     var d, computed_t;
     if (t === 'number') {
         if (type && !(type.equals(Shade.Types.float_t) ||
@@ -7903,7 +7960,7 @@ Shade.constant = function(v, type)
         d = v.length;
         if (d < 2 && d > 4)
             throw "invalid length for constant vector: " + v;
-        var el_ts = _.map(v, function(t) { return facet_typeOf(t); });
+        var el_ts = _.map(v, function(t) { return lux_typeOf(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
             throw "not all constant params have the same types";
         }
@@ -7937,19 +7994,19 @@ Shade.constant = function(v, type)
         throw "type error: constant should be bool, number, vector, matrix, array or struct. got " + t
             + " instead";
     }
-    throw "internal error: facet_constant_type returned bogus value";
+    throw "internal error: lux_constant_type returned bogus value";
 };
 
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };
 Shade.as_bool = function(v) { return Shade.make(v).as_bool(); };
 Shade.as_float = function(v) { return Shade.make(v).as_float(); };
 
-// Shade.array denotes an array of Facet values of the same type:
+// Shade.array denotes an array of Lux values of the same type:
 //    Shade.array([2, 3, 4, 5, 6]);
 
 Shade.array = function(v)
 {
-    var t = facet_typeOf(v);
+    var t = lux_typeOf(v);
     if (t === 'array') {
         var new_v = v.map(Shade.make);
         var array_size = new_v.length;
@@ -8006,7 +8063,7 @@ Shade.array = function(v)
         throw "type error: need array";
     }
 };
-// Shade.struct denotes a heterogeneous structure of Facet values:
+// Shade.struct denotes a heterogeneous structure of Shade values:
 //   Shade.struct({foo: Shade.vec(1,2,3), bar: Shade.struct({baz: 1, bah: false})});
 
 Shade.struct = function(obj)
@@ -8189,14 +8246,14 @@ Shade.parameter = function(type, v)
         set: function(v) {
             // Ideally, we'd like to do type checking here, but I'm concerned about
             // performance implications. setting a uniform might be a hot path
-            // then again, facet_constant_type is unlikely to be particularly fast.
+            // then again, lux_constant_type is unlikely to be particularly fast.
             // FIXME check performance
-            var t = facet_constant_type(v);
+            var t = lux_constant_type(v);
             if (t === "shade_expression")
                 v = v.evaluate();
             value = v;
-            if (this._facet_active_uniform) {
-                this._facet_active_uniform(v);
+            if (this._lux_active_uniform) {
+                this._lux_active_uniform(v);
             }
             _.each(this.watchers, function(f) { f(v); });
         },
@@ -8283,7 +8340,7 @@ Shade.attribute = function(type)
         },
         set: function(buffer) {
             // FIXME buffer typechecking
-            var batch_opts = Facet.get_current_batch_opts();
+            var batch_opts = Lux.get_current_batch_opts();
             if (batch_opts.program && (name in batch_opts.program)) {
                 var ctx = batch_opts._ctx;
                 buffer.bind(batch_opts.program[name]);
@@ -8296,7 +8353,7 @@ Shade.attribute = function(type)
 Shade.varying = function(name, type)
 {
     if (_.isUndefined(type)) throw "varying requires type";
-    if (facet_typeOf(type) === 'string') type = Shade.Types[type];
+    if (lux_typeOf(type) === 'string') type = Shade.Types[type];
     if (_.isUndefined(type)) throw "varying requires valid type";
     var allowed_types = [
         Shade.Types.float_t,
@@ -8688,7 +8745,7 @@ Shade.div = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         }
-        var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
+        var t1 = lux_constant_type(v1), t2 = lux_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { 
                                   if (exp1.type.equals(Shade.Types.int_t))
@@ -8817,7 +8874,7 @@ Shade.mul = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         }
-        var t1 = facet_constant_type(v1), t2 = facet_constant_type(v2);
+        var t1 = lux_constant_type(v1), t2 = lux_constant_type(v2);
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },
@@ -9016,7 +9073,7 @@ Shade.vec = function()
             var result = [];
             var parent_values = _.each(this.parents, function(v) {
                 var c = v.evaluate(cache);
-                if (facet_typeOf(c) === 'number')
+                if (lux_typeOf(c) === 'number')
                     result.push(c);
                 else
                     for (var i=0; i<c.length; ++i)
@@ -10026,12 +10083,12 @@ Shade.Optimizer.is_zero = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = facet_constant_type(v);
+    var t = lux_constant_type(v);
     if (t === 'number')
         return v === 0;
     if (t === 'vector')
         return _.all(v, function (x) { return x === 0; });
-    if (facet_typeOf(v) === 'matrix')
+    if (lux_typeOf(v) === 'matrix')
         return _.all(v, function (x) { return x === 0; });
     return false;
 };
@@ -10041,7 +10098,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = facet_constant_type(v);
+    var t = lux_constant_type(v);
     if (t === 'number')
         return v === 1;
     if (t === 'vector') {
@@ -10156,7 +10213,7 @@ Shade.Optimizer.vec_at_constant_index = function(exp)
     if (!exp.parents[1].is_constant())
         return false;
     var v = exp.parents[1].constant_value();
-    if (facet_typeOf(v) !== "number")
+    if (lux_typeOf(v) !== "number")
         return false;
     var t = exp.parents[0].type;
     if (t.equals(Shade.Types.vec2) && (v >= 0) && (v <= 1))
@@ -10390,7 +10447,7 @@ Shade.program = function(program_obj)
         console.log(fp_source);
         // fp_exp.debug_print();
     }
-    var result = Facet.program(vp_source, fp_source);
+    var result = Lux.program(vp_source, fp_source);
     result.attribute_buffers = vp_exp.attribute_buffers();
     result.uniforms = _.union(vp_exp.uniforms(), fp_exp.uniforms());
     return result;
@@ -10716,35 +10773,35 @@ Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (facet_typeOf(a) === 'number' ||
-            facet_typeOf(a) === 'boolean')
+        if (lux_typeOf(a) === 'number' ||
+            lux_typeOf(a) === 'boolean')
             return a === b;
-        if (facet_typeOf(a) === 'array')
+        if (lux_typeOf(a) === 'array')
             return _.all(_.map(_.zip(a, b),
                                function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
-        if (facet_constant_type(a) === 'vector') {
+        if (lux_constant_type(a) === 'vector') {
             return vec.equal(a, b);
         }
-        if (facet_constant_type(a) === 'matrix') {
+        if (lux_constant_type(a) === 'matrix') {
             return mat.equal(a, b);
         }
-        throw "internal error: unrecognized type " + facet_typeOf(a) + 
-            " " + facet_constant_type(a);
+        throw "internal error: unrecognized type " + lux_typeOf(a) + 
+            " " + lux_constant_type(a);
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (facet_typeOf(a) === 'number' ||
-            facet_typeOf(a) === 'boolean')
+        if (lux_typeOf(a) === 'number' ||
+            lux_typeOf(a) === 'boolean')
             return a !== b;
-        if (facet_typeOf(a) === 'array')
+        if (lux_typeOf(a) === 'array')
             return _.any(_.map(_.zip(a, b),
                                function(v) { return v[0] !== v[1]; } ),
                          function (x) { return x; });
-        throw "internal error: unrecognized type " + facet_typeOf(a) + 
-            " " + facet_constant_type(a);
+        throw "internal error: unrecognized type " + lux_typeOf(a) + 
+            " " + lux_constant_type(a);
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 
@@ -10795,9 +10852,18 @@ Shade.ifelse = function(condition, if_true, if_false)
             }
         },
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
-            return this.parents[0].evaluate(cache)?
-                this.parents[1].evaluate(cache):
-                this.parents[2].evaluate(cache);
+            if (this.parents[1].is_constant() &&
+                this.parents[2].is_constant() &&
+                this.type.constant_equal(this.parents[1].constant_value(),
+                                         this.parents[2].constant_value())) {
+                // if both sides of the branch have the same value, then
+                // this evaluates to the constant, regardless of the condition.
+                return this.parents[1].constant_value();
+            } else {
+                return this.parents[0].evaluate(cache)?
+                    this.parents[1].evaluate(cache):
+                    this.parents[2].evaluate(cache);
+            };
         }),
         is_constant: function() {
             if (!this.parents[0].is_constant()) {
@@ -10988,7 +11054,7 @@ How do I implement discard in a vertex shader?
 **** Possibilities:
 ***** Disallow it to happen in the vertex shader
 Good: Simplest
-Bad: Breaks the model in Facet programs where we don't care much about
+Bad: Breaks the model in Lux programs where we don't care much about
 what happens in vertex expressions vs fragment expressions
 Ugly: The error messages would be really opaque, unless I specifically
 detect where the discard statement would appear.
@@ -11139,19 +11205,118 @@ Shade.Exp.alpha = function(alpha)
 };
 Shade.Colors.Brewer = {};
 
-// based on d3/src/scale/category.js, which is in turn based on Cynthia Brewer's
-// colorbrewer.org
+(function() {
 
-Shade.Colors.Brewer.category10 = function(alpha) {
-    if (_.isUndefined(alpha))
-        alpha = 1;
-    return _.map([
-        "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
-        "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
-    ], function(spec) {
-        return Shade.color(spec, alpha);
+var schemes = {
+    "qualitative":{"Accent":[[127,201,127],[190,174,212],[253,192,134],[255,255,153],[56,108,176],[240,2,127],[191,91,23],[102,102,102]],
+                   "Dark2":[[27,158,119],[217,95,2],[117,112,179],[231,41,138],[102,166,30],[230,171,2],[166,118,29],[102,102,102]],
+	           "Paired":[[166,206,227],[31,120,180],[178,223,138],[51,160,44],[251,154,153],[227,26,28],[253,191,111],[255,127,0],[202,178,214],[106,61,154],[255,255,153],[177,89,40]],
+	           "Pastel1":[[251,180,174],[179,205,227],[204,235,197],[222,203,228],[254,217,166],[255,255,204],[229,216,189],[253,218,236],[242,242,242]],
+                   "Pastel2":[[179,226,205],[253,205,172],[203,213,232],[244,202,228],[230,245,201],[255,242,174],[241,226,204],[204,204,204]],
+	           "Set1":[[228,26,28],[55,126,184],[77,175,74],[152,78,163],[255,127,0],[255,255,51],[166,86,40],[247,129,191],[153,153,153]],
+	           "Set2":[[102,194,165],[252,141,98],[141,160,203],[231,138,195],[166,216,84],[255,217,47],[229,196,148],[179,179,179]],
+	           "Set3":[[141,211,199],[255,255,179],[190,186,218],[251,128,114],[128,177,211],[253,180,98],[179,222,105],[252,205,229],[217,217,217],[188,128,189],[204,235,197],[255,237,111]]},
+    "sequential":{"Blues":[[247,251,255],[222,235,247],[198,219,239],[158,202,225],[107,174,214],[66,146,198],[33,113,181],[8,81,156],[8,48,107]],
+                  "BuGn":[[247,252,253],[229,245,249],[204,236,230],[153,216,201],[102,194,164],[65,174,118],[35,139,69],[0,109,44],[0,68,27]],
+                  "BuPu":[[247,252,253],[224,236,244],[191,211,230],[158,188,218],[140,150,198],[140,107,177],[136,65,157],[129,15,124],[77,0,75]],
+                  "GnBu":[[247,252,240],[224,243,219],[204,235,197],[168,221,181],[123,204,196],[78,179,211],[43,140,190],[8,104,172],[8,64,129]],
+                  "Greens":[[247,252,245],[229,245,224],[199,233,192],[161,217,155],[116,196,118],[65,171,93],[35,139,69],[0,109,44],[0,68,27]],
+                  "Greys":[[255,255,255],[240,240,240],[217,217,217],[189,189,189],[150,150,150],[115,115,115],[82,82,82],[37,37,37],[0,0,0]],
+                  "Oranges":[[255,245,235],[254,230,206],[253,208,162],[253,174,107],[253,141,60],[241,105,19],[217,72,1],[166,54,3],[127,39,4]],
+                  "OrRd":[[255,247,236],[254,232,200],[253,212,158],[253,187,132],[252,141,89],[239,101,72],[215,48,31],[179,0,0],[127,0,0]],
+                  "PuBu":[[255,247,251],[236,231,242],[208,209,230],[166,189,219],[116,169,207],[54,144,192],[5,112,176],[4,90,141],[2,56,88]],
+                  "PuBuGn":[[255,247,251],[236,226,240],[208,209,230],[166,189,219],[103,169,207],[54,144,192],[2,129,138],[1,108,89],[1,70,54]],
+                  "PuRd":[[247,244,249],[231,225,239],[212,185,218],[201,148,199],[223,101,176],[231,41,138],[206,18,86],[152,0,67],[103,0,31]],
+                  "Purples":[[252,251,253],[239,237,245],[218,218,235],[188,189,220],[158,154,200],[128,125,186],[106,81,163],[84,39,143],[63,0,125]],
+                  "RdPu":[[255,247,243],[253,224,221],[252,197,192],[250,159,181],[247,104,161],[221,52,151],[174,1,126],[122,1,119],[73,0,106]],
+	          "Reds":[[255,245,240],[254,224,210],[252,187,161],[252,146,114],[251,106,74],[239,59,44],[203,24,29],[165,15,21],[103,0,13]],
+                  "YlGn":[[255,255,229],[247,252,185],[217,240,163],[173,221,142],[120,198,121],[65,171,93],[35,132,67],[0,104,55],[0,69,41]],
+	          "YlGnBu":[[255,255,217],[237,248,177],[199,233,180],[127,205,187],[65,182,196],[29,145,192],[34,94,168],[37,52,148],[8,29,88]],
+	          "YlOrBr":[[255,255,229],[255,247,188],[254,227,145],[254,196,79],[254,153,41],[236,112,20],[204,76,2],[153,52,4],[102,37,6]],
+	          "YlOrRd":[[255,255,204],[255,237,160],[254,217,118],[254,178,76],[253,141,60],[252,78,42],[227,26,28],[189,0,38],[128,0,38]]},
+    "divergent":{"BrBG":[[84,48,5],[140,81,10],[191,129,45],[223,194,125],[246,232,195],[245,245,245],[199,234,229],[128,205,193],[53,151,143],[1,102,94],[0,60,48]],
+                 "PiYG":[[142,1,82],[197,27,125],[222,119,174],[241,182,218],[253,224,239],[247,247,247],[230,245,208],[184,225,134],[127,188,65],[77,146,33],[39,100,25]],
+	         "PRGn":[[64,0,75],[118,42,131],[153,112,171],[194,165,207],[231,212,232],[247,247,247],[217,240,211],[166,219,160],[90,174,97],[27,120,55],[0,68,27]],
+                 "PuOr":[[127,59,8],[179,88,6],[224,130,20],[253,184,99],[254,224,182],[247,247,247],[216,218,235],[178,171,210],[128,115,172],[84,39,136],[45,0,75]],
+	         "RdBu":[[103,0,31],[178,24,43],[214,96,77],[244,165,130],[253,219,199],[247,247,247],[209,229,240],[146,197,222],[67,147,195],[33,102,172],[5,48,97]],
+	         "RdGy":[[103,0,31],[178,24,43],[214,96,77],[244,165,130],[253,219,199],[255,255,255],[224,224,224],[186,186,186],[135,135,135],[77,77,77],[26,26,26]],
+	         "RdYlBu":[[165,0,38],[215,48,39],[244,109,67],[253,174,97],[254,224,144],[255,255,191],[224,243,248],[171,217,233],[116,173,209],[69,117,180],[49,54,149]],
+	         "RdYlGn":[[165,0,38],[215,48,39],[244,109,67],[253,174,97],[254,224,139],[255,255,191],[217,239,139],[166,217,106],[102,189,99],[26,152,80],[0,104,55]],
+	         "Spectral":[[158,1,66],[213,62,79],[244,109,67],[253,174,97],[254,224,139],[255,255,191],[230,245,152],[171,221,164],[102,194,165],[50,136,189],[94,79,162]]}
+};
+
+Shade.Colors.Brewer.sequential = function(opts) {
+    opts = _.defaults(opts || {}, {
+        alpha: 1,
+        min: 0,
+        max: 1
+    });
+    if (_.isUndefined(opts.name))
+        throw "'name' is a required option";
+    var a = schemes.sequential[opts.name];
+    if (_.isUndefined(a))
+        throw "Unknown sequential colormap " + opts.name;
+    var range = _.map(a, function(lst) {
+        return Shade.vec(lst[0] / 255, lst[1]/255, lst[2]/255, opts.alpha);
+    });
+    var us = _.map(range, function(v, i) {
+        return i / (range.length - 1);
+    });
+    return Shade.Scale.linear({
+        domain: _.map(us, function(u) { return Shade.mix(opts.min, opts.max, u); }),
+        range: range
     });
 };
+
+Shade.Colors.Brewer.qualitative = function(opts) {
+    opts = _.defaults(opts || {}, {
+        alpha: 1
+    });
+    if (_.isUndefined(opts.name))
+        throw "'name' is a required option";
+    var a = schemes.qualitative[opts.name];
+    if (_.isUndefined(a))
+        throw "Unknown qualitative colormap " + opts.name;
+    function lookup(i) {
+        if (_.isUndefined(opts.domain)) {
+            return a[i];
+        }
+        return a[opts.domain[i]];
+    }
+    var range = _.map(a, function(unused, i) {
+        lst = lookup(i);
+        return Shade.vec(lst[0] / 255, lst[1]/255, lst[2]/255, opts.alpha);
+    });
+    return Shade.Scale.ordinal({range: range});
+};
+
+Shade.Colors.Brewer.diverging = function(opts) {
+    opts = _.defaults(opts || {}, {
+        alpha: 1,
+        low: -1,
+        zero: 0,
+        high: 1
+    });
+    if (_.isUndefined(opts.name))
+        throw "'name' is a required option";
+    var a = schemes.diverging[opts.name];
+    if (_.isUndefined(a))
+        throw "Unknown diverging colormap " + opts.name;
+    var range = _.map(a, function(lst) {
+        return Shade.vec(lst[0] / 255, lst[1]/255, lst[2]/255, opts.alpha);
+    });
+    
+    var map1 = Shade.Scale.linear({
+        domain: [opts.low, opts.zero, opts.high],
+        range: [0, (range.length - 1) / 2, range.length - 1]
+    });
+
+    var map2 = Shade.Scale.linear({domain: _.range(range.length),
+                                   range: range});
+    return Shade(_.compose(map2, map1));
+};
+
+})();
 (function() {
 
 function compose(g, f)
@@ -11864,12 +12029,48 @@ var white_point_uv = xyz_to_uv(white_point);
 
 Shade.Colors.shadetable = table;
 
+//////////////////////////////////////////////////////////////////////////////
+// Color utility functions
+
+// FIXME Ideally, I would like these to not depend on the 'table' variable,
+// which is a gigantic mess. But for now, they do.
+
+function flip(v) { return Shade(1).sub(v); }
+
 Shade.Colors.desaturate = Shade(function(amount) {
     return function(color) {
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
         var hsv = table.rgb.hsv(rgb);
-        return table.hsv.create(hsv.h, hsv.s.mul(Shade(1).sub(amount)), hsv.v).as_shade(color.a());
+        return table.hsv.create(hsv.h, hsv.s.mul(flip(amount)), hsv.v).as_shade(color.a());
     };
+});
+
+Shade.Colors.brighten = Shade(function(amount) {
+    return function(color) {
+        var rgb = table.rgb.create(color.r(), color.g(), color.b());
+        var hls = table.rgb.hls(rgb);
+        var darkness = flip(hls.l);
+        amount = flip(amount);
+        var resulting_darkness = darkness.mul(amount);
+        return table.hls.create(hls.h, flip(resulting_darkness), hls.s).as_shade(color.a());
+    };
+});
+
+Shade.Colors.darken = Shade(function(amount) {
+    return function(color) {
+        var rgb = table.rgb.create(color.r(), color.g(), color.b());
+        var hls = table.rgb.hls(rgb);
+        var darkness = flip(hls.l);
+        amount = flip(amount);
+        var resulting_darkness = darkness.mul(amount);
+        return table.hls.create(hls.h, resulting_darkness, hls.s).as_shade(color.a());
+    };
+});
+
+Shade.Colors.invert = Shade(function(c) {
+    var rgb = table.rgb.create(c.r(), c.g(), c.b());
+    var hls = table.rgb.hls(rgb);
+    return table.hls.create(hls.h, flip(hls.l), hls.s).as_shade(c.a()); 
 });
 
 })();
@@ -12197,8 +12398,8 @@ Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
     lat = lat.div(2).add(Math.PI/4).tan().log();
     return Shade.vec(lon, lat);
 });
-Facet.Geometry = {};
-Facet.Geometry.triangulate = function(opts) {
+Lux.Geometry = {};
+Lux.Geometry.triangulate = function(opts) {
     var poly = _.map(opts.contour, function(contour) {
         var p = [];
         for (var i=0; i<contour.length; ++i) {
@@ -12206,9 +12407,9 @@ Facet.Geometry.triangulate = function(opts) {
         }
         return p;
     });
-    return Facet.Lib.tessellate(poly);
+    return Lux.Lib.tessellate(poly);
 };
-Facet.Text = {};
+Lux.Text = {};
 
 /*
  * We include here a shim for typeface.js (http://typeface.neocracy.org)
@@ -12339,13 +12540,13 @@ var loop_blinn_batch = function(opts) {
     };
 
     var model = {};
-    var uv = Facet.attribute_buffer({vertex_array: [0,0], item_size: 2});
-    var winding = Facet.attribute_buffer({vertex_array: [0], item_size: 1});
-    var position = Facet.attribute_buffer({vertex_array: [0,0], item_size: 2});
-    var internal_position_attribute = Facet.attribute_buffer({vertex_array: [0,0], item_size: 2});
-    var elements = Facet.element_buffer([0]); // {vertex_array: []});
+    var uv = Lux.attribute_buffer({vertex_array: [0,0], item_size: 2});
+    var winding = Lux.attribute_buffer({vertex_array: [0], item_size: 1});
+    var position = Lux.attribute_buffer({vertex_array: [0,0], item_size: 2});
+    var internal_position_attribute = Lux.attribute_buffer({vertex_array: [0,0], item_size: 2});
+    var elements = Lux.element_buffer([0]); // {vertex_array: []});
     
-    var ears_model = Facet.model({
+    var ears_model = Lux.model({
         uv: uv,
         position: position,
         winding: winding,
@@ -12356,16 +12557,16 @@ var loop_blinn_batch = function(opts) {
     var y_offset = Shade.parameter("float", 0);
     var offset = Shade.vec(x_offset, y_offset);
     var ears_position = Shade.add(ears_model.position, offset);
-    var ears_batch = Facet.bake(ears_model, {
+    var ears_batch = Lux.bake(ears_model, {
         position: position_function(ears_position.div(1000).mul(opts.size)),
         color: quadratic_discard(color_function(ears_position), ears_model)
     });
-    var internal_model = Facet.model({
+    var internal_model = Lux.model({
         vertex: internal_position_attribute,
         elements: elements
     });
     var internal_position = Shade.add(internal_model.vertex, offset);
-    var internal_batch = Facet.bake(internal_model, {
+    var internal_batch = Lux.bake(internal_model, {
         position: position_function(internal_position.div(1000).mul(opts.size)),
         elements: internal_model.elements,
         color: color_function(internal_position)
@@ -12401,17 +12602,17 @@ function glyph_to_model(glyph)
         var contour = _.map(paths, function(path) {
             return path.points.slice().reverse();
         });
-        var triangulation = Facet.Geometry.triangulate({ contour: contour });
-        var internal_model = Facet.model({
+        var triangulation = Lux.Geometry.triangulate({ contour: contour });
+        var internal_model = Lux.model({
             type: "triangles",
-            vertex: Facet.attribute_buffer({vertex_array: new Float32Array(triangulation.vertices), item_size: 2, keep_array: true}),
+            vertex: Lux.attribute_buffer({vertex_array: new Float32Array(triangulation.vertices), item_size: 2, keep_array: true}),
             elements: _.toArray(triangulation.triangles)
         });
 
-        var ears_model = Facet.model({
-            uv: Facet.attribute_buffer({vertex_array: uv, item_size: 2, keep_array: true}),
-            position: Facet.attribute_buffer({vertex_array: position, item_size: 2, keep_array: true}),
-            winding: Facet.attribute_buffer({vertex_array: winding, item_size: 1, keep_array: true}),
+        var ears_model = Lux.model({
+            uv: Lux.attribute_buffer({vertex_array: uv, item_size: 2, keep_array: true}),
+            position: Lux.attribute_buffer({vertex_array: position, item_size: 2, keep_array: true}),
+            winding: Lux.attribute_buffer({vertex_array: winding, item_size: 1, keep_array: true}),
             elements: uv.length/2,
             type: "triangles"
         });
@@ -12424,7 +12625,7 @@ function glyph_to_model(glyph)
     return glyph._model;
 }
 
-Facet.Text.outline = function(opts) {
+Lux.Text.outline = function(opts) {
     var old_opts = opts;
     if (opts.batch) {
         return opts.batch;
@@ -12512,14 +12713,14 @@ function internal_batch(opts, texture) {
     var position_function = opts.position;
     var color_function = opts.color;
 
-    var uv = Facet.attribute_buffer({vertex_array: [0,0, 1, 0, 1, 1], item_size: 2});
-    var position = Facet.attribute_buffer({vertex_array: [0,0, 1, 0, 1, 1], item_size: 2});
-    var elements = Facet.element_buffer([0, 1, 2]);
+    var uv = Lux.attribute_buffer({vertex_array: [0,0, 1, 0, 1, 1], item_size: 2});
+    var position = Lux.attribute_buffer({vertex_array: [0,0, 1, 0, 1, 1], item_size: 2});
+    var elements = Lux.element_buffer([0, 1, 2]);
 
     var x_offset = Shade.parameter("float", 0);
     var y_offset = Shade.parameter("float", 0);
     var offset = Shade.vec(x_offset, y_offset);
-    var model = Facet.model({
+    var model = Lux.model({
         uv: uv,
         position: position,
         elements: elements,
@@ -12536,11 +12737,11 @@ function internal_batch(opts, texture) {
     var final_opacity = Shade.ifelse(opts.compensate_blur, blur_compensation, opacity);
 
     var final_color = color_function(world_position).mul(Shade.vec(1,1,1, final_opacity));
-    var batch = Facet.bake(model, {
+    var batch = Lux.bake(model, {
         position: position_function(world_position),
         color: final_color,
         elements: model.elements,
-        mode: Facet.DrawingMode.over_with_depth
+        mode: Lux.DrawingMode.over_with_depth
     });
     return {
         batch: batch,
@@ -12562,17 +12763,17 @@ function glyph_to_model(glyph, font)
                   (glyph.xoff + glyph.glyph_width) / font.texture_width, 1 - (glyph.yoff + glyph.glyph_height) / font.texture_height,
                   (glyph.xoff + glyph.glyph_width) / font.texture_width, 1 - glyph.yoff/font.texture_height,
                   glyph.xoff / font.texture_width, 1 - glyph.yoff/font.texture_height];
-        glyph._model = Facet.model({
+        glyph._model = Lux.model({
             type: "triangles",
-            uv: Facet.attribute_buffer({vertex_array: uv, item_size: 2, keep_array: true}),
-            position: Facet.attribute_buffer({vertex_array: position, item_size: 2, keep_array: true}),
-            elements: Facet.element_buffer(elements)
+            uv: Lux.attribute_buffer({vertex_array: uv, item_size: 2, keep_array: true}),
+            position: Lux.attribute_buffer({vertex_array: position, item_size: 2, keep_array: true}),
+            elements: Lux.element_buffer(elements)
         });
     }
     return glyph._model;
 }
 
-Facet.Text.texture = function(opts) {
+Lux.Text.texture = function(opts) {
     var old_opts = opts;
     if (!_.isUndefined(opts.batch)) {
         return opts.batch;
@@ -12587,18 +12788,18 @@ Facet.Text.texture = function(opts) {
     });
 
     if (_.isUndefined(opts.font)) {
-        throw "Facet.Text.texture requires font parameter";
+        throw "Lux.Text.texture requires font parameter";
     }
 
     var batch = {};
 
     if (!opts.font.texture) {
-        opts.font.texture = Facet.texture({
+        opts.font.texture = Lux.texture({
             src: opts.font.image_url,
             onload: function() { 
                 batch = internal_batch(opts, this);
                 old_opts.batch = batch;
-                Facet.Scene.invalidate(); 
+                Lux.Scene.invalidate(); 
             }
         });
     }
@@ -12659,10 +12860,10 @@ Facet.Text.texture = function(opts) {
 };
 
 })();
-Facet.Debug = {};
-Facet.Debug.init = function(div)
+Lux.Debug = {};
+Lux.Debug.init = function(div)
 {
-    if (Facet._globals.debug_table)
+    if (Lux._globals.debug_table)
         return;
     if (_.isUndefined(div)) {
         div = $('<div style="position:absolute;left:1em;top:1em"></div>');
@@ -12670,29 +12871,29 @@ Facet.Debug.init = function(div)
     }
     var table = $("<table></table>");
     div.append(table);
-    Facet._globals.debug_table = table;
-    Facet._globals.debug_dict = {};
+    Lux._globals.debug_table = table;
+    Lux._globals.debug_dict = {};
 };
-Facet.Debug.post = function(key, value)
+Lux.Debug.post = function(key, value)
 {
-    Facet.Debug.init();
+    Lux.Debug.init();
     var str = '<td>' + key + '</td><td>' + value + '</td>';
-    if (Facet._globals.debug_dict[key]) {
-        Facet._globals.debug_dict[key].html(str);
+    if (Lux._globals.debug_dict[key]) {
+        Lux._globals.debug_dict[key].html(str);
     } else {
-        Facet._globals.debug_dict[key] = $('<tr>' + str + '</tr>');
-        Facet._globals.debug_table.append(Facet._globals.debug_dict[key]);
+        Lux._globals.debug_dict[key] = $('<tr>' + str + '</tr>');
+        Lux._globals.debug_table.append(Lux._globals.debug_dict[key]);
     }
 };
-Facet.Marks = {};
+Lux.Marks = {};
 //////////////////////////////////////////////////////////////////////////
 // This is like a poor man's instancing/geometry shader. I need a
 // general API for it.
 
-Facet.Marks.aligned_rects = function(opts)
+Lux.Marks.aligned_rects = function(opts)
 {
     opts = _.defaults(opts || {}, {
-        mode: Facet.DrawingMode.standard,
+        mode: Lux.DrawingMode.standard,
         z: function() { return 0; }
     });
     if (!opts.elements) throw "elements is a required field";
@@ -12702,7 +12903,7 @@ Facet.Marks.aligned_rects = function(opts)
     if (!opts.bottom)   throw "bottom is a required field";
     if (!opts.color)    throw "color is a required field";
 
-    var vertex_index = Facet.attribute_buffer({ 
+    var vertex_index = Lux.attribute_buffer({ 
         vertex_array: _.range(opts.elements * 6), 
         item_size: 1
     });
@@ -12711,7 +12912,7 @@ Facet.Marks.aligned_rects = function(opts)
 
     // aif == apply_if_function
     var aif = function(f, params) {
-        if (facet_typeOf(f) === 'function')
+        if (lux_typeOf(f) === 'function')
             return f.apply(this, params);
         else
             return f;
@@ -12733,7 +12934,7 @@ Facet.Marks.aligned_rects = function(opts)
     var index_array = Shade.array([0, 2, 3, 0, 1, 2]);
     var index_in_vertex_primitive = index_array.at(vertex_in_primitive);
 
-    return Facet.bake({
+    return Lux.bake({
         type: "triangles",
         elements: vertex_index
     }, {
@@ -12743,10 +12944,10 @@ Facet.Marks.aligned_rects = function(opts)
         mode: opts.mode
     });
 };
-Facet.Marks.lines = function(opts)
+Lux.Marks.lines = function(opts)
 {
     opts = _.defaults(opts || {}, {
-        mode: Facet.DrawingMode.standard,
+        mode: Lux.DrawingMode.standard,
         z: function() { return 0; }
     });
 
@@ -12757,7 +12958,7 @@ Facet.Marks.lines = function(opts)
         throw "either position or x and y are required fields";
     }
 
-    var vertex_index        = Facet.attribute_buffer({
+    var vertex_index        = Lux.attribute_buffer({
         vertex_array: _.range(opts.elements * 2), 
         item_size: 1
     });
@@ -12778,19 +12979,19 @@ Facet.Marks.lines = function(opts)
     if (opts.line_width) {
         appearance.line_width = opts.line_width;
     }
-    return Facet.bake({
+    return Lux.bake({
         type: "lines",
         elements: vertex_index
     }, appearance);
 };
-Facet.Marks.dots = function(opts)
+Lux.Marks.dots = function(opts)
 {
     opts = _.defaults(opts, {
         fill_color: Shade.vec(0,0,0,1),
         stroke_color: Shade.vec(0,0,0,1),
         point_diameter: 5,
         stroke_width: 2,
-        mode: Facet.DrawingMode.over_with_depth,
+        mode: Lux.DrawingMode.over_with_depth,
         alpha: true,
         plain: false
     });
@@ -12801,10 +13002,11 @@ Facet.Marks.dots = function(opts)
         throw "missing required parameter 'elements'";
 
     var S = Shade;
+    var ctx = Lux._globals.ctx;
 
     var fill_color     = Shade(opts.fill_color);
     var stroke_color   = Shade(opts.stroke_color);
-    var point_diameter = Shade(opts.point_diameter);
+    var point_diameter = Shade(opts.point_diameter).mul(ctx._lux_globals.devicePixelRatio);
     var stroke_width   = Shade(opts.stroke_width).add(1);
     var use_alpha      = Shade(opts.alpha);
     opts.plain = Shade(opts.plain);
@@ -12815,7 +13017,7 @@ Facet.Marks.dots = function(opts)
         elements: opts.elements
     };
 
-    var model = Facet.model(model_opts);
+    var model = Lux.model(model_opts);
 
     var distance_to_center_in_pixels = S.pointCoord().sub(S.vec(0.5, 0.5))
         .norm().mul(point_diameter);
@@ -12833,7 +13035,7 @@ Facet.Marks.dots = function(opts)
                     no_alpha)
         .discard_if(distance_to_center_in_pixels.gt(point_radius));
 
-    var result = Facet.bake(model, {
+    var result = Lux.bake(model, {
         position: gl_Position,
         point_size: point_diameter,
         color: opts.plain.ifelse(plain_fill_color, alpha_fill_color),
@@ -12849,7 +13051,7 @@ Facet.Marks.dots = function(opts)
     result.gl_Position = gl_Position;
     return result;
 };
-Facet.Marks.scatterplot = function(opts)
+Lux.Marks.scatterplot = function(opts)
 {
     opts = _.defaults(opts, {
         x_scale: function (x) { return x; },
@@ -12877,7 +13079,7 @@ Facet.Marks.scatterplot = function(opts)
     } else if (opts.elements) {
         elements = opts.elements;
     }
-    return Facet.Marks.dots({
+    return Lux.Marks.dots({
         position: position,
         elements: elements,
         fill_color: opts.fill_color,
@@ -12906,7 +13108,7 @@ function spherical_mercator_patch(tess)
             elements.push(ix, ix+1, ix+tess+2, ix, ix+tess+2, ix+tess+1);
         }
 
-    return Facet.model({
+    return Lux.model({
         type: "triangles",
         uv: [uv, 2],
         elements: elements,
@@ -12927,7 +13129,7 @@ function latlong_to_mercator(lat, lon)
     return [lon, Math.log(1.0/Math.cos(lat) + Math.tan(lat))];
 }
 
-Facet.Marks.globe = function(opts)
+Lux.Marks.globe = function(opts)
 {
     opts = _.defaults(opts || {}, {
         longitude_center: -98,
@@ -12946,8 +13148,8 @@ Facet.Marks.globe = function(opts)
     var tiles_per_line  = 1 << (~~Math.round(Math.log(Math.sqrt(cache_size))/Math.log(2)));
     var super_tile_size = tile_size * tiles_per_line;
 
-    var ctx = Facet._globals.ctx;
-    var texture = Facet.texture({
+    var ctx = Lux._globals.ctx;
+    var texture = Lux.texture({
         width: super_tile_size,
         height: super_tile_size
     });
@@ -13013,15 +13215,15 @@ Facet.Marks.globe = function(opts)
         .mul(texture_scale)
     ;
 
-    var sphere_batch = Facet.bake(patch, {
+    var sphere_batch = Lux.bake(patch, {
         gl_Position: mvp(v),
         gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
-        mode: Facet.DrawingMode.pass
+        mode: Lux.DrawingMode.pass
     });
 
     function inertia_tick() {
         var f = function() {
-            Facet.Scene.invalidate();
+            Lux.Scene.invalidate();
             result.longitude_center += move_vec[0] * inertia;
             result.latitude_center  += move_vec[1] * inertia;
             result.latitude_center  = Math.max(Math.min(80, result.latitude_center), -80);
@@ -13033,9 +13235,9 @@ Facet.Marks.globe = function(opts)
         f();
     }
 
-    if (facet_typeOf(opts.zoom) === "number") {
+    if (lux_typeOf(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
-    } else if (Facet.is_shade_expression(opts.zoom) !== "parameter") {
+    } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
         throw "zoom must be either a number or a parameter";
     }
 
@@ -13057,15 +13259,15 @@ Facet.Marks.globe = function(opts)
                 this.longitude_center += 360;
             while (this.longitude_center > 360)
                 this.longitude_center -= 360;
-            var r1 = Facet.rotation(this.latitude_center * (Math.PI/180), [ 1, 0, 0]);
-            var r2 = Facet.rotation(this.longitude_center * (Math.PI/180), [ 0,-1, 0]);
+            var r1 = Lux.rotation(this.latitude_center * (Math.PI/180), [ 1, 0, 0]);
+            var r2 = Lux.rotation(this.longitude_center * (Math.PI/180), [ 0,-1, 0]);
             this.model_matrix.set(mat4.product(r1, r2));
         },
         mousedown: function(event) {
             prev[0] = event.offsetX;
             prev[1] = event.offsetY;
             inertia = 0;
-            Facet.Scene.invalidate();
+            Lux.Scene.invalidate();
         },
         mousemove: function(event) {
             var w = ctx.viewportWidth;
@@ -13085,13 +13287,13 @@ Facet.Marks.globe = function(opts)
                 this.latitude_center += move_vec[1];
                 this.latitude_center = Math.max(Math.min(80, this.latitude_center), -80);
                 this.update_model_matrix();
-                Facet.Scene.invalidate();
+                Lux.Scene.invalidate();
             }
             if (event.which & 1 && event.shiftKey) {
                 zooming = true;
                 var new_zoom = this.zoom.get() * (1.0 + (event.offsetY - prev[1]) / 240);
                 this.zoom.set(Math.max(new_zoom, 0.5));
-                Facet.Scene.invalidate();
+                Lux.Scene.invalidate();
             }
             this.new_center(this.latitude_center, this.longitude_center, this.zoom.get());
             prev[0] = event.offsetX;
@@ -13224,7 +13426,7 @@ Facet.Marks.globe = function(opts)
                     that.tiles[id].last_touched = new Date().getTime();
                     // uncomment this during debugging
                     // that.sanity_check();
-                    Facet.Scene.invalidate();
+                    Lux.Scene.invalidate();
                 };
             };
             texture: tiles[id].texture.load({
@@ -13265,7 +13467,7 @@ Facet.Marks.globe = function(opts)
 };
 (function() {
 
-Facet.Marks.globe_2d = function(opts)
+Lux.Marks.globe_2d = function(opts)
 {
     opts = _.defaults(opts || {}, {
         zoom: 3,
@@ -13288,7 +13490,7 @@ Facet.Marks.globe_2d = function(opts)
         opts.debug = true; // no_network implies debug;
     }
 
-    var patch = Facet.model({
+    var patch = Lux.model({
         type: "triangles",
         uv: [[0,0,1,0,1,1,0,0,1,1,0,1], 2],
         vertex: function(min, max) {
@@ -13300,8 +13502,8 @@ Facet.Marks.globe_2d = function(opts)
     var tiles_per_line  = 1 << (~~Math.round(Math.log(Math.sqrt(cache_size))/Math.log(2)));
     var super_tile_size = tile_size * tiles_per_line;
 
-    var ctx = Facet._globals.ctx;
-    var texture = Facet.texture({
+    var ctx = Lux._globals.ctx;
+    var texture = Lux.texture({
         width: super_tile_size,
         height: super_tile_size
     });
@@ -13349,15 +13551,15 @@ Facet.Marks.globe_2d = function(opts)
         .mul(texture_scale)
     ;
 
-    var tile_batch = Facet.bake(patch, {
+    var tile_batch = Lux.bake(patch, {
         gl_Position: opts.camera(v),
         gl_FragColor: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
-        mode: Facet.DrawingMode.pass
+        mode: Lux.DrawingMode.pass
     });
 
-    if (facet_typeOf(opts.zoom) === "number") {
+    if (lux_typeOf(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
-    } else if (Facet.is_shade_expression(opts.zoom) !== "parameter") {
+    } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
         throw "zoom must be either a number or a parameter";
     }
 
@@ -13370,19 +13572,13 @@ Facet.Marks.globe_2d = function(opts)
         },
         resolution_bias: opts.resolution_bias,
         new_center: function(center_x, center_y, center_zoom) {
-            var w = ctx.viewportWidth;
-            var zoom_divider = 63.6396;
-            var base_zoom = Math.log(w / zoom_divider) / Math.log(2);
-
-            var zoom = this.resolution_bias + base_zoom + (Math.log(center_zoom) / Math.log(2));
+            var screen_resolution_bias = Math.log(ctx.viewportHeight / 256) / Math.log(2);
+            var zoom = this.resolution_bias + screen_resolution_bias + (Math.log(center_zoom) / Math.log(2));
             zoom = ~~zoom;
             this.current_osm_zoom = zoom;
-            var y = (center_y / (Math.PI * 2) + 0.5) * (1 << zoom);
-            var x = (center_x / (Math.PI * 2) + 0.5) * (1 << zoom);
-            // var y = (center_lat + 90) / 180 * (1 << zoom);
-            // var x = center_lon / 360 * (1 << zoom);
+            var y = center_y * (1 << zoom);
+            var x = center_x * (1 << zoom);
             y = (1 << zoom) - y - 1;
-            // x = (x + (1 << (zoom - 1))) & ((1 << zoom) - 1);
 
             for (var i=-2; i<=2; ++i) {
                 for (var j=-2; j<=2; ++j) {
@@ -13481,7 +13677,7 @@ Facet.Marks.globe_2d = function(opts)
                     that.tiles[id].last_touched = Date.now();
                     // uncomment this during debugging
                     // that.sanity_check();
-                    Facet.Scene.invalidate();
+                    Lux.Scene.invalidate();
                 };
             };
             var xform = opts.debug ? function(image) {
@@ -13506,16 +13702,16 @@ Facet.Marks.globe_2d = function(opts)
                 onload: f(x, y, zoom, id)
             };
             if (opts.no_network) {
-                if (!Facet._globals.blank_globe_2d_image) {
+                if (!Lux._globals.blank_globe_2d_image) {
                     var c = document.createElement("canvas");
                     c.setAttribute("width", 256);
                     c.setAttribute("height", 256);
                     var ctx = c.getContext('2d');
                     ctx.fillStyle = "white";
                     ctx.fillRect(0, 0, 256, 256);
-                    Facet._globals.blank_globe_2d_image = c;
+                    Lux._globals.blank_globe_2d_image = c;
                 }
-                obj.canvas = Facet._globals.blank_globe_2d_image;
+                obj.canvas = Lux._globals.blank_globe_2d_image;
             } else {
                 obj.src = opts.tile_pattern(zoom, x, y);
             }
@@ -13538,10 +13734,11 @@ Facet.Marks.globe_2d = function(opts)
                 var t = tiles[lst[i]];
                 if (t.active !== 2)
                     continue;
-                min_x.set((t.x / (1 << t.zoom))           * Math.PI*2 - Math.PI);
-                min_y.set((1 - (t.y + 1) / (1 << t.zoom)) * Math.PI*2 - Math.PI);
-                max_x.set(((t.x + 1) / (1 << t.zoom))     * Math.PI*2 - Math.PI);
-                max_y.set((1 - t.y / (1 << t.zoom))       * Math.PI*2 - Math.PI);
+                var z = (1 << t.zoom);
+                min_x.set(t.x / z);
+                min_y.set(1 - (t.y + 1) / z);
+                max_x.set((t.x + 1) / z);
+                max_y.set(1 - t.y / z);
                 offset_x.set(t.offset_x);
                 offset_y.set(t.offset_y);
                 tile_batch.draw();
@@ -13554,9 +13751,9 @@ Facet.Marks.globe_2d = function(opts)
 };
 
 })();
-Facet.Models = {};
-Facet.Models.flat_cube = function() {
-    return Facet.model({
+Lux.Models = {};
+Lux.Models.flat_cube = function() {
+    return Lux.model({
         type: "triangles",
         elements: [0,  1,  2,  0,  2,  3,
                    4,  5,  6,  4,  6,  7,
@@ -13584,7 +13781,7 @@ Facet.Models.flat_cube = function() {
                      0,0, 1,0, 1,1, 0,1], 2]
     });
 };
-Facet.Models.mesh = function(u_secs, v_secs) {
+Lux.Models.mesh = function(u_secs, v_secs) {
     var verts = [];
     var elements = [];
     if (_.isUndefined(v_secs)) v_secs = u_secs;
@@ -13615,18 +13812,18 @@ Facet.Models.mesh = function(u_secs, v_secs) {
         }
     }
 
-    var uv_attr = Shade(Facet.attribute_buffer({
+    var uv_attr = Shade(Lux.attribute_buffer({
         vertex_array: verts, 
         item_size: 2
     }));
-    return Facet.model({
+    return Lux.model({
         type: "triangle_strip",
         tex_coord: uv_attr,
         vertex: uv_attr.mul(2).sub(1),
-        elements: Facet.element_buffer(elements)
+        elements: Lux.element_buffer(elements)
     });
 };
-Facet.Models.sphere = function(lat_secs, long_secs) {
+Lux.Models.sphere = function(lat_secs, long_secs) {
     var verts = [];
     var elements = [];
     if (_.isUndefined(long_secs)) long_secs = lat_secs;
@@ -13654,31 +13851,31 @@ Facet.Models.sphere = function(lat_secs, long_secs) {
     }
 
     var S = Shade;
-    var uv_attr = Facet.attribute_buffer({ vertex_array: verts, item_size: 2});
+    var uv_attr = Lux.attribute_buffer({ vertex_array: verts, item_size: 2});
     phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
     theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
     var cosphi = S.cos(phi);
-    return Facet.model({
+    return Lux.model({
         type: "triangles",
-        elements: Facet.element_buffer(elements),
+        elements: Lux.element_buffer(elements),
         vertex: S.vec(S.sin(theta).mul(cosphi),
                       S.sin(phi),
                       S.cos(theta).mul(cosphi), 1)
     });
 };
-Facet.Models.square = function() {
-    var uv = Shade(Facet.attribute_buffer({
+Lux.Models.square = function() {
+    var uv = Shade(Lux.attribute_buffer({
         vertex_array: [0, 0, 1, 0, 0, 1, 1, 1], 
         item_size: 2
     }));
-    return Facet.model({
+    return Lux.model({
         type: "triangles",
-        elements: Facet.element_buffer([0, 1, 2, 1, 3, 2]),
+        elements: Lux.element_buffer([0, 1, 2, 1, 3, 2]),
         vertex: uv,
         tex_coord: uv
     });
 };
-Facet.Models.teapot = function()
+Lux.Models.teapot = function()
 {
     // Teapot data from Daniel Wagner (daniel@ims.tuwien.ac.at), via freeglut
     var teapot_coords = [
@@ -15244,17 +15441,17 @@ Facet.Models.teapot = function()
     var elements = teapot_elements;
     var coords = teapot_coords;
 
-    var mesh = Facet.Mesh.indexed(coords, elements);
+    var mesh = Lux.Mesh.indexed(coords, elements);
     mesh.make_normals();
     return mesh.model;
 };
-Facet.Mesh = {};
-Facet.Mesh.indexed = function(vertices, elements)
+Lux.Mesh = {};
+Lux.Mesh.indexed = function(vertices, elements)
 {
     vertices = vertices.slice();
     elements = elements.slice();
     
-    var model = Facet.model({
+    var model = Lux.model({
         type: "triangles",
         elements: elements,
         vertex: [vertices, 3]
@@ -15307,23 +15504,23 @@ Facet.Mesh.indexed = function(vertices, elements)
         }
     };
 };
-Facet.Scene = {};
-Facet.Scene.add = function(obj, ctx)
+Lux.Scene = {};
+Lux.Scene.add = function(obj, ctx)
 {
     if (_.isUndefined(ctx)) {
-        ctx = Facet._globals.ctx;
+        ctx = Lux._globals.ctx;
     }
-    var scene = ctx._facet_globals.scene;
+    var scene = ctx._lux_globals.scene;
 
     scene.push(obj);
-    Facet.Scene.invalidate(undefined, undefined, ctx);
+    Lux.Scene.invalidate(undefined, undefined, ctx);
 };
-Facet.Scene.remove = function(obj, ctx)
+Lux.Scene.remove = function(obj, ctx)
 {
     if (_.isUndefined(ctx)) {
-        ctx = Facet._globals.ctx;
+        ctx = Lux._globals.ctx;
     }
-    var scene = ctx._facet_globals.scene;
+    var scene = ctx._lux_globals.scene;
 
     var i = scene.indexOf(obj);
 
@@ -15332,32 +15529,32 @@ Facet.Scene.remove = function(obj, ctx)
     } else {
         return scene.splice(i, 1)[0];
     }
-    Facet.Scene.invalidate(undefined, undefined, ctx);
+    Lux.Scene.invalidate(undefined, undefined, ctx);
 };
-Facet.Scene.render = function()
+Lux.Scene.render = function()
 {
-    var scene = Facet._globals.ctx._facet_globals.scene;
+    var scene = Lux._globals.ctx._lux_globals.scene;
     for (var i=0; i<scene.length; ++i) {
         scene[i].draw();
     }
 };
 /*
- * Facet.Scene.animate starts a continuous stream of animation refresh
+ * Lux.Scene.animate starts a continuous stream of animation refresh
  * triggers. It returns an object with a single field "stop", which is
  * a function that when called will stop the refresh triggers.
  */
 
-Facet.Scene.animate = function(tick_function, ctx)
+Lux.Scene.animate = function(tick_function, ctx)
 {
     if (_.isUndefined(ctx)) {
-        ctx = Facet._globals.ctx;
+        ctx = Lux._globals.ctx;
     }
     if (_.isUndefined(tick_function)) {
         tick_function = _.identity;
     }
     var done = false;
     function f() {
-        Facet.Scene.invalidate(
+        Lux.Scene.invalidate(
             function() {
                 tick_function();
             }, function() { 
@@ -15373,13 +15570,13 @@ Facet.Scene.animate = function(tick_function, ctx)
     };
 };
 /*
- * Facet.Scene.invalidate triggers a scene redraw using
+ * Lux.Scene.invalidate triggers a scene redraw using
  * requestAnimFrame.  It takes two callbacks to be called respectively
  * before the scene is drawn and after. 
  * 
  * The function allows many different callbacks to be
  * invoked by a single requestAnimFrame handler. This guarantees that
- * every callback passed to Facet.Scene.invalidate during the rendering
+ * every callback passed to Lux.Scene.invalidate during the rendering
  * of a single frame will be called before the invocation of the next scene 
  * redraw.
  * 
@@ -15408,36 +15605,36 @@ Facet.Scene.animate = function(tick_function, ctx)
 (function() {
 
 function draw_it(ctx) {
-    Facet.set_context(ctx);
+    Lux.set_context(ctx);
 
     // Pluck out all callbacks first to avoid infinite loops.
-    var pre = ctx._facet_globals.pre_display_list;
-    ctx._facet_globals.pre_display_list = [];
-    var post = ctx._facet_globals.post_display_list;
-    ctx._facet_globals.post_display_list = [];
+    var pre = ctx._lux_globals.pre_display_list;
+    ctx._lux_globals.pre_display_list = [];
+    var post = ctx._lux_globals.post_display_list;
+    ctx._lux_globals.post_display_list = [];
 
     for (var i=0; i<pre.length; ++i)
         pre[i]();
     ctx.display();
-    ctx._facet_globals.dirty = false;
+    ctx._lux_globals.dirty = false;
     for (i=0; i<post.length; ++i)
         post[i]();
 }
 
-Facet.Scene.invalidate = function(pre_display, post_display, ctx)
+Lux.Scene.invalidate = function(pre_display, post_display, ctx)
 {
     if (_.isUndefined(ctx)) {
-        ctx = Facet._globals.ctx;
+        ctx = Lux._globals.ctx;
     }
-    if (!ctx._facet_globals.dirty) {
-        ctx._facet_globals.dirty = true;
+    if (!ctx._lux_globals.dirty) {
+        ctx._lux_globals.dirty = true;
         window.requestAnimFrame(function() { return draw_it(ctx); });
     }
     if (pre_display) {
-        ctx._facet_globals.pre_display_list.push(pre_display);
+        ctx._lux_globals.pre_display_list.push(pre_display);
     }
     if (post_display) {
-        ctx._facet_globals.post_display_list.push(post_display);
+        ctx._lux_globals.post_display_list.push(post_display);
     }
 };
 

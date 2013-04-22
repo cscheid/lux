@@ -1,6 +1,6 @@
 var gl;
 var scene;
-var Models = Facet.Models;
+var Models = Lux.Models;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -21,16 +21,16 @@ function make_scene()
     function star_drawable()
     {
         var model = Models.square();
-        return Facet.bake(model, {
+        return Lux.bake(model, {
             position: proj.mul(mv)
                 .mul(Shade.vec(model.vertex
                                .mul(2)
                                .sub(Shade.vec(1,1)),
                                0, 1)),
-            color: Shade.texture2D(Facet.texture({
+            color: Shade.texture2D(Lux.texture({
                 src: "../img/star.gif"
             }), model.tex_coord).mul(Shade.vec(color, 1.0)),
-            mode: Facet.DrawingMode.additive
+            mode: Lux.DrawingMode.additive
         });
     }
 
@@ -93,7 +93,7 @@ function make_scene()
     
     return {
         draw: function() {
-            proj.set(Facet.perspective(45, 720/480, 0.1, 100));
+            proj.set(Lux.perspective(45, 720/480, 0.1, 100));
             _.each(star_list, function(x) {
                 x.draw(tilt, spin, twinkle);
             });
@@ -132,7 +132,7 @@ function create_cube_drawable(texture, mv, proj)
 
     var mvp = proj.mul(mv);
     var eye_vertex = mv.mul(Shade.vec(cube_model.vertex, 1));
-    return Facet.bake(cube_model, {
+    return Lux.bake(cube_model, {
         position: proj.mul(eye_vertex),
         color: final_color
     });
@@ -142,7 +142,7 @@ var counter = 0;
 $().ready(function () {
     var canvas = document.getElementById("webgl");
 
-    gl = Facet.init(canvas, {
+    gl = Lux.init(canvas, {
         clearDepth: 1.0,
         clearColor: [0,0,0,0.1],
         display: function() {
@@ -164,9 +164,9 @@ $().ready(function () {
 
     var mv = Shade.parameter("mat4");
     var proj = Shade.parameter("mat4");
-    proj.set(Facet.perspective(45, 720/480, 0.1, 100.0));
+    proj.set(Lux.perspective(45, 720/480, 0.1, 100.0));
     scene = make_scene();
-    var rb = Facet.render_buffer();
+    var rb = Lux.render_buffer();
     var cube = create_cube_drawable(rb, mv, proj);
     var angle = 0;
     
@@ -178,8 +178,8 @@ $().ready(function () {
         counter += 1;
         scene.tick(elapsed);
         angle += (elapsed / 20) * (Math.PI/180);
-        mv.set(mat4.product(Facet.translation(0,0,-6),
-                            Facet.rotation(angle, [1,1,1])));
+        mv.set(mat4.product(Lux.translation(0,0,-6),
+                            Lux.rotation(angle, [1,1,1])));
 
         window.requestAnimFrame(f, canvas);
         gl.display();

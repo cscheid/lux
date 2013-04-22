@@ -1,5 +1,5 @@
 <html>
-<head><title>Facet Documentation</title>
+<head><title>Lux Documentation</title>
   <link rel="stylesheet" href="css/bootstrap.css"/>
   <!-- don't hate me, hate Linux Chrome 16-18's broken optimizeLegibility -->
   <script src="js/bdetect.js">
@@ -18,7 +18,7 @@
   <div class="container">
     <div class="row">
       <div class="span12 offset4">
-	<h1>Facet documentation</h1>
+	<h1>Lux documentation</h1>
       </div>
     </div>
     <div class="row">
@@ -26,15 +26,15 @@
 	<h2>Essentials</h2>
       </div>
       <div class="span12">
-	<p>A Facet program needs a few essentials.
+	<p>A Lux program needs a few essentials.
 	With them, you will be able to write programs which
 	use basic 2D and 3D graphics.
 	</p>
 
 	<h3>Marks</h3>
-	<p>Facet provides some visual primitives which you can use
+	<p>Lux provides some visual primitives which you can use
 	to draw graphics. <b>Marks</b> are almost ready-made:
-	you give a few details and Facet returns an
+	you give a few details and Lux returns an
 	object ready for drawing:</p>
 <div>
 <div class="negoffset4">
@@ -45,7 +45,7 @@
 </div>
 <pre class="highlight">
 // A scatterplot is a set of dots with specified scales for x and y
-var scatterplot_batch = Facet.Marks.scatterplot({
+var scatterplot_batch = Lux.Marks.scatterplot({
     x: iris.sepalLength,
     y: iris.petalLength,
     x_scale: Shade.Utils.fit(iris.sepalLength),
@@ -58,13 +58,13 @@ var scatterplot_batch = Facet.Marks.scatterplot({
 </pre>
 	<p>You then add the object to the scene:</p>
 <pre class="highlight">
-Facet.Scene.add(scatterplot_batch);
+Lux.Scene.add(scatterplot_batch);
 </pre>
 	<p>... and you're done.</p>
 
 	<h3>Models and Batches</h3>
 	<p>Under the hood, a mark is actually created by taking
-	a <b>model</b> and giving it an appearance. Facet provides
+	a <b>model</b> and giving it an appearance. Lux provides
 	some predefined models which you can use to construct your
 	graphics. For example, you create a cube like this:</p>
 <div>
@@ -76,14 +76,14 @@ Facet.Scene.add(scatterplot_batch);
 </div>
 <pre class="highlight">
 // The default cube is centered at the origin and has side length 2
-var cube = Facet.Models.flat_cube();
+var cube = Lux.Models.flat_cube();
 </pre>
 	<p>With a model in hand, you create a <b>batch</b>,
 	which determines how the model is actually drawn on the
-	canvas. A batch is created by <span class="inline-highlight">Facet.bake</span>ing a
+	canvas. A batch is created by <span class="inline-highlight">Lux.bake</span>ing a
 	model and a appearance. 
 	First, you need to specify where the model vertices will appear
-	on the canvas. Facet provides
+	on the canvas. Lux provides
 	"synthetic camera" classes, which project the model onto the
 	screen in the same way that a photographic camera
 	projects light onto a film. You use them as follow:</p>
@@ -98,14 +98,14 @@ var camera = Shade.Camera.perspective({
         <p>The <span class="inline-highlight">project</span> method of
         the returned object will return a vertex, appropriately
         transformed.</p>
-	<p>Finally, we need to tell Facet how to color the model. In the
+	<p>Finally, we need to tell Lux how to color the model. In the
 	simplest case, we can just use a solid color:</p>
 <pre class="highlight">
-var batch = Facet.bake(cube, {
+var batch = Lux.bake(cube, {
     position: camera.project(cube.vertex),
     color: Shade.color('blue')
 });
-Facet.Scene.add(batch);
+Lux.Scene.add(batch);
 </pre>
         <p>Voil&agrave;!</p>
 
@@ -116,15 +116,15 @@ Facet.Scene.add(batch);
     <p class="nomargin"><a href="../demos/lesson5/lesson5.html">Custom models demo</a></p>
   </div>
 </div>
-	<p>When the predefined Facet marks and models become too
+	<p>When the predefined Lux marks and models become too
 	restrictive for your needs, you can easily create objects with
 	customized appearances. The main way to define the appearance
-	of a Facet object from scratch is to create a <b>custom</b>
+	of a Lux object from scratch is to create a <b>custom</b>
 	model, and bake it into a <b>batch</b>. The
-	function <span class="inline-highlight">Facet.model</span> is
+	function <span class="inline-highlight">Lux.model</span> is
 	used to specify the model. Let's say our model is a square:
 <pre class="highlight">
-var square_model = Facet.model({
+var square_model = Lux.model({
     vertex: [[-1, -1,
                1, -1,
                1,  1,
@@ -138,7 +138,7 @@ var square_model = Facet.model({
                0, 2, 3],
 });
 </pre>
-	<p>Facet models can be of a few different <b>types</b>. Here
+	<p>Lux models can be of a few different <b>types</b>. Here
 	we are using triangles, so our model will be a set of
 	triangles. The <span class="inline-highlight">vertex</span>
 	attribute specifies the positions of the vertices and the
@@ -146,7 +146,7 @@ var square_model = Facet.model({
 	(homogeneous) space. Here we're using 2D, but notice that the
 	coordinates are passed in a flat
 	list. The <span class="inline-highlight">elements</span>
-	attribute tells Facet how to make (in this case) triangles out
+	attribute tells Lux how to make (in this case) triangles out
 	of those vertices, and specifies the indices into the list of
 	vertices, three at a time. So there'll be two
 	triangles, <span class="inline-highlight">0,1,2</span> and
@@ -159,33 +159,33 @@ var square_model = Facet.model({
 	</p>
 
 <pre class="highlight">
-Facet.Scene.add(Facet.bake(square_model, {
+Lux.Scene.add(Lux.bake(square_model, {
     position: camera.project(square_model.vertex),
     color: square_model.color
 }));
 </pre>
 
 	<h3>Setting up a Canvas</h3>
-	<p>Facet needs an HTML canvas element in which to draw. Your
+	<p>Lux needs an HTML canvas element in which to draw. Your
 	HTML page should have something like the following:</p>
 <pre class="html-highlight">
 &lt;body&gt; ...
-  &lt;canvas id="facet-canvas" width="640" height="480"&gt;&lt;/canvas&gt;
+  &lt;canvas id="lux-canvas" width="640" height="480"&gt;&lt;/canvas&gt;
 &lt;/body&gt;
 </pre>
 	<p>To
 	initialize a canvas with the appropriate features, simply call
-	<span class="inline-highlight">Facet.init</span>:</p>
+	<span class="inline-highlight">Lux.init</span>:</p>
 <pre class="highlight">
 function draw_it()
 {
     batch.draw();
 }
 
-var canvas = document.getElementById("facet-canvas");
-gl = Facet.init(canvas);
+var canvas = document.getElementById("lux-canvas");
+gl = Lux.init(canvas);
 </pre>
-        <p>Facet.init takes an optional extra parameter with options
+        <p>Lux.init takes an optional extra parameter with options
 	that control things like the background color, an explicit
 	display callback, and other WebGL miscellanea. For more
 	details, refer to the <a href="">API reference</a>.
@@ -199,7 +199,7 @@ gl = Facet.init(canvas);
       <div class="span12">
 	<p>
 	If looking at examples of complete applications is your cup of
-	tea, Facet comes with quite a
+	tea, Lux comes with quite a
 	few <a href="../demos/index.html">demo scripts</a>.
 	</p>
       </div>
@@ -210,7 +210,7 @@ gl = Facet.init(canvas);
 	<h2>API Reference</h2>
       </div>
       <div class="span12">
-	<h3>Facet</h3>
+	<h3>Lux</h3>
 	<p>TBD.</p>
 	<h3>Shade</h3>
 	<p>TBD.</p>

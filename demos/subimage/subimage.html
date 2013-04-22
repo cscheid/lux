@@ -1,10 +1,10 @@
 <html>
-<head><title>Subimage support in Facet</title>
+<head><title>Subimage support in Lux</title>
   <link rel="stylesheet" href="../css/bootstrap.css"/>
   <link rel="stylesheet" href="../css/style.css"/>
   <link rel="stylesheet" href="../css/mchighlight-javascript.css"/>
   <script src="../../lib/jquery-1.6.2.min.js"></script>
-  <script src="../../facet.js"></script>
+  <script src="../../lux.js"></script>
   <script src="../../src/models.js"></script>
   <script src="../js/mclexer.js"></script>
   <script src="../js/mchighlight.js"></script>
@@ -14,14 +14,14 @@
 <body>
 <div class="body">
 <div class="content">
-<h1>Subimage support in Facet</h1>
+<h1>Subimage support in Lux</h1>
 <div style="position: relative;">
   <canvas id="webgl" width="720" height="480"></canvas>
   <div style="position: absolute; top: 5px; right: 5px; color:white;">Cartography OpenStreetMap CC-by-sa</div></div>
 <div style="text-align: right">View the <a href="subimage.js">full source</a>.</div>
 
 <pre class="highlight">
-var texture = Facet.texture({ width: 2048, height: 2048 });
+var texture = Lux.texture({ width: 2048, height: 2048 });
 for (var i=0; i < 8; ++i)
 for (var j=0; j < 8; ++j)
     texture.load({

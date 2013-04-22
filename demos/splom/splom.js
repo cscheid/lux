@@ -18,8 +18,8 @@ var is_selecting = false;
 function data_buffers()
 {
     var d = Data.flowers();
-    var tt = Facet.Data.texture_table(d);
-    var point_index = Facet.attribute_buffer({ vertex_array: _.range(tt.n_rows), item_size: 1 });
+    var tt = Lux.Data.texture_table(d);
+    var point_index = Lux.attribute_buffer({ vertex_array: _.range(tt.n_rows), item_size: 1 });
     
     return {
         sepalLength: tt.at(point_index, 0),
@@ -39,11 +39,10 @@ function init_webgl()
 {
     data = data_buffers();
 
-    var species_color = Shade.vec(Shade.Utils.choose(
-        [Shade.vec(1, 0, 0),
-         Shade.vec(0, 1, 0),
-         Shade.vec(0, 0, 1)])(data.species), 0.5);
-
+    var species_color = Shade.Colors.Brewer.qualitative({
+        name: "Set1",
+        alpha: 0.5
+    })(data.species);
     var min_range = Shade.array([4.3, 2.0, 1.0, 0.1]);
     var max_range = Shade.array([7.9, 4.4, 6.9, 2.5]);
 
@@ -63,7 +62,7 @@ function init_webgl()
     var min_y = splom_row.add(  2*padding).div(4);
     var max_y = splom_row.add(1-2*padding).div(4);
 
-    var first_pick_id = Facet.fresh_pick_id(data.n_rows);
+    var first_pick_id = Lux.fresh_pick_id(data.n_rows);
 
     var picked_color = Shade.mix(species_color, Shade.vec(1,1,1,1), 0.8);
     var dot_pick_id  = Shade.add(first_pick_id, data.index);
@@ -82,7 +81,7 @@ function init_webgl()
     var selection_color = inside_box.ifelse(species_color, Shade.color("gray", 0.3));
     var dot_color = has_selection.ne(0).ifelse(selection_color, species_color);
 
-    var scatterplot_batch = Facet.Marks.scatterplot({
+    var scatterplot_batch = Lux.Marks.scatterplot({
         elements: data.n_rows,
         x: data.at(data.index, splom_col),
         y: data.at(data.index, splom_row),
@@ -93,14 +92,14 @@ function init_webgl()
         fill_color: dot_color,
         stroke_color: dot_color,
         point_diameter: 10,
-        mode: Facet.DrawingMode.over,
+        mode: Lux.DrawingMode.over,
         pick_id: Shade.shade_id(dot_pick_id)
     });
 
     var scale = S.Scale.linear({ range: [-1, 1] });
     var el_row = function(index) { return index.mod(4); };
     var el_col = function(index) { return index.div(4).floor(); };
-    var aligned_rects = Facet.Marks.aligned_rects({
+    var aligned_rects = Lux.Marks.aligned_rects({
         elements: 16,
         left:    function(index) { return scale(el_col(index).add(padding).div(4)); },
         right:   function(index) { return scale(el_col(index).add(1-padding).div(4)); },
@@ -108,20 +107,21 @@ function init_webgl()
         bottom:  function(index) { return scale(el_row(index).add(padding).div(4)); },
         color:   Shade.vec(0,0,0,0.3),
         z:       0.1,
-        pick_id: Shade.shade_id(0)
+        pick_id: Shade.shade_id(0),
+        mode:    Lux.DrawingMode.over
     });
 
-    var selection_rect = Facet.Marks.aligned_rects({
+    var selection_rect = Lux.Marks.aligned_rects({
         left:   scale(selection_u1.add(selection_col).div(4)),
         right:  scale(selection_u2.add(selection_col).div(4)),
         top:    scale(selection_v1.add(selection_row).div(4)),
         bottom: scale(selection_v2.add(selection_row).div(4)),
         color:  Shade.vec(1,1,1,0.2),
         elements: 1,
-        mode: Facet.DrawingMode.over
+        mode: Lux.DrawingMode.over
     });
 
-    Facet.Scene.add({
+    Lux.Scene.add({
         draw: function() {
             aligned_rects.draw();
             for (var i=0; i<4; ++i) {
@@ -140,12 +140,12 @@ function init_webgl()
 
 $().ready(function() {
     var canvas = document.getElementById("splom");
-    gl = Facet.init(canvas, { 
+    gl = Lux.init(canvas, { 
         clearColor: [0, 0, 0, 0],
         mousemove: function(event) {
             if (is_selecting) {
-                var u = (event.facetX / gl.viewportWidth * 4);
-                var v = (event.facetY / gl.viewportHeight * 4);
+                var u = (event.luxX / gl.viewportWidth * 4);
+                var v = (event.luxY / gl.viewportHeight * 4);
                 var col = Math.floor(u);
                 var row = Math.floor(v);
 
@@ -158,12 +158,12 @@ $().ready(function() {
                 selection_u2.set(u);
                 selection_v2.set(v);
             }
-            Facet.Scene.invalidate();
+            Lux.Scene.invalidate();
         },
         mousedown: function(event) {
             canvas.style.cursor = "crosshair";
-            var u = (event.facetX / gl.viewportWidth * 4);
-            var v = (event.facetY / gl.viewportHeight * 4);
+            var u = (event.luxX / gl.viewportWidth * 4);
+            var v = (event.luxY / gl.viewportHeight * 4);
             var col = Math.floor(u);
             var row = Math.floor(v);
 
@@ -179,17 +179,17 @@ $().ready(function() {
             selection_u2.set(u);
             selection_v2.set(v);
             
-            Facet.Scene.invalidate();
+            Lux.Scene.invalidate();
         }, mouseup: function(event) {
             canvas.style.cursor = "default";
             if (selection_u1.get() === selection_u2.get() ||
                 selection_v1.get() === selection_v2.get()) {
                 has_selection.set(false);
-                Facet.Scene.invalidate();
+                Lux.Scene.invalidate();
             }
             is_selecting = false;
         }
     });
     init_webgl();
-    Facet.Picker.draw_pick_scene();
+    Lux.Picker.draw_pick_scene();
 });

@@ -21,13 +21,13 @@ function histo_buffer(opts)
 
     var sz = Math.ceil(Math.sqrt(opts.bin_count));
 
-    var ctx = Facet._globals.ctx;
-    var render_buffer = Facet.render_buffer({
+    var ctx = Lux._globals.ctx;
+    var render_buffer = Lux.render_buffer({
         width: sz,
         height: sz,
         type: ctx.FLOAT // enable render to floating-point texture
     });
-    var read_render_buffer = Facet.render_buffer({
+    var read_render_buffer = Lux.render_buffer({
         width: sz,
         height: sz
     });
@@ -47,11 +47,11 @@ function histo_buffer(opts)
         return Shade.Bits.encode_float(texel_accessor().r());
     });
     
-    var batch = Facet.bake({
+    var batch = Lux.bake({
         type: "points",
         elements: opts.elements
     }, {
-        mode: Facet.DrawingMode.additive,
+        mode: Lux.DrawingMode.additive,
         color: opts.weight,
         position: bin_to_screen(opts.bin)
     });
@@ -66,7 +66,7 @@ function histo_buffer(opts)
         }),
         compute: function() {
             render_buffer.with_bound_buffer(function() {
-                var ctx = Facet._globals.ctx;
+                var ctx = Lux._globals.ctx;
                 ctx.clearColor(0,0,0,0);
                 ctx.clear(ctx.COLOR_BUFFER_BIT);
                 batch.draw();
@@ -74,7 +74,7 @@ function histo_buffer(opts)
         },
         read: function() {
             return read_render_buffer.with_bound_buffer(function() {
-                var ctx = Facet._globals.ctx;
+                var ctx = Lux._globals.ctx;
                 /* In a sane world, we would do this:
 
                 var floatb = new Float32Array(sz * sz);
@@ -109,9 +109,9 @@ function histo_buffer(opts)
 function data_buffers()
 {
     var d = Data.flowers();
-    var tt = Facet.Data.texture_table(d);
+    var tt = Lux.Data.texture_table(d);
 
-    var point_index = Facet.attribute_buffer({ vertex_array: _.range(tt.n_rows), item_size: 1});
+    var point_index = Lux.attribute_buffer({ vertex_array: _.range(tt.n_rows), item_size: 1});
     
     return {
         sepalLength: tt.at(point_index, 0),
@@ -128,7 +128,7 @@ function data_buffers()
 function init_webgl()
 {
     var canvas = document.getElementById("scatterplot");
-    gl = Facet.init(canvas, { attributes: { alpha: true,
+    gl = Lux.init(canvas, { attributes: { alpha: true,
                                             depth: true
                                           },
                               display: function() {
@@ -136,7 +136,7 @@ function init_webgl()
                               },
                               clearColor: [0, 0, 0, 0.2]
                             });
-    Facet.set_context(gl);
+    Lux.set_context(gl);
     data = data_buffers();
     var bin_count = 24;
     histo = histo_buffer({
@@ -151,7 +151,7 @@ function init_webgl()
 
     var project = Shade(function(x) { return x.mul(2).sub(1); });
 
-    bars_batch = Facet.Marks.aligned_rects({
+    bars_batch = Lux.Marks.aligned_rects({
         elements: bin_count,
         bottom: _.compose(project, function(i) { return 0; }),
         top:    _.compose(project, function(i) { return histo.bin_value(i).div(30); }),

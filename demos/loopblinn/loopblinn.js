@@ -8,7 +8,7 @@ var interactor;
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    interactor = Facet.UI.center_zoom_interactor({
+    interactor = Lux.UI.center_zoom_interactor({
         width: canvas.width,
         height: canvas.height,
         zoom: 0.01,
@@ -16,7 +16,7 @@ $().ready(function () {
         widest_zoom: 1e-6
     });
 
-    gl = Facet.init(canvas, {
+    gl = Lux.init(canvas, {
         clearColor: [1,1,1,1], // 0,0,0,1],
         interactor: interactor
     });
@@ -30,11 +30,11 @@ $().ready(function () {
         var x_even = even_p(fc.x()), y_even = even_p(fc.y());
         return Shade.ifelse(xor(x_even, y_even), c1, c2);
     }
-    Facet.Net.json("opensans.regular.json", function(font) {
-        Facet.Scene.add(Facet.Text.outline({
+    Lux.Net.json("opensans.regular.json", function(font) {
+        Lux.Scene.add(Lux.Text.outline({
             string: "The quick brown fox jumps\nover the lazy dog.\nFive boxing wizards\njump quickly.",
             font: font,
-            position: function(p) { return interactor.camera(p); },
+            position: function(p) { return interactor.project(p); },
             color: function(p) { 
                 return checkerboard_pattern(Shade.color("red"), Shade.color("black"));
             }

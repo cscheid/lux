@@ -23,7 +23,7 @@ var JSHighlighter = new McHighlighter(JAVASCRIPT) ;
 /* Standard JavaScript lexemes. */
 JAVASCRIPT (/function|return|var|if|for|in|while|do|break/)   (JSHighlighter.classify("jskeyword")) ;
 JAVASCRIPT (/continue|switch|case|true|false|null|prototype/) (JSHighlighter.classify("jskeyword")) ;
-JAVASCRIPT (/Facet|Shade/)                                     (JSHighlighter.classify("jskeyword"));
+JAVASCRIPT (/Lux|Shade/)                                     (JSHighlighter.classify("jskeyword"));
 
 JAVASCRIPT (/[-=<>&|?{}()\[\]:;,.+*\/!%]/) (JSHighlighter.rewriteAndClassify(McEscapeHTML,'jspunctuation')) ;
 
