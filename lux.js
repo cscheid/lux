@@ -3243,7 +3243,7 @@ function lux_constant_type(obj)
 // it is convenient in many places to accept as a parameter a scalar,
 // a vector or a matrix. This function tries to
 // tell them apart. Functions such as vec.make and mat.make populate
-// the _type slot. This is ugly, but extremely convenient.
+// the .buffer._type slot. This is ugly, but extremely convenient.
 {
     var t = typeof obj;
     if (t === "boolean")         return "boolean";
@@ -5023,6 +5023,8 @@ Lux.Net.json = function(url, handler)
  */
 
 // based on http://calumnymmo.wordpress.com/2010/12/22/so-i-decided-to-wait/
+// Update 2013-04-24; Firefox now seems to behave in the same way as Chrome.
+
 Lux.Net.binary = function(url, handler)
 {
     var current_context = Lux._globals.ctx;
@@ -5053,11 +5055,7 @@ Lux.Net.binary = function(url, handler)
         }
     };
     xhr.open("GET", url, true);
-    if(xhr.hasOwnProperty("responseType")) {
-        xhr.responseType="arraybuffer";
-    } else {
-        xhr.overrideMimeType('text/plain; charset=x-user-defined');
-    }
+    xhr.responseType="arraybuffer";
     xhr.send();
 };
 })();
