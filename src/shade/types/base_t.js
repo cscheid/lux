@@ -41,8 +41,8 @@ Shade.Types.base_t = {
     // for structs:
     //   fields
 
-    // constant_equal
-    //   constant_equal is a function that takes two parameters as produced
-    //   by the constant_value() method of an object with the given type,
-    //   and tests their equality.
+    // value_equals
+    //   value_equals is a function that takes two parameters as produced
+    //   by the constant_value() or evaluate() method of an object with
+    //   the given type, and tests their equality.
 };

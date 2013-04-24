@@ -208,7 +208,7 @@ Shade.Types._create_basic = function(repr) {
                 // FIXME implement this
                 throw new Error("unimplemented for mats");
         },
-        constant_equal: function(v1, v2) {
+        value_equals: function(v1, v2) {
             if (this.is_pod())
                 return v1 === v2;
             if (this.is_vec() || this.is_mat())

@@ -63,9 +63,9 @@ Shade.parameter = function(type, v)
         set: function(v) {
             // Ideally, we'd like to do type checking here, but I'm concerned about
             // performance implications. setting a uniform might be a hot path
-            // then again, lux_constant_type is unlikely to be particularly fast.
+            // then again, Shade.Types.type_of is unlikely to be particularly fast.
             // FIXME check performance
-            var t = lux_constant_type(v);
+            var t = Shade.Types.type_of(v);
             if (t === "shade_expression")
                 v = v.evaluate();
             value = v;

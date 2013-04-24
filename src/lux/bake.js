@@ -73,7 +73,7 @@ function draw_it(batch_opts)
             if (_.isUndefined(value)) {
                 throw new Error("parameter " + key + " has not been set.");
             }
-            var t = lux_constant_type(value);
+            var t = Shade.Types.type_of(value);
             if (t === "other") {
                 uniform._lux_active_uniform = (function(uid, cat) {
                     return function(v) {

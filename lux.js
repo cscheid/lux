@@ -3237,30 +3237,6 @@ Lux.is_shade_expression = function(obj)
 };
 
 //////////////////////////////////////////////////////////////////////////////
-
-// FIXME Can I make these two the same function call?
-function lux_constant_type(obj)
-// it is convenient in many places to accept as a parameter a scalar,
-// a vector or a matrix. This function tries to
-// tell them apart. Functions such as vec.make and mat.make populate
-// the .buffer._type slot. This is ugly, but extremely convenient.
-{
-    var t = typeof obj;
-    if (t === "boolean")         return "boolean";
-    if (t === "number")          return "number";
-    if (obj) {
-        var b = obj._type;
-        if (!_.isUndefined(b))
-            return b;
-        if (!_.isUndefined(obj.buffer) && obj.buffer._type)
-            return obj.buffer._type;
-        else
-            return "other";
-    }
-    return t;
-}
-
-//////////////////////////////////////////////////////////////////////////////
 // http://javascript.crockford.com/remedial.html
 
 // Notice that lux_typeOf is NOT EXACTLY equal to
@@ -3657,7 +3633,7 @@ function draw_it(batch_opts)
             if (_.isUndefined(value)) {
                 throw new Error("parameter " + key + " has not been set.");
             }
-            var t = lux_constant_type(value);
+            var t = Shade.Types.type_of(value);
             if (t === "other") {
                 uniform._lux_active_uniform = (function(uid, cat) {
                     return function(v) {
@@ -5793,15 +5769,30 @@ Shade.make = function(exp)
 
          */
 
-        return function() {
+        var result = function() {
             var wrapped_arguments = [];
             for (var i=0; i<arguments.length; ++i) {
                 wrapped_arguments.push(Shade.make(arguments[i]));
             }
             return Shade.make(exp.apply(this, wrapped_arguments));
         };
+        return result;
+        // var args_type_cache = {};
+        // var create_parameterized_function = function(shade_function, types) {
+        // }
+
+        // result.js_evaluate = function() {
+        //     var args_types = [];
+        //     var args_type_string;
+        //     for (var i=0; i<arguments.length; ++i) {
+        //         args_types.push(Shade.Types.type_of(arguments[i]));
+        //     }
+        //     args_type_string = args_types.join(",");
+        //     if (_.isUndefined(args_type_cache[args_type_string]))
+        //         args_type_cache[args_type_string] = create_parameterized_function(this, args_types);
+        // }
     }
-    t = lux_constant_type(exp);
+    t = Shade.Types.type_of(exp);
     if (t === 'vector' || t === 'matrix') {
         return Shade.constant(exp);
     } else if (exp._shade_type === 'attribute_buffer') {
@@ -6551,6 +6542,26 @@ Shade._create_concrete = function(base, requirements)
     return create_it;
 };
 Shade.Types = {};
+// Shade.Types.type_of will implement the following spec:
+// 
+// for all shade values s such that s.evaluate() equals v,
+// s.type.equals(Shade.Types.type_of(v))
+Shade.Types.type_of = function(v)
+{
+    var t = typeof v;
+    if (t === "boolean")         return "boolean";
+    if (t === "number")          return "number";
+    if (v) {
+        var b = v._type;
+        if (!_.isUndefined(b))
+            return b;
+        if (!_.isUndefined(v.buffer) && v.buffer._type)
+            return v.buffer._type;
+        else
+            return "other";
+    }
+    return t;
+};
 // <rant> How I wish I had algebraic data types. </rant>
 Shade.Types.base_t = {
     is_floating: function() { return false; },
@@ -6594,10 +6605,10 @@ Shade.Types.base_t = {
     // for structs:
     //   fields
 
-    // constant_equal
-    //   constant_equal is a function that takes two parameters as produced
-    //   by the constant_value() method of an object with the given type,
-    //   and tests their equality.
+    // value_equals
+    //   value_equals is a function that takes two parameters as produced
+    //   by the constant_value() or evaluate() method of an object with
+    //   the given type, and tests their equality.
 };
 (function() {
 
@@ -6809,7 +6820,7 @@ Shade.Types._create_basic = function(repr) {
                 // FIXME implement this
                 throw new Error("unimplemented for mats");
         },
-        constant_equal: function(v1, v2) {
+        value_equals: function(v1, v2) {
             if (this.is_pod())
                 return v1 === v2;
             if (this.is_vec() || this.is_mat())
@@ -7933,7 +7944,7 @@ Shade.constant = function(v, type)
         });
     };
 
-    var t = lux_constant_type(v);
+    var t = Shade.Types.type_of(v);
     var d, computed_t;
     if (t === 'number') {
         if (type && !(type.equals(Shade.Types.float_t) ||
@@ -7985,7 +7996,7 @@ Shade.constant = function(v, type)
         throw new Error("type error: constant should be bool, number, vector, matrix, array or struct. got " + t
                         + " instead");
     }
-    throw new Error("internal error: lux_constant_type returned bogus value");
+    throw new Error("internal error: Shade.Types.type_of returned bogus value");
 };
 
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };
@@ -8236,9 +8247,9 @@ Shade.parameter = function(type, v)
         set: function(v) {
             // Ideally, we'd like to do type checking here, but I'm concerned about
             // performance implications. setting a uniform might be a hot path
-            // then again, lux_constant_type is unlikely to be particularly fast.
+            // then again, Shade.Types.type_of is unlikely to be particularly fast.
             // FIXME check performance
-            var t = lux_constant_type(v);
+            var t = Shade.Types.type_of(v);
             if (t === "shade_expression")
                 v = v.evaluate();
             value = v;
@@ -8735,7 +8746,7 @@ Shade.div = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         }
-        var t1 = lux_constant_type(v1), t2 = lux_constant_type(v2);
+        var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
         var dispatch = {
             number: { number: function (x, y) { 
                                   if (exp1.type.equals(Shade.Types.int_t))
@@ -8864,7 +8875,7 @@ Shade.mul = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         }
-        var t1 = lux_constant_type(v1), t2 = lux_constant_type(v2);
+        var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },
@@ -10073,7 +10084,7 @@ Shade.Optimizer.is_zero = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = lux_constant_type(v);
+    var t = Shade.Types.type_of(v);
     if (t === 'number')
         return v === 0;
     if (t === 'vector')
@@ -10088,7 +10099,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = lux_constant_type(v);
+    var t = Shade.Types.type_of(v);
     if (t === 'number')
         return v === 1;
     if (t === 'vector') {
@@ -10763,7 +10774,7 @@ Shade.ge = comparison_operator_exp(">=", inequality_type_checker(">="),
 Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
-    lift_binfun_to_evaluator(function(a, b) { 
+    lift_binfun_to_evaluator(function(a, b) {
         if (lux_typeOf(a) === 'number' ||
             lux_typeOf(a) === 'boolean')
             return a === b;
@@ -10771,14 +10782,14 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
             return _.all(_.map(_.zip(a, b),
                                function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
-        if (lux_constant_type(a) === 'vector') {
+        if (Shade.Types.type_of(a) === 'vector') {
             return vec.equal(a, b);
         }
-        if (lux_constant_type(a) === 'matrix') {
+        if (Shade.Types.type_of(a) === 'matrix') {
             return mat.equal(a, b);
         }
         throw new Error("internal error: unrecognized type " + lux_typeOf(a) + 
-            " " + lux_constant_type(a));
+            " " + Shade.Types.type_of(a));
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
@@ -10792,7 +10803,7 @@ Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
                                function(v) { return v[0] !== v[1]; } ),
                          function (x) { return x; });
         throw new Error("internal error: unrecognized type " + lux_typeOf(a) + 
-            " " + lux_constant_type(a));
+            " " + Shade.Types.type_of(a));
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 
@@ -10845,8 +10856,8 @@ Shade.ifelse = function(condition, if_true, if_false)
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
             if (this.parents[1].is_constant() &&
                 this.parents[2].is_constant() &&
-                this.type.constant_equal(this.parents[1].constant_value(),
-                                         this.parents[2].constant_value())) {
+                this.type.value_equals(this.parents[1].constant_value(),
+                                       this.parents[2].constant_value())) {
                 // if both sides of the branch have the same value, then
                 // this evaluates to the constant, regardless of the condition.
                 return this.parents[1].constant_value();
@@ -10865,7 +10876,7 @@ Shade.ifelse = function(condition, if_true, if_false)
                     this.parents[2].is_constant()) {
                     var v1 = this.parents[1].constant_value();
                     var v2 = this.parents[2].constant_value();
-                    return this.type.constant_equal(v1, v2);
+                    return this.type.value_equals(v1, v2);
                 } else {
                     return false;
                 }
@@ -10904,7 +10915,7 @@ Shade.ifelse = function(condition, if_true, if_false)
                     this.parents[2].element_is_constant(i)) {
                     var v1 = this.parents[1].element_constant_value(i);
                     var v2 = this.parents[2].element_constant_value(i);
-                    return this.type.element_type(i).constant_equal(v1, v2);
+                    return this.type.element_type(i).value_equals(v1, v2);
                 } else {
                     return false;
                 }

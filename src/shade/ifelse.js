@@ -44,8 +44,8 @@ Shade.ifelse = function(condition, if_true, if_false)
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
             if (this.parents[1].is_constant() &&
                 this.parents[2].is_constant() &&
-                this.type.constant_equal(this.parents[1].constant_value(),
-                                         this.parents[2].constant_value())) {
+                this.type.value_equals(this.parents[1].constant_value(),
+                                       this.parents[2].constant_value())) {
                 // if both sides of the branch have the same value, then
                 // this evaluates to the constant, regardless of the condition.
                 return this.parents[1].constant_value();
@@ -64,7 +64,7 @@ Shade.ifelse = function(condition, if_true, if_false)
                     this.parents[2].is_constant()) {
                     var v1 = this.parents[1].constant_value();
                     var v2 = this.parents[2].constant_value();
-                    return this.type.constant_equal(v1, v2);
+                    return this.type.value_equals(v1, v2);
                 } else {
                     return false;
                 }
@@ -103,7 +103,7 @@ Shade.ifelse = function(condition, if_true, if_false)
                     this.parents[2].element_is_constant(i)) {
                     var v1 = this.parents[1].element_constant_value(i);
                     var v2 = this.parents[2].element_constant_value(i);
-                    return this.type.element_type(i).constant_equal(v1, v2);
+                    return this.type.element_type(i).value_equals(v1, v2);
                 } else {
                     return false;
                 }

@@ -17,30 +17,6 @@ Lux.is_shade_expression = function(obj)
 };
 
 //////////////////////////////////////////////////////////////////////////////
-
-// FIXME Can I make these two the same function call?
-function lux_constant_type(obj)
-// it is convenient in many places to accept as a parameter a scalar,
-// a vector or a matrix. This function tries to
-// tell them apart. Functions such as vec.make and mat.make populate
-// the .buffer._type slot. This is ugly, but extremely convenient.
-{
-    var t = typeof obj;
-    if (t === "boolean")         return "boolean";
-    if (t === "number")          return "number";
-    if (obj) {
-        var b = obj._type;
-        if (!_.isUndefined(b))
-            return b;
-        if (!_.isUndefined(obj.buffer) && obj.buffer._type)
-            return obj.buffer._type;
-        else
-            return "other";
-    }
-    return t;
-}
-
-//////////////////////////////////////////////////////////////////////////////
 // http://javascript.crockford.com/remedial.html
 
 // Notice that lux_typeOf is NOT EXACTLY equal to

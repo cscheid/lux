@@ -98,7 +98,7 @@ Shade.constant = function(v, type)
         });
     };
 
-    var t = lux_constant_type(v);
+    var t = Shade.Types.type_of(v);
     var d, computed_t;
     if (t === 'number') {
         if (type && !(type.equals(Shade.Types.float_t) ||
@@ -150,7 +150,7 @@ Shade.constant = function(v, type)
         throw new Error("type error: constant should be bool, number, vector, matrix, array or struct. got " + t
                         + " instead");
     }
-    throw new Error("internal error: lux_constant_type returned bogus value");
+    throw new Error("internal error: Shade.Types.type_of returned bogus value");
 };
 
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };

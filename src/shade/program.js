@@ -58,7 +58,7 @@ Shade.Optimizer.is_zero = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = lux_constant_type(v);
+    var t = Shade.Types.type_of(v);
     if (t === 'number')
         return v === 0;
     if (t === 'vector')
@@ -73,7 +73,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = lux_constant_type(v);
+    var t = Shade.Types.type_of(v);
     if (t === 'number')
         return v === 1;
     if (t === 'vector') {

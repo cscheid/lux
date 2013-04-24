@@ -87,6 +87,7 @@ lux.js:							\
 	src/shade/unique_name.js			\
 	src/shade/create.js				\
 	src/shade/types/_begin.js			\
+	src/shade/types/type_of.js			\
 	src/shade/types/base_t.js			\
 	src/shade/types/basic.js			\
 	src/shade/types/array.js			\

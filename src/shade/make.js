@@ -33,15 +33,30 @@ Shade.make = function(exp)
 
          */
 
-        return function() {
+        var result = function() {
             var wrapped_arguments = [];
             for (var i=0; i<arguments.length; ++i) {
                 wrapped_arguments.push(Shade.make(arguments[i]));
             }
             return Shade.make(exp.apply(this, wrapped_arguments));
         };
+        return result;
+        // var args_type_cache = {};
+        // var create_parameterized_function = function(shade_function, types) {
+        // }
+
+        // result.js_evaluate = function() {
+        //     var args_types = [];
+        //     var args_type_string;
+        //     for (var i=0; i<arguments.length; ++i) {
+        //         args_types.push(Shade.Types.type_of(arguments[i]));
+        //     }
+        //     args_type_string = args_types.join(",");
+        //     if (_.isUndefined(args_type_cache[args_type_string]))
+        //         args_type_cache[args_type_string] = create_parameterized_function(this, args_types);
+        // }
     }
-    t = lux_constant_type(exp);
+    t = Shade.Types.type_of(exp);
     if (t === 'vector' || t === 'matrix') {
         return Shade.constant(exp);
     } else if (exp._shade_type === 'attribute_buffer') {
