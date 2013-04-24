@@ -39,7 +39,7 @@ var operator = function(exp1, exp2,
 };
 
 Shade.add = function() {
-    if (arguments.length === 0) throw "add needs at least one argument";
+    if (arguments.length === 0) throw new Error("add needs at least one argument");
     if (arguments.length === 1) return arguments[0];
     function add_type_resolver(t1, t2) {
         var type_list = [
@@ -87,7 +87,7 @@ Shade.add = function() {
             })) {
             return t1;
         }
-        throw ("type mismatch on add: unexpected types  '"
+        throw new Error("type mismatch on add: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
     var current_result = Shade.make(arguments[0]);
@@ -117,7 +117,7 @@ Shade.add = function() {
             return vt.plus(v1, v2);
         } else {
             if (!exp1.type.is_struct())
-                throw "internal error, was expecting a struct here";
+                throw new Error("internal error, was expecting a struct here");
             var s = {};
             _.each(v1, function(v, k) {
                 s[k] = evaluator(Shade.add(exp1.field(k), exp2.field(k)));
@@ -133,7 +133,7 @@ Shade.add = function() {
             if (i === 0)
                 return exp;
             else
-                throw "i > 0 in pod element";
+                throw new Error("i > 0 in pod element");
         }
         if (e1.type.is_vec() || e1.type.is_mat())
             v1 = e1.element(i);
@@ -154,8 +154,8 @@ Shade.add = function() {
 };
 
 Shade.sub = function() {
-    if (arguments.length === 0) throw "sub needs at least two arguments";
-    if (arguments.length === 1) throw "unary minus unimplemented";
+    if (arguments.length === 0) throw new Error("sub needs at least two arguments");
+    if (arguments.length === 1) throw new Error("unary minus unimplemented");
     function sub_type_resolver(t1, t2) {
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
@@ -201,7 +201,7 @@ Shade.sub = function() {
             })) {
             return t1;
         }
-        throw ("type mismatch on sub: unexpected types  '"
+        throw new Error("type mismatch on sub: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
     function evaluator(exp, cache) {
@@ -236,7 +236,7 @@ Shade.sub = function() {
             if (i === 0)
                 return exp;
             else
-                throw "i > 0 in pod element";
+                throw new Error("i > 0 in pod element");
         }
         if (e1.type.is_vec() || e1.type.is_mat())
             v1 = e1.element(i);
@@ -258,12 +258,12 @@ Shade.sub = function() {
 };
 
 Shade.div = function() {
-    if (arguments.length === 0) throw "div needs at least two arguments";
+    if (arguments.length === 0) throw new Error("div needs at least two arguments");
     function div_type_resolver(t1, t2) {
         if (_.isUndefined(t1))
-            throw "internal error: t1 multiplication with undefined type";
+            throw new Error("internal error: t1 multiplication with undefined type");
         if (_.isUndefined(t2))
-            throw "internal error: t2 multiplication with undefined type";
+            throw new Error("internal error: t2 multiplication with undefined type");
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4],
@@ -295,7 +295,7 @@ Shade.div = function() {
             if (t1.equals(type_list[i][0]) &&
                 t2.equals(type_list[i][1]))
                 return type_list[i][2];
-        throw ("type mismatch on div: unexpected types '"
+        throw new Error("type mismatch on div: unexpected types '"
                    + t1.repr() + "' and '" + t2.repr() + "'");
     }
     function evaluator(exp, cache) {
@@ -337,15 +337,15 @@ Shade.div = function() {
                           });
                       },
                       matrix: function (x, y) {
-                          throw "internal error, can't evaluate vector/matrix";
+                          throw new Error("internal error, can't evaluate vector/matrix");
                       }
                     },
             matrix: { number: function (x, y) { return mt.scaling(x, 1/y); },
                       vector: function (x, y) { 
-                          throw "internal error, can't evaluate matrix/vector";
+                          throw new Error("internal error, can't evaluate matrix/vector");
                       },
                       matrix: function (x, y) { 
-                          throw "internal error, can't evaluate matrix/matrix";
+                          throw new Error("internal error, can't evaluate matrix/matrix");
                       }
                     }
         };
@@ -359,7 +359,7 @@ Shade.div = function() {
             if (i === 0)
                 return exp;
             else
-                throw "i > 0 in pod element";
+                throw new Error("i > 0 in pod element");
         }
         if (e1.type.is_vec() || e1.type.is_mat())
             v1 = e1.element(i);
@@ -380,13 +380,13 @@ Shade.div = function() {
 };
 
 Shade.mul = function() {
-    if (arguments.length === 0) throw "mul needs at least one argument";
+    if (arguments.length === 0) throw new Error("mul needs at least one argument");
     if (arguments.length === 1) return arguments[0];
     function mul_type_resolver(t1, t2) {
         if (_.isUndefined(t1))
-            throw "t1 multiplication with undefined type?";
+            throw new Error("t1 multiplication with undefined type?");
         if (_.isUndefined(t2))
-            throw "t2 multiplication with undefined type?";
+            throw new Error("t2 multiplication with undefined type?");
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4],
@@ -424,7 +424,7 @@ Shade.mul = function() {
             if (t1.equals(type_list[i][0]) &&
                 t2.equals(type_list[i][1]))
                 return type_list[i][2];
-        throw ("type mismatch on mul: unexpected types  '"
+        throw new Error("type mismatch on mul: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
     function evaluator(exp, cache) {
@@ -469,7 +469,7 @@ Shade.mul = function() {
             if (i === 0)
                 return exp;
             else
-                throw "i > 0 in pod element";
+                throw new Error("i > 0 in pod element");
         }
         function value_kind(t) {
             if (t.is_pod())
@@ -478,13 +478,13 @@ Shade.mul = function() {
                 return "vec";
             if (t.is_mat())
                 return "mat";
-            throw "internal error: not pod, vec or mat";
+            throw new Error("internal error: not pod, vec or mat");
         }
         var k1 = value_kind(t1), k2 = value_kind(t2);
         var dispatch = {
             "pod": { 
                 "pod": function() { 
-                    throw "internal error, pod pod"; 
+                    throw new Error("internal error, pod pod"); 
                 },
                 "vec": function() { 
                     v1 = e1; v2 = e2.element(i); 
@@ -531,7 +531,7 @@ Shade.mul = function() {
                                         e1.element(2).element(i),
                                         e1.element(3).element(i));
                     } else
-                        throw "bad dimension for mat " + d;
+                        throw new Error("bad dimension for mat " + d);
                     return Shade.dot(row, e2);
                     // var row = e1.element(i);
                     // return Shade.dot(row, e2);

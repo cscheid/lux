@@ -20,12 +20,12 @@ test("Shade types", function() {
     raises(function() {
         Shade.Types.basic('askldjasdf');
     }, function(e) {
-        return e === "invalid basic type 'askldjasdf'";
+        return e.message === "invalid basic type 'askldjasdf'";
     }, "bad basic objects should fail");
     raises(function() {
         Shade.Types.basic('vec2').swizzle('rx');
     }, function(e) {
-        return e === "swizzle pattern 'rx' belongs to more than one group";
+        return e.message === "swizzle pattern 'rx' belongs to more than one group";
     }, "bad swizzle pattern");
     ok(Shade.Types.basic('vec2').swizzle('rg'), "basic swizzle pattern #1");
     ok(Shade.Types.basic('vec2').equals(Shade.Types.vec2), "type equality");
@@ -39,7 +39,7 @@ test("Shade types", function() {
           'float', "basic swizzle to scalar");
     raises(function() {
         Shade.varying("model_pos");
-    }, function(e) { return e === "varying requires type"; });
+    }, function(e) { return e.message === "varying requires type"; });
 
     equal(Shade.Types.basic('vec4').is_vec(),  true,  "type check methods");
     equal(Shade.Types.basic('float').is_vec(), false, "type check methods");
@@ -50,13 +50,13 @@ test("Shade types", function() {
         var v = [];
         Shade.array(v);
     }, function(e) { 
-        return e === "array constant must be non-empty"; 
+        return e.message === "array constant must be non-empty"; 
     });
     raises(function() {
         var v = [1, false];
         Shade.array(v);
     }, function(e) {
-        return e === "array elements must have identical types";
+        return e.message === "array elements must have identical types";
     });
 
     ok(Shade.Types.basic('vec4').element_type(0).equals(Shade.Types.float_t), "element_type");
@@ -64,18 +64,18 @@ test("Shade types", function() {
     raises(function() {
         Shade.vec(Shade.vec(3, 4), true);
     }, function(e) {
-        return e === "vec requires equal types";
+        return e.message === "vec requires equal types";
     }, "bad vec construction");
     raises(function() {
         Shade.vec(Shade.vec(3, 4), 5).type.element_type(3);
     }, function(e) {
-        return e === "invalid call: vec3 has no element 3";
+        return e.message === "invalid call: vec3 has no element 3";
     }, "out-of-bounds element_type check");
 
     raises(function() {
         Shade.constant(1.5).equal(Shade.as_int(3));
     }, function(e) {
-        return e === "type error on equal: could not find appropriate type match for (float, int)";
+        return e.message === "type error on equal: Error: could not find appropriate type match for (float, int)";
     }, "comparison type check");
 });
 
@@ -99,7 +99,7 @@ test("Shade expressions", function() {
     raises(function() {
         Shade.array([1,2,3,4]).swizzle("a");
     }, function(e) {
-        return e === "type 'float[4]' does not support swizzling";
+        return e.message === "type 'float[4]' does not support swizzling";
     }, "disallow swizzle on arrays");
 });
 
@@ -155,7 +155,7 @@ test("Shade compilation", function() {
             gl_Nononono: Shade.vec(1,0,0,0)
         });
     }, function(e) {
-        return e === "gl_* are reserved GLSL names";
+        return e.message === "gl_* are reserved GLSL names";
     }, "reserved GLSL names in Lux");
     
     (function () {
@@ -278,7 +278,7 @@ test("Shade constant folding", function() {
         var y = Shade.array([1,2,3,4,5]);
         x.eq(y);
     }, function(e) {
-        return e === "operator== does not support arrays";
+        return e.message === "operator== does not support arrays";
     }, "operator== does not support arrays");
 
     equal(Shade.mul(Shade.vec(1, Shade.attribute("vec2")),

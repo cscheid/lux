@@ -12,7 +12,7 @@ Lux.program = function(vs_src, fs_src)
             console.log(ctx.getShaderInfoLog(shader));
             console.log("Failing shader: ");
             console.log(str);
-            throw "failed compilation";
+            throw new Error("failed compilation");
         }
         return shader;
     }
@@ -34,7 +34,7 @@ Lux.program = function(vs_src, fs_src)
         console.log(vs_src);
         console.log("Fragment shader");
         console.log(fs_src);
-        throw "failed link";
+        throw new Error("failed link");
     }
 
     var active_parameters = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);

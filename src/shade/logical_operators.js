@@ -32,19 +32,19 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
 {
     return function() {
         if (arguments.length === 0) 
-            throw ("operator " + operator_name 
+            throw new Error("operator " + operator_name 
                    + " requires at least 1 parameter");
         if (arguments.length === 1) return Shade(arguments[0]).as_bool();
         var first = Shade(arguments[0]);
         if (!first.type.equals(Shade.Types.bool_t))
-            throw ("operator " + operator_name + 
+            throw new Error("operator " + operator_name + 
                    " requires booleans, got argument 1 as " +
                    arguments[0].type.repr() + " instead.");
         var current_result = first;
         for (var i=1; i<arguments.length; ++i) {
             var next = Shade(arguments[i]);
             if (!next.type.equals(Shade.Types.bool_t))
-                throw ("operator " + operator_name + 
+                throw new Error("operator " + operator_name + 
                        " requires booleans, got argument " + (i+1) +
                        " as " + next.type.repr() + " instead.");
             current_result = logical_operator_binexp(
@@ -86,7 +86,7 @@ Shade.Exp.xor = function(other)
 Shade.not = Shade(function(exp)
 {
     if (!exp.type.equals(Shade.Types.bool_t)) {
-        throw "logical_not requires bool expression";
+        throw new Error("logical_not requires bool expression");
     }
     return Shade._create_concrete_value_exp({
         parents: [exp],
@@ -119,7 +119,7 @@ var inequality_type_checker = function(name) {
               t2.equals(Shade.Types.float_t)) &&
             !(t1.equals(Shade.Types.int_t) && 
               t2.equals(Shade.Types.int_t)))
-            throw ("operator" + name + 
+            throw new Error("operator" + name + 
                    " requires two ints or two floats, got " +
                    t1.repr() + " and " + t2.repr() +
                    " instead.");
@@ -129,12 +129,12 @@ var inequality_type_checker = function(name) {
 var equality_type_checker = function(name) {
     return function(t1, t2) {
         if (!t1.equals(t2))
-            throw ("operator" + name +
+            throw new Error("operator" + name +
                    " requires same types, got " +
                    t1.repr() + " and " + t2.repr() +
                    " instead.");
         if (t1.is_array() && !t1.is_vec() && !t1.is_mat())
-            throw ("operator" + name +
+            throw new Error("operator" + name +
                    " does not support arrays");
     };
 };
@@ -170,8 +170,8 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
         if (lux_constant_type(a) === 'matrix') {
             return mat.equal(a, b);
         }
-        throw "internal error: unrecognized type " + lux_typeOf(a) + 
-            " " + lux_constant_type(a);
+        throw new Error("internal error: unrecognized type " + lux_typeOf(a) + 
+            " " + lux_constant_type(a));
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
@@ -184,8 +184,8 @@ Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
             return _.any(_.map(_.zip(a, b),
                                function(v) { return v[0] !== v[1]; } ),
                          function (x) { return x; });
-        throw "internal error: unrecognized type " + lux_typeOf(a) + 
-            " " + lux_constant_type(a);
+        throw new Error("internal error: unrecognized type " + lux_typeOf(a) + 
+            " " + lux_constant_type(a));
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 

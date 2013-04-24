@@ -27,7 +27,7 @@ function builtin_glsl_function(opts)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
             var t = type_resolving_list[i][j];
             if (_.isUndefined(t))
-                throw "undefined type in type_resolver";
+                throw new Error("undefined type in type_resolver");
         }
 
     // takes a list of lists of possible argument types, returns a function to 
@@ -37,8 +37,8 @@ function builtin_glsl_function(opts)
         var param_length = lst[0].length - 1;
         return function() {
             if (arguments.length != param_length) {
-                throw "expected " + param_length + " arguments, got "
-                    + arguments.length + " instead.";
+                throw new Error("expected " + param_length + " arguments, got "
+                    + arguments.length + " instead.");
             }
             for (var i=0; i<lst.length; ++i) {
                 var this_params = lst[i];
@@ -54,7 +54,7 @@ function builtin_glsl_function(opts)
             }
             var types = _.map(_.toArray(arguments).slice(0, arguments.length),
                   function(x) { return x.type.repr(); }).join(", ");
-            throw "could not find appropriate type match for (" + types + ")";
+            throw new Error("could not find appropriate type match for (" + types + ")");
         };
     }
 
@@ -67,7 +67,7 @@ function builtin_glsl_function(opts)
         try {
             type = resolver.apply(this, canon_args);
         } catch (err) {
-            throw "type error on " + name + ": " + err;
+            throw new Error("type error on " + name + ": " + err);
         }
         var obj = {
             parents: canon_args,
@@ -88,12 +88,12 @@ function builtin_glsl_function(opts)
                 return evaluator(this, cache);
             });
         } else {
-            throw "Internal error: Builtin '" + name + "' has no evaluator?!";
+            throw new Error("Internal error: Builtin '" + name + "' has no evaluator?!");
         }
 
         obj.constant_value = Shade.memoize_on_field("_constant_value", function() {
             if (!this.is_constant())
-                throw "constant_value called on non-constant expression";
+                throw new Error("constant_value called on non-constant expression");
             return evaluator(this);
         });
 
@@ -229,8 +229,8 @@ function atan()
         var c = common_fun_2op_evaluator(Math.atan2);
         return common_fun_2op("atan", c)(arguments[0], arguments[1]);
     } else {
-        throw "atan expects 1 or 2 parameters, got " + arguments.length
-        + " instead.";
+        throw new Error("atan expects 1 or 2 parameters, got " + arguments.length
+                        + " instead.");
     }
 }
 
@@ -486,7 +486,7 @@ var cross = builtin_glsl_function({
         } else if (i === 1) { return v1.at(2).mul(v2.at(0)).sub(v1.at(0).mul(v2.at(2)));
         } else if (i === 2) { return v1.at(0).mul(v2.at(1)).sub(v1.at(1).mul(v2.at(0)));
         } else
-            throw "invalid element " + i + " for cross";
+            throw new Error("invalid element " + i + " for cross");
     }
 });
 Shade.cross = cross;
@@ -580,7 +580,7 @@ var refract = builtin_glsl_function({
         case 2: zero = Shade.vec(0,0); break;
         case 3: zero = Shade.vec(0,0,0); break;
         case 4: zero = Shade.vec(0,0,0,0); break;
-        default: throw "internal error";
+        default: throw new Error("internal error");
         };
         return Shade.ifelse(k.lt(0), zero, refraction).element(i);
     }
@@ -597,7 +597,7 @@ var texture2D = builtin_glsl_function({
     element_constant_evaluator: function(exp, i) { return false; },
 
     evaluator: function(exp) {
-        throw "evaluate unsupported on texture2D expressions";
+        throw new Error("evaluate unsupported on texture2D expressions");
     }
 });
 Shade.texture2D = texture2D;
@@ -619,7 +619,7 @@ _.each(["dFdx", "dFdy", "fwidth"], function(cmd) {
         element_constant_evaluator: function(exp, i) { return false; },
 
         evaluator: function(exp) {
-            throw "evaluate unsupported on " + cmd + " expressions";
+            throw new Error("evaluate unsupported on " + cmd + " expressions");
         }
     });
     Shade[cmd] = fun;

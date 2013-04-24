@@ -2,8 +2,8 @@ Lux.Data.table = function(obj) {
     obj = _.defaults(obj || {}, {
         number_columns: []
     });
-    if (_.isUndefined(obj.data)) throw "data is a required field";
-    if (_.isUndefined(obj.data)) throw "columns is a required field";
+    if (_.isUndefined(obj.data)) throw new Error("data is a required field");
+    if (_.isUndefined(obj.data)) throw new Error("columns is a required field");
     function table() {
     };
     table.prototype = {

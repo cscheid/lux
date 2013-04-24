@@ -9,7 +9,7 @@ Lux.Data.texture_table = function(table)
             var col_name = table.columns[table.number_columns[col_ix]];
             var val = row[col_name];
             if (typeof val !== "number")
-                throw "texture_table requires numeric values";
+                throw new Error("texture_table requires numeric values");
             elements.push(val);
         }
     }

@@ -14,9 +14,9 @@ Shade.parameter = function(type, v)
     ];
 
     var uniform_name = Shade.unique_name();
-    if (_.isUndefined(type)) throw "parameter requires type";
+    if (_.isUndefined(type)) throw new Error("parameter requires type");
     if (typeof type === 'string') type = Shade.Types[type];
-    if (_.isUndefined(type)) throw "parameter requires valid type";
+    if (_.isUndefined(type)) throw new Error("parameter requires valid type");
 
     // the local variable value stores the actual value of the
     // parameter to be used by the GLSL uniform when it is set.
@@ -26,7 +26,7 @@ Shade.parameter = function(type, v)
     if (!_.isUndefined(call)) {
         call = call[1];
     } else {
-        throw "Unsupported type " + type.repr() + " for parameter.";
+        throw new Error("Unsupported type " + type.repr() + " for parameter.");
     }
     var result = Shade._create_concrete_exp({
         parents: [],
@@ -47,7 +47,7 @@ Shade.parameter = function(type, v)
                 if (i === 0)
                     return this;
                 else
-                    throw this.type.repr() + " is an atomic type";
+                    throw new Error(this.type.repr() + " is an atomic type");
             } else
                 return this.at(i);
         }),

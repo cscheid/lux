@@ -6,22 +6,22 @@ Shade.mat = function()
     for (var i=0; i<arguments.length; ++i) {
         var arg = arguments[i];
         // if (!(arg.expression_type === 'vec')) {
-        //     throw "mat only takes vecs as parameters";
+        //     throw new Error("mat only takes vecs as parameters");
         // }
         parents.push(arg);
         if (i === 0)
             cols = arg.type.size_for_vec_constructor();
         else if (cols !== arg.type.size_for_vec_constructor())
-            throw "mat: all vecs must have same dimension";
+            throw new Error("mat: all vecs must have same dimension");
     }
 
     if (cols !== rows) {
-        throw "non-square matrices currently not supported";
+        throw new Error("non-square matrices currently not supported");
     }
 
     if (rows < 1 || rows > 4) {
-        throw "mat constructor requires resulting dimension to be between "
-            + "2 and 4";
+        throw new Error("mat constructor requires resulting dimension to be between "
+            + "2 and 4");
     }
     var type = Shade.Types["mat" + rows];
     return Shade._create_concrete_value_exp( {
@@ -71,6 +71,6 @@ Shade.mat3 = function(m)
                          m.element(1).swizzle("xyz"),
                          m.element(2).swizzle("xyz"));
     } else {
-        throw "need matrix to convert to mat3";
+        throw new Error("need matrix to convert to mat3");
     }
 };

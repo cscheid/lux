@@ -65,9 +65,9 @@ Lux.init = function(canvas, opts)
                                   });
     if (Lux.is_shade_expression(opts.clearColor)) {
         if (!opts.clearColor.is_constant())
-            throw "clearColor must be constant expression";
+            throw new Error("clearColor must be constant expression");
         if (!opts.clearColor.type.equals(Shade.Types.vec4))
-            throw "clearColor must be vec4";
+            throw new Error("clearColor must be vec4");
         clearColor = _.toArray(opts.clearColor.constant_value());
     } else
         clearColor = opts.clearColor;
@@ -75,9 +75,9 @@ Lux.init = function(canvas, opts)
     // FIXME This should be a "is Shade expression" check
     if (Lux.is_shade_expression(opts.clearDepth)) {
         if (!opts.clearDepth.is_constant())
-            throw "clearDepth must be constant expression";
+            throw new Error("clearDepth must be constant expression");
         if (!opts.clearDepth.type.equals(Shade.Types.float_t))
-            throw "clearDepth must be float";
+            throw new Error("clearDepth must be float");
         clearDepth = opts.clearDepth.constant_value();
     } else
         clearDepth = opts.clearDepth;
@@ -98,7 +98,7 @@ Lux.init = function(canvas, opts)
             var x = gl.getContextAttributes();
             for (var key in opts.attributes) {
                 if (opts.attributes[key] !== x[key]) {
-                    throw ("requested attribute " + 
+                    throw new Error("requested attribute " + 
                            key + ": " + opts.attributes[key] +
                            " could not be satisfied");
                 }
@@ -106,7 +106,7 @@ Lux.init = function(canvas, opts)
         } else
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
-            throw "failed context creation";
+            throw new Error("failed context creation");
         if ("interactor" in opts) {
             for (var key in opts.interactor.events) {
                 if (opts[key]) {
@@ -124,8 +124,8 @@ Lux.init = function(canvas, opts)
         
         if (opts.debugging) {
             var throwOnGLError = function(err, funcName, args) {
-                throw WebGLDebugUtils.glEnumToString(err) + 
-                    " was caused by call to " + funcName;
+                throw new Error(WebGLDebugUtils.glEnumToString(err) + 
+                    " was caused by call to " + funcName);
             };
             gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
@@ -160,7 +160,7 @@ Lux.init = function(canvas, opts)
             if (exts.indexOf(ext) === -1) {
                 alert(ext + " is not available on your browser/computer! " +
                       "Lux will not work, sorry.");
-                throw "insufficient GPU support";
+                throw new Error("insufficient GPU support");
             } else {
                 gl.getExtension(ext); // must call this to enable extension
             }
@@ -170,7 +170,7 @@ Lux.init = function(canvas, opts)
     }
     if (!gl) {
         alert("Could not initialise WebGL, sorry :-(");
-        throw "failed initalization";
+        throw new Error("failed initalization");
     }
 
     initialize_context_globals(gl);

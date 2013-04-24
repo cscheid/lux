@@ -1,8 +1,8 @@
 Shade.varying = function(name, type)
 {
-    if (_.isUndefined(type)) throw "varying requires type";
+    if (_.isUndefined(type)) throw new Error("varying requires type");
     if (lux_typeOf(type) === 'string') type = Shade.Types[type];
-    if (_.isUndefined(type)) throw "varying requires valid type";
+    if (_.isUndefined(type)) throw new Error("varying requires valid type");
     var allowed_types = [
         Shade.Types.float_t,
         Shade.Types.vec2,
@@ -13,7 +13,7 @@ Shade.varying = function(name, type)
         Shade.Types.mat4
     ];
     if (!_.any(allowed_types, function(t) { return t.equals(type); })) {
-        throw "varying does not support type '" + type.repr() + "'";
+        throw new Error("varying does not support type '" + type.repr() + "'");
     }
     return Shade._create_concrete_exp( {
         parents: [],
@@ -25,7 +25,7 @@ Shade.varying = function(name, type)
                 if (i === 0)
                     return this;
                 else
-                    throw this.type.repr() + " is an atomic type";
+                    throw new Error(this.type.repr() + " is an atomic type");
             } else
                 return this.at(i);
         }),
@@ -36,7 +36,7 @@ Shade.varying = function(name, type)
                 return name; 
         },
         evaluate: function() {
-            throw "evaluate unsupported for varying expressions";
+            throw new Error("evaluate unsupported for varying expressions");
         },
         compile: function(ctx) {
             ctx.declare_varying(name, this.type);

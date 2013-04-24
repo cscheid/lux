@@ -167,7 +167,7 @@ Shade.color = function(spec, alpha)
                              parseInt(spec.substr(3,2), 16) / 255,
                              parseInt(spec.substr(5,2), 16) / 255, alpha);
         } else
-            throw "hex specifier must be either #rgb or #rrggbb";
+            throw new Error("hex specifier must be either #rgb or #rrggbb");
     }
     var m = rgb_re.exec(spec);
     if (m) {
@@ -177,6 +177,6 @@ Shade.color = function(spec, alpha)
     }
     if (spec in css_colors)
         return Shade.color(css_colors[spec], alpha);
-    throw "unrecognized color specifier " + spec;
+    throw new Error("unrecognized color specifier " + spec);
 };
 }());

@@ -47,10 +47,10 @@ Shade._create_concrete = function(base, requirements)
         for (var i=0; i<requirements.length; ++i) {
             var field = requirements[i];
             if (!(field in new_obj)) {
-                throw "new expression missing " + requirements[i];
+                throw new Error("new expression missing " + requirements[i]);
             }
             if (_.isUndefined(new_obj[field])) {
-                throw "field '" + field + "' cannot be undefined";
+                throw new Error("field '" + field + "' cannot be undefined");
             }
         }
         return Shade._create(base, new_obj);

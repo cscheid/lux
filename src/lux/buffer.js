@@ -7,12 +7,12 @@ Lux.buffer = function(opts)
     });
 
     if (_.isUndefined(opts.array)) {
-        throw "opts.array must be defined";
+        throw new Error("opts.array must be defined");
     }
 
     var usage = opts.usage;
     if ([ctx.STATIC_DRAW, ctx.DYNAMIC_DRAW, ctx.STREAM_DRAW].indexOf(usage) === -1) {
-        throw "opts.usage must be one of STATIC_DRAW, DYNAMIC_DRAW, STREAM_DRAW";
+        throw new Error("opts.usage must be one of STATIC_DRAW, DYNAMIC_DRAW, STREAM_DRAW");
     }
 
     var result = ctx.createBuffer();
@@ -27,7 +27,7 @@ Lux.buffer = function(opts)
     };
     result.set(opts.array);
     result.set_region = function() {
-        throw "currently unimplemented";
+        throw new Error("currently unimplemented");
     };
 
     return result;

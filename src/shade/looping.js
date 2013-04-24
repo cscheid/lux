@@ -12,7 +12,7 @@
  nb: nested loops will require deep changes to the infrastructure, and
  won't be supported for a while.
 
- In general, looping in general is pretty unstable.
+ Currently, looping is fairly untested.
 */
 
 (function() {
@@ -34,7 +34,7 @@ Shade.loop_variable = function(type, force_no_declare)
             return [this];
         }),
         evaluate: function() {
-            throw "evaluate undefined for loop_variable";
+            throw new Error("evaluate undefined for loop_variable");
         }
     });
 };
@@ -114,9 +114,9 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
     // violating expressions to a transformed index variable loop 
     // with a termination condition
     if (!this.begin.is_constant())
-        throw "WebGL restricts loop index variable initialization to be constant";
+        throw new Error("WebGL restricts loop index variable initialization to be constant");
     if (!this.end.is_constant())
-        throw "WebGL restricts loop index termination check to be constant";
+        throw new Error("WebGL restricts loop index termination check to be constant");
 
     var result = Shade._create_concrete_exp({
         has_scope: true,
@@ -153,7 +153,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                 if (i === 0)
                     return this;
                 else
-                    throw this.type.repr() + " is an atomic type";
+                    throw new Error(this.type.repr() + " is an atomic type");
             } else
                 return this.at(i);
         }),
@@ -218,7 +218,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             }
         },
         evaluate: function() {
-            throw "evaluate currently undefined for looping expressions";
+            throw new Error("evaluate currently undefined for looping expressions");
         }
     });
 

@@ -15,7 +15,7 @@ function to_dim(l)
     case 9: return 3;
     case 16: return 4;
     }
-    throw "bad length";
+    throw new Error("bad length");
 }
 
 mat.make = function(v)
@@ -31,7 +31,7 @@ mat.map = function(c, f)
 mat.equal = function(m1, m2)
 {
     if (m1.length != m2.length) {
-        throw "mismatched lengths: " + m1.length + ", " + m2.length;
+        throw new Error("mismatched lengths: " + m1.length + ", " + m2.length);
     }
     return mat[to_dim(m1.length)].equal(m1, m2);
 };

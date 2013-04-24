@@ -2,8 +2,8 @@ Lux.Models.sphere = function(lat_secs, long_secs) {
     var verts = [];
     var elements = [];
     if (_.isUndefined(long_secs)) long_secs = lat_secs;
-    if (lat_secs <= 0) throw "lat_secs must be positive";
-    if (long_secs <= 0) throw "long_secs must be positive";
+    if (lat_secs <= 0) throw new Error("lat_secs must be positive");
+    if (long_secs <= 0) throw new Error("long_secs must be positive");
     lat_secs = Math.floor(lat_secs);
     long_secs = Math.floor(long_secs);
     var i, j, phi, theta;    

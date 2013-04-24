@@ -24,17 +24,17 @@ Lux.attribute_buffer_view = function(opts)
     });
 
     if (_.isUndefined(opts.buffer)) {
-        throw "opts.buffer must be defined";
+        throw new Error("opts.buffer must be defined");
     }
 
     var itemSize = opts.item_size;
     if ([1,2,3,4].indexOf(itemSize) === -1) {
-        throw "opts.item_size must be one of 1, 2, 3, or 4";
+        throw new Error("opts.item_size must be one of 1, 2, 3, or 4");
     }
 
     var normalized = opts.normalized;
     if (lux_typeOf(normalized) !== "boolean") {
-        throw "opts.normalized must be boolean";
+        throw new Error("opts.normalized must be boolean");
     }
 
     var gl_enum_typed_array_map = {
@@ -47,21 +47,21 @@ Lux.attribute_buffer_view = function(opts)
 
     var itemType = gl_enum_typed_array_map[opts.item_type];
     if (_.isUndefined(itemType)) {
-        throw "opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'";
+        throw new Error("opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'");
     }
 
     function convert_array(array) {
         var numItems;
         if (array.constructor === Array) {
             if (array.length % itemSize) {
-                throw "set: attribute_buffer expected length to be a multiple of " + 
-                    itemSize + ", got " + array.length + " instead.";
+                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.");
             }
             array = new itemType.typed_array_ctor(array);
         } else if (array.constructor === itemType._typed_array_ctor) {
             if (array.length % itemSize) {
-                throw "set: attribute_buffer expected length to be a multiple of " + 
-                    itemSize + ", got " + array.length + " instead.";
+                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.");
             }
         } else if (opts.vertex_array.constructor === ArrayBuffer) {
             array = opts.vertex_array;
@@ -91,7 +91,7 @@ Lux.attribute_buffer_view = function(opts)
             }
         },
         set_region: function() {
-            throw "currently unimplemented";
+            throw new Error("currently unimplemented");
         },
         //////////////////////////////////////////////////////////////////////
         // These methods are only for internal use within Lux

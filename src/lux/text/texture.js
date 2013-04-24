@@ -80,7 +80,7 @@ Lux.Text.texture = function(opts) {
     });
 
     if (_.isUndefined(opts.font)) {
-        throw "Lux.Text.texture requires font parameter";
+        throw new Error("Lux.Text.texture requires font parameter");
     }
 
     var batch = {};
@@ -118,7 +118,7 @@ Lux.Text.texture = function(opts) {
             case "right": return -advance;
             case "center": return -advance/2;
             default:
-                throw "align must be one of 'left', 'center' or 'right'";
+                throw new Error("align must be one of 'left', 'center' or 'right'");
             }
         },
         draw: function() {

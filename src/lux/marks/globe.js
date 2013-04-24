@@ -144,7 +144,7 @@ Lux.Marks.globe = function(opts)
     if (lux_typeOf(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
     } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
-        throw "zoom must be either a number or a parameter";
+        throw new Error("zoom must be either a number or a parameter");
     }
 
     var result = {
@@ -304,7 +304,7 @@ Lux.Marks.globe = function(opts)
                                 this.tiles[i].x, this.tiles[i].y, this.tiles[i].zoom, 
                                 this.tiles[i].active,
                                 k);                    
-                    throw "die";
+                    throw new Error("Internal Error in globe");
                 }
                 d[k] = true;
             }

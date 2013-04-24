@@ -7,7 +7,7 @@ Shade.pointCoord = function() {
         compile: function(ctx) {
         },
         evaluate: function() {
-            throw "evaluate undefined for pointCoord";
+            throw new Error("evaluate undefined for pointCoord");
         }
     });
 };

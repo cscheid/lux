@@ -11,9 +11,9 @@ Lux.Marks.dots = function(opts)
     });
 
     if (!opts.position)
-        throw "missing required parameter 'position'";
+        throw new Error("missing required parameter 'position'");
     if (!opts.elements)
-        throw "missing required parameter 'elements'";
+        throw new Error("missing required parameter 'elements'");
 
     var S = Shade;
     var ctx = Lux._globals.ctx;

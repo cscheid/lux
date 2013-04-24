@@ -18,7 +18,7 @@ Lux.element_buffer = function(vertex_array)
             typedArray = new Uint16Array(vertex_array);
         } else {
             if (vertex_array.constructor !== Uint16Array) {
-                throw "Lux.element_buffer.set requires either a plain list or a Uint16Array";
+                throw new Error("Lux.element_buffer.set requires either a plain list or a Uint16Array");
             }
             typedArray = vertex_array;
         }

@@ -53,7 +53,7 @@ Shade.CompilationContext = function(compile_type)
         },
         declare: function(decltype, glsl_name, type, declmap) {
             if (_.isUndefined(type)) {
-                throw "must define type";
+                throw new Error("must define type");
             }
             if (!(glsl_name in declmap)) {
                 declmap[glsl_name] = type;
@@ -61,7 +61,7 @@ Shade.CompilationContext = function(compile_type)
             } else {
                 var existing_type = declmap[glsl_name];
                 if (!existing_type.equals(type)) {
-                    throw ("compile error: different expressions use "
+                    throw new Error("compile error: different expressions use "
                            + "conflicting types for '" + decltype + " " + glsl_name
                            + "': '" + existing_type.repr() + "', '"
                            + type.repr() + "'");
@@ -84,7 +84,7 @@ Shade.CompilationContext = function(compile_type)
             _.each(type.fields, function(v) {
                 if (v.is_struct() && 
                     _.isUndefined(this.declared_struct_types[type.internal_type_name])) {
-                    throw "internal error; declare_struct found undeclared internal struct";
+                    throw new Error("internal error; declare_struct found undeclared internal struct");
                 }
             });
             this.global_decls.push("struct", type.internal_type_name, "{\n");

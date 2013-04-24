@@ -312,7 +312,7 @@ mat4.as_inverse_transpose_mat3 = function(mat)
     var b21 =  a21*a10-a11*a20;
 		
     var d = a00*b01 + a01*b11 + a02*b21;
-    if (!d) throw "singular matrix";
+    if (!d) throw new Error("singular matrix");
 
     var result = new Float32Array(9);
     result.buffer._type = 'matrix';
@@ -540,7 +540,7 @@ mat4.rotation_of = function(mat, angle, axis)
 {
     var x = axis[0], y = axis[1], z = axis[2];
     var len = Math.sqrt(x*x + y*y + z*z);
-    if (!len) { throw "zero-length axis"; }
+    if (!len) { throw new Error("zero-length axis"); }
     if (len != 1) {
 	x /= len; 
 	y /= len; 
@@ -591,7 +591,7 @@ mat4.rotation = function(angle, axis)
 {
     var x = axis[0], y = axis[1], z = axis[2];
     var len = Math.sqrt(x*x + y*y + z*z);
-    if (!len) { throw "zero-length axis"; }
+    if (!len) { throw new Error("zero-length axis"); }
     if (len != 1) {
 	x /= len; 
 	y /= len; 
@@ -634,7 +634,7 @@ mat4.rotate = function(mat, angle, axis)
 {
     var x = axis[0], y = axis[1], z = axis[2];
     var len = Math.sqrt(x*x + y*y + z*z);
-    if (!len) { throw "zero-length axis"; }
+    if (!len) { throw new Error("zero-length axis"); }
     if (len != 1) {
 	x /= len; 
 	y /= len; 

@@ -19,7 +19,7 @@ Lux.render_buffer = function(opts)
     // the WebGL spec defers to GLSL ES spec.
     // 
     // if (opts.width != opts.height)
-    //     throw "renderbuffers must be square (blame GLSL ES!)";
+    //     throw new Error("renderbuffers must be square (blame GLSL ES!)");
 
     var rttTexture = Lux.texture(opts);
 
@@ -40,15 +40,15 @@ Lux.render_buffer = function(opts)
             case ctx.FRAMEBUFFER_COMPLETE:
                 break;
             case ctx.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+                throw new Error("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
             case ctx.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+                throw new Error("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
             case ctx.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
+                throw new Error("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
             case ctx.FRAMEBUFFER_UNSUPPORTED:
-                throw "incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED";
+                throw new Error("incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED");
             default:
-                throw "incomplete framebuffer: " + status;
+                throw new Error("incomplete framebuffer: " + status);
             }
         } finally {
             ctx.bindTexture(ctx.TEXTURE_2D, null);

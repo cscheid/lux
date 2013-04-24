@@ -36,7 +36,7 @@ Lux.unload_batch = function()
 function draw_it(batch_opts)
 {
     if (_.isUndefined(batch_opts))
-        throw "drawing mode undefined";
+        throw new Error("drawing mode undefined");
 
     // When the batch_options object is different from the one previously drawn,
     // we must set up the appropriate state for drawing.
@@ -59,7 +59,7 @@ function draw_it(batch_opts)
                 ctx.enableVertexAttribArray(attr);
                 var buffer = attributes[key].get();
                 if (!buffer) {
-                    throw "Unset Shade.attribute " + attributes[key]._attribute_name;
+                    throw new Error("Unset Shade.attribute " + attributes[key]._attribute_name);
                 }
                 buffer.bind(attr);
             }
@@ -71,7 +71,7 @@ function draw_it(batch_opts)
             var call = uniform.uniform_call,
                 value = uniform.get();
             if (_.isUndefined(value)) {
-                throw "parameter " + key + " has not been set.";
+                throw new Error("parameter " + key + " has not been set.");
             }
             var t = lux_constant_type(value);
             if (t === "other") {
@@ -96,7 +96,7 @@ function draw_it(batch_opts)
                     };
                 })(call, program[key]);
             } else {
-                throw "could not figure out parameter type! " + t;
+                throw new Error("could not figure out parameter type! " + t);
             }
             uniform._lux_active_uniform(value);
         });
@@ -133,7 +133,7 @@ Lux.bake = function(model, appearance, opts)
     } else if (appearance.gl_Position.type.equals(Shade.Types.vec3)) {
         appearance.gl_Position = Shade.vec(appearance.gl_Position, 1);
     } else if (!appearance.gl_Position.type.equals(Shade.Types.vec4)) {
-        throw "position appearance attribute must be vec2, vec3 or vec4";
+        throw new Error("position appearance attribute must be vec2, vec3 or vec4");
     }
 
     var ctx = model._ctx || Lux._globals.ctx;
@@ -263,7 +263,7 @@ Lux.bake = function(model, appearance, opts)
                 model.elements.bind_and_draw(primitive_type);
             };
         } else
-            throw "model.elements must be a number, an element buffer or an attribute buffer";
+            throw new Error("model.elements must be a number, an element buffer or an attribute buffer");
     }
 
     // FIXME the batch_id field in the batch_opts objects is not

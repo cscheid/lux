@@ -3,7 +3,7 @@
 function compose(g, f)
 {
     if (_.isUndefined(f) || _.isUndefined(g))
-        throw "Undefined!";
+        throw new Error("Undefined!");
     return function(x) {
         return g(f(x));
     };
@@ -333,7 +333,7 @@ table.hsv.rgb = function(hsv)
         case 4: return table.rgb.create(n, m, v);
         case 5: return table.rgb.create(v, m, n);
         default:
-            throw "internal error";
+            throw new Error("internal error");
         };
     }
 };

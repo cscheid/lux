@@ -6,7 +6,7 @@ function _register_struct(type) {
     var t = type._struct_key;
     var v = _structs[t];
     if (v !== undefined) {
-        throw "type " + t + " already registered as " + v.internal_type_name;
+        throw new Error("type " + t + " already registered as " + v.internal_type_name);
     }
     _structs[t] = type;
 };
@@ -14,10 +14,10 @@ function _register_struct(type) {
 var struct_key = function(obj) {
     return _.map(obj, function(value, key) {
         if (value.is_function()) {
-            throw "function types not allowed inside struct";
+            throw new Error("function types not allowed inside struct");
         }
         if (value.is_sampler()) {
-            throw "sampler types not allowed inside struct";
+            throw new Error("sampler types not allowed inside struct");
         }
         if (value.is_struct()) {
             return "[" + key + ":" + value.internal_type_name + "]";

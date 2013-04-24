@@ -5,9 +5,9 @@ Shade.ifelse = function(condition, if_true, if_false)
     if_false = Shade.make(if_false);
 
     if (!if_true.type.equals(if_false.type))
-        throw "ifelse return expressions must have same types";
+        throw new Error("ifelse return expressions must have same types");
     if (!condition.type.equals(condition.type))
-        throw "ifelse condition must be of type bool";
+        throw new Error("ifelse condition must be of type bool");
 
     return Shade._create_concrete_value_exp( {
         parents: [condition, if_true, if_false],

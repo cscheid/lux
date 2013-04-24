@@ -108,7 +108,7 @@ mat2.inverse = function(mat)
     // Calculate the determinant (inlined to avoid double-caching)
     var det = (a00*a11 - a01*a10);
     if (det === 0)
-        throw "Singular matrix";
+        throw new Error("Singular matrix");
 
     result[0] =  a11/det;
     result[1] = -a01/det;
@@ -126,7 +126,7 @@ mat2.invert = function(mat)
     // Calculate the determinant (inlined to avoid double-caching)
     var det = (a00*a11 - a01*a10);
     if (det === 0)
-        throw "Singular matrix";
+        throw new Error("Singular matrix");
 
     mat[0] =  a11/det;
     mat[1] = -a01/det;

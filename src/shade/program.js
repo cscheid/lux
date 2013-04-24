@@ -48,7 +48,7 @@ Shade.Optimizer.replace_with_constant = function(exp)
     var v = exp.constant_value();
     var result = Shade.constant(v, exp.type);
     if (!exp.type.equals(result.type)) {
-        throw "Shade.constant internal error: type was not preserved";
+        throw new Error("Shade.constant internal error: type was not preserved");
     }
     return result;
 };
@@ -82,7 +82,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
         case 3: return vec.equal(v, vec.make([1,1,1]));
         case 4: return vec.equal(v, vec.make([1,1,1,1]));
         default:
-            throw "bad vec length: " + v.length;    
+            throw new Error("bad vec length: " + v.length);
         }
     }
     if (t === 'matrix')
@@ -110,7 +110,7 @@ Shade.Optimizer.replace_with_nonzero = function(exp)
         return exp.parents[1];
     if (Shade.Optimizer.is_zero(exp.parents[1]))
         return exp.parents[0];
-    throw "internal error: no zero value on input to replace_with_nonzero";
+    throw new Error("internal error: no zero value on input to replace_with_nonzero");
 };
 
 
@@ -132,7 +132,7 @@ Shade.Optimizer.is_times_one = function(exp)
     } else if (t1.is_mat() && t2.is_vec()) {
         return Shade.Optimizer.is_mul_identity(exp.parents[0]);
     } else {
-        throw "internal error on Shade.Optimizer.is_times_one";
+        throw new Error("internal error on Shade.Optimizer.is_times_one");
     }
 };
 
@@ -146,7 +146,7 @@ Shade.Optimizer.replace_with_notone = function(exp)
         } else if (Shade.Optimizer.is_mul_identity(exp.parents[1])) {
             return exp.parents[0];
         } else {
-            throw "internal error on Shade.Optimizer.replace_with_notone";
+            throw new Error("internal error on Shade.Optimizer.replace_with_notone");
         }
     } else if (!t1.equals(ft) && t2.equals(ft)) {
         return exp.parents[0];
@@ -157,7 +157,7 @@ Shade.Optimizer.replace_with_notone = function(exp)
     } else if (t1.is_mat() && t2.is_vec()) {
         return exp.parents[1];
     }
-    throw "internal error: no is_mul_identity value on input to replace_with_notone";
+    throw new Error("internal error: no is_mul_identity value on input to replace_with_notone");
 };
 
 Shade.Optimizer.replace_with_zero = function(x)
@@ -178,7 +178,7 @@ Shade.Optimizer.replace_with_zero = function(x)
         return Shade.constant(mat3.create());
     if (x.type.equals(Shade.Types.mat4))
         return Shade.constant(mat4.create());
-    throw "internal error: not a type replaceable with zero";
+    throw new Error("internal error: not a type replaceable with zero");
 };
 
 Shade.Optimizer.vec_at_constant_index = function(exp)
@@ -207,7 +207,7 @@ Shade.Optimizer.replace_vec_at_constant_with_swizzle = function(exp)
     if (v === 1) return exp.parents[0].swizzle("y");
     if (v === 2) return exp.parents[0].swizzle("z");
     if (v === 3) return exp.parents[0].swizzle("w");
-    throw "internal error on Shade.Optimizer.replace_vec_at_constant_with_swizzle";
+    throw new Error("internal error on Shade.Optimizer.replace_vec_at_constant_with_swizzle");
 };
 
 Shade.Optimizer.is_logical_and_with_constant = function(exp)
@@ -299,25 +299,25 @@ Shade.program = function(program_obj)
         v = Shade.make(v);
         if (k === 'gl_FragColor') {
             if (!v.type.equals(Shade.Types.vec4)) {
-                throw "color attribute must be of type vec4, got " +
-                    v.type.repr() + " instead";
+                throw new Error("color attribute must be of type vec4, got " +
+                    v.type.repr() + " instead");
             }
             fp_obj.gl_FragColor = v;
         } else if (k === 'gl_Position') {
             if (!v.type.equals(Shade.Types.vec4)) {
-                throw "position attribute must be of type vec4, got " +
-                    v.type.repr() + " instead";
+                throw new Error("position attribute must be of type vec4, got " +
+                    v.type.repr() + " instead");
             }
             vp_obj.gl_Position = v;
         } else if (k === 'gl_PointSize') {
             if (!v.type.equals(Shade.Types.float_t)) {
-                throw "color attribute must be of type float, got " +
-                    v.type.repr() + " instead";
+                throw new Error("color attribute must be of type float, got " +
+                    v.type.repr() + " instead");
             }
             vp_obj.gl_PointSize = v;
         } else if (k.substr(0, 3) === 'gl_') {
             // FIXME: Can we sensibly work around these?
-            throw "gl_* are reserved GLSL names";
+            throw new Error("gl_* are reserved GLSL names");
         } else
             vp_obj[k] = v;
     });

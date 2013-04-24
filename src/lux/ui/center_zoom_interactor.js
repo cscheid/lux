@@ -28,10 +28,10 @@ Lux.UI.center_zoom_interactor = function(opts)
     var width = opts.width;
 
     if (_.isUndefined(width)) {
-        throw "Lux.UI.center_zoom_interactor requires width parameter";
+        throw new Error("Lux.UI.center_zoom_interactor requires width parameter");
     }
     if (_.isUndefined(height)) {
-        throw "Lux.UI.center_zoom_interactor requires height parameter";
+        throw new Error("Lux.UI.center_zoom_interactor requires height parameter");
     }
 
     var aspect_ratio = Shade.parameter("float", width/height);

@@ -1,3 +1,4 @@
+// FIXME remove from API
 Shade.Utils.linear = function(f1, f2, t1, t2)
 {
     console.log("Shade.Utils.linear is deprecated; use Shade.Scale.linear instead");

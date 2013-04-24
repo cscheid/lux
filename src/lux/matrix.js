@@ -19,7 +19,7 @@ Lux.translation = function(v)
     else if (v.length === 2) return t_3x3(v);
     else if (arguments.length === 2) return t_3x3(arguments);
 
-    throw "invalid vector size for translation";
+    throw new Error("invalid vector size for translation");
 };
 
 Lux.scaling = function (v)
@@ -40,7 +40,7 @@ Lux.scaling = function (v)
     else if (v.length === 2) return s_3x3(v);
     else if (arguments.length === 2) return s_3x3(arguments);
 
-    throw "invalid size for scale";
+    throw new Error("invalid size for scale");
 };
 
 Lux.rotation = function(angle, axis)

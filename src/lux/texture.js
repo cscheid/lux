@@ -130,7 +130,7 @@ Lux.texture = function(opts)
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
                 if (_.isUndefined(opts.buffer)) {
                     if (x_offset !== 0 || y_offset !== 0) {
-                        throw "texture.load cannot be called with nonzero offsets and no data";
+                        throw new Error("texture.load cannot be called with nonzero offsets and no data");
                     }
                     ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
                                    that.width, that.height,
@@ -143,7 +143,7 @@ Lux.texture = function(opts)
                         "Float32Array": ctx.FLOAT
                     };
                     if (_.isUndefined(map[ctor])) {
-                        throw "opts.buffer must be either Uint8Array or Float32Array";
+                        throw new Error("opts.buffer must be either Uint8Array or Float32Array");
                     }
                     ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset, 
                                       opts.width, opts.height,

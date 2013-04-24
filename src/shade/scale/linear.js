@@ -31,10 +31,10 @@ Shade.Scale.linear = function(opts)
     // that condition is written awkwardly so it catches
     // opts.domain === undefined as well.
     if (!(opts.domain.length >= 2)) { 
-        throw "Shade.Scale.linear requires arrays of length at least 2";
+        throw new Error("Shade.Scale.linear requires arrays of length at least 2");
     }
     if (opts.domain.length !== opts.range.length) {
-        throw "Shade.Scale.linear requires domain and range to be arrays of the same length";
+        throw new Error("Shade.Scale.linear requires domain and range to be arrays of the same length");
     }
 
     opts.domain = _.map(opts.domain, Shade.make);
@@ -44,17 +44,17 @@ Shade.Scale.linear = function(opts)
     var range_types =  _.map(opts.range,  function(v) { return v.type; });
 
     if (!is_any(allowable_types)(domain_types[0]))
-        throw "Shade.Scale.linear requires domain type to be one of {float, vec2, vec3, vec4}";
+        throw new Error("Shade.Scale.linear requires domain type to be one of {float, vec2, vec3, vec4}");
     if (!all_same(domain_types))
-        throw "Shade.Scale.linear requires domain elements to have the same type";
+        throw new Error("Shade.Scale.linear requires domain elements to have the same type");
     if (!is_any(allowable_types)(range_types[0]))
-        throw "Shade.Scale.linear requires range type to be one of {float, vec2, vec3, vec4}";
+        throw new Error("Shade.Scale.linear requires range type to be one of {float, vec2, vec3, vec4}");
     if (!all_same(range_types))
-        throw "Shade.Scale.linear requires range elements to have the same type";
+        throw new Error("Shade.Scale.linear requires range elements to have the same type");
     if (is_any(vec_types)(domain_types[0]) && (!domain_types[0].equals(range_types[0])))
-        throw "Shade.Scale.linear for vec types require equal domain and range types";
+        throw new Error("Shade.Scale.linear for vec types require equal domain and range types");
     if (opts.domain.length < 2 || opts.range.length < 2)
-        throw "Shade.Scale.linear requires domain and range to have at least two elements";
+        throw new Error("Shade.Scale.linear requires domain and range to have at least two elements");
 
     // Special-case the two-element scale for performance
     if (opts.domain.length === 2) {
@@ -126,7 +126,7 @@ Shade.Scale.linear = function(opts)
                 return Shade.vec.apply(this, result);
             });
         } else {
-            throw "internal error on Shade.Scale.linear";
+            throw new Error("internal error on Shade.Scale.linear");
         }
         return result;
 */

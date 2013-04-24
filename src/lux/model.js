@@ -84,8 +84,8 @@ Lux.model = function(input)
     if (!("elements" in result)) {
         // populate automatically using some sensible guess inferred from the attributes above
         if (_.isUndefined(n_elements)) {
-            throw "could not figure out how many elements are in this model; "
-                + "consider passing an 'elements' field";
+            throw new Error("could not figure out how many elements are in this model; "
+                + "consider passing an 'elements' field");
         } else {
             result.elements = n_elements;
         }

@@ -83,7 +83,7 @@ Lux.attribute_buffer = function(opts)
 
     var itemSize = opts.item_size;
     if ([1,2,3,4].indexOf(itemSize) === -1) {
-        throw "opts.item_size must be one of 1, 2, 3, or 4";
+        throw new Error("opts.item_size must be one of 1, 2, 3, or 4");
     }
 
     var gl_enum_typed_array_map = {
@@ -96,30 +96,30 @@ Lux.attribute_buffer = function(opts)
 
     var itemType = gl_enum_typed_array_map[opts.item_type];
     if (_.isUndefined(itemType)) {
-        throw "opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'";
+        throw new Error("opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'");
     }
 
     if (_.isUndefined(opts.vertex_array)) {
-        throw "opts.vertex_array must be defined";
+        throw new Error("opts.vertex_array must be defined");
     }
 
     function convert_array(array) {
         var numItems;
         if (array.constructor === Array) {
             if (array.length % itemSize) {
-                throw "set: attribute_buffer expected length to be a multiple of " + 
-                    itemSize + ", got " + array.length + " instead.";
+                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.");
             }
             array = new itemType.typed_array_ctor(array);
         } else if (array.constructor === itemType.typed_array_ctor) {
             if (array.length % itemSize) {
-                throw "set: attribute_buffer expected length to be a multiple of " + 
-                    itemSize + ", got " + array.length + " instead.";
+                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.");
             }
         } else if (opts.vertex_array.constructor === ArrayBuffer) {
             array = opts.vertex_array;
         } else {
-            throw "Unrecognized array type for attribute_buffer";
+            throw new Error("Unrecognized array type for attribute_buffer");
         }
         return array;
     }

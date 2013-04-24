@@ -5,11 +5,11 @@ Lux.Marks.lines = function(opts)
         z: function() { return 0; }
     });
 
-    if (_.isUndefined(opts.elements)) throw "elements is a required field";
-    if (_.isUndefined(opts.color))    throw "color is a required field";
+    if (_.isUndefined(opts.elements)) throw new Error("elements is a required field");
+    if (_.isUndefined(opts.color))    throw new Error("color is a required field");
     if (_.isUndefined(opts.position) && 
         (_.isUndefined(opts.x) || _.isUndefined(opts.y))) {
-        throw "either position or x and y are required fields";
+        throw new Error("either position or x and y are required fields");
     }
 
     var vertex_index        = Lux.attribute_buffer({

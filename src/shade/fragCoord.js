@@ -5,7 +5,7 @@ Shade.fragCoord = function() {
         type: Shade.Types.vec4,
         glsl_expression: function() { return "gl_FragCoord"; },
         evaluate: function() {
-            throw "evaluate undefined for fragCoord";
+            throw new Error("evaluate undefined for fragCoord");
         },
         compile: function(ctx) {
         }

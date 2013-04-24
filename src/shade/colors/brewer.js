@@ -47,10 +47,10 @@ Shade.Colors.Brewer.sequential = function(opts) {
         max: 1
     });
     if (_.isUndefined(opts.name))
-        throw "'name' is a required option";
+        throw new Error("'name' is a required option");
     var a = schemes.sequential[opts.name];
     if (_.isUndefined(a))
-        throw "Unknown sequential colormap " + opts.name;
+        throw new Error("Unknown sequential colormap " + opts.name);
     var range = _.map(a, function(lst) {
         return Shade.vec(lst[0] / 255, lst[1]/255, lst[2]/255, opts.alpha);
     });
@@ -68,10 +68,10 @@ Shade.Colors.Brewer.qualitative = function(opts) {
         alpha: 1
     });
     if (_.isUndefined(opts.name))
-        throw "'name' is a required option";
+        throw new Error("'name' is a required option");
     var a = schemes.qualitative[opts.name];
     if (_.isUndefined(a))
-        throw "Unknown qualitative colormap " + opts.name;
+        throw new Error("Unknown qualitative colormap " + opts.name);
     function lookup(i) {
         if (_.isUndefined(opts.domain)) {
             return a[i];
@@ -93,10 +93,10 @@ Shade.Colors.Brewer.diverging = function(opts) {
         high: 1
     });
     if (_.isUndefined(opts.name))
-        throw "'name' is a required option";
+        throw new Error("'name' is a required option");
     var a = schemes.diverging[opts.name];
     if (_.isUndefined(a))
-        throw "Unknown diverging colormap " + opts.name;
+        throw new Error("Unknown diverging colormap " + opts.name);
     var range = _.map(a, function(lst) {
         return Shade.vec(lst[0] / 255, lst[1]/255, lst[2]/255, opts.alpha);
     });

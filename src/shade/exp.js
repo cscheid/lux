@@ -43,21 +43,21 @@ Shade.Exp = {
     // javascript-side evaluation of Shade expressions
 
     evaluate: function() {
-        throw "internal error: evaluate undefined for " + this.expression_type;
+        throw new Error("internal error: evaluate undefined for " + this.expression_type);
     },
     is_constant: function() {
         return false;
     },
     constant_value: Shade.memoize_on_field("_constant_value", function() {
         if (!this.is_constant())
-            throw "constant_value called on non-constant expression";
+            throw new Error("constant_value called on non-constant expression");
         return this.evaluate();
     }),
     element_is_constant: function(i) {
         return false;
     },
     element_constant_value: function(i) {
-        throw "invalid call: no constant elements";
+        throw new Error("invalid call: no constant elements");
     },
 
     //////////////////////////////////////////////////////////////////////////
@@ -65,7 +65,7 @@ Shade.Exp = {
 
     element: function(i) {
         // FIXME. Why doesn't this check for is_pod and use this.at()?
-        throw "invalid call: atomic expression";  
+        throw new Error("invalid call: atomic expression");
     },
 
     //////////////////////////////////////////////////////////////////////////
@@ -203,7 +203,7 @@ Shade.Exp = {
                 case 't': return 1;
                 case 'p': return 2;
                 case 'q': return 3;
-                default: throw "invalid swizzle pattern";
+                default: throw new Error("invalid swizzle pattern");
                 }
             }
             var result = [];
@@ -241,7 +241,7 @@ Shade.Exp = {
                 var d = this.type.vec_dimension();
                 var ctor = vec[d];
                 if (_.isUndefined(ctor))
-                    throw "bad vec dimension " + d;
+                    throw new Error("bad vec dimension " + d);
                 return ctor.make(ar);
             }),
             evaluate: Shade.memoize_on_guid_dict(function(cache) {
@@ -257,15 +257,8 @@ Shade.Exp = {
                     var d = this.type.vec_dimension();
                     var ctor = vec[d];
                     if (_.isUndefined(ctor))
-                        throw "bad vec dimension " + d;
+                        throw new Error("bad vec dimension " + d);
                     return ctor.make(ar);
-                    // switch (d) {
-                    // case 2: return vec2.make(ar);
-                    // case 3: return vec3.make(ar);
-                    // case 4: return vec4.make(ar);
-                    // default:
-                    //     throw "bad vec dimension " + d;
-                    // }
                 }
             }),
             element: function(i) {
@@ -296,8 +289,8 @@ Shade.Exp = {
         index._must_be_function_call = true;
         if (!index.type.equals(Shade.Types.float_t) &&
             !index.type.equals(Shade.Types.int_t)) {
-            throw "at expects int or float, got '" + 
-                index.type.repr() + "' instead";
+            throw new Error("at expects int or float, got '" + 
+                            index.type.repr() + "' instead");
         }
         return Shade._create_concrete_exp( {
             parents: [parent, index],
@@ -372,7 +365,7 @@ Shade.Exp = {
                 var ix = this.parents[1].constant_value();
                 var x = this.parents[0].element(ix);
                 if (x === this) {
-                    throw "internal error: would have gone into an infinite loop here.";
+                    throw new Error("internal error: would have gone into an infinite loop here.");
                 }
                 return x.element_constant_value(i);
             }),
@@ -381,11 +374,11 @@ Shade.Exp = {
     },
     field: function(field_name) {
         if (!this.type.is_struct()) {
-            throw "field() only valid on struct types";
+            throw new Error("field() only valid on struct types");
         }
         var index = this.type.field_index[field_name];
         if (_.isUndefined(index)) {
-            throw "field " + field_name + " not existent";
+            throw new Error("field " + field_name + " not existent");
         }
 
         return Shade._create_concrete_value_exp({

@@ -45,10 +45,10 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             if (i === 0)
                 return this;
             else
-                throw this.type.repr() + " is an atomic type, got this: " + i;
+                throw new Error(this.type.repr() + " is an atomic type, got this: " + i);
         } else {
             this.debug_print();
-            throw "Internal error; this should have been overriden.";
+            throw new Error("Internal error; this should have been overriden.");
         }
     },
     compile: function(ctx) {

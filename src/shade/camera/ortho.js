@@ -23,7 +23,7 @@ Shade.Camera.ortho = function(opts)
     else {
         ctx = Lux._globals.ctx;
         if (_.isUndefined(ctx)) {
-            throw "aspect_ratio is only optional with an active Lux context";
+            throw new Error("aspect_ratio is only optional with an active Lux context");
         }
         viewport_ratio = ctx.viewportWidth / ctx.viewportHeight;
     };
@@ -65,7 +65,7 @@ Shade.Camera.ortho = function(opts)
                 model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
                 model_vertex.z());
         } else 
-            throw "Shade.ortho requires vec2, vec3, or vec4s";
+            throw new Error("Shade.ortho requires vec2, vec3, or vec4s");
     });
     var view_xform_invert = Shade(function(view_vertex) {
         return view_vertex.swizzle("xy").div(opts.zoom).add(opts.center);

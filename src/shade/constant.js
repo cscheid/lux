@@ -56,7 +56,7 @@ Shade.constant = function(v, type)
                     if (i === 0)
                         return this;
                     else
-                        throw this.type.repr() + " is an atomic type, got this: " + i;
+                        throw new Error(this.type.repr() + " is an atomic type, got this: " + i);
                 } else if (this.type.is_vec()) {
                     return Shade.constant(args[i]);
                 } else {
@@ -71,7 +71,7 @@ Shade.constant = function(v, type)
                     if (i === 0)
                         return args[0];
                     else
-                        throw "float is an atomic type";
+                        throw new Error("float is an atomic type");
                 } if (this.type.is_vec()) {
                     return args[i];
                 }
@@ -90,7 +90,7 @@ Shade.constant = function(v, type)
                     this.type.equals(Shade.Types.mat4))
                     return mat[mat_length_to_dimension[args.length]].make(args);
                 else
-                    throw "internal error: constant of unknown type";
+                    throw new Error("internal error: constant of unknown type");
             }),
             compile: function(ctx) {},
             parents: [],
@@ -103,41 +103,41 @@ Shade.constant = function(v, type)
     if (t === 'number') {
         if (type && !(type.equals(Shade.Types.float_t) ||
                       type.equals(Shade.Types.int_t))) {
-            throw ("expected specified type for numbers to be float or int," +
+            throw new Error("expected specified type for numbers to be float or int," +
                    " got " + type.repr() + " instead.");
         }
         return constant_tuple_fun(type || Shade.Types.float_t, [v]);
     } else if (t === 'boolean') {
         if (type && !type.equals(Shade.Types.bool_t))
-            throw ("boolean constants cannot be interpreted as " + 
+            throw new Error("boolean constants cannot be interpreted as " + 
                    type.repr());
         return constant_tuple_fun(Shade.Types.bool_t, [v]);
     } else if (t === 'vector') {
         d = v.length;
         if (d < 2 && d > 4)
-            throw "invalid length for constant vector: " + v;
+            throw new Error("invalid length for constant vector: " + v);
         var el_ts = _.map(v, function(t) { return lux_typeOf(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
-            throw "not all constant params have the same types";
+            throw new Error("not all constant params have the same types");
         }
         if (el_ts[0] === "number") {
             computed_t = Shade.Types['vec' + d];
             if (type && !computed_t.equals(type)) {
-                throw "passed constant must have type " + computed_t.repr()
+                throw new Error("passed constant must have type " + computed_t.repr()
                     + ", but was request to have incompatible type " 
-                    + type.repr();
+                    + type.repr());
             }
             return constant_tuple_fun(computed_t, v);
         }
         else
-            throw "bad datatype for constant: " + el_ts[0];
+            throw new Error("bad datatype for constant: " + el_ts[0]);
     } else if (t === 'matrix') {
         d = mat_length_to_dimension[v.length];
         computed_t = Shade.Types['mat' + d];
         if (type && !computed_t.equals(type)) {
-            throw "passed constant must have type " + computed_t.repr()
-                + ", but was request to have incompatible type " 
-                + type.repr();
+            throw new Error("passed constant must have type " + computed_t.repr()
+                            + ", but was requested to have incompatible type " 
+                            + type.repr());
         }
         return constant_tuple_fun(computed_t, v);
     } else if (type.is_struct()) {
@@ -147,10 +147,10 @@ Shade.constant = function(v, type)
         });
         return Shade.struct(obj);
     } else {
-        throw "type error: constant should be bool, number, vector, matrix, array or struct. got " + t
-            + " instead";
+        throw new Error("type error: constant should be bool, number, vector, matrix, array or struct. got " + t
+                        + " instead");
     }
-    throw "internal error: lux_constant_type returned bogus value";
+    throw new Error("internal error: lux_constant_type returned bogus value");
 };
 
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };

@@ -8,21 +8,21 @@ Shade.Types.base_t = {
     is_vec: function()      { return false; },
     is_mat: function()      { return false; },
     vec_dimension: function() { 
-        throw "is_vec() === false, cannot call vec_dimension";
+        throw new Error("is_vec() === false, cannot call vec_dimension");
     },
     is_function: function() { return false; },
     is_struct:   function() { return false; },
     is_sampler:  function() { return false; },
     equals: function(other) {
         if (_.isUndefined(other))
-            throw "type cannot be compared to undefined";
+            throw new Error("type cannot be compared to undefined");
         return this.repr() == other.repr();
     },
     swizzle: function(pattern) {
-        throw "type '" + this.repr() + "' does not support swizzling";
+        throw new Error("type '" + this.repr() + "' does not support swizzling");
     },
     element_type: function(i) {
-        throw "invalid call: atomic expression";
+        throw new Error("invalid call: atomic expression");
     },
     declare: function(glsl_name) {
         return this.repr() + " " + glsl_name;

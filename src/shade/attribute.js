@@ -13,9 +13,9 @@ Shade.attribute_from_buffer = function(buffer)
 Shade.attribute = function(type)
 {
     var name = Shade.unique_name();
-    if (_.isUndefined(type)) throw "attribute requires type";
+    if (_.isUndefined(type)) throw new Error("attribute requires type");
     if (typeof type === 'string') type = Shade.Types[type];
-    if (_.isUndefined(type)) throw "attribute requires valid type";
+    if (_.isUndefined(type)) throw new Error("attribute requires valid type");
     var bound_buffer;
 
     return Shade._create_concrete_exp( {
@@ -27,12 +27,12 @@ Shade.attribute = function(type)
                 if (i === 0)
                     return this;
                 else
-                    throw "float is an atomic type";
+                    throw new Error("float is an atomic type");
             } else
                 return this.at(i);
         }),
         evaluate: function() {
-            throw "client-side evaluation of attributes is currently unsupported";
+            throw new Error("client-side evaluation of attributes is currently unsupported");
         },
         glsl_expression: function() { 
             if (this._must_be_function_call) {

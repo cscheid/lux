@@ -8,7 +8,7 @@
 function compose(g, f)
 {
     if (_.isUndefined(f) || _.isUndefined(g))
-        throw "Undefined!";
+        throw new Error("Undefined!");
     return function(x) {
         return g(f(x));
     };
@@ -31,13 +31,13 @@ _.each(colorspaces, function(space) {
         if (arguments.length === 1) {
             vec = arguments[0];
             if (!vec.type.equals(Shade.Types.vec3))
-                throw "create with 1 parameter requires a vec3";
+                throw new Error("create with 1 parameter requires a vec3");
         } else if (arguments.length === 3) {
             vec = Shade.vec(arguments[0], arguments[1], arguments[2]);
             if (!vec.type.equals(Shade.Types.vec3))
-                throw "create with 3 parameter requires 3 floats";
+                throw new Error("create with 3 parameter requires 3 floats");
         } else
-            throw "create requires either 1 vec3 or 3 floats";
+            throw new Error("create requires either 1 vec3 or 3 floats");
         // this function is carefully designed to work for the above
         // color space names. if those change, this probably changes
         // too.

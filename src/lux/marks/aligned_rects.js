@@ -8,12 +8,12 @@ Lux.Marks.aligned_rects = function(opts)
         mode: Lux.DrawingMode.standard,
         z: function() { return 0; }
     });
-    if (!opts.elements) throw "elements is a required field";
-    if (!opts.left)     throw "left is a required field";
-    if (!opts.right)    throw "right is a required field";
-    if (!opts.top)      throw "top is a required field";
-    if (!opts.bottom)   throw "bottom is a required field";
-    if (!opts.color)    throw "color is a required field";
+    if (!opts.elements) throw new Error("elements is a required field");
+    if (!opts.left)     throw new Error("left is a required field");
+    if (!opts.right)    throw new Error("right is a required field");
+    if (!opts.top)      throw new Error("top is a required field");
+    if (!opts.bottom)   throw new Error("bottom is a required field");
+    if (!opts.color)    throw new Error("color is a required field");
 
     var vertex_index = Lux.attribute_buffer({ 
         vertex_array: _.range(opts.elements * 6), 

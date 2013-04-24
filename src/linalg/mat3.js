@@ -153,7 +153,7 @@ mat3.inverse = function(mat)
     var det = a00*a11*a22 + a01*a12*a20 + a02*a10*a21
         - a02*a11*a20 - a01*a10*a22 - a00*a12*a21;
     if (det === 0)
-        throw "Singular matrix";
+        throw new Error("Singular matrix");
 
     result[0] = ( a11*a22 - a12*a21)/det;
     result[1] = (-a10*a22 + a12*a20)/det;
@@ -179,7 +179,7 @@ mat3.invert = function(mat)
     var det = a00*a11*a22 + a01*a12*a20 + a02*a10*a21
         - a02*a11*a20 - a01*a10*a22 - a00*a12*a21;
     if (det === 0)
-        throw "Singular matrix";
+        throw new Error("Singular matrix");
 
     mat[0] = ( a11*a22 - a12*a21)/det;
     mat[1] = (-a10*a22 + a12*a20)/det;

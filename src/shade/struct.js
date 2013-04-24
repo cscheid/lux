@@ -45,7 +45,7 @@ Shade.struct = function(obj)
         field: function(field_name) {
             var index = this.type.field_index[field_name];
             if (_.isUndefined(index)) {
-                throw "field " + field_name + " not existent";
+                throw new Error("field " + field_name + " not existent");
             }
 
             /* Since field_name is always an immediate string, 

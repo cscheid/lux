@@ -71,7 +71,7 @@ function parse_typeface_instructions(glyph)
             current_point = vec.make([x, y]);
             break;
         default:
-            throw "Unsupported opcode '" + opcode + "'";
+            throw new Error("Unsupported opcode '" + opcode + "'");
         };
     }
     if (points.length || quadratic_ears.length)
@@ -194,7 +194,7 @@ Lux.Text.outline = function(opts) {
         color: function(pos) { return Shade.color("white"); }
     });
     if (_.isUndefined(opts.font)) {
-        throw "outline requires font parameter";
+        throw new Error("outline requires font parameter");
     }
     var batch = loop_blinn_batch(opts);
     old_opts.batch = batch;
@@ -218,7 +218,7 @@ Lux.Text.outline = function(opts) {
             case "right": return -advance;
             case "center": return -advance/2;
             default:
-                throw "align must be one of 'left', 'center' or 'right'";
+                throw new Error("align must be one of 'left', 'center' or 'right'");
             }
         },
         // vertical_alignment_offset: function() {
@@ -227,7 +227,7 @@ Lux.Text.outline = function(opts) {
         //     case "middle": return -opts.font.lineHeight/2;
         //     case "top": return -opts.font.lineHeight;
         //         default:
-        //         throw "vertical_align must be one of 'baseline', 'middle' or 'top'";
+        //         throw new Error("vertical_align must be one of 'baseline', 'middle' or 'top'");
         //     };
         // },
         draw: function() {

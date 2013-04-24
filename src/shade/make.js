@@ -6,18 +6,18 @@
 Shade.make = function(exp)
 {
     if (_.isUndefined(exp)) {
-        throw "expected a value, got undefined instead";
+        throw new Error("expected a value, got undefined instead");
     }
     var t = lux_typeOf(exp);
     if (t === 'string') {
         // Did you accidentally say exp1 + exp2 when you meant
         // exp1.add(exp2)?
-        throw "strings are not valid shade expressions";
+        throw new Error("strings are not valid shade expressions");
     } else if (t === 'boolean' || t === 'number') {
         if (isNaN(exp)) {
             // Did you accidentally say exp1 / exp2 or exp1 - exp2 when you meant
             // exp1.div(exp2) or exp1.sub(exp2)?
-            throw "nans are not valid in shade expressions";
+            throw new Error("nans are not valid in shade expressions");
         }
         return Shade.constant(exp);
     } else if (t === 'array') {

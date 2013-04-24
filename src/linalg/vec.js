@@ -17,7 +17,7 @@ vec.make = function(v)
 vec.equal_eps = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].equal_eps(v1, v2);
 };
@@ -25,7 +25,7 @@ vec.equal_eps = function(v1, v2)
 vec.equal = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].equal(v1, v2);
 };
@@ -33,7 +33,7 @@ vec.equal = function(v1, v2)
 vec.plus = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].plus(v1, v2);
 };
@@ -41,7 +41,7 @@ vec.plus = function(v1, v2)
 vec.minus = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].minus(v1, v2);
 };
@@ -59,7 +59,7 @@ vec.scaling = function(v, val)
 vec.schur_product = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].schur_product(v1, v2);
 };
@@ -82,7 +82,7 @@ vec.length2 = function(v)
 vec.dot = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].dot(v1, v2);
 };
