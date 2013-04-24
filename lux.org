@@ -149,7 +149,6 @@ This should go together with writing the semantics for Shade expressions.
 functions like cosh which just build other expressions should have
 stricter type checking.
 ** TODO Code review on FIXMEs
-** TODO Review best practices on exception raising/handling in JS.
 ** TODO Lux.Marks.* need to be on the same coordinate system, need to consistently all take functions or expressions.
 * Features
 ** More basic marks
