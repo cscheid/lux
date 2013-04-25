@@ -1,6 +1,6 @@
 $().ready(function () {
     var canvas = document.getElementById("webgl");
-    var gl = Lux.init(canvas, {
+    var gl = Lux.init({
         clearColor: [0,0,0,0.1],
         mousedown: function(event) {
             var result = globe.mousedown(event);

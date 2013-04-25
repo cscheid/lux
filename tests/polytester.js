@@ -6,7 +6,7 @@ function point_2d(x, y) {
 	}
 
 function init_webgl(){
-	return Lux.init(document.getElementById("webgl"), {
+	return Lux.init({
         clearColor: [0, 0, 0, 0.2],
         mousedown: function(event) {
 		pick(event.offsetX,event.offsetY);	
@@ -15,7 +15,7 @@ function init_webgl(){
    
 
   function refresh_webgl(){
-    gl = Lux.init(document.getElementById("webgl"), {
+    gl = Lux.init({
         clearColor: [0, 0, 0, 0.2],
    })
     genPoly(numPoints,reduction,cntr,style);
@@ -375,8 +375,8 @@ $().ready(function() {
 
 
 
-gl = Lux.init(document.getElementById("webgl"), {
-        clearColor: [0, 0, 0, 0.2],
+gl = Lux.init({
+        clearColor: [0, 0, 0, 0.2]
    });
 viewportWidth = gl.viewportWidth;
 viewportHeight = gl.viewportHeight;

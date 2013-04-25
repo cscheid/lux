@@ -6,7 +6,7 @@ $().ready(function () {
     init_ui();
 
     show_out_of_gamut = Shade.parameter("bool", true);
-    var gl = Lux.init(document.getElementById("webgl"));
+    var gl = Lux.init();
 
     function max3(v) {
         return Shade.max(v.r(), Shade.max(v.g(), v.b()));

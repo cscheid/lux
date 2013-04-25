@@ -109,17 +109,15 @@ function draw_it()
 $().ready(function () {
     var canvas = document.getElementById("webgl");
 
-    gl = Lux.init(canvas,
-                      {
-                          clearDepth: 1.0,
-                          clearColor: background_color,
-                          display: draw_it,
-                          attributes:
-                          {
-                              alpha: true,
-                              depth: true
-                          }
-                      });
+    gl = Lux.init({
+        clearDepth: 1.0,
+        clearColor: background_color,
+        display: draw_it,
+        attributes: {
+            alpha: true,
+            depth: true
+        }
+    });
     cube_model = Models.flat_cube();
 
     mv = Shade.parameter("mat4");

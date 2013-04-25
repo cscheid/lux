@@ -4038,21 +4038,36 @@ function polyfill_event(event, gl)
     event.luxY = gl.viewportHeight - event.offsetY * gl._lux_globals.devicePixelRatio;
 }
 
-Lux.init = function(canvas, opts)
+Lux.init = function(opts)
 {
+    opts = _.defaults(opts || {}, {
+        clearColor: [1,1,1,0],
+        clearDepth: 1.0,
+        attributes: {
+            alpha: true,
+            depth: true,
+            preserveDrawingBuffer: true
+        },
+        highDPS: true
+    });
+
+    var canvas = opts.canvas;
+    if (_.isUndefined(canvas)) {
+        var q = $("canvas");
+        if (q.length === 0) {
+            throw new Error("no canvas elements found in document");
+        }
+        if (q.length > 1) {
+            throw new Error("More than one canvas element found in document; please specify a canvas option in Lux.init");
+        }
+        canvas = q[0];
+    }
+
     canvas.unselectable = true;
     canvas.onselectstart = function() { return false; };
     var gl;
     var clearColor, clearDepth;
-    opts = _.defaults(opts || {}, { clearColor: [1,1,1,0],
-                                    clearDepth: 1.0,
-                                    attributes: {
-                                        alpha: true,
-                                        depth: true,
-                                        preserveDrawingBuffer: true
-                                    },
-                                    highDPS: true
-                                  });
+
     if (Lux.is_shade_expression(opts.clearColor)) {
         if (!opts.clearColor.is_constant())
             throw new Error("clearColor must be constant expression");

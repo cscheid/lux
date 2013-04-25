@@ -140,7 +140,7 @@ function init_webgl()
 
 $().ready(function() {
     var canvas = document.getElementById("splom");
-    gl = Lux.init(canvas, { 
+    gl = Lux.init({ 
         clearColor: [0, 0, 0, 0],
         mousemove: function(event) {
             if (is_selecting) {

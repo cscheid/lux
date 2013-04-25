@@ -39,7 +39,7 @@ function create_cube_batch(opts)
 }
 
 $().ready(function () {
-    var gl = Lux.init(document.getElementById("webgl"), {
+    var gl = Lux.init({
         clearColor: [0,0,0,0.2]
     });
 

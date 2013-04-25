@@ -35,14 +35,7 @@ function init_webgl()
 }
 
 $().ready(function() {
-    var canvas = document.getElementById("foo");
-    gl = Lux.init(canvas,
-                {
-                    attributes: {
-                        alpha: true,
-                        depth: true
-                    }
-                });
+    gl = Lux.init();
     init_webgl();
     var start = new Date().getTime();
     var f = function () {

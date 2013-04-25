@@ -69,7 +69,7 @@ $().ready(function () {
                        var model = make_graph_model(graph);
                        Lux.Scene.add(make_graph_batch(model, center, interactor.zoom));
                    });
-    gl = Lux.init(canvas, {
+    gl = Lux.init({
         clearDepth: 1.0,
         clearColor: [0, 0, 0, 0.05],
         interactor: interactor

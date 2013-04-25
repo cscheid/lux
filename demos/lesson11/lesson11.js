@@ -29,7 +29,7 @@ function draw_it()
 $().ready(function () {
     var canvas = document.getElementById("webgl");
 
-    gl = Lux.init(canvas, {
+    gl = Lux.init({
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
         display: draw_it,

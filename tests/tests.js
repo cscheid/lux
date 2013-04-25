@@ -1,8 +1,7 @@
 module("Shade tests");
 
-var canvas = document.getElementById("webgl");
-var gl = Lux.init(canvas);
-$(canvas).hide();
+var gl = Lux.init();
+$("canvas").hide();
 
 // returns a uniformly distributed random integer x such mn <= x < mx
 function random_int(mn, mx) {

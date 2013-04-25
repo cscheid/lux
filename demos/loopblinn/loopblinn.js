@@ -16,7 +16,7 @@ $().ready(function () {
         widest_zoom: 1e-6
     });
 
-    gl = Lux.init(canvas, {
+    gl = Lux.init({
         clearColor: [1,1,1,1], // 0,0,0,1],
         interactor: interactor
     });

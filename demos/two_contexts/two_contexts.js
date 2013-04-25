@@ -1,7 +1,8 @@
 $().ready(function () {
     function create_scene(canvas_id) {
         var canvas = document.getElementById(canvas_id);
-        var ctx = Lux.init(canvas, {
+        var ctx = Lux.init({
+            canvas: canvas,
             clearColor: [0,0,0,0.1],
             mousedown: function(event) {
                 var result = globe.mousedown(event);

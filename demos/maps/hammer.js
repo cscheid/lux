@@ -39,7 +39,7 @@ $().ready(function () {
         width: width, height: height, zoom: 2/3
     });
 
-    var gl = Lux.init(canvas, {
+    var gl = Lux.init({
         clearDepth: 1.0,
         clearColor: [0,0,0,0.5],
         interactor: interactor

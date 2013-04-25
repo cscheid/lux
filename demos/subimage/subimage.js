@@ -37,7 +37,7 @@ $().ready(function () {
     var prev_mouse_pos;
     var mv = Shade.parameter("mat4");
     var proj = Shade.parameter("mat4");
-    var gl = Lux.init(canvas, {
+    var gl = Lux.init({
         clearDepth: 1.0,
         clearColor: [0,0,0,1],
         display: function() {

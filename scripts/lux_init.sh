@@ -82,9 +82,7 @@ EOF
 
 cat > $TARGET_DIR/main.js <<EOF
 \$().ready(function() {
-    var gl = Lux.init(document.getElementById("webgl"), {
-        clearColor: [0,0,0,0.2]
-    });
+    var gl = Lux.init();
     Lux.Scene.invalidate();
 });
 EOF
