@@ -5763,11 +5763,13 @@ Shade.make = function(value)
     } else if (t === 'function') {
         /* lifts the passed function to a "shade function".
         
-        In other words, this creates a function that replaces every
-        passed parameter p by Shade.make(p) This way, we save a lot of
-        typing and errors. If a javascript function is expected to
-        take shade values and produce shade expressions as a result,
-        simply wrap that function around a call to Shade.make()
+         In other words, this creates a function that replaces every
+         passed parameter p by Shade.make(p) This way, we save a lot of
+         typing and errors. If a javascript function is expected to
+         take shade values and produce shade expressions as a result,
+         simply wrap that function around a call to Shade.make()
+
+         FIXME: Document js_evaluate appropriately. This is a cool feature!
 
          */
 
@@ -5778,21 +5780,32 @@ Shade.make = function(value)
             }
             return Shade.make(value.apply(this, wrapped_arguments));
         };
-        return result;
-        // var args_type_cache = {};
-        // var create_parameterized_function = function(shade_function, types) {
-        // }
 
-        // result.js_evaluate = function() {
-        //     var args_types = [];
-        //     var args_type_string;
-        //     for (var i=0; i<arguments.length; ++i) {
-        //         args_types.push(Shade.Types.type_of(arguments[i]));
-        //     }
-        //     args_type_string = args_types.join(",");
-        //     if (_.isUndefined(args_type_cache[args_type_string]))
-        //         args_type_cache[args_type_string] = create_parameterized_function(this, args_types);
-        // }
+        var args_type_cache = {};
+        var create_parameterized_function = function(shade_function, types) {
+            var parameters = _.map(types, function(t) {
+                return Shade.parameter(t);
+            });
+            var expression = shade_function.apply(this, parameters);
+            return function() {
+                for (var i=0; i<arguments.length; ++i)
+                    parameters[i].set(arguments[i]);
+                return expression.evaluate();
+            };
+        };
+
+        result.js_evaluate = function() {
+            var args_types = [];
+            var args_type_string;
+            for (var i=0; i<arguments.length; ++i) {
+                args_types.push(Shade.Types.type_of(arguments[i]));
+            }
+            args_type_string = _.map(args_types, function(t) { return t.repr(); }).join(",");
+            if (_.isUndefined(args_type_cache[args_type_string]))
+                args_type_cache[args_type_string] = create_parameterized_function(this, args_types);
+            return args_type_cache[args_type_string].apply(this, arguments);
+        };
+        return result;
     }
     t = Shade.Types.type_of(value);
     if (t.is_vec() || t.is_mat()) {
