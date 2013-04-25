@@ -7,7 +7,6 @@ it's feasible and efficient to skip bind() calls for many
 attribute_buffer_views over the same Lux.buffer.
 
 * etc
-** TODO fix Fork me img on gh-pages
 ** TODO attribute and element buffers
 There currently is an API mismatch between attribute buffers and element
 buffers. I originally tried to make attribute and element buffers look
@@ -64,12 +63,19 @@ is_vec() true for float, vec2, vec3 and vec4 would be very convenient,
 since is_vec() could become a proxy for "can use .add, .sub and
 .mul".
 
-
-** TODO Function types
-These will be useful when we have user-defined GLSL.
-
 ** TODO user-defined glsl
-
+Although I would like there to be no need for user-defined GLSL, there
+is bound to be some situations in which Shade is not expressive enough
+to support a valid use case. I could support arbitrary functions which
+do not access any variables outside their scope. The main complication
+is support for array and struct types. More generally, how do I pass
+arbitrary shade values as parameters, and how do I interpret the
+results back?
+*** TODO Function types
+Right now there exist Shade functions, which are javascript functions
+to build shade expressions. With user-defined GLSL, we will need an
+actual function type that denotes values to which you can apply new
+values and get the result.
 ** TODO Invariance declarations
 
 ** TODO Typechecking code review 
@@ -159,7 +165,6 @@ need documentation.
 ** WebGL FBOs are square?!
 According to the spec, they must be square. But I can create them in
 WebGL without any trouble. I wonder if things will break.
-* Other
 * Demos
 ** rewrite everything using new notations
 ** Fix buffers.js
