@@ -1,24 +1,24 @@
 <html>
-<head><title>NeHe lesson 2 in Lux</title>
-  <link rel="stylesheet" href="../css/bootstrap.css"/>
-  <link rel="stylesheet" href="../css/style.css"/>
-  <link rel="stylesheet" href="../css/mchighlight-javascript.css"/>
-  <script src="../../lib/jquery-1.6.2.min.js"></script>
-  <script src="../../lux.js"></script>
-  <script src="../js/mclexer.js"></script>
-  <script src="../js/mchighlight.js"></script>
-  <script src="../js/mchighlight-javascript.js"></script>
-  <script src="lesson2.js"></script>
+<head><title>Lux tutorial, Lesson 1: Models and Batches</title>
+  <link rel="stylesheet" href="/demos/css/bootstrap.css"/>
+  <link rel="stylesheet" href="/demos/css/style.css"/>
+  <link rel="stylesheet" href="/demos/css/mchighlight-javascript.css"/>
+  <script src="/lib/jquery-1.6.2.min.js"></script>
+  <script src="/lux.js"></script>
+  <script src="/demos/js/mclexer.js"></script>
+  <script src="/demos/js/mchighlight.js"></script>
+  <script src="/demos/js/mchighlight-javascript.js"></script>
+  <script src="lesson1.js"></script>
 </head>
 <body>
 <div class="body">
 <div class="content">
-<h1>Lesson 2</h1>
+<h1>Lesson 1: Models and Batches</h1>
 
 <canvas id="webgl" width="720" height="480"></canvas>
-<div style="text-align: right">View the <a href="lesson2.js">full source</a>.</div>
+<div style="text-align: right">View the <a href="lesson1.js">full source</a>.</div>
 
-<p>We start with the very basics. First, we set up some scaffolding:</p>
+<p>Let's start with the very basics. Before anything else, Lux needs no be initialized, which happens by calling <span class="keyword">Lux.init</span>:</p>
 
 <pre class="highlight">
 var gl = Lux.init(document.getElementById("webgl"), {
@@ -59,11 +59,16 @@ var square_position = camera(Shade.translation( 1.5, 0, -6)(square_model.vertex)
 var triangle_position = camera(Shade.translation(-1.5, 0, -6)(triangle_model.vertex));
 </pre>
 
-<p>The variables <span class="keyword">square_position</span> and <span class="keyword">triangle_position</span> now store a value representing the transformed vertices of the square and triangle model, respectively. All that's left to do is to actually tell Lux to draw the models on the screen. We <span class="keyword">bake</span> the model's positions into batches, and add them into the Lux scene:</p>
+<p>The variables <span class="keyword">square_position</span> and <span class="keyword">triangle_position</span> now store a value representing the transformed vertices of the square and triangle model, respectively. All that's left to do is to actually tell Lux to draw the models on the screen. A model can be drawn in the screen in many different ways: it can have different positions; it can be drawn with different colors; it can be semi-transparent. Because of this, Lux needs to know how to associate an <em>appearance</em> with a particular model. The <span class="keyword">Lux.bake</span> call combines a model and an appearance into a <em>batch</em>:</p>
 
 <pre class="highlight">
 var square = Lux.bake(square_model, { position: square_position }),
     triangle = Lux.bake(triangle_model, { position: triangle_position });
+</pre>
+
+<p>To tell Lux to draw a batch, you simply add it to the Lux scene:</p>
+
+<pre class="highlight">
 Lux.Scene.add(square);
 Lux.Scene.add(triangle);
 </pre>
