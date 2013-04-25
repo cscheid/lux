@@ -107,7 +107,7 @@ Shade.add = function() {
             return v1 + v2;
         if (exp2.type.equals(Shade.Types.float_t))
             return vt.map(v1, function(x) { 
-                return x + v2; 
+                return x + v2;
             });
         if (exp1.type.equals(Shade.Types.float_t))
             return vt.map(v2, function(x) {
@@ -312,6 +312,12 @@ Shade.div = function() {
             mt = mat[exp2.type.array_size()];
         }
         var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
+        var k1 = t1.is_vec() ? "vector" :
+                 t1.is_mat() ? "matrix" :
+                 t1.is_pod() ? "number" : "BAD";
+        var k2 = t2.is_vec() ? "vector" :
+                 t2.is_mat() ? "matrix" :
+                 t2.is_pod() ? "number" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { 
                                   if (exp1.type.equals(Shade.Types.int_t))
@@ -349,7 +355,7 @@ Shade.div = function() {
                       }
                     }
         };
-        return dispatch[t1][t2](v1, v2);
+        return dispatch[k1][k2](v1, v2);
     }
     function element_evaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
@@ -441,6 +447,12 @@ Shade.mul = function() {
             mt = mat[exp2.type.array_size()];
         }
         var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
+        var k1 = t1.is_vec() ? "vector" :
+                 t1.is_mat() ? "matrix" :
+                 t1.is_pod() ? "number" : "BAD";
+        var k2 = t2.is_vec() ? "vector" :
+                 t2.is_mat() ? "matrix" :
+                 t2.is_pod() ? "number" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },
@@ -459,7 +471,7 @@ Shade.mul = function() {
                       matrix: function (x, y) { return mt.product(x, y); }
                     }
         };
-        return dispatch[t1][t2](v1, v2);
+        return dispatch[k1][k2](v1, v2);
     }
     function element_evaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];

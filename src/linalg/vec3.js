@@ -3,14 +3,14 @@ var vec3 = {};
 vec3.create = function()
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     return result;
 };
 
 vec3.copy = function(vec)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = vec[0];
     result[1] = vec[1];
     result[2] = vec[2];
@@ -48,7 +48,7 @@ vec3.set = function(dest, vec)
 vec3.plus = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     result[2] = v1[2] + v2[2];
@@ -66,7 +66,7 @@ vec3.add = function(dest, other)
 vec3.minus = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     result[2] = v1[2] - v2[2];
@@ -84,7 +84,7 @@ vec3.subtract = function(dest, other)
 vec3.negative = function(v)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = -v[0];
     result[1] = -v[1];
     result[2] = -v[2];
@@ -102,7 +102,7 @@ vec3.negate = function(dest)
 vec3.scaling = function(vec, val)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     result[2] = vec[2]*val;
@@ -120,7 +120,7 @@ vec3.scale = function(dest, val)
 vec3.schur_product = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     result[2] = v1[2] * v2[2];
@@ -138,7 +138,7 @@ vec3.schur_multiply = function(dest, other)
 vec3.normalized = function(vec)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     var x = vec[0], y = vec[1], z = vec[2];
     var len = Math.sqrt(x*x + y*y + z*z);
     if (!len)
@@ -174,7 +174,7 @@ vec3.cross = function(v1, v2)
     var x1 = v1[0], y1 = v1[1], z1 = v1[2];
     var x2 = v2[0], y2 = v2[1], z2 = v2[2];
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = y1 * z2 - z1 * y2;
     result[1] = z1 * x2 - x1 * z2;
     result[2] = x1 * y2 - y1 * x2;

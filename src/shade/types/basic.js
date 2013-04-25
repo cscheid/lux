@@ -211,10 +211,11 @@ Shade.Types._create_basic = function(repr) {
         value_equals: function(v1, v2) {
             if (this.is_pod())
                 return v1 === v2;
-            if (this.is_vec() || this.is_mat())
-                return _.all(_.range(v1.length), function(i) { return v1[i] === v2[i]; });
-            else
-                throw new Error("bad type for equality comparison: " + this.repr());
+            if (this.is_vec())
+                return vec.equal(v1, v2);
+            if (this.is_mat())
+                return mat.equal(v1, v2);
+            throw new Error("bad type for equality comparison: " + this.repr());
         }
     });
 };

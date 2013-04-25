@@ -1081,14 +1081,14 @@ var vec2 = {};
 vec2.create = function()
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     return result;
 };
 
 vec2.copy = function(vec)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = vec[0];
     result[1] = vec[1];
     return result;
@@ -1123,7 +1123,7 @@ vec2.set = function(dest, vec)
 vec2.plus = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     return result;
@@ -1139,7 +1139,7 @@ vec2.add = function(dest, other)
 vec2.minus = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     return result;
@@ -1155,7 +1155,7 @@ vec2.subtract = function(dest, other)
 vec2.negative = function(v)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = -v[0];
     result[1] = -v[1];
     return result;
@@ -1171,7 +1171,7 @@ vec2.negate = function(dest)
 vec2.scaling = function(vec, val)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     return result;
@@ -1187,7 +1187,7 @@ vec2.scale = function(dest, val)
 vec2.schur_product = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     return result;
@@ -1203,7 +1203,7 @@ vec2.schur_multiply = function(dest, other)
 vec2.normalized = function(vec)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     var x = vec[0], y = vec[1];
     var len = Math.sqrt(x*x + y*y);
     if (!len)
@@ -1261,14 +1261,14 @@ var vec3 = {};
 vec3.create = function()
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     return result;
 };
 
 vec3.copy = function(vec)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = vec[0];
     result[1] = vec[1];
     result[2] = vec[2];
@@ -1306,7 +1306,7 @@ vec3.set = function(dest, vec)
 vec3.plus = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     result[2] = v1[2] + v2[2];
@@ -1324,7 +1324,7 @@ vec3.add = function(dest, other)
 vec3.minus = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     result[2] = v1[2] - v2[2];
@@ -1342,7 +1342,7 @@ vec3.subtract = function(dest, other)
 vec3.negative = function(v)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = -v[0];
     result[1] = -v[1];
     result[2] = -v[2];
@@ -1360,7 +1360,7 @@ vec3.negate = function(dest)
 vec3.scaling = function(vec, val)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     result[2] = vec[2]*val;
@@ -1378,7 +1378,7 @@ vec3.scale = function(dest, val)
 vec3.schur_product = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     result[2] = v1[2] * v2[2];
@@ -1396,7 +1396,7 @@ vec3.schur_multiply = function(dest, other)
 vec3.normalized = function(vec)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     var x = vec[0], y = vec[1], z = vec[2];
     var len = Math.sqrt(x*x + y*y + z*z);
     if (!len)
@@ -1432,7 +1432,7 @@ vec3.cross = function(v1, v2)
     var x1 = v1[0], y1 = v1[1], z1 = v1[2];
     var x2 = v2[0], y2 = v2[1], z2 = v2[2];
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = y1 * z2 - z1 * y2;
     result[1] = z1 * x2 - x1 * z2;
     result[2] = x1 * y2 - y1 * x2;
@@ -1469,14 +1469,14 @@ var vec4 = {};
 vec4.create = function()
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     return result;
 };
 
 vec4.copy = function(vec)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = vec[0];
     result[1] = vec[1];
     result[2] = vec[2];
@@ -1516,7 +1516,7 @@ vec4.set = function(dest, vec)
 vec4.plus = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     result[2] = v1[2] + v2[2];
@@ -1536,7 +1536,7 @@ vec4.add = function(dest, other)
 vec4.minus = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     result[2] = v1[2] - v2[2];
@@ -1556,7 +1556,7 @@ vec4.subtract = function(dest, other)
 vec4.negative = function(v)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = -v[0];
     result[1] = -v[1];
     result[2] = -v[2];
@@ -1576,7 +1576,7 @@ vec4.negate = function(dest)
 vec4.scaling = function(vec, val)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     result[2] = vec[2]*val;
@@ -1596,7 +1596,7 @@ vec4.scale = function(dest, val)
 vec4.schur_product = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     result[2] = v1[2] * v2[2];
@@ -1616,7 +1616,7 @@ vec4.schur_multiply = function(dest, other)
 vec4.normalized = function(vec)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     var len = Math.sqrt(x*x + y*y + z*z + w*w);
     if (!len)
@@ -1678,14 +1678,14 @@ var mat2 = {};
 mat2.create = function()
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     return result;
 };
 
 mat2.copy = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -1705,7 +1705,7 @@ mat2.equal = function(v1, v2)
 mat2.random = function()
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = Math.random();
     result[1] = Math.random();
     result[2] = Math.random();
@@ -1728,7 +1728,7 @@ var _identity = new Float32Array([1,0,0,1]);
 mat2.identity = function()
 {
     var result = new Float32Array(_identity);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     return result;
 };
 
@@ -1742,7 +1742,7 @@ mat2.set_identity = function(mat)
 mat2.transpose = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = mat[0];
     result[1] = mat[2];
     result[2] = mat[1];
@@ -1775,7 +1775,7 @@ mat2.determinant = function(mat)
 mat2.inverse = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
 	
     var a00 = mat[0], a01 = mat[1];
     var a10 = mat[2], a11 = mat[3];
@@ -1814,7 +1814,7 @@ mat2.invert = function(mat)
 mat2.as_mat4 = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0]  = mat[0];
     result[1]  = mat[1];
     result[4]  = mat[2];
@@ -1825,7 +1825,7 @@ mat2.as_mat4 = function(mat)
 mat2.as_mat3 = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = mat[0];
     result[1] = mat[1];
     result[3] = mat[2];
@@ -1837,7 +1837,7 @@ mat2.as_mat3 = function(mat)
 mat2.product = function(m1, m2)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1];
@@ -1875,7 +1875,7 @@ mat2.multiply = function(dest, other)
 mat2.product_vec = function(mat, vec)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     var x = vec[0], y = vec[1];
     result[0] = mat[0]*x + mat[2]*y;
     result[1] = mat[1]*x + mat[3]*y;
@@ -1915,14 +1915,14 @@ var mat3 = {};
 mat3.create = function()
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     return result;
 };
 
 mat3.copy = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -1952,7 +1952,7 @@ mat3.equal = function(v1, v2)
 mat3.random = function()
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = Math.random();
     result[1] = Math.random();
     result[2] = Math.random();
@@ -1987,7 +1987,7 @@ var _identity = new Float32Array([1,0,0,
 mat3.identity = function()
 {
     var result = new Float32Array(_identity);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     return result;
 };
 
@@ -2001,7 +2001,7 @@ mat3.set_identity = function(mat)
 mat3.transpose = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = mat[0];
     result[1] = mat[3];
     result[2] = mat[6];
@@ -2054,7 +2054,7 @@ mat3.determinant = function(mat)
 mat3.inverse = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
 
     var a00 = mat[0], a01 = mat[3], a02 = mat[6];
     var a10 = mat[1], a11 = mat[4], a12 = mat[7];
@@ -2091,7 +2091,7 @@ mat3.invert = function(mat)
     var det = a00*a11*a22 + a01*a12*a20 + a02*a10*a21
         - a02*a11*a20 - a01*a10*a22 - a00*a12*a21;
     if (det === 0)
-        throw new Error("Singular matrix");
+        throw new Error("Singular mat3");
 
     mat[0] = ( a11*a22 - a12*a21)/det;
     mat[1] = (-a10*a22 + a12*a20)/det;
@@ -2109,7 +2109,7 @@ mat3.invert = function(mat)
 mat3.as_mat4 = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0]  = mat[0];
     result[1]  = mat[1];
     result[2]  = mat[2];
@@ -2125,7 +2125,7 @@ mat3.as_mat4 = function(mat)
 mat3.as_mat2 = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[3];
@@ -2137,7 +2137,7 @@ mat3.as_mat2 = function(mat)
 mat3.product = function(m1, m2)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1],  a02 = m1[2];
@@ -2189,7 +2189,7 @@ mat3.multiply = function(dest, other)
 mat3.product_vec = function(mat, vec)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     var x = vec[0], y = vec[1], z = vec[2];
     result[0] = mat[0]*x + mat[3]*y + mat[6]*z;
     result[1] = mat[1]*x + mat[4]*y + mat[7]*z;
@@ -2237,14 +2237,14 @@ var mat4 = {};
 mat4.create = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     return result;
 };
 
 mat4.copy = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -2324,7 +2324,7 @@ var _identity = new Float32Array([1,0,0,0,
 mat4.identity = function()
 {
     var result = new Float32Array(_identity);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     return result;
 };
 
@@ -2338,7 +2338,7 @@ mat4.set_identity = function(mat)
 mat4.transpose = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0] = mat[0];
     result[1] = mat[4];
     result[2] = mat[8];
@@ -2418,7 +2418,7 @@ mat4.determinant = function(mat)
 mat4.inverse = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
 	
     var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3];
     var a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7];
@@ -2508,7 +2508,7 @@ mat4.invert = function(mat)
 mat4.as_mat3 = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -2524,7 +2524,7 @@ mat4.as_mat3 = function(mat)
 mat4.as_mat2 = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[4];
@@ -2549,7 +2549,7 @@ mat4.as_inverse_transpose_mat3 = function(mat)
     if (!d) throw new Error("singular matrix");
 
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
 	
     result[0] = b01/d;
     result[1] = (-a22*a01 + a02*a21)/d;
@@ -2568,7 +2568,7 @@ mat4.as_inverse_transpose_mat3 = function(mat)
 mat4.product = function(m1, m2)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1],  a02 = m1[2],  a03 = m1[3];
@@ -2638,7 +2638,7 @@ mat4.multiply = function(dest, other)
 mat4.product_vec = function(mat, vec)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     result[0] = mat[0]*x + mat[4]*y + mat[8]*z  + mat[12]*w;
     result[1] = mat[1]*x + mat[5]*y + mat[9]*z  + mat[13]*w;
@@ -2670,7 +2670,7 @@ mat4.multiply_vec3 = function(mat, vec)
 mat4.translation_of = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var x = vec[0], y = vec[1], z = vec[2];
     var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3];
     var a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7];
@@ -2697,7 +2697,7 @@ mat4.translation_of = function(mat, vec)
 mat4.translation = function(vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0] = result[5] = result[10] = result[15] = 1;    
     result[12] = vec[0];
     result[13] = vec[1];
@@ -2718,7 +2718,7 @@ mat4.translate = function(mat, vec)
 mat4.scaling_of = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var x = vec[0], y = vec[1], z = vec[2];
     result[0] =  mat[0]  * x;
     result[1] =  mat[1]  * x;
@@ -2752,7 +2752,7 @@ mat4.scaling = function(mat, vec)
 mat4.scale = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var x = vec[0], y = vec[1], z = vec[2];
     mat[0]  *= x;
     mat[1]  *= x;
@@ -2796,7 +2796,7 @@ mat4.rotation_of = function(mat, angle, axis)
     var b20 = x*z*t + y*s, b21 = y*z*t - x*s, b22 = z*z*t + c;
 
     var result = new Float32Array(16);    
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     
     // Perform rotation-specific matrix multiplication
     result[0]  = a00*b00 + a10*b01 + a20*b02;
@@ -2847,7 +2847,7 @@ mat4.rotation = function(angle, axis)
     var b20 = x*z*t + y*s, b21 = y*z*t - x*s, b22 = z*z*t + c;
 
     var result = new Float32Array(16);    
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     
     // Perform rotation-specific matrix multiplication
     result[0]  = x*x*t + c;
@@ -2915,7 +2915,7 @@ mat4.rotate = function(mat, angle, axis)
 mat4.frustum = function(left, right, bottom, top, near, far)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var rl = (right - left);
     var tb = (top - bottom);
     var fn = (far - near);
@@ -2939,7 +2939,7 @@ mat4.perspective = function(fovy, aspect, near, far)
 mat4.ortho = function(left, right, bottom, top, near, far)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var rl = (right - left);
     var tb = (top - bottom);
     var fn = (far - near);
@@ -2956,7 +2956,7 @@ mat4.ortho = function(left, right, bottom, top, near, far)
 mat4.lookAt = function(eye, center, up)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     
     var eyex = eye[0],
     eyey = eye[1],
@@ -3634,7 +3634,7 @@ function draw_it(batch_opts)
                 throw new Error("parameter " + key + " has not been set.");
             }
             var t = Shade.Types.type_of(value);
-            if (t === "other") {
+            if (t.equals(Shade.Types.other_t)) {
                 uniform._lux_active_uniform = (function(uid, cat) {
                     return function(v) {
                         ctx.activeTexture(ctx.TEXTURE0 + cat);
@@ -3643,13 +3643,15 @@ function draw_it(batch_opts)
                     };
                 })(program[key], currentActiveTexture);
                 currentActiveTexture++;
-            } else if (t === "number" || t === "vector" || t === "boolean") {
+            } else if (t.equals(Shade.Types.float_t) || 
+                       t.equals(Shade.Types.bool_t) ||
+                       t.repr().substr(0,3) === "vec") {
                 uniform._lux_active_uniform = (function(call, uid) {
                     return function(v) {
                         call.call(ctx, uid, v);
                     };
                 })(ctx[call], program[key]);
-            } else if (t === "matrix") {
+            } else if (t.repr().substr(0,3) === "mat") {
                 uniform._lux_active_uniform = (function(call, uid) {
                     return function(v) {
                         ctx[call](uid, false, v);
@@ -5739,25 +5741,25 @@ Shade.debug = false;
 // Exp values to the appropriate Exp values, giving us some poor-man
 // static polymorphism
 
-Shade.make = function(exp)
+Shade.make = function(value)
 {
-    if (_.isUndefined(exp)) {
+    if (_.isUndefined(value)) {
         throw new Error("expected a value, got undefined instead");
     }
-    var t = lux_typeOf(exp);
+    var t = lux_typeOf(value);
     if (t === 'string') {
         // Did you accidentally say exp1 + exp2 when you meant
         // exp1.add(exp2)?
         throw new Error("strings are not valid shade expressions");
     } else if (t === 'boolean' || t === 'number') {
-        if (isNaN(exp)) {
+        if (isNaN(value)) {
             // Did you accidentally say exp1 / exp2 or exp1 - exp2 when you meant
             // exp1.div(exp2) or exp1.sub(exp2)?
             throw new Error("nans are not valid in shade expressions");
         }
-        return Shade.constant(exp);
+        return Shade.constant(value);
     } else if (t === 'array') {
-        return Shade.seq(exp);
+        return Shade.seq(value);
     } else if (t === 'function') {
         /* lifts the passed function to a "shade function".
         
@@ -5774,7 +5776,7 @@ Shade.make = function(exp)
             for (var i=0; i<arguments.length; ++i) {
                 wrapped_arguments.push(Shade.make(arguments[i]));
             }
-            return Shade.make(exp.apply(this, wrapped_arguments));
+            return Shade.make(value.apply(this, wrapped_arguments));
         };
         return result;
         // var args_type_cache = {};
@@ -5792,20 +5794,20 @@ Shade.make = function(exp)
         //         args_type_cache[args_type_string] = create_parameterized_function(this, args_types);
         // }
     }
-    t = Shade.Types.type_of(exp);
-    if (t === 'vector' || t === 'matrix') {
-        return Shade.constant(exp);
-    } else if (exp._shade_type === 'attribute_buffer') {
-        return Shade.attribute_from_buffer(exp);
-    } else if (exp._shade_type === 'render_buffer') {
-        return Shade.sampler2D_from_texture(exp.texture);
-    } else if (exp._shade_type === 'texture') {
-        return Shade.sampler2D_from_texture(exp);
-    } else if (t === 'other') {
-        return Shade.struct(exp);
+    t = Shade.Types.type_of(value);
+    if (t.is_vec() || t.is_mat()) {
+        return Shade.constant(value);
+    } else if (value._shade_type === 'attribute_buffer') {
+        return Shade.attribute_from_buffer(value);
+    } else if (value._shade_type === 'render_buffer') {
+        return Shade.sampler2D_from_texture(value.texture);
+    } else if (value._shade_type === 'texture') {
+        return Shade.sampler2D_from_texture(value);
+    } else if (t.equals(Shade.Types.other_t)) { // FIXME struct types 
+        return Shade.struct(value);
     }
 
-    return exp;
+    return value;
 };
 
 
@@ -6542,25 +6544,30 @@ Shade._create_concrete = function(base, requirements)
     return create_it;
 };
 Shade.Types = {};
-// Shade.Types.type_of will implement the following spec:
+// Shade.Types.type_of implements the following spec:
 // 
 // for all shade values s such that s.evaluate() equals v,
 // s.type.equals(Shade.Types.type_of(v))
+
+// In addition, if there is no s such that s.evaluate() equals v,
+// then Shade.Types.type_of returns other_t. That's a kludge,
+// but is convenient.
 Shade.Types.type_of = function(v)
 {
     var t = typeof v;
-    if (t === "boolean")         return "boolean";
-    if (t === "number")          return "number";
-    if (v) {
-        var b = v._type;
-        if (!_.isUndefined(b))
-            return b;
-        if (!_.isUndefined(v.buffer) && v.buffer._type)
-            return v.buffer._type;
-        else
-            return "other";
+    if (t === "boolean") {
+        return Shade.Types.bool_t;
+    } else if (t === "number") {
+        return Shade.Types.float_t;
+    } else if (Lux.is_shade_expression(v)) {
+        return Shade.Types.shade_t;
+    } else if (_.isUndefined(v)) {
+        return Shade.Types.undefined_t;
+    } else if (!_.isUndefined(v.buffer) && v.buffer._type) {
+        return Shade.Types[v.buffer._type];
+    } else {
+        return Shade.Types.other_t;
     }
-    return t;
 };
 // <rant> How I wish I had algebraic data types. </rant>
 Shade.Types.base_t = {
@@ -6823,10 +6830,11 @@ Shade.Types._create_basic = function(repr) {
         value_equals: function(v1, v2) {
             if (this.is_pod())
                 return v1 === v2;
-            if (this.is_vec() || this.is_mat())
-                return _.all(_.range(v1.length), function(i) { return v1[i] === v2[i]; });
-            else
-                throw new Error("bad type for equality comparison: " + this.repr());
+            if (this.is_vec())
+                return vec.equal(v1, v2);
+            if (this.is_mat())
+                return mat.equal(v1, v2);
+            throw new Error("bad type for equality comparison: " + this.repr());
         }
     });
 };
@@ -6895,6 +6903,11 @@ Shade.Types.function_t = function(return_type, param_types) {
     Shade.Types["bool"]  = Shade.Types.bool_t;
     Shade.Types["int"]   = Shade.Types.int_t;
     Shade.Types["void"]  = Shade.Types.void_t;
+
+    // represents other "non-constant" types. kludgy, but hey.
+    Shade.Types.undefined_t = Shade.Types._create_basic('<undefined>');
+    Shade.Types.shade_t     = Shade.Types._create_basic('<shade>');
+    Shade.Types.other_t     = Shade.Types._create_basic('<other>');
 })();
 (function () {
 
@@ -7576,7 +7589,6 @@ Shade.Exp = {
     },
     _lux_expression: true, // used by lux_typeOf
     expression_type: "other",
-    _type: "shade_expression",
     _uniforms: [],
 
     //////////////////////////////////////////////////////////////////////////
@@ -7944,21 +7956,22 @@ Shade.constant = function(v, type)
         });
     };
 
+    // FIXME refactor this since type_of result is now a Shade.Types.*
     var t = Shade.Types.type_of(v);
     var d, computed_t;
-    if (t === 'number') {
+    if (t.equals(Shade.Types.float_t)) {
         if (type && !(type.equals(Shade.Types.float_t) ||
                       type.equals(Shade.Types.int_t))) {
             throw new Error("expected specified type for numbers to be float or int," +
                    " got " + type.repr() + " instead.");
         }
         return constant_tuple_fun(type || Shade.Types.float_t, [v]);
-    } else if (t === 'boolean') {
+    } else if (t.equals(Shade.Types.bool_t)) {
         if (type && !type.equals(Shade.Types.bool_t))
             throw new Error("boolean constants cannot be interpreted as " + 
                    type.repr());
         return constant_tuple_fun(Shade.Types.bool_t, [v]);
-    } else if (t === 'vector') {
+    } else if (t.repr().substr(0,3) === 'vec') {
         d = v.length;
         if (d < 2 && d > 4)
             throw new Error("invalid length for constant vector: " + v);
@@ -7977,7 +7990,7 @@ Shade.constant = function(v, type)
         }
         else
             throw new Error("bad datatype for constant: " + el_ts[0]);
-    } else if (t === 'matrix') {
+    } else if (t.repr().substr(0,3) === 'mat') {
         d = mat_length_to_dimension[v.length];
         computed_t = Shade.Types['mat' + d];
         if (type && !computed_t.equals(type)) {
@@ -8542,7 +8555,7 @@ Shade.add = function() {
             return v1 + v2;
         if (exp2.type.equals(Shade.Types.float_t))
             return vt.map(v1, function(x) { 
-                return x + v2; 
+                return x + v2;
             });
         if (exp1.type.equals(Shade.Types.float_t))
             return vt.map(v2, function(x) {
@@ -8747,6 +8760,12 @@ Shade.div = function() {
             mt = mat[exp2.type.array_size()];
         }
         var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
+        var k1 = t1.is_vec() ? "vector" :
+                 t1.is_mat() ? "matrix" :
+                 t1.is_pod() ? "number" : "BAD";
+        var k2 = t2.is_vec() ? "vector" :
+                 t2.is_mat() ? "matrix" :
+                 t2.is_pod() ? "number" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { 
                                   if (exp1.type.equals(Shade.Types.int_t))
@@ -8784,7 +8803,7 @@ Shade.div = function() {
                       }
                     }
         };
-        return dispatch[t1][t2](v1, v2);
+        return dispatch[k1][k2](v1, v2);
     }
     function element_evaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
@@ -8876,6 +8895,12 @@ Shade.mul = function() {
             mt = mat[exp2.type.array_size()];
         }
         var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
+        var k1 = t1.is_vec() ? "vector" :
+                 t1.is_mat() ? "matrix" :
+                 t1.is_pod() ? "number" : "BAD";
+        var k2 = t2.is_vec() ? "vector" :
+                 t2.is_mat() ? "matrix" :
+                 t2.is_pod() ? "number" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },
@@ -8894,7 +8919,7 @@ Shade.mul = function() {
                       matrix: function (x, y) { return mt.product(x, y); }
                     }
         };
-        return dispatch[t1][t2](v1, v2);
+        return dispatch[k1][k2](v1, v2);
     }
     function element_evaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
@@ -10085,11 +10110,11 @@ Shade.Optimizer.is_zero = function(exp)
         return false;
     var v = exp.constant_value();
     var t = Shade.Types.type_of(v);
-    if (t === 'number')
+    if (t.is_pod())
         return v === 0;
-    if (t === 'vector')
+    if (t.is_vec())
         return _.all(v, function (x) { return x === 0; });
-    if (lux_typeOf(v) === 'matrix')
+    if (t.is_mat())
         return _.all(v, function (x) { return x === 0; });
     return false;
 };
@@ -10100,9 +10125,9 @@ Shade.Optimizer.is_mul_identity = function(exp)
         return false;
     var v = exp.constant_value();
     var t = Shade.Types.type_of(v);
-    if (t === 'number')
+    if (t.is_pod())
         return v === 1;
-    if (t === 'vector') {
+    if (t.is_vec()) {
         switch (v.length) {
         case 2: return vec.equal(v, vec.make([1,1]));
         case 3: return vec.equal(v, vec.make([1,1,1]));
@@ -10111,7 +10136,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
             throw new Error("bad vec length: " + v.length);
         }
     }
-    if (t === 'matrix')
+    if (t.is_mat())
         return mat.equal(v, mat[Math.sqrt(v.length)].identity());
     return false;
 };
@@ -10775,35 +10800,23 @@ Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
     lift_binfun_to_evaluator(function(a, b) {
-        if (lux_typeOf(a) === 'number' ||
-            lux_typeOf(a) === 'boolean')
-            return a === b;
-        if (lux_typeOf(a) === 'array')
+        if (lux_typeOf(a) === 'array') {
             return _.all(_.map(_.zip(a, b),
                                function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
-        if (Shade.Types.type_of(a) === 'vector') {
-            return vec.equal(a, b);
         }
-        if (Shade.Types.type_of(a) === 'matrix') {
-            return mat.equal(a, b);
-        }
-        throw new Error("internal error: unrecognized type " + lux_typeOf(a) + 
-            " " + Shade.Types.type_of(a));
+        return Shade.Types.type_of(a).value_equals(a, b);
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (lux_typeOf(a) === 'number' ||
-            lux_typeOf(a) === 'boolean')
-            return a !== b;
-        if (lux_typeOf(a) === 'array')
+        if (lux_typeOf(a) === 'array') {
             return _.any(_.map(_.zip(a, b),
                                function(v) { return v[0] !== v[1]; } ),
                          function (x) { return x; });
-        throw new Error("internal error: unrecognized type " + lux_typeOf(a) + 
-            " " + Shade.Types.type_of(a));
+        }
+        return !Shade.Types.type_of(a).value_equals(a, b);
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 

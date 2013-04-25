@@ -74,7 +74,7 @@ function draw_it(batch_opts)
                 throw new Error("parameter " + key + " has not been set.");
             }
             var t = Shade.Types.type_of(value);
-            if (t === "other") {
+            if (t.equals(Shade.Types.other_t)) {
                 uniform._lux_active_uniform = (function(uid, cat) {
                     return function(v) {
                         ctx.activeTexture(ctx.TEXTURE0 + cat);
@@ -83,13 +83,15 @@ function draw_it(batch_opts)
                     };
                 })(program[key], currentActiveTexture);
                 currentActiveTexture++;
-            } else if (t === "number" || t === "vector" || t === "boolean") {
+            } else if (t.equals(Shade.Types.float_t) || 
+                       t.equals(Shade.Types.bool_t) ||
+                       t.repr().substr(0,3) === "vec") {
                 uniform._lux_active_uniform = (function(call, uid) {
                     return function(v) {
                         call.call(ctx, uid, v);
                     };
                 })(ctx[call], program[key]);
-            } else if (t === "matrix") {
+            } else if (t.repr().substr(0,3) === "mat") {
                 uniform._lux_active_uniform = (function(call, uid) {
                     return function(v) {
                         ctx[call](uid, false, v);

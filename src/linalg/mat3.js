@@ -3,14 +3,14 @@ var mat3 = {};
 mat3.create = function()
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     return result;
 };
 
 mat3.copy = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -40,7 +40,7 @@ mat3.equal = function(v1, v2)
 mat3.random = function()
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = Math.random();
     result[1] = Math.random();
     result[2] = Math.random();
@@ -75,7 +75,7 @@ var _identity = new Float32Array([1,0,0,
 mat3.identity = function()
 {
     var result = new Float32Array(_identity);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     return result;
 };
 
@@ -89,7 +89,7 @@ mat3.set_identity = function(mat)
 mat3.transpose = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = mat[0];
     result[1] = mat[3];
     result[2] = mat[6];
@@ -142,7 +142,7 @@ mat3.determinant = function(mat)
 mat3.inverse = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
 
     var a00 = mat[0], a01 = mat[3], a02 = mat[6];
     var a10 = mat[1], a11 = mat[4], a12 = mat[7];
@@ -179,7 +179,7 @@ mat3.invert = function(mat)
     var det = a00*a11*a22 + a01*a12*a20 + a02*a10*a21
         - a02*a11*a20 - a01*a10*a22 - a00*a12*a21;
     if (det === 0)
-        throw new Error("Singular matrix");
+        throw new Error("Singular mat3");
 
     mat[0] = ( a11*a22 - a12*a21)/det;
     mat[1] = (-a10*a22 + a12*a20)/det;
@@ -197,7 +197,7 @@ mat3.invert = function(mat)
 mat3.as_mat4 = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0]  = mat[0];
     result[1]  = mat[1];
     result[2]  = mat[2];
@@ -213,7 +213,7 @@ mat3.as_mat4 = function(mat)
 mat3.as_mat2 = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[3];
@@ -225,7 +225,7 @@ mat3.as_mat2 = function(mat)
 mat3.product = function(m1, m2)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1],  a02 = m1[2];
@@ -277,7 +277,7 @@ mat3.multiply = function(dest, other)
 mat3.product_vec = function(mat, vec)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     var x = vec[0], y = vec[1], z = vec[2];
     result[0] = mat[0]*x + mat[3]*y + mat[6]*z;
     result[1] = mat[1]*x + mat[4]*y + mat[7]*z;

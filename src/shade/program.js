@@ -59,11 +59,11 @@ Shade.Optimizer.is_zero = function(exp)
         return false;
     var v = exp.constant_value();
     var t = Shade.Types.type_of(v);
-    if (t === 'number')
+    if (t.is_pod())
         return v === 0;
-    if (t === 'vector')
+    if (t.is_vec())
         return _.all(v, function (x) { return x === 0; });
-    if (lux_typeOf(v) === 'matrix')
+    if (t.is_mat())
         return _.all(v, function (x) { return x === 0; });
     return false;
 };
@@ -74,9 +74,9 @@ Shade.Optimizer.is_mul_identity = function(exp)
         return false;
     var v = exp.constant_value();
     var t = Shade.Types.type_of(v);
-    if (t === 'number')
+    if (t.is_pod())
         return v === 1;
-    if (t === 'vector') {
+    if (t.is_vec()) {
         switch (v.length) {
         case 2: return vec.equal(v, vec.make([1,1]));
         case 3: return vec.equal(v, vec.make([1,1,1]));
@@ -85,7 +85,7 @@ Shade.Optimizer.is_mul_identity = function(exp)
             throw new Error("bad vec length: " + v.length);
         }
     }
-    if (t === 'matrix')
+    if (t.is_mat())
         return mat.equal(v, mat[Math.sqrt(v.length)].identity());
     return false;
 };

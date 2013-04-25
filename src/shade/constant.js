@@ -98,21 +98,22 @@ Shade.constant = function(v, type)
         });
     };
 
+    // FIXME refactor this since type_of result is now a Shade.Types.*
     var t = Shade.Types.type_of(v);
     var d, computed_t;
-    if (t === 'number') {
+    if (t.equals(Shade.Types.float_t)) {
         if (type && !(type.equals(Shade.Types.float_t) ||
                       type.equals(Shade.Types.int_t))) {
             throw new Error("expected specified type for numbers to be float or int," +
                    " got " + type.repr() + " instead.");
         }
         return constant_tuple_fun(type || Shade.Types.float_t, [v]);
-    } else if (t === 'boolean') {
+    } else if (t.equals(Shade.Types.bool_t)) {
         if (type && !type.equals(Shade.Types.bool_t))
             throw new Error("boolean constants cannot be interpreted as " + 
                    type.repr());
         return constant_tuple_fun(Shade.Types.bool_t, [v]);
-    } else if (t === 'vector') {
+    } else if (t.repr().substr(0,3) === 'vec') {
         d = v.length;
         if (d < 2 && d > 4)
             throw new Error("invalid length for constant vector: " + v);
@@ -131,7 +132,7 @@ Shade.constant = function(v, type)
         }
         else
             throw new Error("bad datatype for constant: " + el_ts[0]);
-    } else if (t === 'matrix') {
+    } else if (t.repr().substr(0,3) === 'mat') {
         d = mat_length_to_dimension[v.length];
         computed_t = Shade.Types['mat' + d];
         if (type && !computed_t.equals(type)) {

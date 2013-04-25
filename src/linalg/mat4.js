@@ -3,14 +3,14 @@ var mat4 = {};
 mat4.create = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     return result;
 };
 
 mat4.copy = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -90,7 +90,7 @@ var _identity = new Float32Array([1,0,0,0,
 mat4.identity = function()
 {
     var result = new Float32Array(_identity);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     return result;
 };
 
@@ -104,7 +104,7 @@ mat4.set_identity = function(mat)
 mat4.transpose = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0] = mat[0];
     result[1] = mat[4];
     result[2] = mat[8];
@@ -184,7 +184,7 @@ mat4.determinant = function(mat)
 mat4.inverse = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
 	
     var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3];
     var a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7];
@@ -274,7 +274,7 @@ mat4.invert = function(mat)
 mat4.as_mat3 = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -290,7 +290,7 @@ mat4.as_mat3 = function(mat)
 mat4.as_mat2 = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[4];
@@ -315,7 +315,7 @@ mat4.as_inverse_transpose_mat3 = function(mat)
     if (!d) throw new Error("singular matrix");
 
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
 	
     result[0] = b01/d;
     result[1] = (-a22*a01 + a02*a21)/d;
@@ -334,7 +334,7 @@ mat4.as_inverse_transpose_mat3 = function(mat)
 mat4.product = function(m1, m2)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1],  a02 = m1[2],  a03 = m1[3];
@@ -404,7 +404,7 @@ mat4.multiply = function(dest, other)
 mat4.product_vec = function(mat, vec)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     result[0] = mat[0]*x + mat[4]*y + mat[8]*z  + mat[12]*w;
     result[1] = mat[1]*x + mat[5]*y + mat[9]*z  + mat[13]*w;
@@ -436,7 +436,7 @@ mat4.multiply_vec3 = function(mat, vec)
 mat4.translation_of = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var x = vec[0], y = vec[1], z = vec[2];
     var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3];
     var a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7];
@@ -463,7 +463,7 @@ mat4.translation_of = function(mat, vec)
 mat4.translation = function(vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0] = result[5] = result[10] = result[15] = 1;    
     result[12] = vec[0];
     result[13] = vec[1];
@@ -484,7 +484,7 @@ mat4.translate = function(mat, vec)
 mat4.scaling_of = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var x = vec[0], y = vec[1], z = vec[2];
     result[0] =  mat[0]  * x;
     result[1] =  mat[1]  * x;
@@ -518,7 +518,7 @@ mat4.scaling = function(mat, vec)
 mat4.scale = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var x = vec[0], y = vec[1], z = vec[2];
     mat[0]  *= x;
     mat[1]  *= x;
@@ -562,7 +562,7 @@ mat4.rotation_of = function(mat, angle, axis)
     var b20 = x*z*t + y*s, b21 = y*z*t - x*s, b22 = z*z*t + c;
 
     var result = new Float32Array(16);    
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     
     // Perform rotation-specific matrix multiplication
     result[0]  = a00*b00 + a10*b01 + a20*b02;
@@ -613,7 +613,7 @@ mat4.rotation = function(angle, axis)
     var b20 = x*z*t + y*s, b21 = y*z*t - x*s, b22 = z*z*t + c;
 
     var result = new Float32Array(16);    
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     
     // Perform rotation-specific matrix multiplication
     result[0]  = x*x*t + c;
@@ -681,7 +681,7 @@ mat4.rotate = function(mat, angle, axis)
 mat4.frustum = function(left, right, bottom, top, near, far)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var rl = (right - left);
     var tb = (top - bottom);
     var fn = (far - near);
@@ -705,7 +705,7 @@ mat4.perspective = function(fovy, aspect, near, far)
 mat4.ortho = function(left, right, bottom, top, near, far)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var rl = (right - left);
     var tb = (top - bottom);
     var fn = (far - near);
@@ -722,7 +722,7 @@ mat4.ortho = function(left, right, bottom, top, near, far)
 mat4.lookAt = function(eye, center, up)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     
     var eyex = eye[0],
     eyey = eye[1],

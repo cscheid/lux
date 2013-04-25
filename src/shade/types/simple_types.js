@@ -22,4 +22,9 @@
     Shade.Types["bool"]  = Shade.Types.bool_t;
     Shade.Types["int"]   = Shade.Types.int_t;
     Shade.Types["void"]  = Shade.Types.void_t;
+
+    // represents other "non-constant" types. kludgy, but hey.
+    Shade.Types.undefined_t = Shade.Types._create_basic('<undefined>');
+    Shade.Types.shade_t     = Shade.Types._create_basic('<shade>');
+    Shade.Types.other_t     = Shade.Types._create_basic('<other>');
 })();

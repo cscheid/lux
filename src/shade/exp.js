@@ -403,7 +403,6 @@ Shade.Exp = {
     },
     _lux_expression: true, // used by lux_typeOf
     expression_type: "other",
-    _type: "shade_expression",
     _uniforms: [],
 
     //////////////////////////////////////////////////////////////////////////

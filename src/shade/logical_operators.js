@@ -157,35 +157,23 @@ Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
     lift_binfun_to_evaluator(function(a, b) {
-        if (lux_typeOf(a) === 'number' ||
-            lux_typeOf(a) === 'boolean')
-            return a === b;
-        if (lux_typeOf(a) === 'array')
+        if (lux_typeOf(a) === 'array') {
             return _.all(_.map(_.zip(a, b),
                                function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
-        if (Shade.Types.type_of(a) === 'vector') {
-            return vec.equal(a, b);
         }
-        if (Shade.Types.type_of(a) === 'matrix') {
-            return mat.equal(a, b);
-        }
-        throw new Error("internal error: unrecognized type " + lux_typeOf(a) + 
-            " " + Shade.Types.type_of(a));
+        return Shade.Types.type_of(a).value_equals(a, b);
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (lux_typeOf(a) === 'number' ||
-            lux_typeOf(a) === 'boolean')
-            return a !== b;
-        if (lux_typeOf(a) === 'array')
+        if (lux_typeOf(a) === 'array') {
             return _.any(_.map(_.zip(a, b),
                                function(v) { return v[0] !== v[1]; } ),
                          function (x) { return x; });
-        throw new Error("internal error: unrecognized type " + lux_typeOf(a) + 
-            " " + Shade.Types.type_of(a));
+        }
+        return !Shade.Types.type_of(a).value_equals(a, b);
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 
