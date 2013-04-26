@@ -17,6 +17,94 @@
 <canvas id="webgl" width="720" height="480"></canvas>
 <div style="text-align: right">View the <a href="lesson5.js">full source</a>.</div>
 
+<p>In this lesson, we will learn how to use texture mapping in
+Lux. Texture mapping was originally a technique to cheap add detail to
+triangle meshes. The way it works is that instead by deciding the
+color of each fragment (a <em>fragment</em> is a pixel-sized bit of a
+triangle that end up on the screen) not by a simple combination of
+vertex colors, but selecting a certain portion of an image,
+or <em>texture</em>. This way, when modeling a complicated surface,
+instead of having to use thousands of triangles, we can simply use an
+image.</p>
+
+<p>The main new idea behind texture mapping is that, together with
+positions, models must include additional per-vertex
+information. Specifically, models need to provide what is known as
+the <em>texture coordinate</em> of that vertex. Imagine that you were
+creating a globe, and wanted it to represent a map of the world. At
+some point, you will have to decide on a color of a fragment, and that
+will be a function of latitude and longitude. The latitude and
+longitude are <em>coordinates</em> that tell you where you are in the
+model. This is different from the position of the 3D model in the
+world; although the globe is clearly three-dimensional, latitude and
+longitude are only two dimensions, and are enough to completely
+determine which point in the globe one is talking about.</p>
+
+<p>We start with the same basic setup as before, but, in this demo, we will use a predetermined model:</p>
+
+<pre class="highlight">
+var ctx = Lux.init({
+    clearColor: [0,0,0,0.2]
+});
+
+var camera = Shade.Camera.perspective({
+    look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
+});
+var angle = ctx.parameters.now.mul(50).radians();
+var cube = Lux.Models.flat_cube();
+</pre>
+
+<p><span class="inline-highlight">cube</span> has texture coordinates stored
+in <span class="inline-highlight">cube.tex_coord</span>. In order to
+use texture mapping, we will need to learn about two new
+calls: <span class="inline-highlight">Lux.texture</span>
+and <span class="inline-highlight">Shade.texture2D</span>.
+
+<h2>Lux.texture</h2>
+
+<p>The <span class="inline-highlight">Lux.texture</span> call creates
+the texture object that can be used in texture mapping. It can load an
+image from a URL, from
+an <span class="inline-highlight">&lt;img/&gt;</span> element in your
+DOM, or from a canvas. Here, we'll open an URL:
+</p>
+
+<pre class="highlight">
+Lux.texture({ 
+    src: "../../img/nehe.jpg",
+</pre>
+
+<p>The important thing to know when loading images from URLs is that this is an
+</em>asynchronous</em> process. The javascript interpreter does not
+wait for the image to finish loading before continuing the
+execution. Instead, you give the image loader a function, and tell it
+to call that function when the image has finally loaded. For <span class="inline-highlight">Lux.texture</span>, you use the <span class="inline-highlight">onload</span> field:
+
+<pre class="highlight">
+    onload: function() {
+</pre>
+
+<h2>Shade.texture2D</h2>
+
+<p>Now turn your attention to how the Lux batch is specified. Most of the code will be familiar to you, but the <span class="inline-highlight">color</span> field of <span class="inline-highlight">Lux.bake</span> contains a reference to <span class="inline-highlight">Shade.texture2D</span>:</p>
+
+<pre class="highlight">
+        Lux.Scene.add(Lux.bake(cube, {
+            position: camera(Shade.rotation(angle, Shade.vec(1,1,1))(cube.vertex)),
+            color: Shade.texture2D(this, cube.tex_coord)
+        }));
+</pre>
+
+<p>The call builds a Lux expression that represents a texture being <em>sampled</em> at a particular location. It takes two parameters: a texture object, and a texture coordinate. The texture object, in our case, is simply <span class="inline-highlight">this</span>; the result of <span class="inline-highlight">Lux.texture</span> is given as the <span class="inline-highlight">this</span> object for the <span class="inline-highlight">onload</span> handler. The texture coordinate, on the other hand, comes from <span class="inline-highlight">cube</span>, in the same way that vertex positions do. The texture coordinates for <span class="inline-highlight">cube</span> repeat themselves on each face; so you see a copy of the image on every face.</p>
+
+<p>The rest of the code is uninteresting:</p>
+
+<pre class="highlight">
+        Lux.Scene.animate();
+    }
+});
+</pre>
+
 <p>Back to the <a href="index.html">index</a>.</p>
 <script>
 $('.highlight').each(function(i, v) { Highlighter.highlight(v); });
