@@ -1,4 +1,8 @@
 Lux.Models.sphere = function(lat_secs, long_secs) {
+    if (_.isUndefined(lat_secs)) {
+        lat_secs = 5;
+        long_secs = 5;
+    }
     var verts = [];
     var elements = [];
     if (_.isUndefined(long_secs)) long_secs = lat_secs;
