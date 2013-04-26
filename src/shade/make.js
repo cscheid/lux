@@ -64,8 +64,8 @@ Shade.make = function(value)
             }
             args_type_string = _.map(args_types, function(t) { return t.repr(); }).join(",");
             if (_.isUndefined(args_type_cache[args_type_string]))
-                args_type_cache[args_type_string] = create_parameterized_function(this, args_types);
-            return args_type_cache[args_type_string].apply(this, arguments);
+                args_type_cache[args_type_string] = create_parameterized_function(result, args_types);
+            return args_type_cache[args_type_string].apply(result, arguments);
         };
         return result;
     }
