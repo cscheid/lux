@@ -148,16 +148,21 @@ Lux.init = function(opts)
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
 
+        //////////////////////////////////////////////////////////////////////
+        // event handling
+
         var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", "mouseup"];
         _.each(canvas_events, function(ename) {
             var listener = opts[ename];
-            if (!_.isUndefined(listener)) {
-                function internal_listener(event) {
-                    polyfill_event(event, gl);
+            function internal_listener(event) {
+                polyfill_event(event, gl);
+                if (!Lux.Scene.on(ename)(event))
+                    return false;
+                if (listener)
                     return listener(event);
-                }
-                canvas.addEventListener(ename, Lux.on_context(gl, internal_listener), false);
+                return true;
             }
+            canvas.addEventListener(ename, Lux.on_context(gl, internal_listener), false);
         });
         
         if (!_.isUndefined(opts.mousewheel)) {
@@ -167,10 +172,10 @@ Lux.init = function(opts)
             });
         };
 
+        //////////////////////////////////////////////////////////////////////
+
         var ext;
-        var exts = gl.getSupportedExtensions(); // _.map(gl.getSupportedExtensions(), function (x) { 
-        //     return x.toLowerCase();
-        // });
+        var exts = gl.getSupportedExtensions();
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
             if (exts.indexOf(ext) === -1) {
                 alert(ext + " is not available on your browser/computer! " +

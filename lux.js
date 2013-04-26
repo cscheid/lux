@@ -4138,16 +4138,21 @@ Lux.init = function(opts)
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
 
+        //////////////////////////////////////////////////////////////////////
+        // event handling
+
         var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", "mouseup"];
         _.each(canvas_events, function(ename) {
             var listener = opts[ename];
-            if (!_.isUndefined(listener)) {
-                function internal_listener(event) {
-                    polyfill_event(event, gl);
+            function internal_listener(event) {
+                polyfill_event(event, gl);
+                if (!Lux.Scene.on(ename)(event))
+                    return false;
+                if (listener)
                     return listener(event);
-                }
-                canvas.addEventListener(ename, Lux.on_context(gl, internal_listener), false);
+                return true;
             }
+            canvas.addEventListener(ename, Lux.on_context(gl, internal_listener), false);
         });
         
         if (!_.isUndefined(opts.mousewheel)) {
@@ -4157,10 +4162,10 @@ Lux.init = function(opts)
             });
         };
 
+        //////////////////////////////////////////////////////////////////////
+
         var ext;
-        var exts = gl.getSupportedExtensions(); // _.map(gl.getSupportedExtensions(), function (x) { 
-        //     return x.toLowerCase();
-        // });
+        var exts = gl.getSupportedExtensions();
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
             if (exts.indexOf(ext) === -1) {
                 alert(ext + " is not available on your browser/computer! " +
@@ -5594,23 +5599,26 @@ Lux.UI.center_zoom_interactor = function(opts)
 
     // c stores the compensation for the kahan compensated sum
     var c = vec.make([0, 0]);
-    var internal_move = (function() {
-        var f = Shade(function (delta_vec) {
-            return result.camera.unproject(Shade.vec(0,0))
-                .sub(result.camera.unproject(delta_vec));
-        }).js_evaluate;
 
-        return function(dx, dy) {
-            var negdelta = f(vec.make([dx, dy]));
-            // we use a kahan compensated sum here:
-            // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
-            // to accumulate minute changes in the center that come from deep zooms.
-            var y = vec.minus(negdelta, c);
-            var t = vec.plus(center.get(), y);
-            c = vec.minus(vec.minus(t, center.get()), y);
-            center.set(t);
-        };
-    })();
+    // f computes the change in the center position, relative to the
+    // current camera parameters. Since camera is a Lux expression,
+    // to get the javascript value we create a Shade function and
+    // use js_evaluate.
+    var f = Shade(function (delta_vec) {
+        return result.camera.unproject(Shade.vec(0,0))
+            .sub(result.camera.unproject(delta_vec));
+    }).js_evaluate;
+
+    var internal_move = function(dx, dy) {
+        var negdelta = f(vec.make([dx, dy]));
+        // we use a kahan compensated sum here:
+        // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+        // to accumulate minute changes in the center that come from deep zooms.
+        var y = vec.minus(negdelta, c);
+        var t = vec.plus(center.get(), y);
+        c = vec.minus(vec.minus(t, center.get()), y);
+        center.set(t);
+    };
 
     function mousemove(event) {
         if ((current_button & 1) && !event.shiftKey) {
@@ -13131,6 +13139,80 @@ Lux.Marks.scatterplot = function(opts)
         pick_id: opts.pick_id
     });
 };
+Lux.Marks.center_zoom_interactor_brush = function(opts)
+{
+    opts = _.defaults(opts || {}, {
+        color: Shade.vec(1,1,1,0.5),
+        mode: Lux.DrawingMode.over,
+        on: {}
+    });
+
+    if (_.isUndefined(opts.interactor)) {
+        throw new Error("center_zoom_interactor_brush needs an interactor");
+    }
+    var interactor = opts.interactor;
+
+    var unproject = Shade(function(p) {
+        return interactor.unproject(p);
+    }).js_evaluate;
+    var selection_pt1 = Shade.parameter("vec2", vec.make([0,0]));
+    var selection_pt2 = Shade.parameter("vec2", vec.make([0,0]));
+    var proj_pt1 = interactor.project(selection_pt1);
+    var proj_pt2 = interactor.project(selection_pt2);
+
+    var brush_batch = Lux.Marks.aligned_rects({
+        elements: 1,
+        left: proj_pt1.x(),
+        right: proj_pt2.x(),
+        top: proj_pt1.y(),
+        bottom: proj_pt2.y(),
+        color: opts.color,
+        mode: opts.mode
+    });
+
+    var gl = Lux._globals.ctx;
+    var brush_is_active = false;
+    var b1;
+    brush_batch.on = {
+        mousedown: function(event) {
+            if (opts.accept_event(event)) {
+                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                b1 = xy_v;
+                selection_pt1.set(xy_v);
+                brush_is_active = true;
+                return false;
+            }
+            return true;
+        },
+        mousemove: function(event) { 
+            if (!brush_is_active)
+                return true;
+            if (opts.accept_event(event)) {
+                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                selection_pt2.set(xy_v);
+                Lux.Scene.invalidate();
+                return false;
+            }
+            return true;
+        },
+        mouseup: function(event) {
+            if (!brush_is_active)
+                return true;
+            brush_is_active = false;
+            if (opts.accept_event(event)) {
+                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                selection_pt2.set(xy_v);
+                var b2 = xy_v;
+                opts.on.brush_updated && opts.on.brush_updated(b1, b2);
+                Lux.Scene.invalidate();
+                return false;
+            }
+            return true;
+        }
+    };
+
+    return brush_batch;
+};
 function spherical_mercator_patch(tess)
 {
     var uv = [];
@@ -15576,6 +15658,18 @@ Lux.Scene.render = function()
     for (var i=0; i<scene.length; ++i) {
         scene[i].draw();
     }
+};
+Lux.Scene.on = function(ename) {
+    return function(event) {
+        var scene = Lux._globals.ctx._lux_globals.scene;
+        for (var i=0; i < scene.length; ++i) {
+            if (scene[i].on && scene[i].on[ename]) {
+                if (!scene[i].on[ename](event))
+                    return false;
+            }
+        }
+        return true;
+    };
 };
 /*
  * Lux.Scene.animate starts a continuous stream of animation refresh
