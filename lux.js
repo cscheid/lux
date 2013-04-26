@@ -11045,6 +11045,26 @@ Shade.translation = Shade(function() {
     } else
         throw new Error("expected either 1, 2 or 3 parameters");
 });
+Shade.scaling = Shade(function() {
+    function build(v1, v2, v3) {
+        return Shade.mat(Shade.vec(v1, 0, 0, 0),
+                         Shade.vec( 0,v2, 0, 0),
+                         Shade.vec( 0, 0,v3, 0),
+                         Shade.vec( 0, 0, 0, 1));
+    }
+    if (arguments.length === 1) {
+        var t = arguments[0];
+        if (t.type.equals(Shade.Types.float_t))
+            return build(t, t, t);
+        if (t.type.equals(Shade.Types.vec3))
+            return build(t.x(), t.y(), t.z());
+        throw new Error("expected float or vec3, got " + t.type.repr() + " instead");
+    } else if (arguments.length === 3) {
+        return build(arguments[0], arguments[1], arguments[2]);
+    } else {
+        throw new Error("expected one or three parameters, got " + arguments.length + " instead");
+    }
+});
 Shade.ortho = Shade.make(function(left, right, bottom, top, near, far) {
     var rl = right.sub(left);
     var tb = top.sub(bottom);
@@ -13945,6 +13965,10 @@ Lux.Models.mesh = function(u_secs, v_secs) {
     });
 };
 Lux.Models.sphere = function(lat_secs, long_secs) {
+    if (_.isUndefined(lat_secs)) {
+        lat_secs = 5;
+        long_secs = 5;
+    }
     var verts = [];
     var elements = [];
     if (_.isUndefined(long_secs)) long_secs = lat_secs;
