@@ -10,7 +10,7 @@
   <script src="/demos/js/mchighlight-javascript.js"></script>
   <script src="lesson2.js"></script>
 </head>
-<body>
+<body>o
 <div class="body">
 <div class="content">
 <h1>Lesson 2: Batch colors</h1>
@@ -23,7 +23,7 @@ are painted on the screen by changing their colors.</p>
 
 <p>If all vertices in the model share the same color, then the color
 can be specified directly in the appearance, at the site of
-the <span class="keyword">bake</span> call. This produces the bluish triangle on the right:</p>
+the <span class="inline-highlight">bake</span> call. This produces the bluish triangle on the right:</p>
 
 <pre class="highlight">
 var square = Lux.model({
@@ -37,9 +37,16 @@ Lux.Scene.add(Lux.bake(square, {
 }));
 </pre>
 
+</p>The field <span class="inline-highlight">elements</span> tells Lux how
+to build the triangles in the model, three at a time. So the first
+triangle is comprised of the vertices at indices 0, 1, and 2, while
+the second triangle has indices 0, 2, and 3.</p>
+
 <p>Now, recall that models are specified vertex by vertex. In the same
-way that model vertices have positions, they can have <em>colors</em>
-as well. These colors can then be specified on the model itself:</p>
+way that model vertices have positions (given by
+the <span class="inline-highlight">vertex</span> field), they can
+have <em>colors</em> as well. These colors can then be specified on
+the model itself:</p>
 
 <pre class="highlight">
 var triangle = Lux.model({
@@ -52,8 +59,12 @@ var triangle = Lux.model({
 });
 </pre>
 
-<p>For convenience, <span class="keyword">Shade.color</span> accepts all <a href="https://developer.mozilla.org/en-US/docs/CSS/color_value">CSS
-color names</a>. In addition, color attributes can also be specified as an array of values, exactly like positions. This snippet is exactly equivalent to the above:</p>
+<p>For convenience, <span class="inline-highlight">Shade.color</span>
+accepts
+all <a href="https://developer.mozilla.org/en-US/docs/CSS/color_value">CSS
+color names</a>. In addition, color attributes can also be specified
+as an array of values, exactly like positions. This snippet is exactly
+equivalent to the above:</p>
 
 <pre class="highlight">
 var triangle = Lux.model({
@@ -64,9 +75,13 @@ var triangle = Lux.model({
 });
 </pre>
 
-<p>Notice that each color has four components, the last of which is the <i>opacity</i> component, or alpha (More about alpha on <a href="../lesson8/lesson8.html">lesson 8</a>).</p>
+<p>Notice that each color has four components, the last of which is
+the <i>opacity</i> component, or alpha (More about alpha
+on <a href="../lesson8/lesson8.html">lesson 8</a>).</p>
 
-<p>To draw the square with different colors, you need to tell <span class="keyword">Lux.bake</span> to use those colors:</p>
+<p>To draw the square with different colors, you need to
+tell <span class="inline-highlight">Lux.bake</span> to use those
+colors:</p>
 
 <pre class="highlight">
 Lux.Scene.add(Lux.bake(triangle, {
@@ -75,9 +90,11 @@ Lux.Scene.add(Lux.bake(triangle, {
 }));
 </pre>
 
+<hr>
 <p>Back to the <a href="../index.html">index</a>.</p>
 <script>
 $('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+$('.inline-highlight').each(function(i, v) { Highlighter.highlight(v); });
 </script>
 </div>
 </body>

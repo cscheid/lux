@@ -1,5 +1,5 @@
 $().ready(function () {
-    var gl = Lux.init({
+    Lux.init({
         clearColor: [0,0,0,0.2]
     });
     var camera = Shade.Camera.perspective();

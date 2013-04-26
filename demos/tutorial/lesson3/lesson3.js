@@ -1,5 +1,5 @@
 $().ready(function () {
-    var gl = Lux.init({
+    var ctx = Lux.init({
         clearColor: [0,0,0,0.2]
     });
 
@@ -19,7 +19,8 @@ $().ready(function () {
 
     var camera = Shade.Camera.perspective();
     // rotate the objects at 50 degrees/second.
-    var angle = gl.parameters.now.mul(50).radians();
+    var now = ctx.parameters.now;
+    var angle = now.mul(50).radians();
 
     Lux.Scene.add(Lux.bake(square, {
         position: camera(Shade.translation( 1.5, 0, -6))
