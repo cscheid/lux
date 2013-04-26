@@ -68,29 +68,28 @@ Lux.UI.center_zoom_interactor = function(opts)
         opts.mouseup(event);
     }
 
-    // FIXME: wow, these eval-Shade-in-Javascript functions get UGLY
-
     // c stores the compensation for the kahan compensated sum
     var c = vec.make([0, 0]);
-    var internal_move = (function() {
-        var param = Shade.parameter("vec2"), t2;
-        return function(dx, dy) {
-            param.set(vec.make([dx, dy]));
-            if (_.isUndefined(t2)) {
-                t2 = result.camera.unproject(Shade.vec(0,0))
-                    .sub(result.camera.unproject(param));
-            }
-            var v = t2.evaluate();
-            var negdelta = v;
-            // we use a kahan compensated sum here:
-            // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
-            // to accumulate minute changes in the center that come from deep zooms.
-            var y = vec.minus(negdelta, c);
-            var t = vec.plus(center.get(), y);
-            c = vec.minus(vec.minus(t, center.get()), y);
-            center.set(t);
-        };
-    })();
+
+    // f computes the change in the center position, relative to the
+    // current camera parameters. Since camera is a Lux expression,
+    // to get the javascript value we create a Shade function and
+    // use js_evaluate.
+    var f = Shade(function (delta_vec) {
+        return result.camera.unproject(Shade.vec(0,0))
+            .sub(result.camera.unproject(delta_vec));
+    }).js_evaluate;
+
+    var internal_move = function(dx, dy) {
+        var negdelta = f(vec.make([dx, dy]));
+        // we use a kahan compensated sum here:
+        // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+        // to accumulate minute changes in the center that come from deep zooms.
+        var y = vec.minus(negdelta, c);
+        var t = vec.plus(center.get(), y);
+        c = vec.minus(vec.minus(t, center.get()), y);
+        center.set(t);
+    };
 
     function mousemove(event) {
         if ((current_button & 1) && !event.shiftKey) {

@@ -5592,20 +5592,16 @@ Lux.UI.center_zoom_interactor = function(opts)
         opts.mouseup(event);
     }
 
-    // FIXME: wow, these eval-Shade-in-Javascript functions get UGLY
-
     // c stores the compensation for the kahan compensated sum
     var c = vec.make([0, 0]);
     var internal_move = (function() {
-        var param = Shade.parameter("vec2"), t2;
+        var f = Shade(function (delta_vec) {
+            return result.camera.unproject(Shade.vec(0,0))
+                .sub(result.camera.unproject(delta_vec));
+        }).js_evaluate;
+
         return function(dx, dy) {
-            param.set(vec.make([dx, dy]));
-            if (_.isUndefined(t2)) {
-                t2 = result.camera.unproject(Shade.vec(0,0))
-                    .sub(result.camera.unproject(param));
-            }
-            var v = t2.evaluate();
-            var negdelta = v;
+            var negdelta = f(vec.make([dx, dy]));
             // we use a kahan compensated sum here:
             // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
             // to accumulate minute changes in the center that come from deep zooms.
@@ -5817,8 +5813,8 @@ Shade.make = function(value)
             }
             args_type_string = _.map(args_types, function(t) { return t.repr(); }).join(",");
             if (_.isUndefined(args_type_cache[args_type_string]))
-                args_type_cache[args_type_string] = create_parameterized_function(this, args_types);
-            return args_type_cache[args_type_string].apply(this, arguments);
+                args_type_cache[args_type_string] = create_parameterized_function(result, args_types);
+            return args_type_cache[args_type_string].apply(result, arguments);
         };
         return result;
     }
