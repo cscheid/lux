@@ -163,6 +163,9 @@ lux.js:							\
 	src/shade/scale/geo/mercator_to_latlong.js	\
 	src/shade/scale/geo/latlong_to_spherical.js	\
 	src/shade/scale/geo/latlong_to_mercator.js	\
+	src/shade/light/_begin.js			\
+	src/shade/light/ambient.js			\
+	src/shade/light/diffuse.js			\
 	src/lux/geometry/_begin.js			\
 	src/lux/geometry/triangulate.js			\
 	src/lux/text/_begin.js				\
