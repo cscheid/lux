@@ -18,6 +18,7 @@ $().ready(function() {
     var model_mat = Shade.rotation(angle, Shade.vec(0,1,0));
     var moon = Lux.texture({
         src: "../img/moon_1024.jpg",
+        max_anisotropy: 4,
         onload: function() {
             var uv          = sphere.tex_coord.swizzle("yx");
             var pos         = model_mat(sphere.vertex);
@@ -27,7 +28,7 @@ $().ready(function() {
                 normal: Shade.ThreeD.bump({
                     uv: uv,
                     map: this,
-                    scale: 0.005,
+                    scale: 0.01,
                     position: pos.swizzle("xyz"),
                     normal: surfnorm.swizzle("xyz")
                 }),

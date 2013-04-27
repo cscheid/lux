@@ -4020,6 +4020,9 @@ function initialize_context_globals(gl)
     gl._lux_globals.post_display_list = [];
 
     gl._lux_globals.devicePixelRatio = undefined;
+
+    // Optional, enabled WebGL extensions go here.
+    gl._lux_globals.webgl_extensions = {};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4112,6 +4115,7 @@ Lux.init = function(opts)
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
             throw new Error("failed context creation");
+        initialize_context_globals(gl);
         if ("interactor" in opts) {
             for (var key in opts.interactor.events) {
                 if (opts[key]) {
@@ -4175,15 +4179,26 @@ Lux.init = function(opts)
                 gl.getExtension(ext); // must call this to enable extension
             }
         });
+        _.each(["WEBKIT_EXT_texture_filter_anisotropic",
+                "MOZ_EXT_texture_filter_anisotropic"], 
+               function(ext) {
+                   if (exts.indexOf(ext) !== -1) {
+                       gl.getExtension(ext);
+                       gl._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic = true;
+                       gl.TEXTURE_MAX_ANISOTROPY_EXT     = 0x84FE;
+                       gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FF;
+                       console.log("Lux: Enabling anisotropic filtering extension, max ",
+                                   gl.getParameter(gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT));
+                   }
+               });
     } catch(e) {
         alert(e);
     }
     if (!gl) {
-        alert("Could not initialise WebGL, sorry :-(");
+        alert("Could not initialize WebGL, sorry :-(");
         throw new Error("failed initalization");
     }
 
-    initialize_context_globals(gl);
     gl._lux_globals.devicePixelRatio = devicePixelRatio;
 
     Lux.set_context(gl);
@@ -4635,8 +4650,6 @@ Lux.on_context = function(the_ctx, f)
 // load texture from DOM element or URL. 
 // BEWARE SAME-DOMAIN POLICY!
 
-// FIXME: replace all this with the code from Lux.load_image_into_texture
-
 Lux.texture = function(opts)
 {
     var ctx = Lux._globals.ctx;
@@ -4652,13 +4665,14 @@ Lux.texture = function(opts)
         var ctx = Lux._globals.ctx;
         opts = _.defaults(opts, {
             onload: function() {},
-            mipmaps: false,
-            mag_filter: ctx.LINEAR,
-            min_filter: ctx.LINEAR,
-            wrap_s: ctx.CLAMP_TO_EDGE,
-            wrap_t: ctx.CLAMP_TO_EDGE,
-            format: ctx.RGBA,
-            type: ctx.UNSIGNED_BYTE
+            max_anisotropy: 2,
+            mipmaps: true,
+            mag_filter: Lux.texture.linear,
+            min_filter: Lux.texture.linear_mipmap_linear,
+            wrap_s: Lux.texture.clamp_to_edge,
+            wrap_t: Lux.texture.clamp_to_edge,
+            format: Lux.texture.rgba,
+            type: Lux.texture.unsigned_byte
         });
         this.width = opts.width;
         this.height = opts.height;
@@ -4825,16 +4839,53 @@ Lux.texture = function(opts)
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
+        if (ctx._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic) {
+            ctx.texParameterf(ctx.TEXTURE_2D, ctx.TEXTURE_MAX_ANISOTROPY_EXT, opts.max_anisotropy);
+        }
 
         delete this.buffer;
         delete this.image;
 
         this.load(opts);
     });
+
     texture.init(opts);
 
     return texture;
 };
+
+//////////////////////////////////////////////////////////////////////////////
+// texture-related enums go here
+
+// mag_filter
+Lux.texture.nearest                = 0x2600;
+Lux.texture.linear                 = 0x2601;
+
+// min_filter 
+Lux.texture.nearest_mipmap_nearest = 0x2700;
+Lux.texture.linear_mipmap_nearest  = 0x2701;
+Lux.texture.nearest_mipmap_linear  = 0x2702;
+Lux.texture.linear_mipmap_linear   = 0x2703;
+
+// wrap_s and wrap_t
+Lux.texture.repeat                 = 0x2901;
+Lux.texture.clamp_to_edge          = 0x812F;
+Lux.texture.mirrored_repeat        = 0x8370;
+
+// format
+Lux.texture.depth_component        = 0x1902;
+Lux.texture.alpha                  = 0x1906;
+Lux.texture.rgb                    = 0x1907;
+Lux.texture.rgba                   = 0x1908;
+Lux.texture.luminance              = 0x1909;
+Lux.texture.luminance_alpha        = 0x190A;
+
+// type
+Lux.texture.unsigned_byte          = 0x1401;
+Lux.texture.unsigned_short_4_4_4_4 = 0x8033;
+Lux.texture.unsigned_short_5_5_5_1 = 0x8034;
+Lux.texture.unsigned_short_5_6_5   = 0x8363;
+Lux.texture["float"]               = 0x1406;
 (function() {
 
 var rb;
@@ -12521,7 +12572,11 @@ Shade.Light.diffuse = function(light_opts)
     };
 };
 Shade.ThreeD = {};
+// Shade.ThreeD.bump returns a normal perturbed by bump mapping.
+
 Shade.ThreeD.bump = function(opts) {
+    // Via Three.JS, and
+    // http://mmikkelsen3d.blogspot.sk/2011/07/derivative-maps.html
     var uv         = opts.uv;
     var bump_map   = opts.map;
     var bump_scale = opts.scale;
@@ -12541,7 +12596,6 @@ Shade.ThreeD.bump = function(opts) {
     var det        = sigmaX.dot(R1);
     var vGrad      = det.sign().mul(dHdxy.x().mul(R1).add(dHdxy.y().mul(R2)));
     return det.abs().mul(surf_norm).sub(vGrad).normalize();
-    
 };
 Lux.Geometry = {};
 Lux.Geometry.triangulate = function(opts) {

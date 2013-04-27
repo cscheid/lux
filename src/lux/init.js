@@ -30,6 +30,9 @@ function initialize_context_globals(gl)
     gl._lux_globals.post_display_list = [];
 
     gl._lux_globals.devicePixelRatio = undefined;
+
+    // Optional, enabled WebGL extensions go here.
+    gl._lux_globals.webgl_extensions = {};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -122,6 +125,7 @@ Lux.init = function(opts)
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
             throw new Error("failed context creation");
+        initialize_context_globals(gl);
         if ("interactor" in opts) {
             for (var key in opts.interactor.events) {
                 if (opts[key]) {
@@ -185,15 +189,26 @@ Lux.init = function(opts)
                 gl.getExtension(ext); // must call this to enable extension
             }
         });
+        _.each(["WEBKIT_EXT_texture_filter_anisotropic",
+                "MOZ_EXT_texture_filter_anisotropic"], 
+               function(ext) {
+                   if (exts.indexOf(ext) !== -1) {
+                       gl.getExtension(ext);
+                       gl._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic = true;
+                       gl.TEXTURE_MAX_ANISOTROPY_EXT     = 0x84FE;
+                       gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FF;
+                       console.log("Lux: Enabling anisotropic filtering extension, max ",
+                                   gl.getParameter(gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT));
+                   }
+               });
     } catch(e) {
         alert(e);
     }
     if (!gl) {
-        alert("Could not initialise WebGL, sorry :-(");
+        alert("Could not initialize WebGL, sorry :-(");
         throw new Error("failed initalization");
     }
 
-    initialize_context_globals(gl);
     gl._lux_globals.devicePixelRatio = devicePixelRatio;
 
     Lux.set_context(gl);
