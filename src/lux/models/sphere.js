@@ -34,11 +34,14 @@ Lux.Models.sphere = function(lat_secs, long_secs) {
     phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
     theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
     var cosphi = S.cos(phi);
+    var position = S.vec(S.sin(theta).mul(cosphi),
+                         S.sin(phi),
+                         S.cos(theta).mul(cosphi), 1);
     return Lux.model({
         type: "triangles",
         elements: Lux.element_buffer(elements),
-        vertex: S.vec(S.sin(theta).mul(cosphi),
-                      S.sin(phi),
-                      S.cos(theta).mul(cosphi), 1)
+        vertex: position,
+        tex_coord: uv_attr,
+        normal: position
     });
 };

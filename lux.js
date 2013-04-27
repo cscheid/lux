@@ -12520,6 +12520,29 @@ Shade.Light.diffuse = function(light_opts)
         return Shade.add(v.mul(light_diffuse).mul(material_color));
     };
 };
+Shade.ThreeD = {};
+Shade.ThreeD.bump = function(opts) {
+    var uv         = opts.uv;
+    var bump_map   = opts.map;
+    var bump_scale = opts.scale;
+    var surf_pos   = opts.position;
+    var surf_norm  = opts.normal;
+
+    var dSTdx      = Shade.dFdx(uv);
+    var dSTdy      = Shade.dFdy(uv);
+    var Hll        = Shade.texture2D(bump_map, uv).x();
+    var dBx        = Shade.texture2D(bump_map, uv.add(dSTdx)).x().sub(Hll);
+    var dBy        = Shade.texture2D(bump_map, uv.add(dSTdy)).x().sub(Hll);
+    var dHdxy      = Shade.vec(dBx, dBy).mul(bump_scale);
+    var sigmaX     = Shade.dFdx(surf_pos);
+    var sigmaY     = Shade.dFdy(surf_pos);
+    var R1         = Shade.cross(sigmaY, surf_norm);
+    var R2         = Shade.cross(surf_norm, sigmaX);
+    var det        = sigmaX.dot(R1);
+    var vGrad      = det.sign().mul(dHdxy.x().mul(R1).add(dHdxy.y().mul(R2)));
+    return det.abs().mul(surf_norm).sub(vGrad).normalize();
+    
+};
 Lux.Geometry = {};
 Lux.Geometry.triangulate = function(opts) {
     var poly = _.map(opts.contour, function(contour) {
@@ -14055,12 +14078,15 @@ Lux.Models.sphere = function(lat_secs, long_secs) {
     phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
     theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
     var cosphi = S.cos(phi);
+    var position = S.vec(S.sin(theta).mul(cosphi),
+                         S.sin(phi),
+                         S.cos(theta).mul(cosphi), 1);
     return Lux.model({
         type: "triangles",
         elements: Lux.element_buffer(elements),
-        vertex: S.vec(S.sin(theta).mul(cosphi),
-                      S.sin(phi),
-                      S.cos(theta).mul(cosphi), 1)
+        vertex: position,
+        tex_coord: uv_attr,
+        normal: position
     });
 };
 Lux.Models.square = function() {

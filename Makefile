@@ -166,6 +166,8 @@ lux.js:							\
 	src/shade/light/_begin.js			\
 	src/shade/light/ambient.js			\
 	src/shade/light/diffuse.js			\
+	src/shade/threed/_begin.js			\
+	src/shade/threed/bump.js			\
 	src/lux/geometry/_begin.js			\
 	src/lux/geometry/triangulate.js			\
 	src/lux/text/_begin.js				\
