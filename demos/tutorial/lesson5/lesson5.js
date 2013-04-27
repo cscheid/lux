@@ -10,7 +10,7 @@ $().ready(function () {
 
     var cube = Lux.Models.flat_cube();
     Lux.texture({ 
-        src: "../../img/nehe.jpg",
+        src: "../../img/crate.jpg",
         onload: function() {
             Lux.Scene.add(Lux.bake(cube, {
                 position: camera(Shade.rotation(angle, Shade.vec(1,1,1))(cube.vertex)),

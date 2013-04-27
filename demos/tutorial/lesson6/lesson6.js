@@ -2,7 +2,7 @@ var angle;
 var texture = [];
 var sampler;
 
-function cube_batch(opts)
+function batches(opts)
 {
     var model = Lux.Models.flat_cube();
     var material_color = Shade.texture2D(opts.texture, model.tex_coord);
@@ -58,7 +58,7 @@ $().ready(function () {
     texture = Lux.texture({ 
         src: "../../img/crate.jpg",
         onload: function() {
-            _.each(cube_batch({ texture: this }), 
+            _.each(batches({ texture: this }), 
                    function(obj) {
                        Lux.Scene.add(obj);
                    });
