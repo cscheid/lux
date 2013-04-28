@@ -5493,22 +5493,18 @@ Lux.UI = {};
 /*
  * Lux.UI.parameter_slider is a function to help create UI elements
  * that control Shade.parameter objects. 
- * 
- * It uses jquery-ui sliders, and so assumes jquery-ui in addition to jquery.
- * 
- * I hear jquery-ui is about as cool as pocket protectors, but hey, 
- * it does the job.
- * 
- */
-
-/*
- * Lux.UI.parameter_slider requires "element" and "parameter" options.
+ *
+ * The result of calling Lux.UI.parameter_slider is a Shade.parameter,
+ * either freshly created, or the one passed as input.
+ *
+ * Lux.UI.parameter_slider requires the "element" field in its options.
  * 
  * opts.element is the HTML element used by jquery-ui to create the slider. That
  *   object needs to have the correct CSS class assigned to it ahead of calling
  *   this function.
  * 
- * opts.parameter is the Shade.parameter object under control.
+ * opts.parameter is the Shade.parameter object under control. if opts.parameter
+ *   is undefined, Lux.UI.parameter_slider creates the Shade.parameter.
  * 
  * opts.change is a user-defined callback to the slider change event.
  * opts.slide is a user-defined callback to the slider slide event.
@@ -5518,7 +5514,12 @@ Lux.UI = {};
  * 
  * opts.min is the minimum value allowed by the slider
  * opts.max is the maximum value allowed by the slider
+ * opts.value is the starting value of the slider and parameter
  * opts.orientation is the slider's orientation, either "horizontal" or "vertical"
+ *
+ * Lux.UI.parameter_slider uses jquery-ui sliders, and so assumes
+ * jquery-ui in addition to jquery.  If you know of a better
+ * lightweight gui library, let me know as well.
  */
 
 Lux.UI.parameter_slider = function(opts)
@@ -5531,9 +5532,18 @@ Lux.UI.parameter_slider = function(opts)
         change: function() {}
     });
     var element = opts.element;
-    var parameter =  opts.parameter;
-
-    var slider_min = 0, slider_max = 1000;
+    if (_.isUndefined(opts.element)) {
+        throw new Error("parameter_slider requires an element option");
+    }
+    if (_.isUndefined(opts.parameter)) {
+        opts.parameter = Shade.parameter("float", opts.min);
+    }
+    if (!_.isUndefined(opts.value)) {
+        opts.parameter.set(opts.value);
+    }
+    var parameter  = opts.parameter,
+        slider_min = 0, 
+        slider_max = 1000;
 
     function to_slider(v) {
         return (v-opts.min) / (opts.max - opts.min) * 
@@ -5561,6 +5571,7 @@ Lux.UI.parameter_slider = function(opts)
             Lux.Scene.invalidate();
         }
     });
+    return parameter;
 };
 Lux.UI.parameter_checkbox = function(opts)
 {
@@ -11041,6 +11052,8 @@ Shade.Exp.ifelse = function(if_true, if_false)
 
 Shade.rotation = Shade(function(angle, axis)
 {
+    if (axis.type.equals(Shade.Types.vec4))
+        axis = axis.swizzle("xyz");
     axis = axis.normalize();
 
     var s = angle.sin(), c = angle.cos(), t = Shade.sub(1, c);
