@@ -190,7 +190,7 @@ Lux.init = function(opts)
             }
         });
         _.each(["WEBKIT_EXT_texture_filter_anisotropic",
-                "MOZ_EXT_texture_filter_anisotropic"], 
+                "EXT_texture_filter_anisotropic"], 
                function(ext) {
                    if (exts.indexOf(ext) !== -1) {
                        gl.getExtension(ext);
