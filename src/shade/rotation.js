@@ -4,6 +4,8 @@
 
 Shade.rotation = Shade(function(angle, axis)
 {
+    if (axis.type.equals(Shade.Types.vec4))
+        axis = axis.swizzle("xyz");
     axis = axis.normalize();
 
     var s = angle.sin(), c = angle.cos(), t = Shade.sub(1, c);
