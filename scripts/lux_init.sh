@@ -56,6 +56,7 @@ cp $LUX_DIR/lib/jquery-1.6.2.min.js $TARGET_DIR/lib
 cp $LUX_DIR/lib/jquery.mousewheel.js $TARGET_DIR/lib
 cp $LUX_DIR/lib/jquery-ui-1.8.16.custom.min.js $TARGET_DIR/lib
 cp -r $LUX_DIR/demos/css $TARGET_DIR
+cp -r $LUX_DIR/lib/ui-lightness $TARGET_DIR/css
 
 cat > $TARGET_DIR/index.html <<EOF
 <html>
@@ -63,6 +64,7 @@ cat > $TARGET_DIR/index.html <<EOF
   <link rel="stylesheet" href="css/bootstrap.css"/>
   <link rel="stylesheet" href="css/style.css"/>
   <link rel="stylesheet" href="css/mchighlight-javascript.css"/>
+  <link type="text/css" href="css/ui-lightness/jquery-ui-1.8.21.custom.css" rel="stylesheet" />
   <script src="lib/jquery-1.6.2.min.js"></script>
   <script src="lib/jquery.mousewheel.js"></script>
   <script src="lib/jquery-ui-1.8.16.custom.min.js"></script>
