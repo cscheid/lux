@@ -7,6 +7,7 @@ Lux.render_buffer = function(opts)
         height: 512,
         mag_filter: ctx.LINEAR,
         min_filter: ctx.LINEAR,
+        mipmaps: false,
         wrap_s: ctx.CLAMP_TO_EDGE,
         wrap_t: ctx.CLAMP_TO_EDGE
     });
