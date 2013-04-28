@@ -4538,11 +4538,11 @@ Lux.render_buffer = function(opts)
     opts = _.defaults(opts || {}, {
         width: 512,
         height: 512,
-        mag_filter: ctx.LINEAR,
-        min_filter: ctx.LINEAR,
+        mag_filter: Lux.texture.linear,
+        min_filter: Lux.texture.linear,
         mipmaps: false,
-        wrap_s: ctx.CLAMP_TO_EDGE,
-        wrap_t: ctx.CLAMP_TO_EDGE
+        wrap_s: Lux.texture.clamp_to_edge,
+        wrap_t: Lux.texture.clamp_to_edge
     });
 
     // Weird:
