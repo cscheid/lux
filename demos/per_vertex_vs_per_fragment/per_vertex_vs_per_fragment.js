@@ -74,14 +74,7 @@ $().ready(function() {
     $("#fp_button").click(function() {
         current_mode = "per_fragment";
     });
-    gl = Lux.init(canvas,
-                {
-                    attributes: {
-                        alpha: true,
-                        depth: true
-                    }
-                });
-
+    gl = Lux.init();
     init_webgl();
     var start = new Date().getTime();
     var f = function () {

@@ -128,14 +128,14 @@ function data_buffers()
 function init_webgl()
 {
     var canvas = document.getElementById("scatterplot");
-    gl = Lux.init(canvas, { attributes: { alpha: true,
-                                            depth: true
-                                          },
-                              display: function() {
-                                  bars_batch.draw();
-                              },
-                              clearColor: [0, 0, 0, 0.2]
-                            });
+    gl = Lux.init({ attributes: { alpha: true,
+                                  depth: true
+                                },
+                    display: function() {
+                        bars_batch.draw();
+                    },
+                    clearColor: [0, 0, 0, 0.2]
+                  });
     Lux.set_context(gl);
     data = data_buffers();
     var bin_count = 24;

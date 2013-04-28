@@ -52,7 +52,7 @@ function data_buffers()
 function init_webgl()
 {
     var canvas = document.getElementById("canvas");
-    gl = Lux.init(canvas, { 
+    gl = Lux.init({ 
         clearColor: [0, 0, 0, 0.2]
     });
     Lux.set_context(gl);

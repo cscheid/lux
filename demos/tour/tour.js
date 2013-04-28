@@ -160,10 +160,7 @@ $().ready(function() {
         change: change_stroke_width
     });
     var canvas = document.getElementById("scatterplot");
-    gl = Lux.init(canvas, { attributes: { alpha: true,
-                                          depth: true
-                                        }
-                          });
+    gl = Lux.init();
     init_webgl();
     var frame_1 = random_2d_frame(4);
     var frame_2 = random_2d_frame(4);

@@ -7,7 +7,7 @@ var mesh;
 
 $().ready(function () {
     var prev_mouse_pos;
-    gl = Lux.init(document.getElementById("webgl"), {
+    gl = Lux.init({
         clearColor: [0,0,0,0.2],
         mousedown: function(event) {
             prev_mouse_pos = [event.offsetX, event.offsetY];

@@ -17,7 +17,7 @@ $().ready(function() {
     strings[pick_id_val+1] = "Wedge 1";
     strings[pick_id_val+2] = "Wedge 2";
 
-    var gl = Lux.init(document.getElementById("webgl"), {
+    var gl = Lux.init({
         clearColor: [0,0,0,0.2],
         mousedown: handle_mouse,
         mousemove: handle_mouse

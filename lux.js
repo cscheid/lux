@@ -1081,14 +1081,14 @@ var vec2 = {};
 vec2.create = function()
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     return result;
 };
 
 vec2.copy = function(vec)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = vec[0];
     result[1] = vec[1];
     return result;
@@ -1123,7 +1123,7 @@ vec2.set = function(dest, vec)
 vec2.plus = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     return result;
@@ -1139,7 +1139,7 @@ vec2.add = function(dest, other)
 vec2.minus = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     return result;
@@ -1155,7 +1155,7 @@ vec2.subtract = function(dest, other)
 vec2.negative = function(v)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = -v[0];
     result[1] = -v[1];
     return result;
@@ -1171,7 +1171,7 @@ vec2.negate = function(dest)
 vec2.scaling = function(vec, val)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     return result;
@@ -1187,7 +1187,7 @@ vec2.scale = function(dest, val)
 vec2.schur_product = function(v1, v2)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     return result;
@@ -1203,7 +1203,7 @@ vec2.schur_multiply = function(dest, other)
 vec2.normalized = function(vec)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     var x = vec[0], y = vec[1];
     var len = Math.sqrt(x*x + y*y);
     if (!len)
@@ -1261,14 +1261,14 @@ var vec3 = {};
 vec3.create = function()
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     return result;
 };
 
 vec3.copy = function(vec)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = vec[0];
     result[1] = vec[1];
     result[2] = vec[2];
@@ -1306,7 +1306,7 @@ vec3.set = function(dest, vec)
 vec3.plus = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     result[2] = v1[2] + v2[2];
@@ -1324,7 +1324,7 @@ vec3.add = function(dest, other)
 vec3.minus = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     result[2] = v1[2] - v2[2];
@@ -1342,7 +1342,7 @@ vec3.subtract = function(dest, other)
 vec3.negative = function(v)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = -v[0];
     result[1] = -v[1];
     result[2] = -v[2];
@@ -1360,7 +1360,7 @@ vec3.negate = function(dest)
 vec3.scaling = function(vec, val)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     result[2] = vec[2]*val;
@@ -1378,7 +1378,7 @@ vec3.scale = function(dest, val)
 vec3.schur_product = function(v1, v2)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     result[2] = v1[2] * v2[2];
@@ -1396,7 +1396,7 @@ vec3.schur_multiply = function(dest, other)
 vec3.normalized = function(vec)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     var x = vec[0], y = vec[1], z = vec[2];
     var len = Math.sqrt(x*x + y*y + z*z);
     if (!len)
@@ -1432,7 +1432,7 @@ vec3.cross = function(v1, v2)
     var x1 = v1[0], y1 = v1[1], z1 = v1[2];
     var x2 = v2[0], y2 = v2[1], z2 = v2[2];
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     result[0] = y1 * z2 - z1 * y2;
     result[1] = z1 * x2 - x1 * z2;
     result[2] = x1 * y2 - y1 * x2;
@@ -1469,14 +1469,14 @@ var vec4 = {};
 vec4.create = function()
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     return result;
 };
 
 vec4.copy = function(vec)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = vec[0];
     result[1] = vec[1];
     result[2] = vec[2];
@@ -1516,7 +1516,7 @@ vec4.set = function(dest, vec)
 vec4.plus = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = v1[0] + v2[0];
     result[1] = v1[1] + v2[1];
     result[2] = v1[2] + v2[2];
@@ -1536,7 +1536,7 @@ vec4.add = function(dest, other)
 vec4.minus = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = v1[0] - v2[0];
     result[1] = v1[1] - v2[1];
     result[2] = v1[2] - v2[2];
@@ -1556,7 +1556,7 @@ vec4.subtract = function(dest, other)
 vec4.negative = function(v)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = -v[0];
     result[1] = -v[1];
     result[2] = -v[2];
@@ -1576,7 +1576,7 @@ vec4.negate = function(dest)
 vec4.scaling = function(vec, val)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = vec[0]*val;
     result[1] = vec[1]*val;
     result[2] = vec[2]*val;
@@ -1596,7 +1596,7 @@ vec4.scale = function(dest, val)
 vec4.schur_product = function(v1, v2)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     result[0] = v1[0] * v2[0];
     result[1] = v1[1] * v2[1];
     result[2] = v1[2] * v2[2];
@@ -1616,7 +1616,7 @@ vec4.schur_multiply = function(dest, other)
 vec4.normalized = function(vec)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     var len = Math.sqrt(x*x + y*y + z*z + w*w);
     if (!len)
@@ -1678,14 +1678,14 @@ var mat2 = {};
 mat2.create = function()
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     return result;
 };
 
 mat2.copy = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -1705,7 +1705,7 @@ mat2.equal = function(v1, v2)
 mat2.random = function()
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = Math.random();
     result[1] = Math.random();
     result[2] = Math.random();
@@ -1728,7 +1728,7 @@ var _identity = new Float32Array([1,0,0,1]);
 mat2.identity = function()
 {
     var result = new Float32Array(_identity);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     return result;
 };
 
@@ -1742,7 +1742,7 @@ mat2.set_identity = function(mat)
 mat2.transpose = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = mat[0];
     result[1] = mat[2];
     result[2] = mat[1];
@@ -1775,7 +1775,7 @@ mat2.determinant = function(mat)
 mat2.inverse = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
 	
     var a00 = mat[0], a01 = mat[1];
     var a10 = mat[2], a11 = mat[3];
@@ -1783,7 +1783,7 @@ mat2.inverse = function(mat)
     // Calculate the determinant (inlined to avoid double-caching)
     var det = (a00*a11 - a01*a10);
     if (det === 0)
-        throw "Singular matrix";
+        throw new Error("Singular matrix");
 
     result[0] =  a11/det;
     result[1] = -a01/det;
@@ -1801,7 +1801,7 @@ mat2.invert = function(mat)
     // Calculate the determinant (inlined to avoid double-caching)
     var det = (a00*a11 - a01*a10);
     if (det === 0)
-        throw "Singular matrix";
+        throw new Error("Singular matrix");
 
     mat[0] =  a11/det;
     mat[1] = -a01/det;
@@ -1814,7 +1814,7 @@ mat2.invert = function(mat)
 mat2.as_mat4 = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0]  = mat[0];
     result[1]  = mat[1];
     result[4]  = mat[2];
@@ -1825,7 +1825,7 @@ mat2.as_mat4 = function(mat)
 mat2.as_mat3 = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = mat[0];
     result[1] = mat[1];
     result[3] = mat[2];
@@ -1837,7 +1837,7 @@ mat2.as_mat3 = function(mat)
 mat2.product = function(m1, m2)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1];
@@ -1875,7 +1875,7 @@ mat2.multiply = function(dest, other)
 mat2.product_vec = function(mat, vec)
 {
     var result = new Float32Array(2);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec2';
     var x = vec[0], y = vec[1];
     result[0] = mat[0]*x + mat[2]*y;
     result[1] = mat[1]*x + mat[3]*y;
@@ -1915,14 +1915,14 @@ var mat3 = {};
 mat3.create = function()
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     return result;
 };
 
 mat3.copy = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -1952,7 +1952,7 @@ mat3.equal = function(v1, v2)
 mat3.random = function()
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = Math.random();
     result[1] = Math.random();
     result[2] = Math.random();
@@ -1987,7 +1987,7 @@ var _identity = new Float32Array([1,0,0,
 mat3.identity = function()
 {
     var result = new Float32Array(_identity);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     return result;
 };
 
@@ -2001,7 +2001,7 @@ mat3.set_identity = function(mat)
 mat3.transpose = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = mat[0];
     result[1] = mat[3];
     result[2] = mat[6];
@@ -2054,7 +2054,7 @@ mat3.determinant = function(mat)
 mat3.inverse = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
 
     var a00 = mat[0], a01 = mat[3], a02 = mat[6];
     var a10 = mat[1], a11 = mat[4], a12 = mat[7];
@@ -2065,7 +2065,7 @@ mat3.inverse = function(mat)
     var det = a00*a11*a22 + a01*a12*a20 + a02*a10*a21
         - a02*a11*a20 - a01*a10*a22 - a00*a12*a21;
     if (det === 0)
-        throw "Singular matrix";
+        throw new Error("Singular matrix");
 
     result[0] = ( a11*a22 - a12*a21)/det;
     result[1] = (-a10*a22 + a12*a20)/det;
@@ -2091,7 +2091,7 @@ mat3.invert = function(mat)
     var det = a00*a11*a22 + a01*a12*a20 + a02*a10*a21
         - a02*a11*a20 - a01*a10*a22 - a00*a12*a21;
     if (det === 0)
-        throw "Singular matrix";
+        throw new Error("Singular mat3");
 
     mat[0] = ( a11*a22 - a12*a21)/det;
     mat[1] = (-a10*a22 + a12*a20)/det;
@@ -2109,7 +2109,7 @@ mat3.invert = function(mat)
 mat3.as_mat4 = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0]  = mat[0];
     result[1]  = mat[1];
     result[2]  = mat[2];
@@ -2125,7 +2125,7 @@ mat3.as_mat4 = function(mat)
 mat3.as_mat2 = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[3];
@@ -2137,7 +2137,7 @@ mat3.as_mat2 = function(mat)
 mat3.product = function(m1, m2)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1],  a02 = m1[2];
@@ -2189,7 +2189,7 @@ mat3.multiply = function(dest, other)
 mat3.product_vec = function(mat, vec)
 {
     var result = new Float32Array(3);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec3';
     var x = vec[0], y = vec[1], z = vec[2];
     result[0] = mat[0]*x + mat[3]*y + mat[6]*z;
     result[1] = mat[1]*x + mat[4]*y + mat[7]*z;
@@ -2237,14 +2237,14 @@ var mat4 = {};
 mat4.create = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     return result;
 };
 
 mat4.copy = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -2324,7 +2324,7 @@ var _identity = new Float32Array([1,0,0,0,
 mat4.identity = function()
 {
     var result = new Float32Array(_identity);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     return result;
 };
 
@@ -2338,7 +2338,7 @@ mat4.set_identity = function(mat)
 mat4.transpose = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0] = mat[0];
     result[1] = mat[4];
     result[2] = mat[8];
@@ -2418,7 +2418,7 @@ mat4.determinant = function(mat)
 mat4.inverse = function(mat)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
 	
     var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3];
     var a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7];
@@ -2508,7 +2508,7 @@ mat4.invert = function(mat)
 mat4.as_mat3 = function(mat)
 {
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[2];
@@ -2524,7 +2524,7 @@ mat4.as_mat3 = function(mat)
 mat4.as_mat2 = function(mat)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat2';
     result[0] = mat[0];
     result[1] = mat[1];
     result[2] = mat[4];
@@ -2546,10 +2546,10 @@ mat4.as_inverse_transpose_mat3 = function(mat)
     var b21 =  a21*a10-a11*a20;
 		
     var d = a00*b01 + a01*b11 + a02*b21;
-    if (!d) throw "singular matrix";
+    if (!d) throw new Error("singular matrix");
 
     var result = new Float32Array(9);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat3';
 	
     result[0] = b01/d;
     result[1] = (-a22*a01 + a02*a21)/d;
@@ -2568,7 +2568,7 @@ mat4.as_inverse_transpose_mat3 = function(mat)
 mat4.product = function(m1, m2)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
 
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = m1[0],  a01 = m1[1],  a02 = m1[2],  a03 = m1[3];
@@ -2638,7 +2638,7 @@ mat4.multiply = function(dest, other)
 mat4.product_vec = function(mat, vec)
 {
     var result = new Float32Array(4);
-    result.buffer._type = 'vector';
+    result.buffer._type = 'vec4';
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     result[0] = mat[0]*x + mat[4]*y + mat[8]*z  + mat[12]*w;
     result[1] = mat[1]*x + mat[5]*y + mat[9]*z  + mat[13]*w;
@@ -2670,7 +2670,7 @@ mat4.multiply_vec3 = function(mat, vec)
 mat4.translation_of = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var x = vec[0], y = vec[1], z = vec[2];
     var a00 = mat[0], a01 = mat[1], a02 = mat[2], a03 = mat[3];
     var a10 = mat[4], a11 = mat[5], a12 = mat[6], a13 = mat[7];
@@ -2697,7 +2697,7 @@ mat4.translation_of = function(mat, vec)
 mat4.translation = function(vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     result[0] = result[5] = result[10] = result[15] = 1;    
     result[12] = vec[0];
     result[13] = vec[1];
@@ -2718,7 +2718,7 @@ mat4.translate = function(mat, vec)
 mat4.scaling_of = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var x = vec[0], y = vec[1], z = vec[2];
     result[0] =  mat[0]  * x;
     result[1] =  mat[1]  * x;
@@ -2752,7 +2752,7 @@ mat4.scaling = function(mat, vec)
 mat4.scale = function(mat, vec)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var x = vec[0], y = vec[1], z = vec[2];
     mat[0]  *= x;
     mat[1]  *= x;
@@ -2774,7 +2774,7 @@ mat4.rotation_of = function(mat, angle, axis)
 {
     var x = axis[0], y = axis[1], z = axis[2];
     var len = Math.sqrt(x*x + y*y + z*z);
-    if (!len) { throw "zero-length axis"; }
+    if (!len) { throw new Error("zero-length axis"); }
     if (len != 1) {
 	x /= len; 
 	y /= len; 
@@ -2796,7 +2796,7 @@ mat4.rotation_of = function(mat, angle, axis)
     var b20 = x*z*t + y*s, b21 = y*z*t - x*s, b22 = z*z*t + c;
 
     var result = new Float32Array(16);    
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     
     // Perform rotation-specific matrix multiplication
     result[0]  = a00*b00 + a10*b01 + a20*b02;
@@ -2825,7 +2825,7 @@ mat4.rotation = function(angle, axis)
 {
     var x = axis[0], y = axis[1], z = axis[2];
     var len = Math.sqrt(x*x + y*y + z*z);
-    if (!len) { throw "zero-length axis"; }
+    if (!len) { throw new Error("zero-length axis"); }
     if (len != 1) {
 	x /= len; 
 	y /= len; 
@@ -2847,7 +2847,7 @@ mat4.rotation = function(angle, axis)
     var b20 = x*z*t + y*s, b21 = y*z*t - x*s, b22 = z*z*t + c;
 
     var result = new Float32Array(16);    
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     
     // Perform rotation-specific matrix multiplication
     result[0]  = x*x*t + c;
@@ -2868,7 +2868,7 @@ mat4.rotate = function(mat, angle, axis)
 {
     var x = axis[0], y = axis[1], z = axis[2];
     var len = Math.sqrt(x*x + y*y + z*z);
-    if (!len) { throw "zero-length axis"; }
+    if (!len) { throw new Error("zero-length axis"); }
     if (len != 1) {
 	x /= len; 
 	y /= len; 
@@ -2915,7 +2915,7 @@ mat4.rotate = function(mat, angle, axis)
 mat4.frustum = function(left, right, bottom, top, near, far)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var rl = (right - left);
     var tb = (top - bottom);
     var fn = (far - near);
@@ -2939,7 +2939,7 @@ mat4.perspective = function(fovy, aspect, near, far)
 mat4.ortho = function(left, right, bottom, top, near, far)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     var rl = (right - left);
     var tb = (top - bottom);
     var fn = (far - near);
@@ -2956,7 +2956,7 @@ mat4.ortho = function(left, right, bottom, top, near, far)
 mat4.lookAt = function(eye, center, up)
 {
     var result = new Float32Array(16);
-    result.buffer._type = 'matrix';
+    result.buffer._type = 'mat4';
     
     var eyex = eye[0],
     eyey = eye[1],
@@ -3075,7 +3075,7 @@ vec.make = function(v)
 vec.equal_eps = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].equal_eps(v1, v2);
 };
@@ -3083,7 +3083,7 @@ vec.equal_eps = function(v1, v2)
 vec.equal = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].equal(v1, v2);
 };
@@ -3091,7 +3091,7 @@ vec.equal = function(v1, v2)
 vec.plus = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].plus(v1, v2);
 };
@@ -3099,7 +3099,7 @@ vec.plus = function(v1, v2)
 vec.minus = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].minus(v1, v2);
 };
@@ -3117,7 +3117,7 @@ vec.scaling = function(v, val)
 vec.schur_product = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].schur_product(v1, v2);
 };
@@ -3140,7 +3140,7 @@ vec.length2 = function(v)
 vec.dot = function(v1, v2)
 {
     if (v1.length != v2.length) {
-        throw "mismatched lengths";
+        throw new Error("mismatched lengths");
     }
     return vec[v1.length].dot(v1, v2);
 };
@@ -3191,7 +3191,7 @@ function to_dim(l)
     case 9: return 3;
     case 16: return 4;
     }
-    throw "bad length";
+    throw new Error("bad length");
 }
 
 mat.make = function(v)
@@ -3207,7 +3207,7 @@ mat.map = function(c, f)
 mat.equal = function(m1, m2)
 {
     if (m1.length != m2.length) {
-        throw "mismatched lengths: " + m1.length + ", " + m2.length;
+        throw new Error("mismatched lengths: " + m1.length + ", " + m2.length);
     }
     return mat[to_dim(m1.length)].equal(m1, m2);
 };
@@ -3235,30 +3235,6 @@ Lux.is_shade_expression = function(obj)
 {
     return typeof obj === 'function' && obj._lux_expression && obj.expression_type;
 };
-
-//////////////////////////////////////////////////////////////////////////////
-
-// FIXME Can I make these two the same function call?
-function lux_constant_type(obj)
-// it is convenient in many places to accept as a parameter a scalar,
-// a vector or a matrix. This function tries to
-// tell them apart. Functions such as vec.make and mat.make populate
-// the _type slot. This is ugly, but extremely convenient.
-{
-    var t = typeof obj;
-    if (t === "boolean")         return "boolean";
-    if (t === "number")          return "number";
-    if (obj) {
-        var b = obj._type;
-        if (!_.isUndefined(b))
-            return b;
-        if (!_.isUndefined(obj.buffer) && obj.buffer._type)
-            return obj.buffer._type;
-        else
-            return "other";
-    }
-    return t;
-}
 
 //////////////////////////////////////////////////////////////////////////////
 // http://javascript.crockford.com/remedial.html
@@ -3319,17 +3295,17 @@ Lux.attribute_buffer_view = function(opts)
     });
 
     if (_.isUndefined(opts.buffer)) {
-        throw "opts.buffer must be defined";
+        throw new Error("opts.buffer must be defined");
     }
 
     var itemSize = opts.item_size;
     if ([1,2,3,4].indexOf(itemSize) === -1) {
-        throw "opts.item_size must be one of 1, 2, 3, or 4";
+        throw new Error("opts.item_size must be one of 1, 2, 3, or 4");
     }
 
     var normalized = opts.normalized;
     if (lux_typeOf(normalized) !== "boolean") {
-        throw "opts.normalized must be boolean";
+        throw new Error("opts.normalized must be boolean");
     }
 
     var gl_enum_typed_array_map = {
@@ -3342,21 +3318,21 @@ Lux.attribute_buffer_view = function(opts)
 
     var itemType = gl_enum_typed_array_map[opts.item_type];
     if (_.isUndefined(itemType)) {
-        throw "opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'";
+        throw new Error("opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'");
     }
 
     function convert_array(array) {
         var numItems;
         if (array.constructor === Array) {
             if (array.length % itemSize) {
-                throw "set: attribute_buffer expected length to be a multiple of " + 
-                    itemSize + ", got " + array.length + " instead.";
+                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.");
             }
             array = new itemType.typed_array_ctor(array);
         } else if (array.constructor === itemType._typed_array_ctor) {
             if (array.length % itemSize) {
-                throw "set: attribute_buffer expected length to be a multiple of " + 
-                    itemSize + ", got " + array.length + " instead.";
+                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.");
             }
         } else if (opts.vertex_array.constructor === ArrayBuffer) {
             array = opts.vertex_array;
@@ -3386,7 +3362,7 @@ Lux.attribute_buffer_view = function(opts)
             }
         },
         set_region: function() {
-            throw "currently unimplemented";
+            throw new Error("currently unimplemented");
         },
         //////////////////////////////////////////////////////////////////////
         // These methods are only for internal use within Lux
@@ -3496,7 +3472,7 @@ Lux.attribute_buffer = function(opts)
 
     var itemSize = opts.item_size;
     if ([1,2,3,4].indexOf(itemSize) === -1) {
-        throw "opts.item_size must be one of 1, 2, 3, or 4";
+        throw new Error("opts.item_size must be one of 1, 2, 3, or 4");
     }
 
     var gl_enum_typed_array_map = {
@@ -3509,30 +3485,30 @@ Lux.attribute_buffer = function(opts)
 
     var itemType = gl_enum_typed_array_map[opts.item_type];
     if (_.isUndefined(itemType)) {
-        throw "opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'";
+        throw new Error("opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'");
     }
 
     if (_.isUndefined(opts.vertex_array)) {
-        throw "opts.vertex_array must be defined";
+        throw new Error("opts.vertex_array must be defined");
     }
 
     function convert_array(array) {
         var numItems;
         if (array.constructor === Array) {
             if (array.length % itemSize) {
-                throw "set: attribute_buffer expected length to be a multiple of " + 
-                    itemSize + ", got " + array.length + " instead.";
+                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.");
             }
             array = new itemType.typed_array_ctor(array);
         } else if (array.constructor === itemType.typed_array_ctor) {
             if (array.length % itemSize) {
-                throw "set: attribute_buffer expected length to be a multiple of " + 
-                    itemSize + ", got " + array.length + " instead.";
+                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                    itemSize + ", got " + array.length + " instead.");
             }
         } else if (opts.vertex_array.constructor === ArrayBuffer) {
             array = opts.vertex_array;
         } else {
-            throw "Unrecognized array type for attribute_buffer";
+            throw new Error("Unrecognized array type for attribute_buffer");
         }
         return array;
     }
@@ -3557,12 +3533,12 @@ Lux.buffer = function(opts)
     });
 
     if (_.isUndefined(opts.array)) {
-        throw "opts.array must be defined";
+        throw new Error("opts.array must be defined");
     }
 
     var usage = opts.usage;
     if ([ctx.STATIC_DRAW, ctx.DYNAMIC_DRAW, ctx.STREAM_DRAW].indexOf(usage) === -1) {
-        throw "opts.usage must be one of STATIC_DRAW, DYNAMIC_DRAW, STREAM_DRAW";
+        throw new Error("opts.usage must be one of STATIC_DRAW, DYNAMIC_DRAW, STREAM_DRAW");
     }
 
     var result = ctx.createBuffer();
@@ -3577,7 +3553,7 @@ Lux.buffer = function(opts)
     };
     result.set(opts.array);
     result.set_region = function() {
-        throw "currently unimplemented";
+        throw new Error("currently unimplemented");
     };
 
     return result;
@@ -3620,7 +3596,7 @@ Lux.unload_batch = function()
 function draw_it(batch_opts)
 {
     if (_.isUndefined(batch_opts))
-        throw "drawing mode undefined";
+        throw new Error("drawing mode undefined");
 
     // When the batch_options object is different from the one previously drawn,
     // we must set up the appropriate state for drawing.
@@ -3643,7 +3619,7 @@ function draw_it(batch_opts)
                 ctx.enableVertexAttribArray(attr);
                 var buffer = attributes[key].get();
                 if (!buffer) {
-                    throw "Unset Shade.attribute " + attributes[key]._attribute_name;
+                    throw new Error("Unset Shade.attribute " + attributes[key]._attribute_name);
                 }
                 buffer.bind(attr);
             }
@@ -3655,10 +3631,10 @@ function draw_it(batch_opts)
             var call = uniform.uniform_call,
                 value = uniform.get();
             if (_.isUndefined(value)) {
-                throw "parameter " + key + " has not been set.";
+                throw new Error("parameter " + key + " has not been set.");
             }
-            var t = lux_constant_type(value);
-            if (t === "other") {
+            var t = Shade.Types.type_of(value);
+            if (t.equals(Shade.Types.other_t)) {
                 uniform._lux_active_uniform = (function(uid, cat) {
                     return function(v) {
                         ctx.activeTexture(ctx.TEXTURE0 + cat);
@@ -3667,20 +3643,22 @@ function draw_it(batch_opts)
                     };
                 })(program[key], currentActiveTexture);
                 currentActiveTexture++;
-            } else if (t === "number" || t === "vector" || t === "boolean") {
+            } else if (t.equals(Shade.Types.float_t) || 
+                       t.equals(Shade.Types.bool_t) ||
+                       t.repr().substr(0,3) === "vec") {
                 uniform._lux_active_uniform = (function(call, uid) {
                     return function(v) {
                         call.call(ctx, uid, v);
                     };
                 })(ctx[call], program[key]);
-            } else if (t === "matrix") {
+            } else if (t.repr().substr(0,3) === "mat") {
                 uniform._lux_active_uniform = (function(call, uid) {
                     return function(v) {
                         ctx[call](uid, false, v);
                     };
                 })(call, program[key]);
             } else {
-                throw "could not figure out parameter type! " + t;
+                throw new Error("could not figure out parameter type! " + t);
             }
             uniform._lux_active_uniform(value);
         });
@@ -3717,7 +3695,7 @@ Lux.bake = function(model, appearance, opts)
     } else if (appearance.gl_Position.type.equals(Shade.Types.vec3)) {
         appearance.gl_Position = Shade.vec(appearance.gl_Position, 1);
     } else if (!appearance.gl_Position.type.equals(Shade.Types.vec4)) {
-        throw "position appearance attribute must be vec2, vec3 or vec4";
+        throw new Error("position appearance attribute must be vec2, vec3 or vec4");
     }
 
     var ctx = model._ctx || Lux._globals.ctx;
@@ -3847,7 +3825,7 @@ Lux.bake = function(model, appearance, opts)
                 model.elements.bind_and_draw(primitive_type);
             };
         } else
-            throw "model.elements must be a number, an element buffer or an attribute buffer";
+            throw new Error("model.elements must be a number, an element buffer or an attribute buffer");
     }
 
     // FIXME the batch_id field in the batch_opts objects is not
@@ -3957,7 +3935,7 @@ Lux.element_buffer = function(vertex_array)
             typedArray = new Uint16Array(vertex_array);
         } else {
             if (vertex_array.constructor !== Uint16Array) {
-                throw "Lux.element_buffer.set requires either a plain list or a Uint16Array";
+                throw new Error("Lux.element_buffer.set requires either a plain list or a Uint16Array");
             }
             typedArray = vertex_array;
         }
@@ -4000,7 +3978,7 @@ Lux.fresh_pick_id = function(quantity)
 Lux.id_buffer = function(vertex_array)
 {
     if (lux_typeOf(vertex_array) !== 'array')
-        throw "id_buffer expects array of integers";
+        throw new Error("id_buffer expects array of integers");
     var typedArray = new Int32Array(vertex_array);
     var byteArray = new Uint8Array(typedArray.buffer);
     return Lux.attribute_buffer({
@@ -4042,6 +4020,9 @@ function initialize_context_globals(gl)
     gl._lux_globals.post_display_list = [];
 
     gl._lux_globals.devicePixelRatio = undefined;
+
+    // Optional, enabled WebGL extensions go here.
+    gl._lux_globals.webgl_extensions = {};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4060,26 +4041,41 @@ function polyfill_event(event, gl)
     event.luxY = gl.viewportHeight - event.offsetY * gl._lux_globals.devicePixelRatio;
 }
 
-Lux.init = function(canvas, opts)
+Lux.init = function(opts)
 {
+    opts = _.defaults(opts || {}, {
+        clearColor: [1,1,1,0],
+        clearDepth: 1.0,
+        attributes: {
+            alpha: true,
+            depth: true,
+            preserveDrawingBuffer: true
+        },
+        highDPS: true
+    });
+
+    var canvas = opts.canvas;
+    if (_.isUndefined(canvas)) {
+        var q = $("canvas");
+        if (q.length === 0) {
+            throw new Error("no canvas elements found in document");
+        }
+        if (q.length > 1) {
+            throw new Error("More than one canvas element found in document; please specify a canvas option in Lux.init");
+        }
+        canvas = q[0];
+    }
+
     canvas.unselectable = true;
     canvas.onselectstart = function() { return false; };
     var gl;
     var clearColor, clearDepth;
-    opts = _.defaults(opts || {}, { clearColor: [1,1,1,0],
-                                    clearDepth: 1.0,
-                                    attributes: {
-                                        alpha: true,
-                                        depth: true,
-                                        preserveDrawingBuffer: true
-                                    },
-                                    highDPS: true
-                                  });
+
     if (Lux.is_shade_expression(opts.clearColor)) {
         if (!opts.clearColor.is_constant())
-            throw "clearColor must be constant expression";
+            throw new Error("clearColor must be constant expression");
         if (!opts.clearColor.type.equals(Shade.Types.vec4))
-            throw "clearColor must be vec4";
+            throw new Error("clearColor must be vec4");
         clearColor = _.toArray(opts.clearColor.constant_value());
     } else
         clearColor = opts.clearColor;
@@ -4087,9 +4083,9 @@ Lux.init = function(canvas, opts)
     // FIXME This should be a "is Shade expression" check
     if (Lux.is_shade_expression(opts.clearDepth)) {
         if (!opts.clearDepth.is_constant())
-            throw "clearDepth must be constant expression";
+            throw new Error("clearDepth must be constant expression");
         if (!opts.clearDepth.type.equals(Shade.Types.float_t))
-            throw "clearDepth must be float";
+            throw new Error("clearDepth must be float");
         clearDepth = opts.clearDepth.constant_value();
     } else
         clearDepth = opts.clearDepth;
@@ -4110,7 +4106,7 @@ Lux.init = function(canvas, opts)
             var x = gl.getContextAttributes();
             for (var key in opts.attributes) {
                 if (opts.attributes[key] !== x[key]) {
-                    throw ("requested attribute " + 
+                    throw new Error("requested attribute " + 
                            key + ": " + opts.attributes[key] +
                            " could not be satisfied");
                 }
@@ -4118,7 +4114,8 @@ Lux.init = function(canvas, opts)
         } else
             gl = WebGLUtils.setupWebGL(canvas);
         if (!gl)
-            throw "failed context creation";
+            throw new Error("failed context creation");
+        initialize_context_globals(gl);
         if ("interactor" in opts) {
             for (var key in opts.interactor.events) {
                 if (opts[key]) {
@@ -4136,8 +4133,8 @@ Lux.init = function(canvas, opts)
         
         if (opts.debugging) {
             var throwOnGLError = function(err, funcName, args) {
-                throw WebGLDebugUtils.glEnumToString(err) + 
-                    " was caused by call to " + funcName;
+                throw new Error(WebGLDebugUtils.glEnumToString(err) + 
+                    " was caused by call to " + funcName);
             };
             gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
@@ -4145,16 +4142,21 @@ Lux.init = function(canvas, opts)
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
 
+        //////////////////////////////////////////////////////////////////////
+        // event handling
+
         var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", "mouseup"];
         _.each(canvas_events, function(ename) {
             var listener = opts[ename];
-            if (!_.isUndefined(listener)) {
-                function internal_listener(event) {
-                    polyfill_event(event, gl);
+            function internal_listener(event) {
+                polyfill_event(event, gl);
+                if (!Lux.Scene.on(ename)(event))
+                    return false;
+                if (listener)
                     return listener(event);
-                }
-                canvas.addEventListener(ename, Lux.on_context(gl, internal_listener), false);
+                return true;
             }
+            canvas.addEventListener(ename, Lux.on_context(gl, internal_listener), false);
         });
         
         if (!_.isUndefined(opts.mousewheel)) {
@@ -4164,28 +4166,39 @@ Lux.init = function(canvas, opts)
             });
         };
 
+        //////////////////////////////////////////////////////////////////////
+
         var ext;
-        var exts = gl.getSupportedExtensions(); // _.map(gl.getSupportedExtensions(), function (x) { 
-        //     return x.toLowerCase();
-        // });
+        var exts = gl.getSupportedExtensions();
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
             if (exts.indexOf(ext) === -1) {
                 alert(ext + " is not available on your browser/computer! " +
                       "Lux will not work, sorry.");
-                throw "insufficient GPU support";
+                throw new Error("insufficient GPU support");
             } else {
                 gl.getExtension(ext); // must call this to enable extension
             }
         });
+        _.each(["WEBKIT_EXT_texture_filter_anisotropic",
+                "EXT_texture_filter_anisotropic"], 
+               function(ext) {
+                   if (exts.indexOf(ext) !== -1) {
+                       gl.getExtension(ext);
+                       gl._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic = true;
+                       gl.TEXTURE_MAX_ANISOTROPY_EXT     = 0x84FE;
+                       gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FF;
+                       console.log("Lux: Enabling anisotropic filtering extension, max ",
+                                   gl.getParameter(gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT));
+                   }
+               });
     } catch(e) {
         alert(e);
     }
     if (!gl) {
-        alert("Could not initialise WebGL, sorry :-(");
-        throw "failed initalization";
+        alert("Could not initialize WebGL, sorry :-(");
+        throw new Error("failed initalization");
     }
 
-    initialize_context_globals(gl);
     gl._lux_globals.devicePixelRatio = devicePixelRatio;
 
     Lux.set_context(gl);
@@ -4264,7 +4277,7 @@ Lux.translation = function(v)
     else if (v.length === 2) return t_3x3(v);
     else if (arguments.length === 2) return t_3x3(arguments);
 
-    throw "invalid vector size for translation";
+    throw new Error("invalid vector size for translation");
 };
 
 Lux.scaling = function (v)
@@ -4285,7 +4298,7 @@ Lux.scaling = function (v)
     else if (v.length === 2) return s_3x3(v);
     else if (arguments.length === 2) return s_3x3(arguments);
 
-    throw "invalid size for scale";
+    throw new Error("invalid size for scale");
 };
 
 Lux.rotation = function(angle, axis)
@@ -4397,8 +4410,8 @@ Lux.model = function(input)
     if (!("elements" in result)) {
         // populate automatically using some sensible guess inferred from the attributes above
         if (_.isUndefined(n_elements)) {
-            throw "could not figure out how many elements are in this model; "
-                + "consider passing an 'elements' field";
+            throw new Error("could not figure out how many elements are in this model; "
+                + "consider passing an 'elements' field");
         } else {
             result.elements = n_elements;
         }
@@ -4474,7 +4487,7 @@ Lux.program = function(vs_src, fs_src)
             console.log(ctx.getShaderInfoLog(shader));
             console.log("Failing shader: ");
             console.log(str);
-            throw "failed compilation";
+            throw new Error("failed compilation");
         }
         return shader;
     }
@@ -4496,7 +4509,7 @@ Lux.program = function(vs_src, fs_src)
         console.log(vs_src);
         console.log("Fragment shader");
         console.log(fs_src);
-        throw "failed link";
+        throw new Error("failed link");
     }
 
     var active_parameters = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
@@ -4525,10 +4538,11 @@ Lux.render_buffer = function(opts)
     opts = _.defaults(opts || {}, {
         width: 512,
         height: 512,
-        mag_filter: ctx.LINEAR,
-        min_filter: ctx.LINEAR,
-        wrap_s: ctx.CLAMP_TO_EDGE,
-        wrap_t: ctx.CLAMP_TO_EDGE
+        mag_filter: Lux.texture.linear,
+        min_filter: Lux.texture.linear,
+        mipmaps: false,
+        wrap_s: Lux.texture.clamp_to_edge,
+        wrap_t: Lux.texture.clamp_to_edge
     });
 
     // Weird:
@@ -4539,7 +4553,7 @@ Lux.render_buffer = function(opts)
     // the WebGL spec defers to GLSL ES spec.
     // 
     // if (opts.width != opts.height)
-    //     throw "renderbuffers must be square (blame GLSL ES!)";
+    //     throw new Error("renderbuffers must be square (blame GLSL ES!)");
 
     var rttTexture = Lux.texture(opts);
 
@@ -4560,15 +4574,15 @@ Lux.render_buffer = function(opts)
             case ctx.FRAMEBUFFER_COMPLETE:
                 break;
             case ctx.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+                throw new Error("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
             case ctx.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+                throw new Error("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
             case ctx.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-                throw "incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
+                throw new Error("incomplete framebuffer: FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
             case ctx.FRAMEBUFFER_UNSUPPORTED:
-                throw "incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED";
+                throw new Error("incomplete framebuffer: FRAMEBUFFER_UNSUPPORTED");
             default:
-                throw "incomplete framebuffer: " + status;
+                throw new Error("incomplete framebuffer: " + status);
             }
         } finally {
             ctx.bindTexture(ctx.TEXTURE_2D, null);
@@ -4637,8 +4651,6 @@ Lux.on_context = function(the_ctx, f)
 // load texture from DOM element or URL. 
 // BEWARE SAME-DOMAIN POLICY!
 
-// FIXME: replace all this with the code from Lux.load_image_into_texture
-
 Lux.texture = function(opts)
 {
     var ctx = Lux._globals.ctx;
@@ -4654,13 +4666,14 @@ Lux.texture = function(opts)
         var ctx = Lux._globals.ctx;
         opts = _.defaults(opts, {
             onload: function() {},
-            mipmaps: false,
-            mag_filter: ctx.LINEAR,
-            min_filter: ctx.LINEAR,
-            wrap_s: ctx.CLAMP_TO_EDGE,
-            wrap_t: ctx.CLAMP_TO_EDGE,
-            format: ctx.RGBA,
-            type: ctx.UNSIGNED_BYTE
+            max_anisotropy: 2,
+            mipmaps: true,
+            mag_filter: Lux.texture.linear,
+            min_filter: Lux.texture.linear_mipmap_linear,
+            wrap_s: Lux.texture.clamp_to_edge,
+            wrap_t: Lux.texture.clamp_to_edge,
+            format: Lux.texture.rgba,
+            type: Lux.texture.unsigned_byte
         });
         this.width = opts.width;
         this.height = opts.height;
@@ -4765,7 +4778,7 @@ Lux.texture = function(opts)
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
                 if (_.isUndefined(opts.buffer)) {
                     if (x_offset !== 0 || y_offset !== 0) {
-                        throw "texture.load cannot be called with nonzero offsets and no data";
+                        throw new Error("texture.load cannot be called with nonzero offsets and no data");
                     }
                     ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
                                    that.width, that.height,
@@ -4778,7 +4791,7 @@ Lux.texture = function(opts)
                         "Float32Array": ctx.FLOAT
                     };
                     if (_.isUndefined(map[ctor])) {
-                        throw "opts.buffer must be either Uint8Array or Float32Array";
+                        throw new Error("opts.buffer must be either Uint8Array or Float32Array");
                     }
                     ctx.texSubImage2D(ctx.TEXTURE_2D, 0, x_offset, y_offset, 
                                       opts.width, opts.height,
@@ -4827,16 +4840,53 @@ Lux.texture = function(opts)
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
+        if (ctx._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic) {
+            ctx.texParameterf(ctx.TEXTURE_2D, ctx.TEXTURE_MAX_ANISOTROPY_EXT, opts.max_anisotropy);
+        }
 
         delete this.buffer;
         delete this.image;
 
         this.load(opts);
     });
+
     texture.init(opts);
 
     return texture;
 };
+
+//////////////////////////////////////////////////////////////////////////////
+// texture-related enums go here
+
+// mag_filter
+Lux.texture.nearest                = 0x2600;
+Lux.texture.linear                 = 0x2601;
+
+// min_filter 
+Lux.texture.nearest_mipmap_nearest = 0x2700;
+Lux.texture.linear_mipmap_nearest  = 0x2701;
+Lux.texture.nearest_mipmap_linear  = 0x2702;
+Lux.texture.linear_mipmap_linear   = 0x2703;
+
+// wrap_s and wrap_t
+Lux.texture.repeat                 = 0x2901;
+Lux.texture.clamp_to_edge          = 0x812F;
+Lux.texture.mirrored_repeat        = 0x8370;
+
+// format
+Lux.texture.depth_component        = 0x1902;
+Lux.texture.alpha                  = 0x1906;
+Lux.texture.rgb                    = 0x1907;
+Lux.texture.rgba                   = 0x1908;
+Lux.texture.luminance              = 0x1909;
+Lux.texture.luminance_alpha        = 0x190A;
+
+// type
+Lux.texture.unsigned_byte          = 0x1401;
+Lux.texture.unsigned_short_4_4_4_4 = 0x8033;
+Lux.texture.unsigned_short_5_5_5_1 = 0x8034;
+Lux.texture.unsigned_short_5_6_5   = 0x8363;
+Lux.texture["float"]               = 0x1406;
 (function() {
 
 var rb;
@@ -5023,6 +5073,8 @@ Lux.Net.json = function(url, handler)
  */
 
 // based on http://calumnymmo.wordpress.com/2010/12/22/so-i-decided-to-wait/
+// Update 2013-04-24; Firefox now seems to behave in the same way as Chrome.
+
 Lux.Net.binary = function(url, handler)
 {
     var current_context = Lux._globals.ctx;
@@ -5053,11 +5105,7 @@ Lux.Net.binary = function(url, handler)
         }
     };
     xhr.open("GET", url, true);
-    if(xhr.hasOwnProperty("responseType")) {
-        xhr.responseType="arraybuffer";
-    } else {
-        xhr.overrideMimeType('text/plain; charset=x-user-defined');
-    }
+    xhr.responseType="arraybuffer";
     xhr.send();
 };
 })();
@@ -5247,8 +5295,8 @@ Lux.Data.table = function(obj) {
     obj = _.defaults(obj || {}, {
         number_columns: []
     });
-    if (_.isUndefined(obj.data)) throw "data is a required field";
-    if (_.isUndefined(obj.data)) throw "columns is a required field";
+    if (_.isUndefined(obj.data)) throw new Error("data is a required field");
+    if (_.isUndefined(obj.data)) throw new Error("columns is a required field");
     function table() {
     };
     table.prototype = {
@@ -5279,7 +5327,7 @@ Lux.Data.texture_table = function(table)
             var col_name = table.columns[table.number_columns[col_ix]];
             var val = row[col_name];
             if (typeof val !== "number")
-                throw "texture_table requires numeric values";
+                throw new Error("texture_table requires numeric values");
             elements.push(val);
         }
     }
@@ -5445,22 +5493,18 @@ Lux.UI = {};
 /*
  * Lux.UI.parameter_slider is a function to help create UI elements
  * that control Shade.parameter objects. 
- * 
- * It uses jquery-ui sliders, and so assumes jquery-ui in addition to jquery.
- * 
- * I hear jquery-ui is about as cool as pocket protectors, but hey, 
- * it does the job.
- * 
- */
-
-/*
- * Lux.UI.parameter_slider requires "element" and "parameter" options.
+ *
+ * The result of calling Lux.UI.parameter_slider is a Shade.parameter,
+ * either freshly created, or the one passed as input.
+ *
+ * Lux.UI.parameter_slider requires the "element" field in its options.
  * 
  * opts.element is the HTML element used by jquery-ui to create the slider. That
  *   object needs to have the correct CSS class assigned to it ahead of calling
  *   this function.
  * 
- * opts.parameter is the Shade.parameter object under control.
+ * opts.parameter is the Shade.parameter object under control. if opts.parameter
+ *   is undefined, Lux.UI.parameter_slider creates the Shade.parameter.
  * 
  * opts.change is a user-defined callback to the slider change event.
  * opts.slide is a user-defined callback to the slider slide event.
@@ -5470,7 +5514,12 @@ Lux.UI = {};
  * 
  * opts.min is the minimum value allowed by the slider
  * opts.max is the maximum value allowed by the slider
+ * opts.value is the starting value of the slider and parameter
  * opts.orientation is the slider's orientation, either "horizontal" or "vertical"
+ *
+ * Lux.UI.parameter_slider uses jquery-ui sliders, and so assumes
+ * jquery-ui in addition to jquery.  If you know of a better
+ * lightweight gui library, let me know as well.
  */
 
 Lux.UI.parameter_slider = function(opts)
@@ -5483,9 +5532,18 @@ Lux.UI.parameter_slider = function(opts)
         change: function() {}
     });
     var element = opts.element;
-    var parameter =  opts.parameter;
-
-    var slider_min = 0, slider_max = 1000;
+    if (_.isUndefined(opts.element)) {
+        throw new Error("parameter_slider requires an element option");
+    }
+    if (_.isUndefined(opts.parameter)) {
+        opts.parameter = Shade.parameter("float", opts.min);
+    }
+    if (!_.isUndefined(opts.value)) {
+        opts.parameter.set(opts.value);
+    }
+    var parameter  = opts.parameter,
+        slider_min = 0, 
+        slider_max = 1000;
 
     function to_slider(v) {
         return (v-opts.min) / (opts.max - opts.min) * 
@@ -5513,6 +5571,7 @@ Lux.UI.parameter_slider = function(opts)
             Lux.Scene.invalidate();
         }
     });
+    return parameter;
 };
 Lux.UI.parameter_checkbox = function(opts)
 {
@@ -5561,10 +5620,10 @@ Lux.UI.center_zoom_interactor = function(opts)
     var width = opts.width;
 
     if (_.isUndefined(width)) {
-        throw "Lux.UI.center_zoom_interactor requires width parameter";
+        throw new Error("Lux.UI.center_zoom_interactor requires width parameter");
     }
     if (_.isUndefined(height)) {
-        throw "Lux.UI.center_zoom_interactor requires height parameter";
+        throw new Error("Lux.UI.center_zoom_interactor requires height parameter");
     }
 
     var aspect_ratio = Shade.parameter("float", width/height);
@@ -5601,29 +5660,28 @@ Lux.UI.center_zoom_interactor = function(opts)
         opts.mouseup(event);
     }
 
-    // FIXME: wow, these eval-Shade-in-Javascript functions get UGLY
-
     // c stores the compensation for the kahan compensated sum
     var c = vec.make([0, 0]);
-    var internal_move = (function() {
-        var param = Shade.parameter("vec2"), t2;
-        return function(dx, dy) {
-            param.set(vec.make([dx, dy]));
-            if (_.isUndefined(t2)) {
-                t2 = result.camera.unproject(Shade.vec(0,0))
-                    .sub(result.camera.unproject(param));
-            }
-            var v = t2.evaluate();
-            var negdelta = v;
-            // we use a kahan compensated sum here:
-            // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
-            // to accumulate minute changes in the center that come from deep zooms.
-            var y = vec.minus(negdelta, c);
-            var t = vec.plus(center.get(), y);
-            c = vec.minus(vec.minus(t, center.get()), y);
-            center.set(t);
-        };
-    })();
+
+    // f computes the change in the center position, relative to the
+    // current camera parameters. Since camera is a Lux expression,
+    // to get the javascript value we create a Shade function and
+    // use js_evaluate.
+    var f = Shade(function (delta_vec) {
+        return result.camera.unproject(Shade.vec(0,0))
+            .sub(result.camera.unproject(delta_vec));
+    }).js_evaluate;
+
+    var internal_move = function(dx, dy) {
+        var negdelta = f(vec.make([dx, dy]));
+        // we use a kahan compensated sum here:
+        // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
+        // to accumulate minute changes in the center that come from deep zooms.
+        var y = vec.minus(negdelta, c);
+        var t = vec.plus(center.get(), y);
+        c = vec.minus(vec.minus(t, center.get()), y);
+        center.set(t);
+    };
 
     function mousemove(event) {
         if ((current_button & 1) && !event.shiftKey) {
@@ -5765,58 +5823,86 @@ Shade.debug = false;
 // Exp values to the appropriate Exp values, giving us some poor-man
 // static polymorphism
 
-Shade.make = function(exp)
+Shade.make = function(value)
 {
-    if (_.isUndefined(exp)) {
-        throw "expected a value, got undefined instead";
+    if (_.isUndefined(value)) {
+        throw new Error("expected a value, got undefined instead");
     }
-    var t = lux_typeOf(exp);
+    var t = lux_typeOf(value);
     if (t === 'string') {
         // Did you accidentally say exp1 + exp2 when you meant
         // exp1.add(exp2)?
-        throw "strings are not valid shade expressions";
+        throw new Error("strings are not valid shade expressions");
     } else if (t === 'boolean' || t === 'number') {
-        if (isNaN(exp)) {
+        if (isNaN(value)) {
             // Did you accidentally say exp1 / exp2 or exp1 - exp2 when you meant
             // exp1.div(exp2) or exp1.sub(exp2)?
-            throw "nans are not valid in shade expressions";
+            throw new Error("nans are not valid in shade expressions");
         }
-        return Shade.constant(exp);
+        return Shade.constant(value);
     } else if (t === 'array') {
-        return Shade.seq(exp);
+        return Shade.seq(value);
     } else if (t === 'function') {
         /* lifts the passed function to a "shade function".
         
-        In other words, this creates a function that replaces every
-        passed parameter p by Shade.make(p) This way, we save a lot of
-        typing and errors. If a javascript function is expected to
-        take shade values and produce shade expressions as a result,
-        simply wrap that function around a call to Shade.make()
+         In other words, this creates a function that replaces every
+         passed parameter p by Shade.make(p) This way, we save a lot of
+         typing and errors. If a javascript function is expected to
+         take shade values and produce shade expressions as a result,
+         simply wrap that function around a call to Shade.make()
+
+         FIXME: Document js_evaluate appropriately. This is a cool feature!
 
          */
 
-        return function() {
+        var result = function() {
             var wrapped_arguments = [];
             for (var i=0; i<arguments.length; ++i) {
                 wrapped_arguments.push(Shade.make(arguments[i]));
             }
-            return Shade.make(exp.apply(this, wrapped_arguments));
+            return Shade.make(value.apply(this, wrapped_arguments));
         };
+
+        var args_type_cache = {};
+        var create_parameterized_function = function(shade_function, types) {
+            var parameters = _.map(types, function(t) {
+                return Shade.parameter(t);
+            });
+            var expression = shade_function.apply(this, parameters);
+            return function() {
+                for (var i=0; i<arguments.length; ++i)
+                    parameters[i].set(arguments[i]);
+                return expression.evaluate();
+            };
+        };
+
+        result.js_evaluate = function() {
+            var args_types = [];
+            var args_type_string;
+            for (var i=0; i<arguments.length; ++i) {
+                args_types.push(Shade.Types.type_of(arguments[i]));
+            }
+            args_type_string = _.map(args_types, function(t) { return t.repr(); }).join(",");
+            if (_.isUndefined(args_type_cache[args_type_string]))
+                args_type_cache[args_type_string] = create_parameterized_function(result, args_types);
+            return args_type_cache[args_type_string].apply(result, arguments);
+        };
+        return result;
     }
-    t = lux_constant_type(exp);
-    if (t === 'vector' || t === 'matrix') {
-        return Shade.constant(exp);
-    } else if (exp._shade_type === 'attribute_buffer') {
-        return Shade.attribute_from_buffer(exp);
-    } else if (exp._shade_type === 'render_buffer') {
-        return Shade.sampler2D_from_texture(exp.texture);
-    } else if (exp._shade_type === 'texture') {
-        return Shade.sampler2D_from_texture(exp);
-    } else if (t === 'other') {
-        return Shade.struct(exp);
+    t = Shade.Types.type_of(value);
+    if (t.is_vec() || t.is_mat()) {
+        return Shade.constant(value);
+    } else if (value._shade_type === 'attribute_buffer') {
+        return Shade.attribute_from_buffer(value);
+    } else if (value._shade_type === 'render_buffer') {
+        return Shade.sampler2D_from_texture(value.texture);
+    } else if (value._shade_type === 'texture') {
+        return Shade.sampler2D_from_texture(value);
+    } else if (t.equals(Shade.Types.other_t)) { // FIXME struct types 
+        return Shade.struct(value);
     }
 
-    return exp;
+    return value;
 };
 
 
@@ -5859,8 +5945,8 @@ Shade.memoize_on_guid_dict = function(if_not_found) {
         return Shade._create_concrete_value_exp({
             parents: [],
             type: type,
-            evaluate: function() { throw "<unknown> does not support evaluation; "; },
-            value: function() { throw "<unknown> should never get to compilation"; }
+            evaluate: function() { throw new Error("<unknown> does not support evaluation"); },
+            value: function() { throw new Error("<unknown> should never get to compilation"); }
         });
     }, function(type) { 
         return type.repr();
@@ -5890,7 +5976,7 @@ Shade.Camera.perspective = function(opts)
     else {
         var ctx = Lux._globals.ctx;
         if (_.isUndefined(ctx)) {
-            throw "aspect_ratio is only optional with an active Lux context";
+            throw new Error("aspect_ratio is only optional with an active Lux context");
         }
         aspect_ratio = ctx.viewportWidth / ctx.viewportHeight;
     }
@@ -5935,7 +6021,7 @@ Shade.Camera.ortho = function(opts)
     else {
         ctx = Lux._globals.ctx;
         if (_.isUndefined(ctx)) {
-            throw "aspect_ratio is only optional with an active Lux context";
+            throw new Error("aspect_ratio is only optional with an active Lux context");
         }
         viewport_ratio = ctx.viewportWidth / ctx.viewportHeight;
     };
@@ -5977,7 +6063,7 @@ Shade.Camera.ortho = function(opts)
                 model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
                 model_vertex.z());
         } else 
-            throw "Shade.ortho requires vec2, vec3, or vec4s";
+            throw new Error("Shade.ortho requires vec2, vec3, or vec4s");
     });
     var view_xform_invert = Shade(function(view_vertex) {
         return view_vertex.swizzle("xy").div(opts.zoom).add(opts.center);
@@ -6172,7 +6258,7 @@ Shade.color = function(spec, alpha)
                              parseInt(spec.substr(3,2), 16) / 255,
                              parseInt(spec.substr(5,2), 16) / 255, alpha);
         } else
-            throw "hex specifier must be either #rgb or #rrggbb";
+            throw new Error("hex specifier must be either #rgb or #rrggbb");
     }
     var m = rgb_re.exec(spec);
     if (m) {
@@ -6182,7 +6268,7 @@ Shade.color = function(spec, alpha)
     }
     if (spec in css_colors)
         return Shade.color(css_colors[spec], alpha);
-    throw "unrecognized color specifier " + spec;
+    throw new Error("unrecognized color specifier " + spec);
 };
 }());
 /*
@@ -6199,7 +6285,7 @@ Shade.color = function(spec, alpha)
  nb: nested loops will require deep changes to the infrastructure, and
  won't be supported for a while.
 
- In general, looping in general is pretty unstable.
+ Currently, looping is fairly untested.
 */
 
 (function() {
@@ -6221,7 +6307,7 @@ Shade.loop_variable = function(type, force_no_declare)
             return [this];
         }),
         evaluate: function() {
-            throw "evaluate undefined for loop_variable";
+            throw new Error("evaluate undefined for loop_variable");
         }
     });
 };
@@ -6301,9 +6387,9 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
     // violating expressions to a transformed index variable loop 
     // with a termination condition
     if (!this.begin.is_constant())
-        throw "WebGL restricts loop index variable initialization to be constant";
+        throw new Error("WebGL restricts loop index variable initialization to be constant");
     if (!this.end.is_constant())
-        throw "WebGL restricts loop index termination check to be constant";
+        throw new Error("WebGL restricts loop index termination check to be constant");
 
     var result = Shade._create_concrete_exp({
         has_scope: true,
@@ -6340,7 +6426,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
                 if (i === 0)
                     return this;
                 else
-                    throw this.type.repr() + " is an atomic type";
+                    throw new Error(this.type.repr() + " is an atomic type");
             } else
                 return this.at(i);
         }),
@@ -6405,7 +6491,7 @@ BasicRange.prototype.fold = Shade(function(operation, starting_value)
             }
         },
         evaluate: function() {
-            throw "evaluate currently undefined for looping expressions";
+            throw new Error("evaluate currently undefined for looping expressions");
         }
     });
 
@@ -6542,10 +6628,10 @@ Shade._create_concrete = function(base, requirements)
         for (var i=0; i<requirements.length; ++i) {
             var field = requirements[i];
             if (!(field in new_obj)) {
-                throw "new expression missing " + requirements[i];
+                throw new Error("new expression missing " + requirements[i]);
             }
             if (_.isUndefined(new_obj[field])) {
-                throw "field '" + field + "' cannot be undefined";
+                throw new Error("field '" + field + "' cannot be undefined");
             }
         }
         return Shade._create(base, new_obj);
@@ -6553,6 +6639,31 @@ Shade._create_concrete = function(base, requirements)
     return create_it;
 };
 Shade.Types = {};
+// Shade.Types.type_of implements the following spec:
+// 
+// for all shade values s such that s.evaluate() equals v,
+// s.type.equals(Shade.Types.type_of(v))
+
+// In addition, if there is no s such that s.evaluate() equals v,
+// then Shade.Types.type_of returns other_t. That's a kludge,
+// but is convenient.
+Shade.Types.type_of = function(v)
+{
+    var t = typeof v;
+    if (t === "boolean") {
+        return Shade.Types.bool_t;
+    } else if (t === "number") {
+        return Shade.Types.float_t;
+    } else if (Lux.is_shade_expression(v)) {
+        return Shade.Types.shade_t;
+    } else if (_.isUndefined(v)) {
+        return Shade.Types.undefined_t;
+    } else if (!_.isUndefined(v.buffer) && v.buffer._type) {
+        return Shade.Types[v.buffer._type];
+    } else {
+        return Shade.Types.other_t;
+    }
+};
 // <rant> How I wish I had algebraic data types. </rant>
 Shade.Types.base_t = {
     is_floating: function() { return false; },
@@ -6563,21 +6674,21 @@ Shade.Types.base_t = {
     is_vec: function()      { return false; },
     is_mat: function()      { return false; },
     vec_dimension: function() { 
-        throw "is_vec() === false, cannot call vec_dimension";
+        throw new Error("is_vec() === false, cannot call vec_dimension");
     },
     is_function: function() { return false; },
     is_struct:   function() { return false; },
     is_sampler:  function() { return false; },
     equals: function(other) {
         if (_.isUndefined(other))
-            throw "type cannot be compared to undefined";
+            throw new Error("type cannot be compared to undefined");
         return this.repr() == other.repr();
     },
     swizzle: function(pattern) {
-        throw "type '" + this.repr() + "' does not support swizzling";
+        throw new Error("type '" + this.repr() + "' does not support swizzling");
     },
     element_type: function(i) {
-        throw "invalid call: atomic expression";
+        throw new Error("invalid call: atomic expression");
     },
     declare: function(glsl_name) {
         return this.repr() + " " + glsl_name;
@@ -6596,10 +6707,10 @@ Shade.Types.base_t = {
     // for structs:
     //   fields
 
-    // constant_equal
-    //   constant_equal is a function that takes two parameters as produced
-    //   by the constant_value() method of an object with the given type,
-    //   and tests their equality.
+    // value_equals
+    //   value_equals is a function that takes two parameters as produced
+    //   by the constant_value() or evaluate() method of an object with
+    //   the given type, and tests their equality.
 };
 (function() {
 
@@ -6627,7 +6738,7 @@ function is_valid_basic_type(repr) {
 
 Shade.Types.basic = function(repr) {
     if (!is_valid_basic_type(repr)) {
-        throw "invalid basic type '" + repr + "'";
+        throw new Error("invalid basic type '" + repr + "'");
     }
     return Shade.Types[repr];
 };
@@ -6638,7 +6749,7 @@ Shade.Types._create_basic = function(repr) {
         repr: function() { return repr; },
         swizzle: function(pattern) {
             if (!this.is_vec()) {
-                throw "swizzle requires a vec";
+                throw new Error("swizzle requires a vec");
             }
             var base_repr = this.repr();
             var base_size = Number(base_repr[base_repr.length-1]);
@@ -6658,17 +6769,17 @@ Shade.Types._create_basic = function(repr) {
                 group_res = [ /[rgba]/, /[xyzw]/, /[stpq]/ ];
                 break;
             default:
-                throw "internal error on swizzle";
+                throw new Error("internal error on swizzle");
             }
             if (!pattern.match(valid_re)) {
-                throw "invalid swizzle pattern '" + pattern + "'";
+                throw new Error("invalid swizzle pattern '" + pattern + "'");
             }
             var count = 0;
             for (var i=0; i<group_res.length; ++i) {
                 if (pattern.match(group_res[i])) count += 1;
             }
             if (count != 1) {
-                throw ("swizzle pattern '" + pattern + 
+                throw new Error("swizzle pattern '" + pattern + 
                        "' belongs to more than one group");
             }
             if (pattern.length === 1) {
@@ -6718,9 +6829,9 @@ Shade.Types._create_basic = function(repr) {
                 // this would allow sizzling from a float, which GLSL disallows.
                 return 1;
             if (!this.is_vec()) {
-                throw "is_vec() === false, cannot call vec_dimension";
+                throw new Error("is_vec() === false, cannot call vec_dimension");
             }
-            throw "internal error";
+            throw new Error("internal error");
         },
         is_array: function() {
             var repr = this.repr();
@@ -6742,7 +6853,7 @@ Shade.Types._create_basic = function(repr) {
                 return Shade.Types.int_t;
             if (repr === "float")
                 return Shade.Types.float_t;
-            throw "datatype not array";
+            throw new Error("datatype not array");
         },
         size_for_vec_constructor: function() {
             var repr = this.repr();
@@ -6752,7 +6863,7 @@ Shade.Types._create_basic = function(repr) {
                 repr === 'bool' ||
                 repr === 'int')
                 return 1;
-            throw "not usable inside vec constructor";
+            throw new Error("not usable inside vec constructor");
         },
         array_size: function() {
             if (this.is_vec())
@@ -6760,7 +6871,7 @@ Shade.Types._create_basic = function(repr) {
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")  
                 return parseInt(repr[3], 10);
-            throw "datatype not array";
+            throw new Error("datatype not array");
         },
         is_floating: function() {
             var repr = this.repr();
@@ -6791,13 +6902,13 @@ Shade.Types._create_basic = function(repr) {
                 if (i === 0)
                     return this;
                 else
-                    throw "invalid call: " + this.repr() + " is atomic";
+                    throw new Error("invalid call: " + this.repr() + " is atomic");
             } else if (this.is_vec()) {
                 var f = this.repr()[0];
                 var d = this.array_size();
                 if (i < 0 || i >= d) {
-                    throw "invalid call: " + this.repr() + 
-                        " has no element " + i;
+                    throw new Error("invalid call: " + this.repr() + 
+                                    " has no element " + i);
                 }
                 if (f === 'v')
                     return Shade.Types.float_t;
@@ -6806,18 +6917,19 @@ Shade.Types._create_basic = function(repr) {
                 else if (f === 'i')
                     return Shade.Types.int_t;
                 else
-                    throw "internal error";
+                    throw new Error("internal error");
             } else
                 // FIXME implement this
-                throw "unimplemented for mats";
+                throw new Error("unimplemented for mats");
         },
-        constant_equal: function(v1, v2) {
+        value_equals: function(v1, v2) {
             if (this.is_pod())
                 return v1 === v2;
-            if (this.is_vec() || this.is_mat())
-                return _.all(_.range(v1.length), function(i) { return v1[i] === v2[i]; });
-            else
-                throw "bad type for equality comparison: " + this.repr();
+            if (this.is_vec())
+                return vec.equal(v1, v2);
+            if (this.is_mat())
+                return mat.equal(v1, v2);
+            throw new Error("bad type for equality comparison: " + this.repr());
         }
     });
 };
@@ -6886,6 +6998,11 @@ Shade.Types.function_t = function(return_type, param_types) {
     Shade.Types["bool"]  = Shade.Types.bool_t;
     Shade.Types["int"]   = Shade.Types.int_t;
     Shade.Types["void"]  = Shade.Types.void_t;
+
+    // represents other "non-constant" types. kludgy, but hey.
+    Shade.Types.undefined_t = Shade.Types._create_basic('<undefined>');
+    Shade.Types.shade_t     = Shade.Types._create_basic('<shade>');
+    Shade.Types.other_t     = Shade.Types._create_basic('<other>');
 })();
 (function () {
 
@@ -6895,7 +7012,7 @@ function _register_struct(type) {
     var t = type._struct_key;
     var v = _structs[t];
     if (v !== undefined) {
-        throw "type " + t + " already registered as " + v.internal_type_name;
+        throw new Error("type " + t + " already registered as " + v.internal_type_name);
     }
     _structs[t] = type;
 };
@@ -6903,10 +7020,10 @@ function _register_struct(type) {
 var struct_key = function(obj) {
     return _.map(obj, function(value, key) {
         if (value.is_function()) {
-            throw "function types not allowed inside struct";
+            throw new Error("function types not allowed inside struct");
         }
         if (value.is_sampler()) {
-            throw "sampler types not allowed inside struct";
+            throw new Error("sampler types not allowed inside struct");
         }
         if (value.is_struct()) {
             return "[" + key + ":" + value.internal_type_name + "]";
@@ -7018,7 +7135,7 @@ Shade.CompilationContext = function(compile_type)
         },
         declare: function(decltype, glsl_name, type, declmap) {
             if (_.isUndefined(type)) {
-                throw "must define type";
+                throw new Error("must define type");
             }
             if (!(glsl_name in declmap)) {
                 declmap[glsl_name] = type;
@@ -7026,7 +7143,7 @@ Shade.CompilationContext = function(compile_type)
             } else {
                 var existing_type = declmap[glsl_name];
                 if (!existing_type.equals(type)) {
-                    throw ("compile error: different expressions use "
+                    throw new Error("compile error: different expressions use "
                            + "conflicting types for '" + decltype + " " + glsl_name
                            + "': '" + existing_type.repr() + "', '"
                            + type.repr() + "'");
@@ -7049,7 +7166,7 @@ Shade.CompilationContext = function(compile_type)
             _.each(type.fields, function(v) {
                 if (v.is_struct() && 
                     _.isUndefined(this.declared_struct_types[type.internal_type_name])) {
-                    throw "internal error; declare_struct found undeclared internal struct";
+                    throw new Error("internal error; declare_struct found undeclared internal struct");
                 }
             });
             this.global_decls.push("struct", type.internal_type_name, "{\n");
@@ -7207,21 +7324,21 @@ Shade.Exp = {
     // javascript-side evaluation of Shade expressions
 
     evaluate: function() {
-        throw "internal error: evaluate undefined for " + this.expression_type;
+        throw new Error("internal error: evaluate undefined for " + this.expression_type);
     },
     is_constant: function() {
         return false;
     },
     constant_value: Shade.memoize_on_field("_constant_value", function() {
         if (!this.is_constant())
-            throw "constant_value called on non-constant expression";
+            throw new Error("constant_value called on non-constant expression");
         return this.evaluate();
     }),
     element_is_constant: function(i) {
         return false;
     },
     element_constant_value: function(i) {
-        throw "invalid call: no constant elements";
+        throw new Error("invalid call: no constant elements");
     },
 
     //////////////////////////////////////////////////////////////////////////
@@ -7229,7 +7346,7 @@ Shade.Exp = {
 
     element: function(i) {
         // FIXME. Why doesn't this check for is_pod and use this.at()?
-        throw "invalid call: atomic expression";  
+        throw new Error("invalid call: atomic expression");
     },
 
     //////////////////////////////////////////////////////////////////////////
@@ -7367,7 +7484,7 @@ Shade.Exp = {
                 case 't': return 1;
                 case 'p': return 2;
                 case 'q': return 3;
-                default: throw "invalid swizzle pattern";
+                default: throw new Error("invalid swizzle pattern");
                 }
             }
             var result = [];
@@ -7405,7 +7522,7 @@ Shade.Exp = {
                 var d = this.type.vec_dimension();
                 var ctor = vec[d];
                 if (_.isUndefined(ctor))
-                    throw "bad vec dimension " + d;
+                    throw new Error("bad vec dimension " + d);
                 return ctor.make(ar);
             }),
             evaluate: Shade.memoize_on_guid_dict(function(cache) {
@@ -7421,15 +7538,8 @@ Shade.Exp = {
                     var d = this.type.vec_dimension();
                     var ctor = vec[d];
                     if (_.isUndefined(ctor))
-                        throw "bad vec dimension " + d;
+                        throw new Error("bad vec dimension " + d);
                     return ctor.make(ar);
-                    // switch (d) {
-                    // case 2: return vec2.make(ar);
-                    // case 3: return vec3.make(ar);
-                    // case 4: return vec4.make(ar);
-                    // default:
-                    //     throw "bad vec dimension " + d;
-                    // }
                 }
             }),
             element: function(i) {
@@ -7460,8 +7570,8 @@ Shade.Exp = {
         index._must_be_function_call = true;
         if (!index.type.equals(Shade.Types.float_t) &&
             !index.type.equals(Shade.Types.int_t)) {
-            throw "at expects int or float, got '" + 
-                index.type.repr() + "' instead";
+            throw new Error("at expects int or float, got '" + 
+                            index.type.repr() + "' instead");
         }
         return Shade._create_concrete_exp( {
             parents: [parent, index],
@@ -7536,7 +7646,7 @@ Shade.Exp = {
                 var ix = this.parents[1].constant_value();
                 var x = this.parents[0].element(ix);
                 if (x === this) {
-                    throw "internal error: would have gone into an infinite loop here.";
+                    throw new Error("internal error: would have gone into an infinite loop here.");
                 }
                 return x.element_constant_value(i);
             }),
@@ -7545,11 +7655,11 @@ Shade.Exp = {
     },
     field: function(field_name) {
         if (!this.type.is_struct()) {
-            throw "field() only valid on struct types";
+            throw new Error("field() only valid on struct types");
         }
         var index = this.type.field_index[field_name];
         if (_.isUndefined(index)) {
-            throw "field " + field_name + " not existent";
+            throw new Error("field " + field_name + " not existent");
         }
 
         return Shade._create_concrete_value_exp({
@@ -7574,7 +7684,6 @@ Shade.Exp = {
     },
     _lux_expression: true, // used by lux_typeOf
     expression_type: "other",
-    _type: "shade_expression",
     _uniforms: [],
 
     //////////////////////////////////////////////////////////////////////////
@@ -7773,10 +7882,10 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
             if (i === 0)
                 return this;
             else
-                throw this.type.repr() + " is an atomic type, got this: " + i;
+                throw new Error(this.type.repr() + " is an atomic type, got this: " + i);
         } else {
             this.debug_print();
-            throw "Internal error; this should have been overriden.";
+            throw new Error("Internal error; this should have been overriden.");
         }
     },
     compile: function(ctx) {
@@ -7900,7 +8009,7 @@ Shade.constant = function(v, type)
                     if (i === 0)
                         return this;
                     else
-                        throw this.type.repr() + " is an atomic type, got this: " + i;
+                        throw new Error(this.type.repr() + " is an atomic type, got this: " + i);
                 } else if (this.type.is_vec()) {
                     return Shade.constant(args[i]);
                 } else {
@@ -7915,7 +8024,7 @@ Shade.constant = function(v, type)
                     if (i === 0)
                         return args[0];
                     else
-                        throw "float is an atomic type";
+                        throw new Error("float is an atomic type");
                 } if (this.type.is_vec()) {
                     return args[i];
                 }
@@ -7934,7 +8043,7 @@ Shade.constant = function(v, type)
                     this.type.equals(Shade.Types.mat4))
                     return mat[mat_length_to_dimension[args.length]].make(args);
                 else
-                    throw "internal error: constant of unknown type";
+                    throw new Error("internal error: constant of unknown type");
             }),
             compile: function(ctx) {},
             parents: [],
@@ -7942,46 +8051,47 @@ Shade.constant = function(v, type)
         });
     };
 
-    var t = lux_constant_type(v);
+    // FIXME refactor this since type_of result is now a Shade.Types.*
+    var t = Shade.Types.type_of(v);
     var d, computed_t;
-    if (t === 'number') {
+    if (t.equals(Shade.Types.float_t)) {
         if (type && !(type.equals(Shade.Types.float_t) ||
                       type.equals(Shade.Types.int_t))) {
-            throw ("expected specified type for numbers to be float or int," +
+            throw new Error("expected specified type for numbers to be float or int," +
                    " got " + type.repr() + " instead.");
         }
         return constant_tuple_fun(type || Shade.Types.float_t, [v]);
-    } else if (t === 'boolean') {
+    } else if (t.equals(Shade.Types.bool_t)) {
         if (type && !type.equals(Shade.Types.bool_t))
-            throw ("boolean constants cannot be interpreted as " + 
+            throw new Error("boolean constants cannot be interpreted as " + 
                    type.repr());
         return constant_tuple_fun(Shade.Types.bool_t, [v]);
-    } else if (t === 'vector') {
+    } else if (t.repr().substr(0,3) === 'vec') {
         d = v.length;
         if (d < 2 && d > 4)
-            throw "invalid length for constant vector: " + v;
+            throw new Error("invalid length for constant vector: " + v);
         var el_ts = _.map(v, function(t) { return lux_typeOf(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
-            throw "not all constant params have the same types";
+            throw new Error("not all constant params have the same types");
         }
         if (el_ts[0] === "number") {
             computed_t = Shade.Types['vec' + d];
             if (type && !computed_t.equals(type)) {
-                throw "passed constant must have type " + computed_t.repr()
+                throw new Error("passed constant must have type " + computed_t.repr()
                     + ", but was request to have incompatible type " 
-                    + type.repr();
+                    + type.repr());
             }
             return constant_tuple_fun(computed_t, v);
         }
         else
-            throw "bad datatype for constant: " + el_ts[0];
-    } else if (t === 'matrix') {
+            throw new Error("bad datatype for constant: " + el_ts[0]);
+    } else if (t.repr().substr(0,3) === 'mat') {
         d = mat_length_to_dimension[v.length];
         computed_t = Shade.Types['mat' + d];
         if (type && !computed_t.equals(type)) {
-            throw "passed constant must have type " + computed_t.repr()
-                + ", but was request to have incompatible type " 
-                + type.repr();
+            throw new Error("passed constant must have type " + computed_t.repr()
+                            + ", but was requested to have incompatible type " 
+                            + type.repr());
         }
         return constant_tuple_fun(computed_t, v);
     } else if (type.is_struct()) {
@@ -7991,10 +8101,10 @@ Shade.constant = function(v, type)
         });
         return Shade.struct(obj);
     } else {
-        throw "type error: constant should be bool, number, vector, matrix, array or struct. got " + t
-            + " instead";
+        throw new Error("type error: constant should be bool, number, vector, matrix, array or struct. got " + t
+                        + " instead");
     }
-    throw "internal error: lux_constant_type returned bogus value";
+    throw new Error("internal error: Shade.Types.type_of returned bogus value");
 };
 
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };
@@ -8007,61 +8117,60 @@ Shade.as_float = function(v) { return Shade.make(v).as_float(); };
 Shade.array = function(v)
 {
     var t = lux_typeOf(v);
-    if (t === 'array') {
-        var new_v = v.map(Shade.make);
-        var array_size = new_v.length;
-        if (array_size === 0) {
-            throw "array constant must be non-empty";
-        }
+    if (t !== 'array')
+        throw new Error("type error: need array");
 
-        var new_types = new_v.map(function(t) { return t.type; });
-        var array_type = Shade.Types.array(new_types[0], array_size);
-        if (_.any(new_types, function(t) { return !t.equals(new_types[0]); })) {
-            throw "array elements must have identical types";
-        }
-        return Shade._create_concrete_exp( {
-            parents: new_v,
-            type: array_type,
-            array_element_type: new_types[0],
-            expression_type: "constant", // FIXME: is there a reason this is not "array"?
-
-            evaluate: Shade.memoize_on_guid_dict(function(cache) {
-                return _.map(this.parents, function(e) {
-                    return e.evaluate(cache);
-                });
-            }),
-            
-            glsl_expression: function() { return this.glsl_name; },
-            compile: function (ctx) {
-                this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
-                ctx.strings.push(this.type.declare(this.glsl_name), ";\n");
-                ctx.strings.push("void", this.array_initializer_glsl_name, "(void) {\n");
-                for (var i=0; i<this.parents.length; ++i) {
-                    ctx.strings.push("    ", this.glsl_name, "[", i, "] =",
-                                     this.parents[i].glsl_expression(), ";\n");
-                }
-                ctx.strings.push("}\n");
-                ctx.add_initialization(this.array_initializer_glsl_name + "()");
-            },
-            is_constant: function() { return false; }, 
-            element: function(i) {
-                return this.parents[i];
-            },
-            element_is_constant: function(i) {
-                return this.parents[i].is_constant();
-            },
-            element_constant_value: function(i) {
-                return this.parents[i].constant_value();
-            },
-            locate: function(target, xform) {
-                var that = this;
-                xform = xform || function(x) { return x; };
-                return Shade.locate(function(i) { return xform(that.at(i.as_int())); }, target, 0, array_size-1);
-            }
-        });
-    } else {
-        throw "type error: need array";
+    var new_v = v.map(Shade.make);
+    var array_size = new_v.length;
+    if (array_size === 0) {
+        throw new Error("array constant must be non-empty");
     }
+
+    var new_types = new_v.map(function(t) { return t.type; });
+    var array_type = Shade.Types.array(new_types[0], array_size);
+    if (_.any(new_types, function(t) { return !t.equals(new_types[0]); })) {
+        throw new Error("array elements must have identical types");
+    }
+    return Shade._create_concrete_exp( {
+        parents: new_v,
+        type: array_type,
+        array_element_type: new_types[0],
+        expression_type: "constant", // FIXME: is there a reason this is not "array"?
+
+        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            return _.map(this.parents, function(e) {
+                return e.evaluate(cache);
+            });
+        }),
+        
+        glsl_expression: function() { return this.glsl_name; },
+        compile: function (ctx) {
+            this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
+            ctx.strings.push(this.type.declare(this.glsl_name), ";\n");
+            ctx.strings.push("void", this.array_initializer_glsl_name, "(void) {\n");
+            for (var i=0; i<this.parents.length; ++i) {
+                ctx.strings.push("    ", this.glsl_name, "[", i, "] =",
+                                 this.parents[i].glsl_expression(), ";\n");
+            }
+            ctx.strings.push("}\n");
+            ctx.add_initialization(this.array_initializer_glsl_name + "()");
+        },
+        is_constant: function() { return false; }, 
+        element: function(i) {
+            return this.parents[i];
+        },
+        element_is_constant: function(i) {
+            return this.parents[i].is_constant();
+        },
+        element_constant_value: function(i) {
+            return this.parents[i].constant_value();
+        },
+        locate: function(target, xform) {
+            var that = this;
+            xform = xform || function(x) { return x; };
+            return Shade.locate(function(i) { return xform(that.at(i.as_int())); }, target, 0, array_size-1);
+        }
+    });
 };
 // Shade.struct denotes a heterogeneous structure of Shade values:
 //   Shade.struct({foo: Shade.vec(1,2,3), bar: Shade.struct({baz: 1, bah: false})});
@@ -8110,7 +8219,7 @@ Shade.struct = function(obj)
         field: function(field_name) {
             var index = this.type.field_index[field_name];
             if (_.isUndefined(index)) {
-                throw "field " + field_name + " not existent";
+                throw new Error("field " + field_name + " not existent");
             }
 
             /* Since field_name is always an immediate string, 
@@ -8151,19 +8260,19 @@ Shade.set = function(exp, name)
             if ((name === "gl_FragColor" ||
                  (name.substring(0, 11) === "gl_FragData")) &&
                 ctx.compile_type !== Shade.FRAGMENT_PROGRAM_COMPILE) {
-                throw ("gl_FragColor and gl_FragData assignment"
+                throw new Error("gl_FragColor and gl_FragData assignment"
                        + " only allowed on fragment shaders");
             }
             if ((name === "gl_Position" ||
                  name === "gl_PointSize") &&
                 ctx.compile_type !== Shade.VERTEX_PROGRAM_COMPILE) {
-                throw ("gl_Position and gl_PointSize assignment "
+                throw new Error("gl_Position and gl_PointSize assignment "
                        + "only allowed on vertex shaders");
             }
             if ((ctx.compile_type !== Shade.VERTEX_PROGRAM_COMPILE) &&
                 (name !== "gl_FragColor") &&
                 (name.substring(0, 11) !== "gl_FragData")) {
-                throw ("the only allowed output variables on a fragment"
+                throw new Error("the only allowed output variables on a fragment"
                        + " shader are gl_FragColor and gl_FragData[]");
             }
             if (name !== "gl_FragColor" &&
@@ -8197,9 +8306,9 @@ Shade.parameter = function(type, v)
     ];
 
     var uniform_name = Shade.unique_name();
-    if (_.isUndefined(type)) throw "parameter requires type";
+    if (_.isUndefined(type)) throw new Error("parameter requires type");
     if (typeof type === 'string') type = Shade.Types[type];
-    if (_.isUndefined(type)) throw "parameter requires valid type";
+    if (_.isUndefined(type)) throw new Error("parameter requires valid type");
 
     // the local variable value stores the actual value of the
     // parameter to be used by the GLSL uniform when it is set.
@@ -8209,7 +8318,7 @@ Shade.parameter = function(type, v)
     if (!_.isUndefined(call)) {
         call = call[1];
     } else {
-        throw "Unsupported type " + type.repr() + " for parameter.";
+        throw new Error("Unsupported type " + type.repr() + " for parameter.");
     }
     var result = Shade._create_concrete_exp({
         parents: [],
@@ -8230,7 +8339,7 @@ Shade.parameter = function(type, v)
                 if (i === 0)
                     return this;
                 else
-                    throw this.type.repr() + " is an atomic type";
+                    throw new Error(this.type.repr() + " is an atomic type");
             } else
                 return this.at(i);
         }),
@@ -8246,9 +8355,9 @@ Shade.parameter = function(type, v)
         set: function(v) {
             // Ideally, we'd like to do type checking here, but I'm concerned about
             // performance implications. setting a uniform might be a hot path
-            // then again, lux_constant_type is unlikely to be particularly fast.
+            // then again, Shade.Types.type_of is unlikely to be particularly fast.
             // FIXME check performance
-            var t = lux_constant_type(v);
+            var t = Shade.Types.type_of(v);
             if (t === "shade_expression")
                 v = v.evaluate();
             value = v;
@@ -8299,9 +8408,9 @@ Shade.attribute_from_buffer = function(buffer)
 Shade.attribute = function(type)
 {
     var name = Shade.unique_name();
-    if (_.isUndefined(type)) throw "attribute requires type";
+    if (_.isUndefined(type)) throw new Error("attribute requires type");
     if (typeof type === 'string') type = Shade.Types[type];
-    if (_.isUndefined(type)) throw "attribute requires valid type";
+    if (_.isUndefined(type)) throw new Error("attribute requires valid type");
     var bound_buffer;
 
     return Shade._create_concrete_exp( {
@@ -8313,12 +8422,12 @@ Shade.attribute = function(type)
                 if (i === 0)
                     return this;
                 else
-                    throw "float is an atomic type";
+                    throw new Error("float is an atomic type");
             } else
                 return this.at(i);
         }),
         evaluate: function() {
-            throw "client-side evaluation of attributes is currently unsupported";
+            throw new Error("client-side evaluation of attributes is currently unsupported");
         },
         glsl_expression: function() { 
             if (this._must_be_function_call) {
@@ -8352,9 +8461,9 @@ Shade.attribute = function(type)
 };
 Shade.varying = function(name, type)
 {
-    if (_.isUndefined(type)) throw "varying requires type";
+    if (_.isUndefined(type)) throw new Error("varying requires type");
     if (lux_typeOf(type) === 'string') type = Shade.Types[type];
-    if (_.isUndefined(type)) throw "varying requires valid type";
+    if (_.isUndefined(type)) throw new Error("varying requires valid type");
     var allowed_types = [
         Shade.Types.float_t,
         Shade.Types.vec2,
@@ -8365,7 +8474,7 @@ Shade.varying = function(name, type)
         Shade.Types.mat4
     ];
     if (!_.any(allowed_types, function(t) { return t.equals(type); })) {
-        throw "varying does not support type '" + type.repr() + "'";
+        throw new Error("varying does not support type '" + type.repr() + "'");
     }
     return Shade._create_concrete_exp( {
         parents: [],
@@ -8377,7 +8486,7 @@ Shade.varying = function(name, type)
                 if (i === 0)
                     return this;
                 else
-                    throw this.type.repr() + " is an atomic type";
+                    throw new Error(this.type.repr() + " is an atomic type");
             } else
                 return this.at(i);
         }),
@@ -8388,7 +8497,7 @@ Shade.varying = function(name, type)
                 return name; 
         },
         evaluate: function() {
-            throw "evaluate unsupported for varying expressions";
+            throw new Error("evaluate unsupported for varying expressions");
         },
         compile: function(ctx) {
             ctx.declare_varying(name, this.type);
@@ -8409,7 +8518,7 @@ Shade.fragCoord = function() {
         type: Shade.Types.vec4,
         glsl_expression: function() { return "gl_FragCoord"; },
         evaluate: function() {
-            throw "evaluate undefined for fragCoord";
+            throw new Error("evaluate undefined for fragCoord");
         },
         compile: function(ctx) {
         }
@@ -8424,7 +8533,7 @@ Shade.pointCoord = function() {
         compile: function(ctx) {
         },
         evaluate: function() {
-            throw "evaluate undefined for pointCoord";
+            throw new Error("evaluate undefined for pointCoord");
         }
     });
 };
@@ -8473,7 +8582,7 @@ var operator = function(exp1, exp2,
 };
 
 Shade.add = function() {
-    if (arguments.length === 0) throw "add needs at least one argument";
+    if (arguments.length === 0) throw new Error("add needs at least one argument");
     if (arguments.length === 1) return arguments[0];
     function add_type_resolver(t1, t2) {
         var type_list = [
@@ -8521,7 +8630,7 @@ Shade.add = function() {
             })) {
             return t1;
         }
-        throw ("type mismatch on add: unexpected types  '"
+        throw new Error("type mismatch on add: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
     var current_result = Shade.make(arguments[0]);
@@ -8541,7 +8650,7 @@ Shade.add = function() {
             return v1 + v2;
         if (exp2.type.equals(Shade.Types.float_t))
             return vt.map(v1, function(x) { 
-                return x + v2; 
+                return x + v2;
             });
         if (exp1.type.equals(Shade.Types.float_t))
             return vt.map(v2, function(x) {
@@ -8551,7 +8660,7 @@ Shade.add = function() {
             return vt.plus(v1, v2);
         } else {
             if (!exp1.type.is_struct())
-                throw "internal error, was expecting a struct here";
+                throw new Error("internal error, was expecting a struct here");
             var s = {};
             _.each(v1, function(v, k) {
                 s[k] = evaluator(Shade.add(exp1.field(k), exp2.field(k)));
@@ -8567,7 +8676,7 @@ Shade.add = function() {
             if (i === 0)
                 return exp;
             else
-                throw "i > 0 in pod element";
+                throw new Error("i > 0 in pod element");
         }
         if (e1.type.is_vec() || e1.type.is_mat())
             v1 = e1.element(i);
@@ -8588,8 +8697,8 @@ Shade.add = function() {
 };
 
 Shade.sub = function() {
-    if (arguments.length === 0) throw "sub needs at least two arguments";
-    if (arguments.length === 1) throw "unary minus unimplemented";
+    if (arguments.length === 0) throw new Error("sub needs at least two arguments");
+    if (arguments.length === 1) throw new Error("unary minus unimplemented");
     function sub_type_resolver(t1, t2) {
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
@@ -8635,7 +8744,7 @@ Shade.sub = function() {
             })) {
             return t1;
         }
-        throw ("type mismatch on sub: unexpected types  '"
+        throw new Error("type mismatch on sub: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
     function evaluator(exp, cache) {
@@ -8670,7 +8779,7 @@ Shade.sub = function() {
             if (i === 0)
                 return exp;
             else
-                throw "i > 0 in pod element";
+                throw new Error("i > 0 in pod element");
         }
         if (e1.type.is_vec() || e1.type.is_mat())
             v1 = e1.element(i);
@@ -8692,12 +8801,12 @@ Shade.sub = function() {
 };
 
 Shade.div = function() {
-    if (arguments.length === 0) throw "div needs at least two arguments";
+    if (arguments.length === 0) throw new Error("div needs at least two arguments");
     function div_type_resolver(t1, t2) {
         if (_.isUndefined(t1))
-            throw "internal error: t1 multiplication with undefined type";
+            throw new Error("internal error: t1 multiplication with undefined type");
         if (_.isUndefined(t2))
-            throw "internal error: t2 multiplication with undefined type";
+            throw new Error("internal error: t2 multiplication with undefined type");
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4],
@@ -8729,7 +8838,7 @@ Shade.div = function() {
             if (t1.equals(type_list[i][0]) &&
                 t2.equals(type_list[i][1]))
                 return type_list[i][2];
-        throw ("type mismatch on div: unexpected types '"
+        throw new Error("type mismatch on div: unexpected types '"
                    + t1.repr() + "' and '" + t2.repr() + "'");
     }
     function evaluator(exp, cache) {
@@ -8745,7 +8854,13 @@ Shade.div = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         }
-        var t1 = lux_constant_type(v1), t2 = lux_constant_type(v2);
+        var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
+        var k1 = t1.is_vec() ? "vector" :
+                 t1.is_mat() ? "matrix" :
+                 t1.is_pod() ? "number" : "BAD";
+        var k2 = t2.is_vec() ? "vector" :
+                 t2.is_mat() ? "matrix" :
+                 t2.is_pod() ? "number" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { 
                                   if (exp1.type.equals(Shade.Types.int_t))
@@ -8771,19 +8886,19 @@ Shade.div = function() {
                           });
                       },
                       matrix: function (x, y) {
-                          throw "internal error, can't evaluate vector/matrix";
+                          throw new Error("internal error, can't evaluate vector/matrix");
                       }
                     },
             matrix: { number: function (x, y) { return mt.scaling(x, 1/y); },
                       vector: function (x, y) { 
-                          throw "internal error, can't evaluate matrix/vector";
+                          throw new Error("internal error, can't evaluate matrix/vector");
                       },
                       matrix: function (x, y) { 
-                          throw "internal error, can't evaluate matrix/matrix";
+                          throw new Error("internal error, can't evaluate matrix/matrix");
                       }
                     }
         };
-        return dispatch[t1][t2](v1, v2);
+        return dispatch[k1][k2](v1, v2);
     }
     function element_evaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
@@ -8793,7 +8908,7 @@ Shade.div = function() {
             if (i === 0)
                 return exp;
             else
-                throw "i > 0 in pod element";
+                throw new Error("i > 0 in pod element");
         }
         if (e1.type.is_vec() || e1.type.is_mat())
             v1 = e1.element(i);
@@ -8814,13 +8929,13 @@ Shade.div = function() {
 };
 
 Shade.mul = function() {
-    if (arguments.length === 0) throw "mul needs at least one argument";
+    if (arguments.length === 0) throw new Error("mul needs at least one argument");
     if (arguments.length === 1) return arguments[0];
     function mul_type_resolver(t1, t2) {
         if (_.isUndefined(t1))
-            throw "t1 multiplication with undefined type?";
+            throw new Error("t1 multiplication with undefined type?");
         if (_.isUndefined(t2))
-            throw "t2 multiplication with undefined type?";
+            throw new Error("t2 multiplication with undefined type?");
         var type_list = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4],
@@ -8858,7 +8973,7 @@ Shade.mul = function() {
             if (t1.equals(type_list[i][0]) &&
                 t2.equals(type_list[i][1]))
                 return type_list[i][2];
-        throw ("type mismatch on mul: unexpected types  '"
+        throw new Error("type mismatch on mul: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
     function evaluator(exp, cache) {
@@ -8874,7 +8989,13 @@ Shade.mul = function() {
             vt = vec[exp2.type.array_size()];
             mt = mat[exp2.type.array_size()];
         }
-        var t1 = lux_constant_type(v1), t2 = lux_constant_type(v2);
+        var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
+        var k1 = t1.is_vec() ? "vector" :
+                 t1.is_mat() ? "matrix" :
+                 t1.is_pod() ? "number" : "BAD";
+        var k2 = t2.is_vec() ? "vector" :
+                 t2.is_mat() ? "matrix" :
+                 t2.is_pod() ? "number" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },
@@ -8893,7 +9014,7 @@ Shade.mul = function() {
                       matrix: function (x, y) { return mt.product(x, y); }
                     }
         };
-        return dispatch[t1][t2](v1, v2);
+        return dispatch[k1][k2](v1, v2);
     }
     function element_evaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
@@ -8903,7 +9024,7 @@ Shade.mul = function() {
             if (i === 0)
                 return exp;
             else
-                throw "i > 0 in pod element";
+                throw new Error("i > 0 in pod element");
         }
         function value_kind(t) {
             if (t.is_pod())
@@ -8912,13 +9033,13 @@ Shade.mul = function() {
                 return "vec";
             if (t.is_mat())
                 return "mat";
-            throw "internal error: not pod, vec or mat";
+            throw new Error("internal error: not pod, vec or mat");
         }
         var k1 = value_kind(t1), k2 = value_kind(t2);
         var dispatch = {
             "pod": { 
                 "pod": function() { 
-                    throw "internal error, pod pod"; 
+                    throw new Error("internal error, pod pod"); 
                 },
                 "vec": function() { 
                     v1 = e1; v2 = e2.element(i); 
@@ -8965,7 +9086,7 @@ Shade.mul = function() {
                                         e1.element(2).element(i),
                                         e1.element(3).element(i));
                     } else
-                        throw "bad dimension for mat " + d;
+                        throw new Error("bad dimension for mat " + d);
                     return Shade.dot(row, e2);
                     // var row = e1.element(i);
                     // return Shade.dot(row, e2);
@@ -9011,13 +9132,13 @@ Shade.vec = function()
         if (_.isUndefined(vec_type))
             vec_type = arg.type.element_type(0);
         else if (!vec_type.equals(arg.type.element_type(0)))
-            throw "vec requires equal types";
+            throw new Error("vec requires equal types");
         total_size += arg.type.size_for_vec_constructor();
     }
     parent_offsets.push(total_size);
     if (total_size < 1 || total_size > 4) {
-        throw "vec constructor requires resulting width to be between "
-            + "1 and 4, got " + total_size + " instead";
+        throw new Error("vec constructor requires resulting width to be between "
+            + "1 and 4, got " + total_size + " instead");
     }
     var type;
     if (vec_type.equals(Shade.Types.float_t)) {
@@ -9027,7 +9148,7 @@ Shade.vec = function()
     } else if (vec_type.equals(Shade.Types.bool_t)) {
         type = Shade.Types["bvec" + total_size];
     } else {
-        throw "vec type must be bool, int, or float";
+        throw new Error("vec type must be bool, int, or float");
     }
     
     return Shade._create_concrete_value_exp({
@@ -9044,8 +9165,8 @@ Shade.vec = function()
                     return this.parents[j].element(i);
                 i = i - sz;
             }
-            throw "element " + old_i + " out of bounds (size=" 
-                + total_size + ")";
+            throw new Error("element " + old_i + " out of bounds (size=" 
+                + total_size + ")");
         },
         element_is_constant: function(i) {
             var old_i = i;
@@ -9055,8 +9176,8 @@ Shade.vec = function()
                     return this.parents[j].element_is_constant(i);
                 i = i - sz;
             }
-            throw "element " + old_i + " out of bounds (size=" 
-                + total_size + ")";
+            throw new Error("element " + old_i + " out of bounds (size=" 
+                + total_size + ")");
         },
         element_constant_value: function(i) {
             var old_i = i;
@@ -9066,8 +9187,8 @@ Shade.vec = function()
                     return this.parents[j].element_constant_value(i);
                 i = i - sz;
             }
-            throw "element " + old_i + " out of bounds (size=" 
-                + total_size + ")";
+            throw new Error("element " + old_i + " out of bounds (size=" 
+                + total_size + ")");
         },
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
             var result = [];
@@ -9097,22 +9218,22 @@ Shade.mat = function()
     for (var i=0; i<arguments.length; ++i) {
         var arg = arguments[i];
         // if (!(arg.expression_type === 'vec')) {
-        //     throw "mat only takes vecs as parameters";
+        //     throw new Error("mat only takes vecs as parameters");
         // }
         parents.push(arg);
         if (i === 0)
             cols = arg.type.size_for_vec_constructor();
         else if (cols !== arg.type.size_for_vec_constructor())
-            throw "mat: all vecs must have same dimension";
+            throw new Error("mat: all vecs must have same dimension");
     }
 
     if (cols !== rows) {
-        throw "non-square matrices currently not supported";
+        throw new Error("non-square matrices currently not supported");
     }
 
     if (rows < 1 || rows > 4) {
-        throw "mat constructor requires resulting dimension to be between "
-            + "2 and 4";
+        throw new Error("mat constructor requires resulting dimension to be between "
+            + "2 and 4");
     }
     var type = Shade.Types["mat" + rows];
     return Shade._create_concrete_value_exp( {
@@ -9162,7 +9283,7 @@ Shade.mat3 = function(m)
                          m.element(1).swizzle("xyz"),
                          m.element(2).swizzle("xyz"));
     } else {
-        throw "need matrix to convert to mat3";
+        throw new Error("need matrix to convert to mat3");
     }
 };
 // per_vertex is an identity operation value-wise, but it tags the AST
@@ -9209,7 +9330,7 @@ function builtin_glsl_function(opts)
         for (var j=0; j<type_resolving_list[i].length; ++j) {
             var t = type_resolving_list[i][j];
             if (_.isUndefined(t))
-                throw "undefined type in type_resolver";
+                throw new Error("undefined type in type_resolver");
         }
 
     // takes a list of lists of possible argument types, returns a function to 
@@ -9219,8 +9340,8 @@ function builtin_glsl_function(opts)
         var param_length = lst[0].length - 1;
         return function() {
             if (arguments.length != param_length) {
-                throw "expected " + param_length + " arguments, got "
-                    + arguments.length + " instead.";
+                throw new Error("expected " + param_length + " arguments, got "
+                    + arguments.length + " instead.");
             }
             for (var i=0; i<lst.length; ++i) {
                 var this_params = lst[i];
@@ -9236,7 +9357,7 @@ function builtin_glsl_function(opts)
             }
             var types = _.map(_.toArray(arguments).slice(0, arguments.length),
                   function(x) { return x.type.repr(); }).join(", ");
-            throw "could not find appropriate type match for (" + types + ")";
+            throw new Error("could not find appropriate type match for (" + types + ")");
         };
     }
 
@@ -9249,7 +9370,7 @@ function builtin_glsl_function(opts)
         try {
             type = resolver.apply(this, canon_args);
         } catch (err) {
-            throw "type error on " + name + ": " + err;
+            throw new Error("type error on " + name + ": " + err);
         }
         var obj = {
             parents: canon_args,
@@ -9270,12 +9391,12 @@ function builtin_glsl_function(opts)
                 return evaluator(this, cache);
             });
         } else {
-            throw "Internal error: Builtin '" + name + "' has no evaluator?!";
+            throw new Error("Internal error: Builtin '" + name + "' has no evaluator?!");
         }
 
         obj.constant_value = Shade.memoize_on_field("_constant_value", function() {
             if (!this.is_constant())
-                throw "constant_value called on non-constant expression";
+                throw new Error("constant_value called on non-constant expression");
             return evaluator(this);
         });
 
@@ -9411,8 +9532,8 @@ function atan()
         var c = common_fun_2op_evaluator(Math.atan2);
         return common_fun_2op("atan", c)(arguments[0], arguments[1]);
     } else {
-        throw "atan expects 1 or 2 parameters, got " + arguments.length
-        + " instead.";
+        throw new Error("atan expects 1 or 2 parameters, got " + arguments.length
+                        + " instead.");
     }
 }
 
@@ -9668,7 +9789,7 @@ var cross = builtin_glsl_function({
         } else if (i === 1) { return v1.at(2).mul(v2.at(0)).sub(v1.at(0).mul(v2.at(2)));
         } else if (i === 2) { return v1.at(0).mul(v2.at(1)).sub(v1.at(1).mul(v2.at(0)));
         } else
-            throw "invalid element " + i + " for cross";
+            throw new Error("invalid element " + i + " for cross");
     }
 });
 Shade.cross = cross;
@@ -9762,7 +9883,7 @@ var refract = builtin_glsl_function({
         case 2: zero = Shade.vec(0,0); break;
         case 3: zero = Shade.vec(0,0,0); break;
         case 4: zero = Shade.vec(0,0,0,0); break;
-        default: throw "internal error";
+        default: throw new Error("internal error");
         };
         return Shade.ifelse(k.lt(0), zero, refraction).element(i);
     }
@@ -9779,7 +9900,7 @@ var texture2D = builtin_glsl_function({
     element_constant_evaluator: function(exp, i) { return false; },
 
     evaluator: function(exp) {
-        throw "evaluate unsupported on texture2D expressions";
+        throw new Error("evaluate unsupported on texture2D expressions");
     }
 });
 Shade.texture2D = texture2D;
@@ -9801,7 +9922,7 @@ _.each(["dFdx", "dFdy", "fwidth"], function(cmd) {
         element_constant_evaluator: function(exp, i) { return false; },
 
         evaluator: function(exp) {
-            throw "evaluate unsupported on " + cmd + " expressions";
+            throw new Error("evaluate unsupported on " + cmd + " expressions");
         }
     });
     Shade[cmd] = fun;
@@ -10073,7 +10194,7 @@ Shade.Optimizer.replace_with_constant = function(exp)
     var v = exp.constant_value();
     var result = Shade.constant(v, exp.type);
     if (!exp.type.equals(result.type)) {
-        throw "Shade.constant internal error: type was not preserved";
+        throw new Error("Shade.constant internal error: type was not preserved");
     }
     return result;
 };
@@ -10083,12 +10204,12 @@ Shade.Optimizer.is_zero = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = lux_constant_type(v);
-    if (t === 'number')
+    var t = Shade.Types.type_of(v);
+    if (t.is_pod())
         return v === 0;
-    if (t === 'vector')
+    if (t.is_vec())
         return _.all(v, function (x) { return x === 0; });
-    if (lux_typeOf(v) === 'matrix')
+    if (t.is_mat())
         return _.all(v, function (x) { return x === 0; });
     return false;
 };
@@ -10098,19 +10219,19 @@ Shade.Optimizer.is_mul_identity = function(exp)
     if (!exp.is_constant())
         return false;
     var v = exp.constant_value();
-    var t = lux_constant_type(v);
-    if (t === 'number')
+    var t = Shade.Types.type_of(v);
+    if (t.is_pod())
         return v === 1;
-    if (t === 'vector') {
+    if (t.is_vec()) {
         switch (v.length) {
         case 2: return vec.equal(v, vec.make([1,1]));
         case 3: return vec.equal(v, vec.make([1,1,1]));
         case 4: return vec.equal(v, vec.make([1,1,1,1]));
         default:
-            throw "bad vec length: " + v.length;    
+            throw new Error("bad vec length: " + v.length);
         }
     }
-    if (t === 'matrix')
+    if (t.is_mat())
         return mat.equal(v, mat[Math.sqrt(v.length)].identity());
     return false;
 };
@@ -10135,7 +10256,7 @@ Shade.Optimizer.replace_with_nonzero = function(exp)
         return exp.parents[1];
     if (Shade.Optimizer.is_zero(exp.parents[1]))
         return exp.parents[0];
-    throw "internal error: no zero value on input to replace_with_nonzero";
+    throw new Error("internal error: no zero value on input to replace_with_nonzero");
 };
 
 
@@ -10157,7 +10278,7 @@ Shade.Optimizer.is_times_one = function(exp)
     } else if (t1.is_mat() && t2.is_vec()) {
         return Shade.Optimizer.is_mul_identity(exp.parents[0]);
     } else {
-        throw "internal error on Shade.Optimizer.is_times_one";
+        throw new Error("internal error on Shade.Optimizer.is_times_one");
     }
 };
 
@@ -10171,7 +10292,7 @@ Shade.Optimizer.replace_with_notone = function(exp)
         } else if (Shade.Optimizer.is_mul_identity(exp.parents[1])) {
             return exp.parents[0];
         } else {
-            throw "internal error on Shade.Optimizer.replace_with_notone";
+            throw new Error("internal error on Shade.Optimizer.replace_with_notone");
         }
     } else if (!t1.equals(ft) && t2.equals(ft)) {
         return exp.parents[0];
@@ -10182,7 +10303,7 @@ Shade.Optimizer.replace_with_notone = function(exp)
     } else if (t1.is_mat() && t2.is_vec()) {
         return exp.parents[1];
     }
-    throw "internal error: no is_mul_identity value on input to replace_with_notone";
+    throw new Error("internal error: no is_mul_identity value on input to replace_with_notone");
 };
 
 Shade.Optimizer.replace_with_zero = function(x)
@@ -10203,7 +10324,7 @@ Shade.Optimizer.replace_with_zero = function(x)
         return Shade.constant(mat3.create());
     if (x.type.equals(Shade.Types.mat4))
         return Shade.constant(mat4.create());
-    throw "internal error: not a type replaceable with zero";
+    throw new Error("internal error: not a type replaceable with zero");
 };
 
 Shade.Optimizer.vec_at_constant_index = function(exp)
@@ -10232,7 +10353,7 @@ Shade.Optimizer.replace_vec_at_constant_with_swizzle = function(exp)
     if (v === 1) return exp.parents[0].swizzle("y");
     if (v === 2) return exp.parents[0].swizzle("z");
     if (v === 3) return exp.parents[0].swizzle("w");
-    throw "internal error on Shade.Optimizer.replace_vec_at_constant_with_swizzle";
+    throw new Error("internal error on Shade.Optimizer.replace_vec_at_constant_with_swizzle");
 };
 
 Shade.Optimizer.is_logical_and_with_constant = function(exp)
@@ -10324,25 +10445,25 @@ Shade.program = function(program_obj)
         v = Shade.make(v);
         if (k === 'gl_FragColor') {
             if (!v.type.equals(Shade.Types.vec4)) {
-                throw "color attribute must be of type vec4, got " +
-                    v.type.repr() + " instead";
+                throw new Error("color attribute must be of type vec4, got " +
+                    v.type.repr() + " instead");
             }
             fp_obj.gl_FragColor = v;
         } else if (k === 'gl_Position') {
             if (!v.type.equals(Shade.Types.vec4)) {
-                throw "position attribute must be of type vec4, got " +
-                    v.type.repr() + " instead";
+                throw new Error("position attribute must be of type vec4, got " +
+                    v.type.repr() + " instead");
             }
             vp_obj.gl_Position = v;
         } else if (k === 'gl_PointSize') {
             if (!v.type.equals(Shade.Types.float_t)) {
-                throw "color attribute must be of type float, got " +
-                    v.type.repr() + " instead";
+                throw new Error("color attribute must be of type float, got " +
+                    v.type.repr() + " instead");
             }
             vp_obj.gl_PointSize = v;
         } else if (k.substr(0, 3) === 'gl_') {
             // FIXME: Can we sensibly work around these?
-            throw "gl_* are reserved GLSL names";
+            throw new Error("gl_* are reserved GLSL names");
         } else
             vp_obj[k] = v;
     });
@@ -10490,6 +10611,7 @@ Shade.Utils.choose = function(lst) {
         return vals_exp.at(v);
     };
 };
+// FIXME remove from API
 Shade.Utils.linear = function(f1, f2, t1, t2)
 {
     console.log("Shade.Utils.linear is deprecated; use Shade.Scale.linear instead");
@@ -10508,9 +10630,9 @@ Shade.Utils.fit = function(data) {
     var t = data._shade_type;
     if (t === 'attribute_buffer') {
         if (data.itemSize !== 1)
-            throw "only dimension-1 attribute buffers are supported";
+            throw new Error("only dimension-1 attribute buffers are supported");
         if (_.isUndefined(data.array))
-            throw "Shade.Utils.fit on attribute buffers requires keep_array:true in options";
+            throw new Error("Shade.Utils.fit on attribute buffers requires keep_array:true in options");
         data = data.array;
     }
 
@@ -10648,19 +10770,19 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
 {
     return function() {
         if (arguments.length === 0) 
-            throw ("operator " + operator_name 
+            throw new Error("operator " + operator_name 
                    + " requires at least 1 parameter");
         if (arguments.length === 1) return Shade(arguments[0]).as_bool();
         var first = Shade(arguments[0]);
         if (!first.type.equals(Shade.Types.bool_t))
-            throw ("operator " + operator_name + 
+            throw new Error("operator " + operator_name + 
                    " requires booleans, got argument 1 as " +
                    arguments[0].type.repr() + " instead.");
         var current_result = first;
         for (var i=1; i<arguments.length; ++i) {
             var next = Shade(arguments[i]);
             if (!next.type.equals(Shade.Types.bool_t))
-                throw ("operator " + operator_name + 
+                throw new Error("operator " + operator_name + 
                        " requires booleans, got argument " + (i+1) +
                        " as " + next.type.repr() + " instead.");
             current_result = logical_operator_binexp(
@@ -10702,7 +10824,7 @@ Shade.Exp.xor = function(other)
 Shade.not = Shade(function(exp)
 {
     if (!exp.type.equals(Shade.Types.bool_t)) {
-        throw "logical_not requires bool expression";
+        throw new Error("logical_not requires bool expression");
     }
     return Shade._create_concrete_value_exp({
         parents: [exp],
@@ -10735,7 +10857,7 @@ var inequality_type_checker = function(name) {
               t2.equals(Shade.Types.float_t)) &&
             !(t1.equals(Shade.Types.int_t) && 
               t2.equals(Shade.Types.int_t)))
-            throw ("operator" + name + 
+            throw new Error("operator" + name + 
                    " requires two ints or two floats, got " +
                    t1.repr() + " and " + t2.repr() +
                    " instead.");
@@ -10745,12 +10867,12 @@ var inequality_type_checker = function(name) {
 var equality_type_checker = function(name) {
     return function(t1, t2) {
         if (!t1.equals(t2))
-            throw ("operator" + name +
+            throw new Error("operator" + name +
                    " requires same types, got " +
                    t1.repr() + " and " + t2.repr() +
                    " instead.");
         if (t1.is_array() && !t1.is_vec() && !t1.is_mat())
-            throw ("operator" + name +
+            throw new Error("operator" + name +
                    " does not support arrays");
     };
 };
@@ -10772,36 +10894,24 @@ Shade.ge = comparison_operator_exp(">=", inequality_type_checker(">="),
 Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
-    lift_binfun_to_evaluator(function(a, b) { 
-        if (lux_typeOf(a) === 'number' ||
-            lux_typeOf(a) === 'boolean')
-            return a === b;
-        if (lux_typeOf(a) === 'array')
+    lift_binfun_to_evaluator(function(a, b) {
+        if (lux_typeOf(a) === 'array') {
             return _.all(_.map(_.zip(a, b),
                                function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
-        if (lux_constant_type(a) === 'vector') {
-            return vec.equal(a, b);
         }
-        if (lux_constant_type(a) === 'matrix') {
-            return mat.equal(a, b);
-        }
-        throw "internal error: unrecognized type " + lux_typeOf(a) + 
-            " " + lux_constant_type(a);
+        return Shade.Types.type_of(a).value_equals(a, b);
     }));
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (lux_typeOf(a) === 'number' ||
-            lux_typeOf(a) === 'boolean')
-            return a !== b;
-        if (lux_typeOf(a) === 'array')
+        if (lux_typeOf(a) === 'array') {
             return _.any(_.map(_.zip(a, b),
                                function(v) { return v[0] !== v[1]; } ),
                          function (x) { return x; });
-        throw "internal error: unrecognized type " + lux_typeOf(a) + 
-            " " + lux_constant_type(a);
+        }
+        return !Shade.Types.type_of(a).value_equals(a, b);
     }));
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 
@@ -10815,9 +10925,9 @@ Shade.ifelse = function(condition, if_true, if_false)
     if_false = Shade.make(if_false);
 
     if (!if_true.type.equals(if_false.type))
-        throw "ifelse return expressions must have same types";
+        throw new Error("ifelse return expressions must have same types");
     if (!condition.type.equals(condition.type))
-        throw "ifelse condition must be of type bool";
+        throw new Error("ifelse condition must be of type bool");
 
     return Shade._create_concrete_value_exp( {
         parents: [condition, if_true, if_false],
@@ -10854,8 +10964,8 @@ Shade.ifelse = function(condition, if_true, if_false)
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
             if (this.parents[1].is_constant() &&
                 this.parents[2].is_constant() &&
-                this.type.constant_equal(this.parents[1].constant_value(),
-                                         this.parents[2].constant_value())) {
+                this.type.value_equals(this.parents[1].constant_value(),
+                                       this.parents[2].constant_value())) {
                 // if both sides of the branch have the same value, then
                 // this evaluates to the constant, regardless of the condition.
                 return this.parents[1].constant_value();
@@ -10874,7 +10984,7 @@ Shade.ifelse = function(condition, if_true, if_false)
                     this.parents[2].is_constant()) {
                     var v1 = this.parents[1].constant_value();
                     var v2 = this.parents[2].constant_value();
-                    return this.type.constant_equal(v1, v2);
+                    return this.type.value_equals(v1, v2);
                 } else {
                     return false;
                 }
@@ -10913,7 +11023,7 @@ Shade.ifelse = function(condition, if_true, if_false)
                     this.parents[2].element_is_constant(i)) {
                     var v1 = this.parents[1].element_constant_value(i);
                     var v2 = this.parents[2].element_constant_value(i);
-                    return this.type.element_type(i).constant_equal(v1, v2);
+                    return this.type.element_type(i).value_equals(v1, v2);
                 } else {
                     return false;
                 }
@@ -10942,6 +11052,8 @@ Shade.Exp.ifelse = function(if_true, if_false)
 
 Shade.rotation = Shade(function(angle, axis)
 {
+    if (axis.type.equals(Shade.Types.vec4))
+        axis = axis.swizzle("xyz");
     axis = axis.normalize();
 
     var s = angle.sin(), c = angle.cos(), t = Shade.sub(1, c);
@@ -10971,32 +11083,52 @@ Shade.translation = Shade(function() {
     if (arguments.length === 1) {
         var t = arguments[0];
         if (!t.type.equals(Shade.Types.vec3)) {
-            throw "expected vec3, got " + t.type.repr() + "instead";
+            throw new Error("expected vec3, got " + t.type.repr() + "instead");
         }
         return from_vec3(t);
     } else if (arguments.length === 2) {
         var x = arguments[0], y = arguments[1];
         if (!x.type.equals(Shade.Types.float_t)) {
-            throw "expected float, got " + x.type.repr() + "instead";
+            throw new Error("expected float, got " + x.type.repr() + "instead");
         }
         if (!y.type.equals(Shade.Types.float_t)) {
-            throw "expected float, got " + y.type.repr() + "instead";
+            throw new Error("expected float, got " + y.type.repr() + "instead");
         }
         return from_vec3(Shade.vec(x, y, 0));
     } else if (arguments.length === 3) {
         var x = arguments[0], y = arguments[1], z = arguments[2];
         if (!x.type.equals(Shade.Types.float_t)) {
-            throw "expected float, got " + x.type.repr() + "instead";
+            throw new Error("expected float, got " + x.type.repr() + "instead");
         }
         if (!y.type.equals(Shade.Types.float_t)) {
-            throw "expected float, got " + y.type.repr() + "instead";
+            throw new Error("expected float, got " + y.type.repr() + "instead");
         }
         if (!z.type.equals(Shade.Types.float_t)) {
-            throw "expected float, got " + z.type.repr() + "instead";
+            throw new Error("expected float, got " + z.type.repr() + "instead");
         }
         return from_vec3(Shade.vec(x, y, z));
     } else
-        throw "expected either 1, 2 or 3 parameters";
+        throw new Error("expected either 1, 2 or 3 parameters");
+});
+Shade.scaling = Shade(function() {
+    function build(v1, v2, v3) {
+        return Shade.mat(Shade.vec(v1, 0, 0, 0),
+                         Shade.vec( 0,v2, 0, 0),
+                         Shade.vec( 0, 0,v3, 0),
+                         Shade.vec( 0, 0, 0, 1));
+    }
+    if (arguments.length === 1) {
+        var t = arguments[0];
+        if (t.type.equals(Shade.Types.float_t))
+            return build(t, t, t);
+        if (t.type.equals(Shade.Types.vec3))
+            return build(t.x(), t.y(), t.z());
+        throw new Error("expected float or vec3, got " + t.type.repr() + " instead");
+    } else if (arguments.length === 3) {
+        return build(arguments[0], arguments[1], arguments[2]);
+    } else {
+        throw new Error("expected one or three parameters, got " + arguments.length + " instead");
+    }
 });
 Shade.ortho = Shade.make(function(left, right, bottom, top, near, far) {
     var rl = right.sub(left);
@@ -11189,14 +11321,14 @@ Shade.Colors.alpha = function(color, alpha)
     color = Shade.make(color);
     alpha = Shade.make(alpha);
     if (!alpha.type.equals(Shade.Types.float_t))
-        throw "alpha parameter must be float";
+        throw new Error("alpha parameter must be float");
     if (color.type.equals(Shade.Types.vec4)) {
         return Shade.vec(color.swizzle("rgb"), alpha);
     }
     if (color.type.equals(Shade.Types.vec3)) {
         return Shade.vec(color, alpha);
     }
-    throw "color parameter must be vec3 or vec4";
+    throw new Error("color parameter must be vec3 or vec4");
 };
 
 Shade.Exp.alpha = function(alpha)
@@ -11252,10 +11384,10 @@ Shade.Colors.Brewer.sequential = function(opts) {
         max: 1
     });
     if (_.isUndefined(opts.name))
-        throw "'name' is a required option";
+        throw new Error("'name' is a required option");
     var a = schemes.sequential[opts.name];
     if (_.isUndefined(a))
-        throw "Unknown sequential colormap " + opts.name;
+        throw new Error("Unknown sequential colormap " + opts.name);
     var range = _.map(a, function(lst) {
         return Shade.vec(lst[0] / 255, lst[1]/255, lst[2]/255, opts.alpha);
     });
@@ -11273,10 +11405,10 @@ Shade.Colors.Brewer.qualitative = function(opts) {
         alpha: 1
     });
     if (_.isUndefined(opts.name))
-        throw "'name' is a required option";
+        throw new Error("'name' is a required option");
     var a = schemes.qualitative[opts.name];
     if (_.isUndefined(a))
-        throw "Unknown qualitative colormap " + opts.name;
+        throw new Error("Unknown qualitative colormap " + opts.name);
     function lookup(i) {
         if (_.isUndefined(opts.domain)) {
             return a[i];
@@ -11298,10 +11430,10 @@ Shade.Colors.Brewer.diverging = function(opts) {
         high: 1
     });
     if (_.isUndefined(opts.name))
-        throw "'name' is a required option";
+        throw new Error("'name' is a required option");
     var a = schemes.diverging[opts.name];
     if (_.isUndefined(a))
-        throw "Unknown diverging colormap " + opts.name;
+        throw new Error("Unknown diverging colormap " + opts.name);
     var range = _.map(a, function(lst) {
         return Shade.vec(lst[0] / 255, lst[1]/255, lst[2]/255, opts.alpha);
     });
@@ -11322,7 +11454,7 @@ Shade.Colors.Brewer.diverging = function(opts) {
 function compose(g, f)
 {
     if (_.isUndefined(f) || _.isUndefined(g))
-        throw "Undefined!";
+        throw new Error("Undefined!");
     return function(x) {
         return g(f(x));
     };
@@ -11652,7 +11784,7 @@ table.hsv.rgb = function(hsv)
         case 4: return table.rgb.create(n, m, v);
         case 5: return table.rgb.create(v, m, n);
         default:
-            throw "internal error";
+            throw new Error("internal error");
         };
     }
 };
@@ -11680,7 +11812,7 @@ Shade.Colors.jstable = table;
 function compose(g, f)
 {
     if (_.isUndefined(f) || _.isUndefined(g))
-        throw "Undefined!";
+        throw new Error("Undefined!");
     return function(x) {
         return g(f(x));
     };
@@ -11703,13 +11835,13 @@ _.each(colorspaces, function(space) {
         if (arguments.length === 1) {
             vec = arguments[0];
             if (!vec.type.equals(Shade.Types.vec3))
-                throw "create with 1 parameter requires a vec3";
+                throw new Error("create with 1 parameter requires a vec3");
         } else if (arguments.length === 3) {
             vec = Shade.vec(arguments[0], arguments[1], arguments[2]);
             if (!vec.type.equals(Shade.Types.vec3))
-                throw "create with 3 parameter requires 3 floats";
+                throw new Error("create with 3 parameter requires 3 floats");
         } else
-            throw "create requires either 1 vec3 or 3 floats";
+            throw new Error("create requires either 1 vec3 or 3 floats");
         // this function is carefully designed to work for the above
         // color space names. if those change, this probably changes
         // too.
@@ -12197,12 +12329,12 @@ Shade.Scale.ordinal = function(opts)
         return _.all(set, function(v) { return v.equals(set[0]); });
     }
     if (!(opts.range.length >= 2)) { 
-        throw "Shade.Scale.ordinal requires arrays of length at least 2";
+        throw new Error("Shade.Scale.ordinal requires arrays of length at least 2");
     }
     var range = _.map(opts.range, Shade.make);
     var range_types = _.map(range,  function(v) { return v.type; });
     if (!all_same(range_types))
-        throw "Shade.Scale.linear requires range elements to have the same type";
+        throw new Error("Shade.Scale.linear requires range elements to have the same type");
 
     var choose = Shade.Utils.choose(range);
 
@@ -12243,10 +12375,10 @@ Shade.Scale.linear = function(opts)
     // that condition is written awkwardly so it catches
     // opts.domain === undefined as well.
     if (!(opts.domain.length >= 2)) { 
-        throw "Shade.Scale.linear requires arrays of length at least 2";
+        throw new Error("Shade.Scale.linear requires arrays of length at least 2");
     }
     if (opts.domain.length !== opts.range.length) {
-        throw "Shade.Scale.linear requires domain and range to be arrays of the same length";
+        throw new Error("Shade.Scale.linear requires domain and range to be arrays of the same length");
     }
 
     opts.domain = _.map(opts.domain, Shade.make);
@@ -12256,17 +12388,17 @@ Shade.Scale.linear = function(opts)
     var range_types =  _.map(opts.range,  function(v) { return v.type; });
 
     if (!is_any(allowable_types)(domain_types[0]))
-        throw "Shade.Scale.linear requires domain type to be one of {float, vec2, vec3, vec4}";
+        throw new Error("Shade.Scale.linear requires domain type to be one of {float, vec2, vec3, vec4}");
     if (!all_same(domain_types))
-        throw "Shade.Scale.linear requires domain elements to have the same type";
+        throw new Error("Shade.Scale.linear requires domain elements to have the same type");
     if (!is_any(allowable_types)(range_types[0]))
-        throw "Shade.Scale.linear requires range type to be one of {float, vec2, vec3, vec4}";
+        throw new Error("Shade.Scale.linear requires range type to be one of {float, vec2, vec3, vec4}");
     if (!all_same(range_types))
-        throw "Shade.Scale.linear requires range elements to have the same type";
+        throw new Error("Shade.Scale.linear requires range elements to have the same type");
     if (is_any(vec_types)(domain_types[0]) && (!domain_types[0].equals(range_types[0])))
-        throw "Shade.Scale.linear for vec types require equal domain and range types";
+        throw new Error("Shade.Scale.linear for vec types require equal domain and range types");
     if (opts.domain.length < 2 || opts.range.length < 2)
-        throw "Shade.Scale.linear requires domain and range to have at least two elements";
+        throw new Error("Shade.Scale.linear requires domain and range to have at least two elements");
 
     // Special-case the two-element scale for performance
     if (opts.domain.length === 2) {
@@ -12338,7 +12470,7 @@ Shade.Scale.linear = function(opts)
                 return Shade.vec.apply(this, result);
             });
         } else {
-            throw "internal error on Shade.Scale.linear";
+            throw new Error("internal error on Shade.Scale.linear");
         }
         return result;
 */
@@ -12346,7 +12478,7 @@ Shade.Scale.linear = function(opts)
 Shade.Scale.transformed = function(opts)
 {
     if (_.isUndefined(opts.transform)) {
-        throw "Shade.Scale.transform expects a domain transformation function";
+        throw new Error("Shade.Scale.transform expects a domain transformation function");
     };
     var linear_scale = Shade.Scale.linear(opts);
     return Shade(function(x) {
@@ -12398,6 +12530,87 @@ Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
     lat = lat.div(2).add(Math.PI/4).tan().log();
     return Shade.vec(lon, lat);
 });
+Shade.Light = {};
+// The most basic lighting component, ambient lighting simply multiplies
+// the light color by the material color.
+Shade.Light.ambient = function(light_opts)
+{
+    var color;
+    if (light_opts.color.type.equals(Shade.Types.vec4)) {
+        color = light_opts.color.swizzle("rgb");
+    } else if (light_opts.color.type.equals(Shade.Types.vec3)) {
+        color = light_opts.color;
+    } else throw new Error("expected color of type vec3 or vec4, got " +
+                           light_opts.color.type.repr() + " instead");
+    return function(material_opts) {
+        if (material_opts.material.type.equals(Shade.Types.vec4)) {
+            return Shade.vec(
+                material_opts.material.swizzle("xyz").mul(color),
+                material_opts.material.swizzle("a")
+            );
+        } else {
+            return material_opts.material.mul(color);
+        }
+    };
+};
+Shade.Light.diffuse = function(light_opts)
+{
+    light_opts = _.defaults(light_opts || {}, {
+        color: Shade.vec(1,1,1,1)
+    });
+
+    function vec3(v) {
+        return v.type.equals(Shade.Types.vec4) ? v.swizzle("xyz").div(v.at(3)) : v;
+    }
+    var light_diffuse = light_opts.color;
+    var light_pos = vec3(light_opts.light_position);
+
+    return function(material_opts) {
+        material_opts = _.defaults(material_opts || {}, { 
+            two_sided: false
+        });
+        var vertex_pos = vec3(material_opts.vertex);
+        var material_color = material_opts.material;
+
+        var vertex_normal = (material_opts.normal.type.equals(Shade.Types.vec4) ? 
+                             material_opts.normal.swizzle("xyz") : 
+                             material_opts.normal).normalize();
+
+        var N = vertex_normal;
+        var L = light_pos.sub(vertex_pos).normalize();
+        var v = Shade.max(Shade.ifelse(material_opts.two_sided,
+                                       L.dot(N).abs(),
+                                       L.dot(N)), 0);
+
+        return Shade.add(v.mul(light_diffuse).mul(material_color));
+    };
+};
+Shade.ThreeD = {};
+// Shade.ThreeD.bump returns a normal perturbed by bump mapping.
+
+Shade.ThreeD.bump = function(opts) {
+    // Via Three.JS, and
+    // http://mmikkelsen3d.blogspot.sk/2011/07/derivative-maps.html
+    var uv         = opts.uv;
+    var bump_map   = opts.map;
+    var bump_scale = opts.scale;
+    var surf_pos   = opts.position;
+    var surf_norm  = opts.normal;
+
+    var dSTdx      = Shade.dFdx(uv);
+    var dSTdy      = Shade.dFdy(uv);
+    var Hll        = Shade.texture2D(bump_map, uv).x();
+    var dBx        = Shade.texture2D(bump_map, uv.add(dSTdx)).x().sub(Hll);
+    var dBy        = Shade.texture2D(bump_map, uv.add(dSTdy)).x().sub(Hll);
+    var dHdxy      = Shade.vec(dBx, dBy).mul(bump_scale);
+    var sigmaX     = Shade.dFdx(surf_pos);
+    var sigmaY     = Shade.dFdy(surf_pos);
+    var R1         = Shade.cross(sigmaY, surf_norm);
+    var R2         = Shade.cross(surf_norm, sigmaX);
+    var det        = sigmaX.dot(R1);
+    var vGrad      = det.sign().mul(dHdxy.x().mul(R1).add(dHdxy.y().mul(R2)));
+    return det.abs().mul(surf_norm).sub(vGrad).normalize();
+};
 Lux.Geometry = {};
 Lux.Geometry.triangulate = function(opts) {
     var poly = _.map(opts.contour, function(contour) {
@@ -12515,7 +12728,7 @@ function parse_typeface_instructions(glyph)
             current_point = vec.make([x, y]);
             break;
         default:
-            throw "Unsupported opcode '" + opcode + "'";
+            throw new Error("Unsupported opcode '" + opcode + "'");
         };
     }
     if (points.length || quadratic_ears.length)
@@ -12638,7 +12851,7 @@ Lux.Text.outline = function(opts) {
         color: function(pos) { return Shade.color("white"); }
     });
     if (_.isUndefined(opts.font)) {
-        throw "outline requires font parameter";
+        throw new Error("outline requires font parameter");
     }
     var batch = loop_blinn_batch(opts);
     old_opts.batch = batch;
@@ -12662,7 +12875,7 @@ Lux.Text.outline = function(opts) {
             case "right": return -advance;
             case "center": return -advance/2;
             default:
-                throw "align must be one of 'left', 'center' or 'right'";
+                throw new Error("align must be one of 'left', 'center' or 'right'");
             }
         },
         // vertical_alignment_offset: function() {
@@ -12671,7 +12884,7 @@ Lux.Text.outline = function(opts) {
         //     case "middle": return -opts.font.lineHeight/2;
         //     case "top": return -opts.font.lineHeight;
         //         default:
-        //         throw "vertical_align must be one of 'baseline', 'middle' or 'top'";
+        //         throw new Error("vertical_align must be one of 'baseline', 'middle' or 'top'");
         //     };
         // },
         draw: function() {
@@ -12788,7 +13001,7 @@ Lux.Text.texture = function(opts) {
     });
 
     if (_.isUndefined(opts.font)) {
-        throw "Lux.Text.texture requires font parameter";
+        throw new Error("Lux.Text.texture requires font parameter");
     }
 
     var batch = {};
@@ -12826,7 +13039,7 @@ Lux.Text.texture = function(opts) {
             case "right": return -advance;
             case "center": return -advance/2;
             default:
-                throw "align must be one of 'left', 'center' or 'right'";
+                throw new Error("align must be one of 'left', 'center' or 'right'");
             }
         },
         draw: function() {
@@ -12896,12 +13109,12 @@ Lux.Marks.aligned_rects = function(opts)
         mode: Lux.DrawingMode.standard,
         z: function() { return 0; }
     });
-    if (!opts.elements) throw "elements is a required field";
-    if (!opts.left)     throw "left is a required field";
-    if (!opts.right)    throw "right is a required field";
-    if (!opts.top)      throw "top is a required field";
-    if (!opts.bottom)   throw "bottom is a required field";
-    if (!opts.color)    throw "color is a required field";
+    if (!opts.elements) throw new Error("elements is a required field");
+    if (!opts.left)     throw new Error("left is a required field");
+    if (!opts.right)    throw new Error("right is a required field");
+    if (!opts.top)      throw new Error("top is a required field");
+    if (!opts.bottom)   throw new Error("bottom is a required field");
+    if (!opts.color)    throw new Error("color is a required field");
 
     var vertex_index = Lux.attribute_buffer({ 
         vertex_array: _.range(opts.elements * 6), 
@@ -12951,11 +13164,11 @@ Lux.Marks.lines = function(opts)
         z: function() { return 0; }
     });
 
-    if (_.isUndefined(opts.elements)) throw "elements is a required field";
-    if (_.isUndefined(opts.color))    throw "color is a required field";
+    if (_.isUndefined(opts.elements)) throw new Error("elements is a required field");
+    if (_.isUndefined(opts.color))    throw new Error("color is a required field");
     if (_.isUndefined(opts.position) && 
         (_.isUndefined(opts.x) || _.isUndefined(opts.y))) {
-        throw "either position or x and y are required fields";
+        throw new Error("either position or x and y are required fields");
     }
 
     var vertex_index        = Lux.attribute_buffer({
@@ -12997,9 +13210,9 @@ Lux.Marks.dots = function(opts)
     });
 
     if (!opts.position)
-        throw "missing required parameter 'position'";
+        throw new Error("missing required parameter 'position'");
     if (!opts.elements)
-        throw "missing required parameter 'elements'";
+        throw new Error("missing required parameter 'elements'");
 
     var S = Shade;
     var ctx = Lux._globals.ctx;
@@ -13091,6 +13304,80 @@ Lux.Marks.scatterplot = function(opts)
         plain: opts.plain,
         pick_id: opts.pick_id
     });
+};
+Lux.Marks.center_zoom_interactor_brush = function(opts)
+{
+    opts = _.defaults(opts || {}, {
+        color: Shade.vec(1,1,1,0.5),
+        mode: Lux.DrawingMode.over,
+        on: {}
+    });
+
+    if (_.isUndefined(opts.interactor)) {
+        throw new Error("center_zoom_interactor_brush needs an interactor");
+    }
+    var interactor = opts.interactor;
+
+    var unproject = Shade(function(p) {
+        return interactor.unproject(p);
+    }).js_evaluate;
+    var selection_pt1 = Shade.parameter("vec2", vec.make([0,0]));
+    var selection_pt2 = Shade.parameter("vec2", vec.make([0,0]));
+    var proj_pt1 = interactor.project(selection_pt1);
+    var proj_pt2 = interactor.project(selection_pt2);
+
+    var brush_batch = Lux.Marks.aligned_rects({
+        elements: 1,
+        left: proj_pt1.x(),
+        right: proj_pt2.x(),
+        top: proj_pt1.y(),
+        bottom: proj_pt2.y(),
+        color: opts.color,
+        mode: opts.mode
+    });
+
+    var gl = Lux._globals.ctx;
+    var brush_is_active = false;
+    var b1;
+    brush_batch.on = {
+        mousedown: function(event) {
+            if (opts.accept_event(event)) {
+                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                b1 = xy_v;
+                selection_pt1.set(xy_v);
+                brush_is_active = true;
+                return false;
+            }
+            return true;
+        },
+        mousemove: function(event) { 
+            if (!brush_is_active)
+                return true;
+            if (opts.accept_event(event)) {
+                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                selection_pt2.set(xy_v);
+                Lux.Scene.invalidate();
+                return false;
+            }
+            return true;
+        },
+        mouseup: function(event) {
+            if (!brush_is_active)
+                return true;
+            brush_is_active = false;
+            if (opts.accept_event(event)) {
+                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                selection_pt2.set(xy_v);
+                var b2 = xy_v;
+                opts.on.brush_updated && opts.on.brush_updated(b1, b2);
+                Lux.Scene.invalidate();
+                return false;
+            }
+            return true;
+        }
+    };
+
+    return brush_batch;
 };
 function spherical_mercator_patch(tess)
 {
@@ -13238,7 +13525,7 @@ Lux.Marks.globe = function(opts)
     if (lux_typeOf(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
     } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
-        throw "zoom must be either a number or a parameter";
+        throw new Error("zoom must be either a number or a parameter");
     }
 
     var result = {
@@ -13398,7 +13685,7 @@ Lux.Marks.globe = function(opts)
                                 this.tiles[i].x, this.tiles[i].y, this.tiles[i].zoom, 
                                 this.tiles[i].active,
                                 k);                    
-                    throw "die";
+                    throw new Error("Internal Error in globe");
                 }
                 d[k] = true;
             }
@@ -13560,7 +13847,7 @@ Lux.Marks.globe_2d = function(opts)
     if (lux_typeOf(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
     } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
-        throw "zoom must be either a number or a parameter";
+        throw new Error("zoom must be either a number or a parameter");
     }
 
     var result = {
@@ -13649,7 +13936,7 @@ Lux.Marks.globe_2d = function(opts)
                                 this.tiles[i].x, this.tiles[i].y, this.tiles[i].zoom, 
                                 this.tiles[i].active,
                                 k);                    
-                    throw "die";
+                    throw new Error("Internal Error in globe_2d");
                 }
                 d[k] = true;
             }
@@ -13785,8 +14072,8 @@ Lux.Models.mesh = function(u_secs, v_secs) {
     var verts = [];
     var elements = [];
     if (_.isUndefined(v_secs)) v_secs = u_secs;
-    if (v_secs <= 0) throw "v_secs must be positive";
-    if (u_secs <= 0) throw "u_secs must be positive";
+    if (v_secs <= 0) throw new Error("v_secs must be positive");
+    if (u_secs <= 0) throw new Error("u_secs must be positive");
     v_secs = Math.floor(v_secs);
     u_secs = Math.floor(u_secs);
     var i, j;    
@@ -13824,11 +14111,15 @@ Lux.Models.mesh = function(u_secs, v_secs) {
     });
 };
 Lux.Models.sphere = function(lat_secs, long_secs) {
+    if (_.isUndefined(lat_secs)) {
+        lat_secs = 5;
+        long_secs = 5;
+    }
     var verts = [];
     var elements = [];
     if (_.isUndefined(long_secs)) long_secs = lat_secs;
-    if (lat_secs <= 0) throw "lat_secs must be positive";
-    if (long_secs <= 0) throw "long_secs must be positive";
+    if (lat_secs <= 0) throw new Error("lat_secs must be positive");
+    if (long_secs <= 0) throw new Error("long_secs must be positive");
     lat_secs = Math.floor(lat_secs);
     long_secs = Math.floor(long_secs);
     var i, j, phi, theta;    
@@ -13855,12 +14146,15 @@ Lux.Models.sphere = function(lat_secs, long_secs) {
     phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
     theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
     var cosphi = S.cos(phi);
+    var position = S.vec(S.sin(theta).mul(cosphi),
+                         S.sin(phi),
+                         S.cos(theta).mul(cosphi), 1);
     return Lux.model({
         type: "triangles",
         elements: Lux.element_buffer(elements),
-        vertex: S.vec(S.sin(theta).mul(cosphi),
-                      S.sin(phi),
-                      S.cos(theta).mul(cosphi), 1)
+        vertex: position,
+        tex_coord: uv_attr,
+        normal: position
     });
 };
 Lux.Models.square = function() {
@@ -15537,6 +15831,18 @@ Lux.Scene.render = function()
     for (var i=0; i<scene.length; ++i) {
         scene[i].draw();
     }
+};
+Lux.Scene.on = function(ename) {
+    return function(event) {
+        var scene = Lux._globals.ctx._lux_globals.scene;
+        for (var i=0; i < scene.length; ++i) {
+            if (scene[i].on && scene[i].on[ename]) {
+                if (!scene[i].on[ename](event))
+                    return false;
+            }
+        }
+        return true;
+    };
 };
 /*
  * Lux.Scene.animate starts a continuous stream of animation refresh

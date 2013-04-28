@@ -25,7 +25,7 @@ $().ready(function () {
                    "Red Face", "Yellow Face",
                    "Blue Face", "Violet Face",
                    "Pyramid"];
-    gl = Lux.init(canvas, {
+    gl = Lux.init({
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
         display: draw_it,

@@ -45,7 +45,7 @@ $().ready(function() {
         max: 100
     });
 
-    gl = Lux.init(document.getElementById("scatterplot"), {
+    gl = Lux.init({
         clearColor: [0, 0, 0, 0.2]
     });
 

@@ -110,12 +110,10 @@ $().ready(function() {
         change: change_stroke_width
     });
     var canvas = document.getElementById("scatterplot");
-    gl = Lux.init(canvas, { attributes: { alpha: true,
-                                            depth: true
-                                          },
-                              display: display,
-                              clearColor: [0, 0, 0, 0.2]
-                            });
+    gl = Lux.init({
+        display: display,
+        clearColor: [0, 0, 0, 0.2]
+    });
     init_webgl();
     var start = new Date().getTime();
     var f = function () {
