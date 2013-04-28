@@ -4180,7 +4180,7 @@ Lux.init = function(opts)
             }
         });
         _.each(["WEBKIT_EXT_texture_filter_anisotropic",
-                "MOZ_EXT_texture_filter_anisotropic"], 
+                "EXT_texture_filter_anisotropic"], 
                function(ext) {
                    if (exts.indexOf(ext) !== -1) {
                        gl.getExtension(ext);
@@ -4540,6 +4540,7 @@ Lux.render_buffer = function(opts)
         height: 512,
         mag_filter: ctx.LINEAR,
         min_filter: ctx.LINEAR,
+        mipmaps: false,
         wrap_s: ctx.CLAMP_TO_EDGE,
         wrap_t: ctx.CLAMP_TO_EDGE
     });

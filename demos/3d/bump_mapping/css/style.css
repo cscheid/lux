@@ -1,13 +1,19 @@
+html {
+  color: rgb(40,40,40);
+  background-color: rgb(240,240,240); /*rgb(77, 62, 50);*/
+  background-image: url('brushed_metal_lite.jpg');
+  background-repeat: repeat;
+}
+
 body {
   font: 14px "Helvetica Neue", sans-serif;
   padding-top: 1em;
   font-weight: 200;
   font-size: 1em;
 /*   overflow-y: scroll; */
-  color: rgb(40,40,40);
-  background-color: rgb(240,240,240); /*rgb(77, 62, 50);*/
-  background-image: url('brushed_metal_lite.jpg');
+
 /* brushed metal textures based on zooboing's brushed metal
+
 
    http://www.flickr.com/photos/zooboing/3662888243/sizes/o/in/set-72157620464703577/
 
