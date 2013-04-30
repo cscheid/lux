@@ -3,18 +3,174 @@
   <link rel="stylesheet" href="/demos/css/bootstrap.css"/>
   <link rel="stylesheet" href="/demos/css/style.css"/>
   <link rel="stylesheet" href="/demos/css/mchighlight-javascript.css"/>
+  <link type="text/css" href="/lib/ui-lightness/jquery-ui-1.8.21.custom.css" rel="stylesheet" />
   <script src="/lib/jquery-1.6.2.min.js"></script>
+  <script src="/lib/jquery.mousewheel.js"></script>
+  <script src="/lib/jquery-ui-1.8.16.custom.min.js"></script>
   <script src="/lux.js"></script>
   <script src="/demos/js/mclexer.js"></script>
   <script src="/demos/js/mchighlight.js"></script>
   <script src="/demos/js/mchighlight-javascript.js"></script>
   <script src="lesson6.js"></script>
+  <style>
+  .ui-slider .ui-slider-handle { 
+      width: 18px; 
+      height: 18px;
+  }
+  .slider-div {
+     top: 7px;
+     width: 300px;
+     height: 10px;
+     float: left;
+     clear: left;
+     margin-right: 18px;
+     margin-left: 18px;
+  }
+  </style>
 </head>
 <body>
 <div class="body">
 <div class="content">
 <h1>Lesson 6: Lighting</h1>
+
 <canvas id="webgl" width="720" height="480"></canvas>
+
+<div style="padding-top: 1em; padding-bottom: 1em">
+  <div><div class="slider-div" id="ambient"></div>ambient component</div>
+  <div><div class="slider-div" id="diffuse"></div>diffuse component</div>
+</div>
+
+<p>When we look at an object in real life, all of what we perceive
+  from it comes from some light bouncing off of the object and
+  reaching our eyes. It should come as no surprise, then, that a very
+  large amount of generating realistic computer imagery comes from
+  modelling the behavior of light appropriately. In this lesson, you
+  will learn how to use two of the most basic lighting approaches,
+  namely ambient sources, and completely diffuse, non-attenuating
+  point lights. Even though computer graphics has existed for mor than
+  50 years now, new lighting algorithms are still being actively
+  developed! These Lux tutorials won't even scratch the surface of
+  what's possible.</p>
+
+<p>One property of physical light which is essentially always explored
+  in lighting algorithms is <em>linearity</em>. The physical effects
+  of multiple lights combine additively: the total effect produced by
+  two lights is the equal to the sum of the effects of each
+  light. This lets us design lighting algorithms one-light-at-a-time,
+  and then add all the contributions in the end. Note that this does
+  not mean that we perceive a light that is twice as powerful being
+  twice as bright (even the most simplistic
+  model <a href="http://en.wikipedia.org/wiki/Weber%E2%80%93Fechner_law">says
+  differently</a>), but rather that photons
+  <a href="http://en.wikipedia.org/wiki/Two-photon_physics">don't
+  generally interact with one another</a>.</p>
+
+<h2>Ambient sources: No light, no images</h2>
+
+<p>As mentioned above, all we can perceive is light. This means that
+  if there's no light shining on the surface, it will appear to be
+  pitch black. For a computer-generated image, a completely black
+  image is rarely what you are going for, and so typically surface
+  lighting algorithms start with a basic assumption that there is a
+  small, constant amount of light reaching every possible surface
+  point at every possible angle. This is what computer graphics folks
+  call an <em>ambient</em> light source. Such a light source is
+  completely impossible in real life, but is very convenient
+  computationally. </p>
+
+<p>For today's lesson, we will assume that the
+  appearance of a material is completely determined by what we call
+  the "material color", an RGB triple which tells us how much this
+  material reacts to red, green and blue light, respectively. </p>
+
+<p>Now, recall that light behaves linearly. If we assume that each
+  photon comes with a specific color, (which is pretty close to what
+  happens in physics), that photons are either red, green or blue
+  (which is <em>not</em> that close to what happens in physics), and
+  that light of a mixed color consists of a mixture of pure colors
+  (which is close to what happens in physics), then linearity across
+  light colors means can compute the amount of outgoing light one
+  channel at a time, and combine the result.  We will encode the
+  ambient light source intensity by another RGB triple, this time
+  representing the amount of red, green and blue light being
+  emitted. In addition, linearity <em>inside</em> each channel means
+  that a red light source that's twice as powerful generates twice as
+  much light bouncing off any material. Putting these observations
+  together gives us the formula for ambient light sources:</p>
+
+<p>TL;DR: the contribution of the ambient light source is the
+  component-wise product of the material color and the light
+  color.</p>
+
+<pre class="highlight">
+var ambient_light = Shade.Light.ambient({ 
+    color: Shade.vec(1,1,1).mul(ambient_parameter)
+});
+// excerpt from <a href="https://github.com/cscheid/lux/blob/master/src/shade/light/ambient.js">Shade.Light.ambient</a>:
+Shade.Light.ambient = function(light_opts)
+{
+    // ...
+    return function(material_opts) {
+        // ...
+        return material_opts.material.mul(color);
+    };
+};
+</pre>
+
+<h2>Diffuse light sources: some directions look brighter than others</h2>
+
+<p>TL;DR: the contribution of the diffuse light source is the
+  component-wise product of the material color and the light color,
+  multiplied by the negative of the dot product of the surface normal
+  and the incident light direction.</p>
+
+<h2>Putting it all together</h2>
+
+<pre class="highlight">
+Lux.bake(model, {
+    position: camera(cube_model_mat)(model.vertex),
+    color: ambient_light(material_opts)
+        .add(diffuse_light(material_opts))
+})
+</pre>
+
+<h2>Addendum: Slider interaction</h2>
+<p>Lux makes it easy for you to create simple interactive HTML sliders
+  which correspond to a specific parameter. This is done by calling
+  <a href="https://github.com/cscheid/lux/blob/master/src/lux/ui/parameter_slider.js">Lux.UI.parameter_slider</a>:</p>
+<pre>
+&lt;!-- in your HTML; jquery UI is required (and included in the Lux distribution) --&gt;
+&lt;head&gt;
+  &lt;link type="text/css" href="/lib/ui-lightness/jquery-ui-1.8.21.custom.css" rel="stylesheet" /&gt;
+  &lt;script src="lib/jquery-ui-1.8.16.custom.min.js"&gt;&lt;/script&gt;
+  &lt;style&gt;
+  .ui-slider .ui-slider-handle { 
+      /* ... */
+      /* look at the source of this HTML file for concrete examples */
+  }
+  .slider-div {
+      /* ... */
+      /* look at the source of this HTML file for concrete examples */
+     margin-right: 18px;
+  }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;div&gt;&lt;div class="slider-div" id="ambient"&gt;&lt;/div&gt;ambient&lt;/div&gt;
+&lt;/body&gt;
+</pre>
+<pre class="highlight">
+// in your JS
+var ambient_parameter = Shade.parameter("float", 0.3);
+Lux.UI.parameter_slider({
+    parameter: ambient_parameter,
+    element: "#ambient",
+    min: 0,
+    max: 1
+});
+</pre>
+
+<hr>
 <div style="text-align: right">View the <a href="lesson6.js">full source</a>.</div>
 <p>Back to the <a href="index.html">index</a>.</p>
 <script>
