@@ -18,13 +18,15 @@
 <div style="text-align: right">View the <a href="lesson5.js">full source</a>.</div>
 
 <p>In this lesson, we will learn how to use texture mapping in
-Lux. Texture mapping was originally a technique to cheap add detail to
-triangle meshes. The way it works is that instead by deciding the
-color of each fragment (a <em>fragment</em> is a pixel-sized bit of a
-triangle that end up on the screen) not by a simple combination of
-vertex colors, but selecting a certain portion of an image,
-or <em>texture</em>. This way, when modeling a complicated surface,
-instead of having to use thousands of triangles, we can simply use an
+Lux. Texture mapping was
+originally <a href="http://www.pixartouchbook.com/blog/2009/1/4/ed-catmulls-phd-thesis.html">a
+technique to cheaply add detail to curved surfaces</a>. The way it
+works is that instead by deciding the color of each fragment
+(a <em>fragment</em> is a pixel-sized bit of a surface that end up on
+the screen) not by a simple combination of vertex colors, but
+selecting a certain portion of an image, or <em>texture</em>. This
+way, when modeling a complicated surface, instead of having to use
+thousands of triangles, we use instead the thousands of pixels of an
 image.</p>
 
 <p>The main new idea behind texture mapping is that, together with
