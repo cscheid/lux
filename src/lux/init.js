@@ -201,6 +201,10 @@ Lux.init = function(opts)
                                    gl.getParameter(gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT));
                    }
                });
+        if (exts.indexOf("OES_element_index_uint")) {
+            gl.getExtension(ext);
+            gl._lux_globals.webgl_extensions.OES_element_index_uint = true;
+        }
     } catch(e) {
         alert(e);
         throw e;
