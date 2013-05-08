@@ -203,6 +203,7 @@ Lux.init = function(opts)
                });
     } catch(e) {
         alert(e);
+        throw e;
     }
     if (!gl) {
         alert("Could not initialize WebGL, sorry :-(");
