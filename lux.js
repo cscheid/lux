@@ -3915,6 +3915,35 @@ Lux.conditional_batch = function(batch, condition)
         }
     };
 };
+Lux.bake_many = function(model_list, 
+                         appearance_function,
+                         model_callback)
+{
+    var scratch_model = _.clone(model_list[0]);
+    var batch = Lux.bake(scratch_model, appearance_function(scratch_model));
+    return model_callback ? {
+        draw: function() {
+            _.each(model_list, function(model, i) {
+                _.each(scratch_model.attributes, function(v, k) {
+                    v.set(model[k].get());
+                });
+                scratch_model.elements.set(model.elements.array);
+                model_callback(model, i);
+                batch.draw();
+            });
+        }
+    }:{
+        draw: function() {
+            _.each(model_list, function(model, i) {
+                _.each(scratch_model.attributes, function(v, k) {
+                    v.set(model[k].get());
+                });
+                scratch_model.elements.set(model.elements.array);
+                batch.draw();
+            });
+        }
+    };
+};
 // FIXME make API similar to Lux.attribute_buffer
 Lux.element_buffer = function(vertex_array)
 {
@@ -4193,6 +4222,7 @@ Lux.init = function(opts)
                });
     } catch(e) {
         alert(e);
+        throw e;
     }
     if (!gl) {
         alert("Could not initialize WebGL, sorry :-(");
@@ -13862,7 +13892,7 @@ Lux.Marks.globe_2d = function(opts)
         queue: [],
         current_osm_zoom: opts.zoom.get(),
         lat_lon_position: function(lat, lon) {
-            return Shade.Scale.Geo.latlong_to_mercator(lat, lon);
+            return Shade.Scale.Geo.latlong_to_mercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
         },
         resolution_bias: opts.resolution_bias,
         new_center: function(center_x, center_y, center_zoom) {

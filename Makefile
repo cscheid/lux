@@ -41,6 +41,7 @@ lux.js:							\
 	src/lux/bake.js					\
 	src/lux/batch_list.js				\
 	src/lux/conditional_batch.js			\
+	src/lux/bake_many.js				\
 	src/lux/element_buffer.js			\
 	src/lux/fresh_pick_id.js			\
 	src/lux/id_buffer.js				\
