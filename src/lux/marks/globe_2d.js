@@ -101,7 +101,7 @@ Lux.Marks.globe_2d = function(opts)
         queue: [],
         current_osm_zoom: opts.zoom.get(),
         lat_lon_position: function(lat, lon) {
-            return Shade.Scale.Geo.latlong_to_mercator(lat, lon);
+            return Shade.Scale.Geo.latlong_to_mercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
         },
         resolution_bias: opts.resolution_bias,
         new_center: function(center_x, center_y, center_zoom) {
