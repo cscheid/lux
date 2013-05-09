@@ -106,8 +106,8 @@ Lux.init = function(opts)
         devicePixelRatio = window.devicePixelRatio || 1;
         canvas.style.width = canvas.width;
         canvas.style.height = canvas.height;
-        canvas.width = canvas.clientWidth * devicePixelRatio;
-        canvas.height = canvas.clientHeight * devicePixelRatio;
+        canvas.width = (canvas.clientWidth || canvas.width) * devicePixelRatio;
+        canvas.height = (canvas.clientHeight || canvas.height) * devicePixelRatio;
     }
 
     try {
@@ -180,20 +180,19 @@ Lux.init = function(opts)
 
         var ext;
         var exts = gl.getSupportedExtensions();
+        console.log(exts);
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
-            if (exts.indexOf(ext) === -1) {
+            if (exts.indexOf(ext) === -1 ||
+                (gl.getExtension(ext)) === null) { // must call this to enable extension
                 alert(ext + " is not available on your browser/computer! " +
                       "Lux will not work, sorry.");
                 throw new Error("insufficient GPU support");
-            } else {
-                gl.getExtension(ext); // must call this to enable extension
             }
         });
         _.each(["WEBKIT_EXT_texture_filter_anisotropic",
                 "EXT_texture_filter_anisotropic"], 
                function(ext) {
-                   if (exts.indexOf(ext) !== -1) {
-                       gl.getExtension(ext);
+                   if (exts.indexOf(ext) !== -1 && (gl.getExtension(ext) !== null)) {
                        gl._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic = true;
                        gl.TEXTURE_MAX_ANISOTROPY_EXT     = 0x84FE;
                        gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FF;
@@ -201,8 +200,8 @@ Lux.init = function(opts)
                                    gl.getParameter(gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT));
                    }
                });
-        if (exts.indexOf("OES_element_index_uint")) {
-            gl.getExtension(ext);
+        if (exts.indexOf("OES_element_index_uint") !== -1 &&
+            gl.getExtension("OES_element_index_uint") !== null) {
             gl._lux_globals.webgl_extensions.OES_element_index_uint = true;
         }
     } catch(e) {
