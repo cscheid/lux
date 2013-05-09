@@ -171,6 +171,7 @@ lux.js:							\
 	src/shade/threed/bump.js			\
 	src/lux/geometry/_begin.js			\
 	src/lux/geometry/triangulate.js			\
+	src/lux/geometry/ply.js				\
 	src/lux/text/_begin.js				\
 	src/lux/text/outline.js				\
 	src/lux/text/texture.js				\

@@ -33,6 +33,13 @@ function initialize_context_globals(gl)
 
     // Optional, enabled WebGL extensions go here.
     gl._lux_globals.webgl_extensions = {};
+
+    // from https://developer.mozilla.org/en-US/docs/JavaScript/Typed_arrays/DataView
+    gl._lux_globals.little_endian = (function() {
+        var buffer = new ArrayBuffer(2);
+        new DataView(buffer).setInt16(0, 256, true);
+        return new Int16Array(buffer)[0] === 256;
+    })();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +187,6 @@ Lux.init = function(opts)
 
         var ext;
         var exts = gl.getSupportedExtensions();
-        console.log(exts);
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
             if (exts.indexOf(ext) === -1 ||
                 (gl.getExtension(ext)) === null) { // must call this to enable extension
@@ -196,8 +202,6 @@ Lux.init = function(opts)
                        gl._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic = true;
                        gl.TEXTURE_MAX_ANISOTROPY_EXT     = 0x84FE;
                        gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FF;
-                       console.log("Lux: Enabling anisotropic filtering extension, max ",
-                                   gl.getParameter(gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT));
                    }
                });
         if (exts.indexOf("OES_element_index_uint") !== -1 &&
