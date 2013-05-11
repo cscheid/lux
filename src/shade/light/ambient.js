@@ -10,13 +10,13 @@ Shade.Light.ambient = function(light_opts)
     } else throw new Error("expected color of type vec3 or vec4, got " +
                            light_opts.color.type.repr() + " instead");
     return function(material_opts) {
-        if (material_opts.material.type.equals(Shade.Types.vec4)) {
+        if (material_opts.color.type.equals(Shade.Types.vec4)) {
             return Shade.vec(
-                material_opts.material.swizzle("xyz").mul(color),
-                material_opts.material.swizzle("a")
+                material_opts.color.swizzle("xyz").mul(color),
+                material_opts.color.swizzle("a")
             );
         } else {
-            return material_opts.material.mul(color);
+            return material_opts.color.mul(color);
         }
     };
 };
