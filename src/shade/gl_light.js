@@ -1,6 +1,6 @@
-
 // replicates something like an opengl light. 
 // Fairly bare-bones for now (only diffuse, no attenuation)
+// gl_light is deprecated, functionality is being moved to Shade.Light
 Shade.gl_light = function(opts)
 {
     opts = _.defaults(opts || {}, {
