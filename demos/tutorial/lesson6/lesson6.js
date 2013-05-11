@@ -22,7 +22,7 @@ function batches(opts)
     var diffuse_parameter = Shade.parameter("float", 1);
     var diffuse_light_color = Shade.vec(1,1,1).mul(diffuse_parameter);
     var diffuse_light = Shade.Light.diffuse({
-        light_position: light_position,
+        position: light_position,
         color: diffuse_light_color
     });
 
@@ -50,8 +50,8 @@ function batches(opts)
     });
 
     var material_opts = {
-        material: material_color,
-        vertex: cube_model_mat(model.vertex),
+        color: material_color,
+        position: cube_model_mat(model.vertex),
         normal: cube_model_mat(model.normal)
     };
 

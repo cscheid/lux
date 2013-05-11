@@ -25,7 +25,7 @@ $().ready(function() {
         //     color: Shade.vec(0.3, 0.3, 0.3)
         // });
         // var diffuse_light = Shade.Light.diffuse({
-        //     light_position: light_position,
+        //     position: light_position,
         //     color: Shade.light(1, 0.9, 0.8)
         // });
         var dragon_model = Lux.model({
