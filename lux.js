@@ -4226,7 +4226,6 @@ Lux.init = function(opts)
 
         var ext;
         var exts = gl.getSupportedExtensions();
-        console.log(exts);
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
             if (exts.indexOf(ext) === -1 ||
                 (gl.getExtension(ext)) === null) { // must call this to enable extension
@@ -4242,8 +4241,6 @@ Lux.init = function(opts)
                        gl._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic = true;
                        gl.TEXTURE_MAX_ANISOTROPY_EXT     = 0x84FE;
                        gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FF;
-                       console.log("Lux: Enabling anisotropic filtering extension, max ",
-                                   gl.getParameter(gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT));
                    }
                });
         if (exts.indexOf("OES_element_index_uint") !== -1 &&
@@ -10700,42 +10697,6 @@ Shade.Utils.fit = function(data) {
     return Shade.Scale.linear({domain: [min, max]},
                               {range: [0, 1]});
 };
-
-// replicates something like an opengl light. 
-// Fairly bare-bones for now (only diffuse, no attenuation)
-Shade.gl_light = function(opts)
-{
-    opts = _.defaults(opts || {}, {
-        light_ambient: Shade.vec(0,0,0,1),
-        light_diffuse: Shade.vec(1,1,1,1),
-        two_sided: false,
-        per_vertex: false
-    });
-    function vec3(v) {
-        return v.type.equals(Shade.Types.vec4) ? v.swizzle("xyz").div(v.at(3)) : v;
-    }
-    var light_pos = vec3(opts.light_position);
-    var vertex_pos = vec3(opts.vertex);
-    var material_color = opts.material_color;
-    var light_ambient = opts.light_ambient;
-    var light_diffuse = opts.light_diffuse;
-    var per_vertex = opts.per_vertex;
-    var vertex_normal = (opts.normal.type.equals(Shade.Types.vec4) ? 
-                         opts.normal.swizzle("xyz") : 
-                         opts.normal).normalize();
-
-    // this must be appropriately transformed
-    var N = vertex_normal;
-    var L = light_pos.sub(vertex_pos).normalize();
-    var v = Shade.max(Shade.ifelse(opts.two_sided,
-                                   L.dot(N).abs(),
-                                   L.dot(N)), 0);
-    if (per_vertex)
-        v = Shade.per_vertex(v);
-
-    return Shade.add(light_ambient.mul(material_color),
-                     v.mul(light_diffuse).mul(material_color));
-};
 // replicates OpenGL's fog functionality
 
 (function() {
@@ -12590,6 +12551,42 @@ Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
     lat = lat.div(2).add(Math.PI/4).tan().log();
     return Shade.vec(lon, lat);
 });
+// replicates something like an opengl light. 
+// Fairly bare-bones for now (only diffuse, no attenuation)
+// gl_light is deprecated, functionality is being moved to Shade.Light
+Shade.gl_light = function(opts)
+{
+    opts = _.defaults(opts || {}, {
+        light_ambient: Shade.vec(0,0,0,1),
+        light_diffuse: Shade.vec(1,1,1,1),
+        two_sided: false,
+        per_vertex: false
+    });
+    function vec3(v) {
+        return v.type.equals(Shade.Types.vec4) ? v.swizzle("xyz").div(v.at(3)) : v;
+    }
+    var light_pos = vec3(opts.light_position);
+    var vertex_pos = vec3(opts.vertex);
+    var material_color = opts.material_color;
+    var light_ambient = opts.light_ambient;
+    var light_diffuse = opts.light_diffuse;
+    var per_vertex = opts.per_vertex;
+    var vertex_normal = (opts.normal.type.equals(Shade.Types.vec4) ? 
+                         opts.normal.swizzle("xyz") : 
+                         opts.normal).normalize();
+
+    // this must be appropriately transformed
+    var N = vertex_normal;
+    var L = light_pos.sub(vertex_pos).normalize();
+    var v = Shade.max(Shade.ifelse(opts.two_sided,
+                                   L.dot(N).abs(),
+                                   L.dot(N)), 0);
+    if (per_vertex)
+        v = Shade.per_vertex(v);
+
+    return Shade.add(light_ambient.mul(material_color),
+                     v.mul(light_diffuse).mul(material_color));
+};
 Shade.Light = {};
 // The most basic lighting component, ambient lighting simply multiplies
 // the light color by the material color.
@@ -12603,13 +12600,13 @@ Shade.Light.ambient = function(light_opts)
     } else throw new Error("expected color of type vec3 or vec4, got " +
                            light_opts.color.type.repr() + " instead");
     return function(material_opts) {
-        if (material_opts.material.type.equals(Shade.Types.vec4)) {
+        if (material_opts.color.type.equals(Shade.Types.vec4)) {
             return Shade.vec(
-                material_opts.material.swizzle("xyz").mul(color),
-                material_opts.material.swizzle("a")
+                material_opts.color.swizzle("xyz").mul(color),
+                material_opts.color.swizzle("a")
             );
         } else {
-            return material_opts.material.mul(color);
+            return material_opts.color.mul(color);
         }
     };
 };
@@ -12625,33 +12622,36 @@ Shade.Light.diffuse = function(light_opts)
     var light_diffuse = light_opts.color;
     if (light_diffuse.type.equals(Shade.Types.vec4))
         light_diffuse = light_diffuse.swizzle("xyz");
-    var light_pos = vec3(light_opts.light_position);
+    var light_pos = vec3(light_opts.position);
 
     return function(material_opts) {
         material_opts = _.defaults(material_opts || {}, {
             two_sided: false
         });
-        var vertex_pos = vec3(material_opts.vertex);
-        var material_color = material_opts.material;
+        var vertex_pos = vec3(material_opts.position);
+        var material_color = material_opts.color;
         if (material_color.type.equals(Shade.Types.vec4))
             material_color = material_color.swizzle("xyz");
 
-        var vertex_normal = (material_opts.normal.type.equals(Shade.Types.vec4) ?
-                             material_opts.normal.swizzle("xyz") :
-                             material_opts.normal).normalize();
+        var vertex_normal;
+        if (_.isUndefined(material_opts.normal)) {
+            vertex_normal = Shade.ThreeD.normal(vertex_pos);
+        } else {
+            vertex_normal = vec3(material_opts.normal).normalize();
+        }
 
-        var N = vertex_normal;
         var L = light_pos.sub(vertex_pos).normalize();
         var v = Shade.max(Shade.ifelse(material_opts.two_sided,
-                                       L.dot(N).abs(),
-                                       L.dot(N)), 0);
+                                       L.dot(vertex_normal).abs(),
+                                       L.dot(vertex_normal)), 0);
 
         var c = Shade.add(v.mul(light_diffuse).mul(material_color));
 
-        return material_opts.material.type.equals(Shade.Types.vec4) ?
-            Shade.vec(c, material_opts.material.a()) : c;
+        return material_opts.color.type.equals(Shade.Types.vec4) ?
+            Shade.vec(c, material_opts.color.a()) : c;
     };
 };
+// functions to help with 3D rendering.
 Shade.ThreeD = {};
 // Shade.ThreeD.bump returns a normal perturbed by bump mapping.
 
@@ -12677,6 +12677,18 @@ Shade.ThreeD.bump = function(opts) {
     var det        = sigmaX.dot(R1);
     var vGrad      = det.sign().mul(dHdxy.x().mul(R1).add(dHdxy.y().mul(R2)));
     return det.abs().mul(surf_norm).sub(vGrad).normalize();
+};
+/*
+ * Given a position expression, computes screen-space normals using
+ * pixel derivatives
+ */
+Shade.ThreeD.normal = function(position)
+{
+    if (position.type.equals(Shade.Types.vec4))
+        position = position.swizzle("xyz").div(position.w());
+    var dPos_dpixelx = Shade.dFdx(position);
+    var dPos_dpixely = Shade.dFdy(position);
+    return Shade.normalize(Shade.cross(dPos_dpixelx, dPos_dpixely));
 };
 Lux.Geometry = {};
 Lux.Geometry.triangulate = function(opts) {

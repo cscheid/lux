@@ -124,7 +124,6 @@ lux.js:							\
 	src/shade/utils/choose.js			\
 	src/shade/utils/linear.js			\
 	src/shade/utils/fit.js				\
-	src/shade/gl_light.js				\
 	src/shade/gl_fog.js				\
 	src/shade/cosh.js				\
 	src/shade/sinh.js				\
@@ -164,11 +163,13 @@ lux.js:							\
 	src/shade/scale/geo/mercator_to_latlong.js	\
 	src/shade/scale/geo/latlong_to_spherical.js	\
 	src/shade/scale/geo/latlong_to_mercator.js	\
+	src/shade/gl_light.js				\
 	src/shade/light/_begin.js			\
 	src/shade/light/ambient.js			\
 	src/shade/light/diffuse.js			\
 	src/shade/threed/_begin.js			\
 	src/shade/threed/bump.js			\
+	src/shade/threed/normal.js			\
 	src/lux/geometry/_begin.js			\
 	src/lux/geometry/triangulate.js			\
 	src/lux/geometry/ply.js				\
