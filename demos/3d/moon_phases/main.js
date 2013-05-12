@@ -32,7 +32,7 @@ $().ready(function() {
 
     var diffuse_light = Shade.Light.diffuse({
         color: Shade.vec(Shade(0.5).mul(Shade.vec(1,1,1)), 1),
-        light_position: Shade.vec(light_pos,1)
+        position: Shade.vec(light_pos,1)
     });
 
     var latitude_libration = angle.cos().neg().mul(Shade(6.69).radians());
@@ -64,9 +64,9 @@ $().ready(function() {
     });
 
     var material = { 
-        vertex: pos,
+        position: pos,
         normal: bumpnorm,
-        material: Shade.vec(Shade.texture2D(moon, uv).x().pow(0.7).mul(Shade.vec(1,1,1)),1)
+        color: Shade.vec(Shade.texture2D(moon, uv).x().pow(0.7).mul(Shade.vec(1,1,1)),1)
     };
 
     Lux.Scene.add(Lux.conditional_batch(Lux.bake(sphere, {

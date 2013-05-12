@@ -112,7 +112,7 @@ Shade.Light.ambient = function(light_opts)
     // ...
     return function(material_opts) {
         // ...
-        return material_opts.material.mul(color);
+        return material_opts.color.mul(color);
     };
 };
 </pre>
