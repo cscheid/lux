@@ -10841,15 +10841,15 @@ Shade.gl_fog = function(opts)
 };
 
 })();
-Shade.cosh = function(v)
+Shade.cosh = Shade(function(v)
 {
     return Shade.exp(v).add(v.neg().exp()).div(2);
-};
+});
 Shade.Exp.cosh = function() { return Shade.cosh(this); };
-Shade.sinh = function(v)
+Shade.sinh = Shade(function(v)
 {
     return Shade.exp(v).sub(v.neg().exp()).div(2);
-};
+});
 Shade.Exp.sinh = function() { return Shade.sinh(this); };
 Shade.tanh = Shade(function(v)
 {
