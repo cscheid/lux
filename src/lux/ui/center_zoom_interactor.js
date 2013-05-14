@@ -120,12 +120,27 @@ Lux.UI.center_zoom_interactor = function(opts)
         result.resize(w, h);
     }
 
+    // implement transform stack inverse requirements
+    var transform = function(appearance) {
+        var new_appearance = _.clone(appearance);
+        new_appearance.position = result.project(new_appearance.position);
+        return new_appearance;
+    };
+    transform.inverse = function(appearance) {
+        var new_appearance = _.clone(appearance);
+        new_appearance.position = result.unproject(new_appearance.position);
+        return new_appearance;
+    };
+    transform.inverse.inverse = transform;
+
     var result = {
         camera: camera,
         center: center,
         zoom: zoom,
         width: width,
         height: height,
+
+        transform: transform,
 
         project: function(pt) {
             return this.camera.project(pt);

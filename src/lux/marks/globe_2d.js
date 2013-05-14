@@ -10,14 +10,15 @@ Lux.Marks.globe_2d = function(opts)
         tile_pattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         },
+        camera: function(v) { return v; },
         debug: false, // if true, add outline and x-y-zoom marker to every tile
         no_network: false, // if true, tile is always blank white and does no HTTP requests.
         post_process: function(c) { return c; }
     });
+
     if (opts.interactor) {
         opts.center = opts.interactor.center;
         opts.zoom   = opts.interactor.zoom;
-        opts.camera = opts.interactor.camera;
     }
     if (opts.no_network) {
         opts.debug = true; // no_network implies debug;
@@ -85,8 +86,8 @@ Lux.Marks.globe_2d = function(opts)
     ;
 
     var tile_batch = Lux.bake(patch, {
-        gl_Position: opts.camera(v),
-        gl_FragColor: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
+        position: opts.camera(v),
+        color: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
         mode: Lux.DrawingMode.pass
     });
 

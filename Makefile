@@ -56,6 +56,7 @@ lux.js:							\
 	src/lux/on_context.js				\
 	src/lux/texture.js				\
 	src/lux/unprojector.js				\
+	src/lux/with_transformation.js			\
 	src/lux/net/_begin.js				\
 	src/lux/net/ajax.js				\
 	src/lux/net/json.js				\

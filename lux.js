@@ -3676,8 +3676,18 @@ Lux.bake = function(model, appearance, opts)
         force_no_pick: false,
         force_no_unproject: false
     });
+    var ctx = model._ctx || Lux._globals.ctx;
 
-    appearance = Shade.canonicalize_program_object(appearance);
+    function apply_transformation_stack(appearance) {
+        var s = ctx._lux_globals.transform_stack;
+        var i = s.length;
+        while (--i >= 0) {
+            appearance = s[i](appearance);
+        }
+        return appearance;
+    }
+
+    appearance = apply_transformation_stack(appearance);
 
     if (_.isUndefined(appearance.gl_FragColor)) {
         appearance.gl_FragColor = Shade.vec(1,1,1,1);
@@ -3697,8 +3707,6 @@ Lux.bake = function(model, appearance, opts)
     } else if (!appearance.gl_Position.type.equals(Shade.Types.vec4)) {
         throw new Error("position appearance attribute must be vec2, vec3 or vec4");
     }
-
-    var ctx = model._ctx || Lux._globals.ctx;
 
     var batch_id = Lux.fresh_pick_id();
 
@@ -4079,6 +4087,12 @@ function initialize_context_globals(gl)
         new DataView(buffer).setInt16(0, 256, true);
         return new Int16Array(buffer)[0] === 256;
     })();
+
+    // the transform stack is honored by Lux.bake and can be used to implement
+    // a matrix stack, etc. The last transformation on the stack canonicalizes
+    // the appearance object to always have gl_Position, gl_FragColor
+    // and gl_PointSize fields.
+    gl._lux_globals.transform_stack = [Shade.canonicalize_program_object];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5022,6 +5036,63 @@ Lux.Unprojector = {
 };
 
 })();
+/*
+ * Lux.with_transformation(transformation, what) calls the function what() in a
+ * context in which a new transformation is pushed onto the transform stack.
+ * 
+ * The transform stack is a wide generalization of the venerable OpenGL matrix stack.
+ * Instead of multiplying one specific matrix of the fixed function pipeline, the Lux
+ * transform stack changes the *appearance* parameter passed to Lux.bake. It can
+ * be used to implement a regular matrix stack, but can also perform non-linear
+ * transformations, apply arbitrary transformations to the color field, etc.
+ * 
+ * Some parts of Lux (Lux.Marks.center_zoom_interactor_brush, for example) need the
+ * transformations to be invertible, so that the unprojection code works appropriately.
+ * This is done by monkey-patching the transformation function with an "inverse" field,
+ * which is itself a function that will perform the inverse transformation to the
+ * appearance. If the inverse of a transformation is unknown or unavailable, it will
+ * be assumed to be the identity function. This might have undesired side effects.
+ * 
+ */
+
+Lux.with_transformation = function(transformation, what) {
+    var ctx = Lux._globals.ctx;
+    var old_stack, new_stack;
+    old_stack = ctx._lux_globals.transform_stack;
+    try {
+        new_stack = old_stack.slice();
+        ctx._lux_globals.transform_stack = new_stack;
+        ctx._lux_globals.transform_stack.push(transformation);
+        return what();
+    } finally {
+        ctx._lux_globals.transform_stack = old_stack;
+    }
+};
+
+Lux.apply_transformation_stack = function(appearance, stack) 
+{
+    if (_.isUndefined(stack))
+        stack = Lux._globals.ctx._lux_globals.transform_stack;
+
+    var s = stack;
+    var i = s.length;
+    while (--i >= 0) {
+        appearance = s[i](appearance);
+    }
+    return appearance;
+};
+
+Lux.apply_transformation_stack_inverse = function(appearance, stack) 
+{
+    if (_.isUndefined(stack))
+        stack = Lux._globals.ctx._lux_globals.transform_stack;
+
+    var s = stack;
+    for (var i=0; i<s.length; ++i) {
+        appearance = (s[i].inverse || function(i) { return i; })(appearance);
+    }
+    return appearance;
+};
 Lux.Net = {};
 
 (function() {
@@ -5769,12 +5840,27 @@ Lux.UI.center_zoom_interactor = function(opts)
         result.resize(w, h);
     }
 
+    // implement transform stack inverse requirements
+    var transform = function(appearance) {
+        var new_appearance = _.clone(appearance);
+        new_appearance.position = result.project(new_appearance.position);
+        return new_appearance;
+    };
+    transform.inverse = function(appearance) {
+        var new_appearance = _.clone(appearance);
+        new_appearance.position = result.unproject(new_appearance.position);
+        return new_appearance;
+    };
+    transform.inverse.inverse = transform;
+
     var result = {
         camera: camera,
         center: center,
         zoom: zoom,
         width: width,
         height: height,
+
+        transform: transform,
 
         project: function(pt) {
             return this.camera.project(pt);
@@ -13553,26 +13639,28 @@ Lux.Marks.scatterplot = function(opts)
         pick_id: opts.pick_id
     });
 };
+// Lux.Marks.center_zoom_interactor_brush needs the transformation stack
+// to have appropriate inverses for the position. If it doesn't have them,
+// then opts.project and opts.unproject need to be inverses of each other.
 Lux.Marks.center_zoom_interactor_brush = function(opts)
 {
     opts = _.defaults(opts || {}, {
         color: Shade.vec(1,1,1,0.5),
         mode: Lux.DrawingMode.over,
+        project: function(v) { return v; },
+        unproject: function(v) { return v; },
         on: {}
     });
 
-    if (_.isUndefined(opts.interactor)) {
-        throw new Error("center_zoom_interactor_brush needs an interactor");
-    }
-    var interactor = opts.interactor;
+    var stack = Lux._globals.ctx._lux_globals.transform_stack;
 
     var unproject = Shade(function(p) {
-        return interactor.unproject(p);
+        return opts.unproject(Lux.apply_transformation_stack_inverse({ position: p }, stack).position);
     }).js_evaluate;
     var selection_pt1 = Shade.parameter("vec2", vec.make([0,0]));
     var selection_pt2 = Shade.parameter("vec2", vec.make([0,0]));
-    var proj_pt1 = interactor.project(selection_pt1);
-    var proj_pt2 = interactor.project(selection_pt2);
+    var proj_pt1 = opts.project(selection_pt1);
+    var proj_pt2 = opts.project(selection_pt2);
 
     var brush_batch = Lux.Marks.aligned_rects({
         elements: 1,
@@ -14012,14 +14100,15 @@ Lux.Marks.globe_2d = function(opts)
         tile_pattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         },
+        camera: function(v) { return v; },
         debug: false, // if true, add outline and x-y-zoom marker to every tile
         no_network: false, // if true, tile is always blank white and does no HTTP requests.
         post_process: function(c) { return c; }
     });
+
     if (opts.interactor) {
         opts.center = opts.interactor.center;
         opts.zoom   = opts.interactor.zoom;
-        opts.camera = opts.interactor.camera;
     }
     if (opts.no_network) {
         opts.debug = true; // no_network implies debug;
@@ -14087,8 +14176,8 @@ Lux.Marks.globe_2d = function(opts)
     ;
 
     var tile_batch = Lux.bake(patch, {
-        gl_Position: opts.camera(v),
-        gl_FragColor: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
+        position: opts.camera(v),
+        color: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
         mode: Lux.DrawingMode.pass
     });
 

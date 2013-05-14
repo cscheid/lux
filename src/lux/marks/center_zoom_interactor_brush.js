@@ -1,23 +1,25 @@
+// Lux.Marks.center_zoom_interactor_brush needs the transformation stack
+// to have appropriate inverses for the position. If it doesn't have them,
+// then opts.project and opts.unproject need to be inverses of each other.
 Lux.Marks.center_zoom_interactor_brush = function(opts)
 {
     opts = _.defaults(opts || {}, {
         color: Shade.vec(1,1,1,0.5),
         mode: Lux.DrawingMode.over,
+        project: function(v) { return v; },
+        unproject: function(v) { return v; },
         on: {}
     });
 
-    if (_.isUndefined(opts.interactor)) {
-        throw new Error("center_zoom_interactor_brush needs an interactor");
-    }
-    var interactor = opts.interactor;
+    var stack = Lux._globals.ctx._lux_globals.transform_stack;
 
     var unproject = Shade(function(p) {
-        return interactor.unproject(p);
+        return opts.unproject(Lux.apply_transformation_stack_inverse({ position: p }, stack).position);
     }).js_evaluate;
     var selection_pt1 = Shade.parameter("vec2", vec.make([0,0]));
     var selection_pt2 = Shade.parameter("vec2", vec.make([0,0]));
-    var proj_pt1 = interactor.project(selection_pt1);
-    var proj_pt2 = interactor.project(selection_pt2);
+    var proj_pt1 = opts.project(selection_pt1);
+    var proj_pt2 = opts.project(selection_pt2);
 
     var brush_batch = Lux.Marks.aligned_rects({
         elements: 1,
