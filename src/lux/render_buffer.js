@@ -80,17 +80,20 @@ Lux.render_buffer = function(opts)
     };
     frame_buffer.make_screen_batch = function(with_texel_at_uv, mode) {
         var that = this;
-        mode = mode || Lux.DrawingMode.standard;
-        var sq = Lux.Models.square();
-        return Lux.bake(sq, {
-            position: sq.vertex.mul(2).sub(1),
-            color: with_texel_at_uv(function(offset) { 
-                var texcoord = sq.tex_coord;
-                if (arguments.length > 0)
-                    texcoord = texcoord.add(offset);
-                return Shade.texture2D(that.texture, texcoord);
-            }, sq.tex_coord),
-            mode: mode
+        return Lux.Transform.saving(function() {
+            Lux.Transform.clear();
+            mode = mode || Lux.DrawingMode.standard;
+            var sq = Lux.Models.square();
+            return Lux.bake(sq, {
+                position: sq.vertex.mul(2).sub(1),
+                color: with_texel_at_uv(function(offset) { 
+                    var texcoord = sq.tex_coord;
+                    if (arguments.length > 0)
+                        texcoord = texcoord.add(offset);
+                    return Shade.texture2D(that.texture, texcoord);
+                }, sq.tex_coord),
+                mode: mode
+            });
         });
     };
     return frame_buffer;

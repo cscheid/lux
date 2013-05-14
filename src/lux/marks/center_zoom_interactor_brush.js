@@ -1,6 +1,7 @@
 // Lux.Marks.center_zoom_interactor_brush needs the transformation stack
 // to have appropriate inverses for the position. If it doesn't have them,
-// then opts.project and opts.unproject need to be inverses of each other.
+// then do not use the transformation stack, and instead use
+// opts.project and opts.unproject, which need to be inverses of each other.
 Lux.Marks.center_zoom_interactor_brush = function(opts)
 {
     opts = _.defaults(opts || {}, {
@@ -11,10 +12,9 @@ Lux.Marks.center_zoom_interactor_brush = function(opts)
         on: {}
     });
 
-    var stack = Lux._globals.ctx._lux_globals.transform_stack;
-
+    var inverter = Lux.Transform.get_inverse();
     var unproject = Shade(function(p) {
-        return opts.unproject(Lux.apply_transformation_stack_inverse({ position: p }, stack).position);
+        return opts.unproject(inverter({ position: p }).position);
     }).js_evaluate;
     var selection_pt1 = Shade.parameter("vec2", vec.make([0,0]));
     var selection_pt2 = Shade.parameter("vec2", vec.make([0,0]));

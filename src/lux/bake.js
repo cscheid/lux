@@ -118,16 +118,7 @@ Lux.bake = function(model, appearance, opts)
     });
     var ctx = model._ctx || Lux._globals.ctx;
 
-    function apply_transformation_stack(appearance) {
-        var s = ctx._lux_globals.transform_stack;
-        var i = s.length;
-        while (--i >= 0) {
-            appearance = s[i](appearance);
-        }
-        return appearance;
-    }
-
-    appearance = apply_transformation_stack(appearance);
+    appearance = Lux.Transform.apply(appearance, ctx);
 
     if (_.isUndefined(appearance.gl_FragColor)) {
         appearance.gl_FragColor = Shade.vec(1,1,1,1);

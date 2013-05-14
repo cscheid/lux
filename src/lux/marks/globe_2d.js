@@ -1,5 +1,3 @@
-(function() {
-
 Lux.Marks.globe_2d = function(opts)
 {
     opts = _.defaults(opts || {}, {
@@ -101,9 +99,7 @@ Lux.Marks.globe_2d = function(opts)
         tiles: tiles,
         queue: [],
         current_osm_zoom: opts.zoom.get(),
-        lat_lon_position: function(lat, lon) {
-            return Shade.Scale.Geo.latlong_to_mercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
-        },
+        lat_lon_position: Lux.Marks.globe_2d.lat_lon_to_tile_mercator,
         resolution_bias: opts.resolution_bias,
         new_center: function(center_x, center_y, center_zoom) {
             var screen_resolution_bias = Math.log(ctx.viewportHeight / 256) / Math.log(2);
@@ -284,4 +280,6 @@ Lux.Marks.globe_2d = function(opts)
     return result;
 };
 
-})();
+Lux.Marks.globe_2d.lat_lon_to_tile_mercator = Shade(function(lat, lon) {
+    return Shade.Scale.Geo.latlong_to_mercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
+});
