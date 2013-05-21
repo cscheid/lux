@@ -98,7 +98,7 @@ Lux.Marks.globe_2d = function(opts)
     var result = {
         tiles: tiles,
         queue: [],
-        current_osm_zoom: opts.zoom.get(),
+        current_osm_zoom: 0,
         lat_lon_position: Lux.Marks.globe_2d.lat_lon_to_tile_mercator,
         resolution_bias: opts.resolution_bias,
         new_center: function(center_x, center_y, center_zoom) {
