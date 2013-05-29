@@ -101,7 +101,6 @@ Lux.init = function(opts)
     } else
         clearColor = opts.clearColor;
 
-    // FIXME This should be a "is Shade expression" check
     if (Lux.is_shade_expression(opts.clearDepth)) {
         if (!opts.clearDepth.is_constant())
             throw new Error("clearDepth must be constant expression");
