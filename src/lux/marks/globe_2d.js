@@ -1,5 +1,3 @@
-(function() {
-
 Lux.Marks.globe_2d = function(opts)
 {
     opts = _.defaults(opts || {}, {
@@ -10,14 +8,15 @@ Lux.Marks.globe_2d = function(opts)
         tile_pattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         },
+        camera: function(v) { return v; },
         debug: false, // if true, add outline and x-y-zoom marker to every tile
         no_network: false, // if true, tile is always blank white and does no HTTP requests.
         post_process: function(c) { return c; }
     });
+
     if (opts.interactor) {
         opts.center = opts.interactor.center;
         opts.zoom   = opts.interactor.zoom;
-        opts.camera = opts.interactor.camera;
     }
     if (opts.no_network) {
         opts.debug = true; // no_network implies debug;
@@ -85,8 +84,8 @@ Lux.Marks.globe_2d = function(opts)
     ;
 
     var tile_batch = Lux.bake(patch, {
-        gl_Position: opts.camera(v),
-        gl_FragColor: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
+        position: opts.camera(v),
+        color: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
         mode: Lux.DrawingMode.pass
     });
 
@@ -100,9 +99,7 @@ Lux.Marks.globe_2d = function(opts)
         tiles: tiles,
         queue: [],
         current_osm_zoom: opts.zoom.get(),
-        lat_lon_position: function(lat, lon) {
-            return Shade.Scale.Geo.latlong_to_mercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
-        },
+        lat_lon_position: Lux.Marks.globe_2d.lat_lon_to_tile_mercator,
         resolution_bias: opts.resolution_bias,
         new_center: function(center_x, center_y, center_zoom) {
             var screen_resolution_bias = Math.log(ctx.viewportHeight / 256) / Math.log(2);
@@ -283,4 +280,6 @@ Lux.Marks.globe_2d = function(opts)
     return result;
 };
 
-})();
+Lux.Marks.globe_2d.lat_lon_to_tile_mercator = Shade(function(lat, lon) {
+    return Shade.Scale.Geo.latlong_to_mercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
+});

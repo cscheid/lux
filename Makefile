@@ -56,6 +56,16 @@ lux.js:							\
 	src/lux/on_context.js				\
 	src/lux/texture.js				\
 	src/lux/unprojector.js				\
+	src/lux/transform/_begin.js			\
+	src/lux/transform/saving.js			\
+	src/lux/transform/using.js			\
+	src/lux/transform/push.js			\
+	src/lux/transform/pop.js			\
+	src/lux/transform/clear.js			\
+	src/lux/transform/apply.js			\
+	src/lux/transform/apply_inverse.js		\
+	src/lux/transform/get.js			\
+	src/lux/transform/get_inverse.js		\
 	src/lux/net/_begin.js				\
 	src/lux/net/ajax.js				\
 	src/lux/net/json.js				\

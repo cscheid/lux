@@ -40,6 +40,10 @@ function initialize_context_globals(gl)
         new DataView(buffer).setInt16(0, 256, true);
         return new Int16Array(buffer)[0] === 256;
     })();
+
+    // the transform stack is honored by Lux.bake and can be used to implement
+    // a matrix stack, etc. 
+    gl._lux_globals.transform_stack = [];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -220,6 +224,8 @@ Lux.init = function(opts)
     gl._lux_globals.devicePixelRatio = devicePixelRatio;
 
     Lux.set_context(gl);
+
+    Lux.Transform.clear();
 
     if (opts.display) {
         gl._lux_globals.display_callback = opts.display;

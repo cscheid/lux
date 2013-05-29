@@ -3676,8 +3676,9 @@ Lux.bake = function(model, appearance, opts)
         force_no_pick: false,
         force_no_unproject: false
     });
+    var ctx = model._ctx || Lux._globals.ctx;
 
-    appearance = Shade.canonicalize_program_object(appearance);
+    appearance = Lux.Transform.apply(appearance, ctx);
 
     if (_.isUndefined(appearance.gl_FragColor)) {
         appearance.gl_FragColor = Shade.vec(1,1,1,1);
@@ -3697,8 +3698,6 @@ Lux.bake = function(model, appearance, opts)
     } else if (!appearance.gl_Position.type.equals(Shade.Types.vec4)) {
         throw new Error("position appearance attribute must be vec2, vec3 or vec4");
     }
-
-    var ctx = model._ctx || Lux._globals.ctx;
 
     var batch_id = Lux.fresh_pick_id();
 
@@ -4079,6 +4078,10 @@ function initialize_context_globals(gl)
         new DataView(buffer).setInt16(0, 256, true);
         return new Int16Array(buffer)[0] === 256;
     })();
+
+    // the transform stack is honored by Lux.bake and can be used to implement
+    // a matrix stack, etc. 
+    gl._lux_globals.transform_stack = [];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4259,6 +4262,8 @@ Lux.init = function(opts)
     gl._lux_globals.devicePixelRatio = devicePixelRatio;
 
     Lux.set_context(gl);
+
+    Lux.Transform.clear();
 
     if (opts.display) {
         gl._lux_globals.display_callback = opts.display;
@@ -4670,17 +4675,20 @@ Lux.render_buffer = function(opts)
     };
     frame_buffer.make_screen_batch = function(with_texel_at_uv, mode) {
         var that = this;
-        mode = mode || Lux.DrawingMode.standard;
-        var sq = Lux.Models.square();
-        return Lux.bake(sq, {
-            position: sq.vertex.mul(2).sub(1),
-            color: with_texel_at_uv(function(offset) { 
-                var texcoord = sq.tex_coord;
-                if (arguments.length > 0)
-                    texcoord = texcoord.add(offset);
-                return Shade.texture2D(that.texture, texcoord);
-            }, sq.tex_coord),
-            mode: mode
+        return Lux.Transform.saving(function() {
+            Lux.Transform.clear();
+            mode = mode || Lux.DrawingMode.standard;
+            var sq = Lux.Models.square();
+            return Lux.bake(sq, {
+                position: sq.vertex.mul(2).sub(1),
+                color: with_texel_at_uv(function(offset) { 
+                    var texcoord = sq.tex_coord;
+                    if (arguments.length > 0)
+                        texcoord = texcoord.add(offset);
+                    return Shade.texture2D(that.texture, texcoord);
+                }, sq.tex_coord),
+                mode: mode
+            });
         });
     };
     return frame_buffer;
@@ -5023,6 +5031,82 @@ Lux.Unprojector = {
 };
 
 })();
+Lux.Transform = {};
+Lux.Transform.saving = function(what, ctx) {
+    if (_.isUndefined(ctx))
+        ctx = Lux._globals.ctx;
+    var old_stack = ctx._lux_globals.transform_stack;
+    try {
+        return what();
+    } finally {
+        ctx._lux_globals.transform_stack = old_stack;
+    }
+};
+Lux.Transform.using = function(transformation, what, ctx)
+{
+    if (_.isUndefined(ctx))
+        ctx = Lux._globals.ctx;
+    return Lux.Transform.saving(function() {
+        Lux.Transform.push(transformation, ctx);
+        return what();
+    });
+};
+Lux.Transform.push = function(transform, ctx) {
+    if (_.isUndefined(ctx))
+        ctx = Lux._globals.ctx;
+    var new_stack = ctx._lux_globals.transform_stack.slice();
+    new_stack.push(transform);
+    ctx._lux_globals.transform_stack = new_stack;
+};
+Lux.Transform.pop = function(ctx) {
+    if (_.isUndefined(ctx))
+        ctx = Lux._globals.ctx;
+    var new_stack = ctx._lux_globals.transform_stack.slice();
+    var result = new_stack.pop();
+    ctx._lux_globals.transform_stack = new_stack;
+    return result;
+};
+Lux.Transform.clear = function(ctx) {
+    // The last transformation on the stack canonicalizes
+    // the appearance object to always have gl_Position, gl_FragColor
+    // and gl_PointSize fields.
+    if (_.isUndefined(ctx))
+        ctx = Lux._globals.ctx;
+    ctx._lux_globals.transform_stack = [Shade.canonicalize_program_object];
+};
+Lux.Transform.apply = function(appearance, ctx) 
+{
+    return Lux.Transform.get(ctx)(appearance);
+};
+Lux.Transform.apply_inverse = function(appearance, ctx) 
+{
+    return Lux.Transform.get_inverse(ctx)(appearance);
+};
+Lux.Transform.get = function(ctx)
+{
+    if (_.isUndefined(ctx))
+        ctx = Lux._globals.ctx;
+    var s = ctx._lux_globals.transform_stack;
+    return function(appearance) {
+        var i = s.length;
+        while (--i >= 0) {
+            appearance = s[i](appearance);
+        }
+        return appearance;
+    };
+};
+Lux.Transform.get_inverse = function(ctx)
+{
+    if (_.isUndefined(ctx))
+        ctx = Lux._globals.ctx;
+    var s = ctx._lux_globals.transform_stack;
+    return function(appearance) {
+        for (var i=0; i<s.length; ++i) {
+            appearance = (s[i].inverse || function(i) { return i; })(appearance);
+        }
+        return appearance;
+    };
+};
 Lux.Net = {};
 
 (function() {
@@ -5770,12 +5854,27 @@ Lux.UI.center_zoom_interactor = function(opts)
         result.resize(w, h);
     }
 
+    // implement transform stack inverse requirements
+    var transform = function(appearance) {
+        var new_appearance = _.clone(appearance);
+        new_appearance.position = result.project(new_appearance.position);
+        return new_appearance;
+    };
+    transform.inverse = function(appearance) {
+        var new_appearance = _.clone(appearance);
+        new_appearance.position = result.unproject(new_appearance.position);
+        return new_appearance;
+    };
+    transform.inverse.inverse = transform;
+
     var result = {
         camera: camera,
         center: center,
         zoom: zoom,
         width: width,
         height: height,
+
+        transform: transform,
 
         project: function(pt) {
             return this.camera.project(pt);
@@ -10743,15 +10842,15 @@ Shade.gl_fog = function(opts)
 };
 
 })();
-Shade.cosh = function(v)
+Shade.cosh = Shade(function(v)
 {
-    return Shade.exp(v).add(v.neg().exp()).div(2);
-};
+    return v.exp().add(v.neg().exp()).div(2);
+});
 Shade.Exp.cosh = function() { return Shade.cosh(this); };
-Shade.sinh = function(v)
+Shade.sinh = Shade(function(v)
 {
-    return Shade.exp(v).sub(v.neg().exp()).div(2);
-};
+    return v.exp().sub(v.neg().exp()).div(2);
+});
 Shade.Exp.sinh = function() { return Shade.sinh(this); };
 Shade.tanh = Shade(function(v)
 {
@@ -13554,26 +13653,28 @@ Lux.Marks.scatterplot = function(opts)
         pick_id: opts.pick_id
     });
 };
+// Lux.Marks.center_zoom_interactor_brush needs the transformation stack
+// to have appropriate inverses for the position. If it doesn't have them,
+// then do not use the transformation stack, and instead use
+// opts.project and opts.unproject, which need to be inverses of each other.
 Lux.Marks.center_zoom_interactor_brush = function(opts)
 {
     opts = _.defaults(opts || {}, {
         color: Shade.vec(1,1,1,0.5),
         mode: Lux.DrawingMode.over,
+        project: function(v) { return v; },
+        unproject: function(v) { return v; },
         on: {}
     });
 
-    if (_.isUndefined(opts.interactor)) {
-        throw new Error("center_zoom_interactor_brush needs an interactor");
-    }
-    var interactor = opts.interactor;
-
+    var inverter = Lux.Transform.get_inverse();
     var unproject = Shade(function(p) {
-        return interactor.unproject(p);
+        return opts.unproject(inverter({ position: p }).position);
     }).js_evaluate;
     var selection_pt1 = Shade.parameter("vec2", vec.make([0,0]));
     var selection_pt2 = Shade.parameter("vec2", vec.make([0,0]));
-    var proj_pt1 = interactor.project(selection_pt1);
-    var proj_pt2 = interactor.project(selection_pt2);
+    var proj_pt1 = opts.project(selection_pt1);
+    var proj_pt2 = opts.project(selection_pt2);
 
     var brush_batch = Lux.Marks.aligned_rects({
         elements: 1,
@@ -14001,8 +14102,6 @@ Lux.Marks.globe = function(opts)
 
     return result;
 };
-(function() {
-
 Lux.Marks.globe_2d = function(opts)
 {
     opts = _.defaults(opts || {}, {
@@ -14013,14 +14112,15 @@ Lux.Marks.globe_2d = function(opts)
         tile_pattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         },
+        camera: function(v) { return v; },
         debug: false, // if true, add outline and x-y-zoom marker to every tile
         no_network: false, // if true, tile is always blank white and does no HTTP requests.
         post_process: function(c) { return c; }
     });
+
     if (opts.interactor) {
         opts.center = opts.interactor.center;
         opts.zoom   = opts.interactor.zoom;
-        opts.camera = opts.interactor.camera;
     }
     if (opts.no_network) {
         opts.debug = true; // no_network implies debug;
@@ -14088,8 +14188,8 @@ Lux.Marks.globe_2d = function(opts)
     ;
 
     var tile_batch = Lux.bake(patch, {
-        gl_Position: opts.camera(v),
-        gl_FragColor: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
+        position: opts.camera(v),
+        color: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
         mode: Lux.DrawingMode.pass
     });
 
@@ -14103,9 +14203,7 @@ Lux.Marks.globe_2d = function(opts)
         tiles: tiles,
         queue: [],
         current_osm_zoom: opts.zoom.get(),
-        lat_lon_position: function(lat, lon) {
-            return Shade.Scale.Geo.latlong_to_mercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
-        },
+        lat_lon_position: Lux.Marks.globe_2d.lat_lon_to_tile_mercator,
         resolution_bias: opts.resolution_bias,
         new_center: function(center_x, center_y, center_zoom) {
             var screen_resolution_bias = Math.log(ctx.viewportHeight / 256) / Math.log(2);
@@ -14286,7 +14384,9 @@ Lux.Marks.globe_2d = function(opts)
     return result;
 };
 
-})();
+Lux.Marks.globe_2d.lat_lon_to_tile_mercator = Shade(function(lat, lon) {
+    return Shade.Scale.Geo.latlong_to_mercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
+});
 Lux.Models = {};
 Lux.Models.flat_cube = function() {
     return Lux.model({

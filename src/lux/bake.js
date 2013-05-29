@@ -116,8 +116,9 @@ Lux.bake = function(model, appearance, opts)
         force_no_pick: false,
         force_no_unproject: false
     });
+    var ctx = model._ctx || Lux._globals.ctx;
 
-    appearance = Shade.canonicalize_program_object(appearance);
+    appearance = Lux.Transform.apply(appearance, ctx);
 
     if (_.isUndefined(appearance.gl_FragColor)) {
         appearance.gl_FragColor = Shade.vec(1,1,1,1);
@@ -137,8 +138,6 @@ Lux.bake = function(model, appearance, opts)
     } else if (!appearance.gl_Position.type.equals(Shade.Types.vec4)) {
         throw new Error("position appearance attribute must be vec2, vec3 or vec4");
     }
-
-    var ctx = model._ctx || Lux._globals.ctx;
 
     var batch_id = Lux.fresh_pick_id();
 
