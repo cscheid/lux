@@ -17,10 +17,10 @@ Lux.texture = function(opts)
         var ctx = Lux._globals.ctx;
         opts = _.defaults(opts, {
             onload: function() {},
-            max_anisotropy: 2,
+            max_anisotropy: opts.mipmaps ? 2 : 1,
             mipmaps: true,
             mag_filter: Lux.texture.linear,
-            min_filter: Lux.texture.linear_mipmap_linear,
+            min_filter: _.isUndefined(opts.mipmaps) || opts.mipmaps ? Lux.texture.linear_mipmap_linear : Lux.texture.linear,
             wrap_s: Lux.texture.clamp_to_edge,
             wrap_t: Lux.texture.clamp_to_edge,
             format: Lux.texture.rgba,
@@ -191,7 +191,8 @@ Lux.texture = function(opts)
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
-        if (ctx._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic) {
+        if (ctx._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic &&
+            opts.max_anisotropy > 1 && opts.mipmaps) {
             ctx.texParameterf(ctx.TEXTURE_2D, ctx.TEXTURE_MAX_ANISOTROPY_EXT, opts.max_anisotropy);
         }
 
