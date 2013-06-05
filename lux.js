@@ -16279,7 +16279,11 @@ Lux.scene = function(opts)
             parent_scene = scene;
             var that = this;
             // reset transform, then re-add things to batch list.
-            transform = _.compose(opts.transform, parent_scene.get_transform());
+            transform = function(appearance) {
+                appearance = opts.transform(appearance);
+                appearance = parent_scene.get_transform()(appearance);
+                return appearance;
+            };
             // FIXME ideally we'd have a well-defined cleanup of batches; I
             // think the current implementation below might leak.
             batch_list = _.map(actor_list, function(actor) {

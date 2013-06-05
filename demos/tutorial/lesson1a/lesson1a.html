@@ -1,0 +1,86 @@
+<html>
+<head><title>Lux tutorial, Lesson 1: Models and Batches</title>
+  <link rel="stylesheet" href="/lux/demos/css/bootstrap.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/style.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/mchighlight-javascript.css"/>
+  <script src="/lux/lib/jquery-1.6.2.min.js"></script>
+  <script src="/lux/lux.js"></script>
+  <script src="/lux/demos/js/mclexer.js"></script>
+  <script src="/lux/demos/js/mchighlight.js"></script>
+  <script src="/lux/demos/js/mchighlight-javascript.js"></script>
+  <script src="lesson1a.js"></script>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>Lesson 1: Models and Batches</h1>
+
+<canvas id="webgl" width="720" height="480"></canvas>
+<div style="text-align: right">View the <a href="lesson1.js">full source</a>.</div>
+
+<p>Let's start with the very basics. Before anything else, Lux needs no be initialized, which happens by calling <span class="inline-highlight">Lux.init</span>:</p>
+
+<pre class="highlight">
+Lux.init({
+    clearColor: [0, 0, 0, 0.2]
+});
+</pre>
+
+<p>In WebGL, pictures are created by drawing points, lines, triangles,
+  etc. on the screen. With Lux, these are packaged
+  in <em>models</em>, which are created
+  with <span class="inline-highlight">Lux.model</span>. Each model is created by specifying the type of
+  primitive being drawn (<span class="inline-highlight">type</span>), a
+  list of vertex coordinates and their dimension (<span class="inline-highlight">vertex</span>), and
+  the sequence in which these vertices are drawn
+  (<span class="inline-highlight">elements</span>):</p>
+
+<pre class="highlight">
+var square = Lux.model({
+    type: "triangles",
+    elements: [0, 1, 2, 0, 2, 3],
+    vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2]
+}), triangle = Lux.model({
+    type: "triangles",
+    elements: 3, // this is equivalent to [0, 1, 2]
+    vertex: [[0,1, -1,-1, 1,-1], 2]
+});
+</pre>
+
+<p>To take the three-dimensional positions of the vertices and put
+  them in the two-dimensional screen, we use a camera class. A camera
+  can be called like a function, and will return the transformed
+  version of the parameter. Here, we are also translating the
+  models (the square to the right, and the triangle to the left):</p>
+
+<pre class="highlight">
+var camera = Shade.Camera.perspective();
+var square_position = camera(Shade.translation( 1.5, 0, -6)(square_model.vertex));
+var triangle_position = camera(Shade.translation(-1.5, 0, -6)(triangle_model.vertex));
+</pre>
+
+<p>The variables <span class="inline-highlight">square_position</span> and <span class="inline-highlight">triangle_position</span> now store a value representing the transformed vertices of the square and triangle model, respectively. All that's left to do is to actually tell Lux to draw the models on the screen. A model can be drawn in the screen in many different ways: it can have different positions; it can be drawn with different colors; it can be semi-transparent. Because of this, Lux needs to know how to associate an <em>appearance</em> with a particular model. The <span class="inline-highlight">Lux.bake</span> call combines a model and an appearance into a <em>batch</em>:</p>
+
+<pre class="highlight">
+var square = Lux.bake(square_model, { position: square_position }),
+    triangle = Lux.bake(triangle_model, { position: triangle_position });
+</pre>
+
+<p>To tell Lux to draw a batch, you simply add it to the Lux scene:</p>
+
+<pre class="highlight">
+Lux.Scene.add(square);
+Lux.Scene.add(triangle);
+</pre>
+
+<p>Voila!</p>
+
+<hr>
+<p>Back to the <a href="../index.html">index</a>.</p>
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</div>
+</body>
+</html>
