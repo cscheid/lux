@@ -205,12 +205,14 @@ lux.js:							\
 	src/lux/models/teapot.js			\
 	src/lux/mesh/_begin.js				\
 	src/lux/mesh/indexed.js				\
+	src/lux/actor.js				\
+	src/lux/scene.js				\
 	src/lux/scene/_begin.js				\
 	src/lux/scene/add.js				\
 	src/lux/scene/remove.js				\
 	src/lux/scene/render.js				\
-	src/lux/scene/on.js				\
 	src/lux/scene/animate.js			\
+	src/lux/scene/on.js				\
 	src/lux/scene/invalidate.js
 
 # If the chmods below don't make sense to you right now, wait until

@@ -1,33 +1,19 @@
+/*
+ * Scenes conform to the actor interface. Since can then
+   contain other scenes, and have hierarchical structure. Currently,
+   "sub-scenes" cannot have more than one parent. (If you're thinking
+   about scene graphs and sharing, this means that, to you,Lux scenes
+   are actually "scene trees".)
+
+ */
 Lux.scene = function(opts)
 {
     opts = _.defaults(opts || {}, {
         context: Lux._globals.ctx,
-        clearDepth: 1.0,
-        clearColor: [1,1,1,0],
         transform: function(i) { return i; }
     });
     var ctx = opts.context;
-    var clearColor;
-    var clearDepth;
     var transform = opts.transform;
-
-    if (Lux.is_shade_expression(opts.clearColor)) {
-        if (!opts.clearColor.is_constant())
-            throw new Error("clearColor must be constant expression");
-        if (!opts.clearColor.type.equals(Shade.Types.vec4))
-            throw new Error("clearColor must be vec4");
-        clearColor = _.toArray(opts.clearColor.constant_value());
-    } else
-        clearColor = opts.clearColor;
-
-    if (Lux.is_shade_expression(opts.clearDepth)) {
-        if (!opts.clearDepth.is_constant())
-            throw new Error("clearDepth must be constant expression");
-        if (!opts.clearDepth.type.equals(Shade.Types.float_t))
-            throw new Error("clearDepth must be float");
-        clearDepth = opts.clearDepth.constant_value();
-    } else
-        clearDepth = opts.clearDepth;
 
     var dirty = false;
     var pre_display_list = [];
@@ -40,7 +26,7 @@ Lux.scene = function(opts)
         post_display_list = [];
         for (var i=0; i<pre.length; ++i)
             pre[i]();
-        result.display();
+        scene.draw();
         dirty = false;
         for (i=0; i<post.length; ++i)
             post[i]();
@@ -48,13 +34,10 @@ Lux.scene = function(opts)
 
     var batch_list = [];
     var actor_list = [];
-    var result = {
+    var parent_scene = undefined;
+    var scene = {
+        context: ctx,
         get_transform: function() { return transform; },
-        display: function() {
-            
-        },
-
-        //////////////////////////////////////////////////////////////////////
 
         add: function(actor) {
             actor_list.push(actor);
@@ -71,6 +54,8 @@ Lux.scene = function(opts)
          */
 
         animate: function(tick_function) {
+            if (parent_scene)
+                return parent_scene.animate(tick_function);
             if (_.isUndefined(tick_function)) {
                 tick_function = _.identity;
             }
@@ -93,13 +78,13 @@ Lux.scene = function(opts)
         },
 
         /*
-         * Lux.Scene.invalidate triggers a scene redraw using
+         * scene.invalidate triggers a scene redraw using
          * requestAnimFrame.  It takes two callbacks to be called respectively
          * before the scene is drawn and after. 
          * 
          * The function allows many different callbacks to be
          * invoked by a single requestAnimFrame handler. This guarantees that
-         * every callback passed to Lux.Scene.invalidate during the rendering
+         * every callback passed to scene.invalidate during the rendering
          * of a single frame will be called before the invocation of the next scene 
          * redraw.
          * 
@@ -107,9 +92,9 @@ Lux.scene = function(opts)
          * 
          * - during scene.render:
          * 
-         *    - object 1 calls Scene.invalidate(f1, f2) (requestAnimFrame #1)
+         *    - object 1 calls scene.invalidate(f1, f2) (requestAnimFrame #1)
          * 
-         *    - object 2 calls Scene.invalidate(f3, f4) (requestAnimFrame #2)
+         *    - object 2 calls scene.invalidate(f3, f4) (requestAnimFrame #2)
          * 
          *    - scene.render ends
          * 
@@ -125,10 +110,103 @@ Lux.scene = function(opts)
          * 
          */
         invalidate: function(pre_display, post_display) {
+            if (parent_scene) {
+                parent_scene.invalidate(pre_display, post_display);
+                return;
+            }
             if (!dirty) {
                 dirty = true;
-                window.requestAnimFrame(function() { 
+                window.requestAnimFrame(function() { return draw_it(); });
+            }
+            if (pre_display) {
+                pre_display_list.push(pre_display);
+            }
+            if (post_display) {
+                post_display_list.push(post_display);
+            }
+        },
+
+
+        //////////////////////////////////////////////////////////////////////
+        // actor interface
+
+        on: function(event_name, event) {
+            for (var i=0; i<actor_list.length; ++i) {
+                if (!actor_list[i].on(event_name, event))
+                    return false;
+            }
+            return true;
+        },
+
+        dress: function(scene) {
+            parent_scene = scene;
+            var that = this;
+            // reset transform, then re-add things to batch list.
+            transform = _.compose(opts.transform, parent_scene.get_transform());
+            // FIXME ideally we'd have a well-defined cleanup of batches; I
+            // think the current implementation below might leak.
+            batch_list = _.map(actor_list, function(actor) {
+                return actor.dress(that);                
+            });
+            return this;
+        },
+
+        //////////////////////////////////////////////////////////////////////
+        // batch interface
+
+        draw: function() {
+            for (var i=0; i<batch_list.length; ++i) {
+                batch_list[i].draw();
             }
         }
+
     };
+    return scene;
+};
+
+Lux.default_scene = function(opts)
+{
+    opts = _.clone(opts);
+    opts.transform = function(appearance) {
+        return Shade.canonicalize_program_object(appearance);
+    };
+    var scene = Lux.scene(opts);
+    var ctx = scene.context;
+
+    var clearColor, clearDepth;
+
+    if (Lux.is_shade_expression(opts.clearColor)) {
+        if (!opts.clearColor.is_constant())
+            throw new Error("clearColor must be constant expression");
+        if (!opts.clearColor.type.equals(Shade.Types.vec4))
+            throw new Error("clearColor must be vec4");
+        clearColor = _.toArray(opts.clearColor.constant_value());
+    } else
+        clearColor = opts.clearColor;
+
+    if (Lux.is_shade_expression(opts.clearDepth)) {
+        if (!opts.clearDepth.is_constant())
+            throw new Error("clearDepth must be constant expression");
+        if (!opts.clearDepth.type.equals(Shade.Types.float_t))
+            throw new Error("clearDepth must be float");
+        clearDepth = opts.clearDepth.constant_value();
+    } else
+        clearDepth = opts.clearDepth;
+
+    function clear() {
+        ctx.viewport(0, 0, ctx.viewportWidth, ctx.viewportHeight);
+        ctx.clearDepth(clearDepth);
+        ctx.clearColor.apply(ctx, clearColor);
+        ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+        var raw_t = new Date().getTime() / 1000;
+        var new_t = raw_t - ctx._lux_globals.epoch;
+        var old_t = ctx.parameters.now.get();
+        ctx.parameters.frame_duration.set(new_t - old_t);
+        ctx.parameters.now.set(new_t);
+    }
+    scene.add({
+        dress: function(scene) { return { draw: clear }; },
+        on: function() { return true; }
+    });
+    return scene;
 };

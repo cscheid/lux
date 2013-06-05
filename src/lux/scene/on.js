@@ -1,12 +1,9 @@
-Lux.Scene.on = function(ename) {
-    return function(event) {
-        var scene = Lux._globals.ctx._lux_globals.scene;
-        for (var i=0; i < scene.length; ++i) {
-            if (scene[i].on && scene[i].on[ename]) {
-                if (!scene[i].on[ename](event))
-                    return false;
-            }
-        }
-        return true;
-    };
+Lux.Scene.on = function(ename, event, ctx) 
+{
+    if (_.isUndefined(ctx)) {
+        ctx = Lux._globals.ctx;
+    }
+    var scene = ctx._lux_globals.scene;
+
+    return scene.on(ename, event);
 };

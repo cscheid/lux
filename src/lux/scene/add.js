@@ -5,6 +5,5 @@ Lux.Scene.add = function(obj, ctx)
     }
     var scene = ctx._lux_globals.scene;
 
-    scene.push(obj);
-    Lux.Scene.invalidate(undefined, undefined, ctx);
+    return scene.add(obj);
 };
