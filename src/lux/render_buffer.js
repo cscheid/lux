@@ -1,8 +1,7 @@
 Lux.render_buffer = function(opts)
 {
-    var ctx = Lux._globals.ctx;
-    var frame_buffer = ctx.createFramebuffer();
     opts = _.defaults(opts || {}, {
+        context: Lux._globals.ctx,
         width: 512,
         height: 512,
         mag_filter: Lux.texture.linear,
@@ -11,6 +10,8 @@ Lux.render_buffer = function(opts)
         wrap_s: Lux.texture.clamp_to_edge,
         wrap_t: Lux.texture.clamp_to_edge
     });
+    var ctx = opts.ctx;
+    var frame_buffer = ctx.createFramebuffer();
 
     // Weird:
     // http://www.khronos.org/registry/gles/specs/2.0/es_full_spec_2.0.25.pdf
