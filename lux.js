@@ -2,7 +2,7 @@
  * Lux: An EDSL for WebGL graphics
  * By Carlos Scheidegger, cscheid@research.att.com
  * 
- * Copyright (c) 2011, 2012 AT&T Intellectual Property
+ * Copyright (c) 2011-2013 AT&T Intellectual Property
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -3914,6 +3914,21 @@ Lux.conditional_batch = function(batch, condition)
         }
     };
 };
+
+Lux.conditional_actor = function(opts)
+{
+    var appearance = opts.appearance;
+    var model = opts.model;
+    var condition = opts.condition;
+    var actor = Lux.actor(opts);
+    actor.dress = function(scene) {
+        var xform = scene.get_transform();
+        var this_appearance = xform(appearance);
+        var batch = Lux.bake(model, this_appearance);
+        return Lux.conditional_batch(batch, condition);
+    };
+    return actor;
+};
 Lux.bake_many = function(model_list, 
                          appearance_function,
                          model_callback)
@@ -4547,9 +4562,8 @@ Lux.program = function(vs_src, fs_src)
 };
 Lux.render_buffer = function(opts)
 {
-    var ctx = Lux._globals.ctx;
-    var frame_buffer = ctx.createFramebuffer();
     opts = _.defaults(opts || {}, {
+        context: Lux._globals.ctx,
         width: 512,
         height: 512,
         mag_filter: Lux.texture.linear,
@@ -4558,6 +4572,8 @@ Lux.render_buffer = function(opts)
         wrap_s: Lux.texture.clamp_to_edge,
         wrap_t: Lux.texture.clamp_to_edge
     });
+    var ctx = opts.ctx;
+    var frame_buffer = ctx.createFramebuffer();
 
     // Weird:
     // http://www.khronos.org/registry/gles/specs/2.0/es_full_spec_2.0.25.pdf
@@ -4983,6 +4999,14 @@ Lux.Unprojector = {
 
 })();
 Lux.Transform = {};
+Lux.Transform.change = function(field, f)
+{
+    return function(appearance) {
+        var result = _.clone(appearance);
+        result[field] = f(appearance[field]);
+        return result;
+    };
+};
 Lux.Transform.saving = function(what, ctx) {
     if (_.isUndefined(ctx))
         ctx = Lux._globals.ctx;

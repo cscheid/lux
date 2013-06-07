@@ -57,6 +57,7 @@ lux.js:							\
 	src/lux/texture.js				\
 	src/lux/unprojector.js				\
 	src/lux/transform/_begin.js			\
+	src/lux/transform/change.js			\
 	src/lux/transform/saving.js			\
 	src/lux/transform/using.js			\
 	src/lux/transform/push.js			\
