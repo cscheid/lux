@@ -47,11 +47,11 @@ $().ready(function() {
     var surfnorm    = model_mat(sphere.normal).swizzle("xyz");
 
     var moon = Lux.texture({
-        src: "/demos/img/moon_2048.jpg",
+        src: "/lux/demos/img/moon_2048.jpg",
         max_anisotropy: 16
     });
     var moon_bump = Lux.texture({
-        src: "/demos/img/moon_bump_2048.jpg",
+        src: "/lux/demos/img/moon_bump_2048.jpg",
         max_anisotropy: 16
     });
 
@@ -69,16 +69,19 @@ $().ready(function() {
         color: Shade.vec(Shade.texture2D(moon, uv).x().pow(0.7).mul(Shade.vec(1,1,1)),1)
     };
 
-    Lux.Scene.add(Lux.conditional_batch(Lux.bake(sphere, {
-        position: camera(pos),
-        color: Shade.ifelse(
-            surfnorm.normalize().dot(light_pos.normalize()).gt(0),
-            ambient_light(material)
-                .add(diffuse_light(material)),
-            Shade.vec(ambient_light(material).swizzle("xyz").mul(Shade.vec(0.2,0.18,0.15)),1))
-
-    }), function() {
-        return moon.ready && moon_bump.ready;
+    Lux.Scene.add(Lux.conditional_actor({ 
+        model: sphere, 
+        appearance: {
+            position: camera(pos),
+            color: Shade.ifelse(
+                surfnorm.normalize().dot(light_pos.normalize()).gt(0),
+                ambient_light(material)
+                    .add(diffuse_light(material)),
+                Shade.vec(ambient_light(material).swizzle("xyz").mul(Shade.vec(0.2,0.18,0.15)),1))
+        },
+        condition: function() {
+            return moon.ready && moon_bump.ready;
+        }
     }));
 
     Lux.Scene.animate();
