@@ -9,24 +9,23 @@ $().ready(function () {
         elements: [0, 1, 2, 0, 2, 3],
         vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2]
     });
-    Lux.Scene.add(Lux.bake(square, {
-        position: camera(Shade.translation( 1.5, 0, -6)(square.vertex)),
-        color: Shade.color('#88f')
-    }));
+    Lux.Scene.add(Lux.actor({
+        model: square, 
+        appearance: {
+            position: camera(Shade.translation( 1.5, 0, -6)(square.vertex)),
+            color: Shade.color('#88f')
+        }}));
 
     var triangle = Lux.model({
         type: "triangles",
         elements: [0, 1, 2],
         vertex: [[0,1, -1,-1, 1,-1], 2],
         color: [[1,0,0,1, 0,0.5,0,1, 0,0,1,1], 4]
-        // color: [Shade.color('red'),
-        //         Shade.color('green'),
-        //         Shade.color('blue')]
     });
-
-
-    Lux.Scene.add(Lux.bake(triangle, {
-        position: camera(Shade.translation(-1.5, 0, -6)(triangle.vertex)),
-        color: triangle.color
-    }));
+    Lux.Scene.add(Lux.actor({
+        model: triangle, 
+        appearance: {
+            position: camera(Shade.translation(-1.5, 0, -6)(triangle.vertex)),
+            color: triangle.color
+        }}));
 });

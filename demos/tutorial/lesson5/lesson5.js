@@ -12,10 +12,12 @@ $().ready(function () {
     Lux.texture({ 
         src: "../../img/crate.jpg",
         onload: function() {
-            Lux.Scene.add(Lux.bake(cube, {
-                position: camera(Shade.rotation(angle, Shade.vec(1,1,1))(cube.vertex)),
-                color: Shade.texture2D(this, cube.tex_coord)
-            }));
+            Lux.Scene.add(Lux.actor({
+                model: cube, 
+                appearance: {
+                    position: camera(Shade.rotation(angle, Shade.vec(1,1,1))(cube.vertex)),
+                    color: Shade.texture2D(this, cube.tex_coord)
+                }}));
             Lux.Scene.animate();
         }
     });

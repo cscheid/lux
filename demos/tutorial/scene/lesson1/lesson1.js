@@ -1,7 +1,5 @@
 $().ready(function () {
-    Lux.init({
-        clearColor: [0, 0, 0, 0.2]
-    });
+    Lux.init({ clearColor: [0, 0, 0, 0.2] });
 
     var square_model = Lux.model({
         type: "triangles",
@@ -15,11 +13,7 @@ $().ready(function () {
 
     var camera = Shade.Camera.perspective();
     var camera_scene = Lux.scene({
-        transform: function(appearance) {
-            var result = _.clone(appearance);
-            result.position = camera(appearance.position);
-            return result;
-        }
+        transform: Lux.Transform.change("position", function(v) { return camera(v); })
     });
     Lux.Scene.add(camera_scene);
 

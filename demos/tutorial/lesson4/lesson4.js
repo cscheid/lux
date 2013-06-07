@@ -62,14 +62,18 @@ $().ready(function () {
         (Shade.rotation(angle, Shade.vec(0,1,0)))
         (pyramid_model.vertex);
 
-    Lux.Scene.add(Lux.bake(cube_model, {
-        position: camera(cube_xformed_vertex),
-        color: cube_model.color
-    }));
-    Lux.Scene.add(Lux.bake(pyramid_model, {
-        position: camera(pyramid_xformed_vertex),
-        color: pyramid_model.color
-    }));
+    Lux.Scene.add(Lux.actor({
+        model: cube_model, 
+        appearance: {
+            position: camera(cube_xformed_vertex),
+            color: cube_model.color
+        }}));
+    Lux.Scene.add(Lux.actor({
+        model: pyramid_model, 
+        appearance: {
+            position: camera(pyramid_xformed_vertex),
+            color: pyramid_model.color
+        }}));
 
     // Start scene animation
     Lux.Scene.animate();
