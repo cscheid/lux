@@ -52,7 +52,9 @@ Lux.UI.center_zoom_interactor = function(opts)
     var current_button = 0;
 
     function dblclick(event) {
+        internal_move(result.width/2-event.offsetX, event.offsetY-result.height/2);
         zoom.set(zoom.get() * 1.5);
+        internal_move(event.offsetX-result.width/2, result.height/2-event.offsetY);
         Lux.Scene.invalidate();
         opts.dblclick(event);
     }
