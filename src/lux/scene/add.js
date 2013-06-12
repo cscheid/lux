@@ -7,4 +7,5 @@ Lux.Scene.add = function(obj, ctx)
 
     scene.push(obj);
     Lux.Scene.invalidate(undefined, undefined, ctx);
+    return obj;
 };
