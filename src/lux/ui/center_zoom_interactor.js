@@ -19,6 +19,7 @@ Lux.UI.center_zoom_interactor = function(opts)
         mouseup: function() {},
         mousedown: function() {},
         mousewheel: function() {},
+        dblclick: function() {},
         center: vec.make([0,0]),
         zoom: 1,
         widest_zoom: 0.1
@@ -49,6 +50,12 @@ Lux.UI.center_zoom_interactor = function(opts)
 
     var prev_mouse_pos;
     var current_button = 0;
+
+    function dblclick(event) {
+        zoom.set(zoom.get() * 1.5);
+        Lux.Scene.invalidate();
+        opts.dblclick(event);
+    }
 
     function mousedown(event) {
         if (_.isUndefined(event.buttons)) {
@@ -217,6 +224,7 @@ Lux.UI.center_zoom_interactor = function(opts)
             mouseup: mouseup,
             mousemove: mousemove,
             mousewheel: mousewheel,
+            dblclick: dblclick,
             resize: resize
         }
     };
