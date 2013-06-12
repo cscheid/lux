@@ -53,7 +53,7 @@ $().ready(function () {
     $("#siemon").click(function() { B.set(10000); Lux.Scene.invalidate(); });
 
     var sphere = sphere_coords(200, B);
-    var texture = Lux.texture({ width: 2048, height: 2048 });
+    var texture = Lux.texture({ width: 2048, height: 2048, mipmaps: false });
 
     for (var i=0; i<8; ++i)
     for (var j=0; j<8; ++j)
@@ -65,9 +65,10 @@ $().ready(function () {
             onload: function() { gl.display(); }
         });
 
+    var c = Shade.texture2D(texture, sphere.tex_coord);
     var sphere_drawable = Lux.bake(sphere, {
         position: interactor.project(sphere.vertex()),
-        color: Shade.texture2D(texture, sphere.tex_coord)
+        color: Shade.vec(c.swizzle("rgb").div(c.a()), 1)
     });
     Lux.Scene.add(sphere_drawable);
 });
