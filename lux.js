@@ -5788,7 +5788,7 @@ Lux.UI.center_zoom_interactor = function(opts)
 
     function dblclick(event) {
         internal_move(result.width/2-event.offsetX, event.offsetY-result.height/2);
-        zoom.set(zoom.get() * 1.5);
+        zoom.set(zoom.get() * 2);
         internal_move(event.offsetX-result.width/2, result.height/2-event.offsetY);
         Lux.Scene.invalidate();
         opts.dblclick(event);
@@ -16168,6 +16168,7 @@ Lux.Scene.add = function(obj, ctx)
 
     scene.push(obj);
     Lux.Scene.invalidate(undefined, undefined, ctx);
+    return obj;
 };
 Lux.Scene.remove = function(obj, ctx)
 {
