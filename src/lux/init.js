@@ -166,7 +166,8 @@ Lux.init = function(opts)
         //////////////////////////////////////////////////////////////////////
         // event handling
 
-        var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", "mouseup"];
+        var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", 
+                             "mouseup", "dblclick"];
         _.each(canvas_events, function(ename) {
             var listener = opts[ename];
             function internal_listener(event) {
