@@ -23,8 +23,7 @@ Lux.is_shade_expression = function(obj)
 // 
 //   http://javascript.crockford.com/remedial.html
 //
-// In particular, lux_typeOf will return "object" if given Shade expressions,
-// and will return "array" for typed arrays, instead of "object"
+// In particular, lux_typeOf will return "object" if given Shade expressions
 // 
 // Shade expressions are actually functions with a bunch of extra methods.
 // 
@@ -39,12 +38,9 @@ function lux_typeOf(value)
         return 'object'; // shade expression
     if (s === 'object') {
         if (value) {
-            if ((typeof value.length === 'number'
+            if (typeof value.length === 'number'
                  && !(value.propertyIsEnumerable('length'))
-                 && typeof value.splice === 'function') // regular array
-                || (typeof value.length === 'number'
-                    && value.propertyIsEnumerable('length')
-                    && (typeof value.subarray === 'function' && typeof value.set === 'function'))) { // typed array
+                 && typeof value.splice === 'function')  { // typed array
                 s = 'array';
             }
         } else {

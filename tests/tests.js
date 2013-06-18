@@ -19,7 +19,7 @@ test("lux_typeOf", function() {
     equal(lux_typeOf(Shade.vec(1, 2, 3)), "object");
     equal(lux_typeOf({}), "object");
     equal(lux_typeOf([1, 2, 3, 4]), "array");
-    equal(lux_typeOf(new Float32Array([1,2,3,4])), "array");
+    equal(lux_typeOf(new Float32Array([1,2,3,4])), "object"); // this needs to be object, unfortunately, because of vec2, vec3, vec4, etc.. Sigh....
 });
 
 test("Shade types", function() {
@@ -109,6 +109,9 @@ test("Shade expressions", function() {
     }, function(e) {
         return e.message === "type 'float[4]' does not support swizzling";
     }, "disallow swizzle on arrays");
+
+    ok(Shade(Shade.id(1)).type.equals(Shade.vec(1,1,1,1).type), "Shade id is of type vec4");
+
 });
 
 test("Shade compilation", function() {
