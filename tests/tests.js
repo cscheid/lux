@@ -13,6 +13,15 @@ function almost_equal(expected, got, msg, eps) {
     ok(Math.abs(expected - got) < eps, msg + " expected: " + expected + " got: " + got);
 }
 
+test("lux_typeOf", function() {
+    expect(5);
+    equal(lux_typeOf(1), "number");
+    equal(lux_typeOf(Shade.vec(1, 2, 3)), "object");
+    equal(lux_typeOf({}), "object");
+    equal(lux_typeOf([1, 2, 3, 4]), "array");
+    equal(lux_typeOf(new Float32Array([1,2,3,4])), "array");
+});
+
 test("Shade types", function() {
     var x = Shade.Types.basic('float');
     expect(21);
