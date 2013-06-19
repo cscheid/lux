@@ -278,6 +278,13 @@ Lux.bake = function(model, appearance, opts)
     // readers.
 
     function create_batch_opts(program, caps_name) {
+        function ensure_parameter(v) {
+            if (lux_typeOf(v) === 'number')
+                return Shade.parameter("float", v);
+            else if (Lux.is_shade_expression(v) === 'parameter')
+                return v;
+            else throw new Error("expected float or parameter, got " + v + " instead.");
+        }
         var result = {
             _ctx: ctx,
             program: program,
@@ -288,14 +295,14 @@ Lux.bake = function(model, appearance, opts)
                        Lux.DrawingMode.standard[caps_name]);
                 mode_caps();
                 if (this.line_width) {
-                    ctx.lineWidth(this.line_width);
+                    ctx.lineWidth(this.line_width.get());
                 }
             },
             draw_chunk: draw_chunk,
             batch_id: largest_batch_id++
         };
-        if (appearance.line_width)
-            result.line_width = appearance.line_width;
+        if (!_.isUndefined(appearance.line_width))
+            result.line_width = ensure_parameter(appearance.line_width);
         return result;
     }
 
