@@ -1,7 +1,5 @@
 $().ready(function () {
-    Lux.init({
-        clearColor: [0, 0, 0, 0.2]
-    });
+    Lux.init({ clearColor: [0, 0, 0, 0.2] });
 
     var square_model = Lux.model({
         type: "triangles",
@@ -14,14 +12,19 @@ $().ready(function () {
     });
 
     var camera = Shade.Camera.perspective();
-    var square_position = camera(Shade.translation( 1.5, 0, -6)(square_model.vertex));
-    var triangle_position = camera(Shade.translation(-1.5, 0, -6)(triangle_model.vertex));
+    var camera_scene = Lux.scene({
+        transform: Lux.Transform.change("position", function(v) { return camera(v); })
+    });
+    Lux.Scene.add(camera_scene);
+
+    var square_position = Shade.translation( 1.5, 0, -6)(square_model.vertex);
+    var triangle_position = Shade.translation(-1.5, 0, -6)(triangle_model.vertex);
 
     var square   = Lux.actor({ model: square_model, 
                                appearance: { position: square_position }}),
         triangle = Lux.actor({ model: triangle_model, 
                                appearance: { position: triangle_position }});
 
-    Lux.Scene.add(square);
-    Lux.Scene.add(triangle);
+    camera_scene.add(square);
+    camera_scene.add(triangle);
 });
