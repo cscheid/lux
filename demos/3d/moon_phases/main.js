@@ -47,11 +47,11 @@ $().ready(function() {
     var surfnorm    = model_mat(sphere.normal).swizzle("xyz");
 
     var moon = Lux.texture({
-        src: "/demos/img/moon_2048.jpg",
+        src: "/lux/demos/img/moon_2048.jpg",
         max_anisotropy: 16
     });
     var moon_bump = Lux.texture({
-        src: "/demos/img/moon_bump_2048.jpg",
+        src: "/lux/demos/img/moon_bump_2048.jpg",
         max_anisotropy: 16
     });
 
