@@ -36,6 +36,7 @@ Lux.Marks.globe_2d = function(opts)
 
     var ctx = Lux._globals.ctx;
     var texture = Lux.texture({
+        mipmaps: false,
         width: super_tile_size,
         height: super_tile_size
     });
