@@ -12675,6 +12675,7 @@ Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
 // gl_light is deprecated, functionality is being moved to Shade.Light
 Shade.gl_light = function(opts)
 {
+    console.log("DEPRECATED: use Shade.Light functionality");
     opts = _.defaults(opts || {}, {
         light_ambient: Shade.vec(0,0,0,1),
         light_diffuse: Shade.vec(1,1,1,1),
