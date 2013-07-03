@@ -13599,13 +13599,14 @@ Lux.Marks.dots = function(opts)
                     no_alpha)
         .discard_if(distance_to_center_in_pixels.gt(point_radius));
 
-    var result = Lux.bake(model, {
-        position: gl_Position,
-        point_size: point_diameter,
-        color: opts.plain.ifelse(plain_fill_color, alpha_fill_color),
-        mode: opts.mode,
-        pick_id: opts.pick_id
-    });
+    var result = Lux.actor({
+        model: model, 
+        appearance: {
+            position: gl_Position,
+            point_size: point_diameter,
+            color: opts.plain.ifelse(plain_fill_color, alpha_fill_color),
+            mode: opts.mode,
+            pick_id: opts.pick_id }});
 
     /* We pass the gl_Position attribute explicitly because some other
      call might want to explicitly use the same position of the dots marks.
@@ -16186,6 +16187,31 @@ Lux.actor = function(opts)
         },
         on: function(event_name, event) {
             return opts.on(event_name, event);
+        }
+    };
+};
+
+Lux.actor_list = function(actors_list)
+{
+    return {
+        dress: function(scene) {
+            var batch_list = _.map(actors_list, function(actor) {
+                return actor.dress(scene);
+            });
+            return {
+                draw: function() {
+                    _.each(batch_list, function(batch) {
+                        return batch.draw();
+                    });
+                }
+            };
+        },
+        on: function(event_name, event) {
+            for (var i=0; i<actors_list.length; ++i) {
+                if (!actors_list[i].on(event_name, event))
+                    return false;
+            }
+            return true;
         }
     };
 };
