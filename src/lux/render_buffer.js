@@ -9,7 +9,9 @@ Lux.render_buffer = function(opts)
         mipmaps: false,
         max_anisotropy: 1,
         wrap_s: Lux.texture.clamp_to_edge,
-        wrap_t: Lux.texture.clamp_to_edge
+        wrap_t: Lux.texture.clamp_to_edge,
+        clearColor: [0,0,0,1],
+        clearDepth: 1.0
     });
     var ctx = opts.context;
     var frame_buffer = ctx.createFramebuffer();
@@ -80,7 +82,12 @@ Lux.render_buffer = function(opts)
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
-    frame_buffer.screen_actor = function(with_texel_at_uv, mode) {
+    frame_buffer.screen_actor = function(opts) {
+        opts = _.defaults(opts, {
+            mode: Lux.DrawingMode.standard
+        });
+        var with_texel_at_uv = opts.texel_function;
+        var mode = opts.mode;
         var that = this;
         var sq = Lux.Models.square();
         mode = mode || Lux.DrawingMode.standard;
@@ -95,7 +102,8 @@ Lux.render_buffer = function(opts)
                     return Shade.texture2D(that.texture, texcoord);
                 }),
                 mode: mode
-            }
+            },
+            bake: opts.bake
         });
     };
     
