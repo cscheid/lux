@@ -13089,7 +13089,7 @@ function parse_typeface_instructions(glyph)
     return paths;
 }
 
-var loop_blinn_batch = function(opts) {
+var loop_blinn_actor = function(opts) {
     var position_function = opts.position;
     var color_function = opts.color;
     
@@ -13121,24 +13121,26 @@ var loop_blinn_batch = function(opts) {
     var y_offset = Shade.parameter("float", 0);
     var offset = Shade.vec(x_offset, y_offset);
     var ears_position = Shade.add(ears_model.position, offset);
-    var ears_batch = Lux.bake(ears_model, {
-        position: position_function(ears_position.div(1000).mul(opts.size)),
-        color: quadratic_discard(color_function(ears_position), ears_model)
-    });
+    var ears_actor = Lux.actor({
+        model: ears_model, 
+        appearance: {
+            position: position_function(ears_position.div(1000).mul(opts.size)),
+            color: quadratic_discard(color_function(ears_position), ears_model)}});
     var internal_model = Lux.model({
         vertex: internal_position_attribute,
         elements: elements
     });
     var internal_position = Shade.add(internal_model.vertex, offset);
-    var internal_batch = Lux.bake(internal_model, {
-        position: position_function(internal_position.div(1000).mul(opts.size)),
-        elements: internal_model.elements,
-        color: color_function(internal_position)
-    });
+    var internal_actor = Lux.actor({
+        model: internal_model, 
+        appearance: {
+            position: position_function(internal_position.div(1000).mul(opts.size)),
+            elements: internal_model.elements,
+            color: color_function(internal_position)}});
     return {
-        ears_batch: ears_batch,
+        ears_actor: ears_actor,
         ears_model: ears_model,
-        internal_batch: internal_batch,
+        internal_actor: internal_actor,
         internal_model: internal_model,
         x_offset: x_offset,
         y_offset: y_offset
@@ -13190,10 +13192,6 @@ function glyph_to_model(glyph)
 }
 
 Lux.Text.outline = function(opts) {
-    var old_opts = opts;
-    if (opts.batch) {
-        return opts.batch;
-    }
     opts = _.defaults(opts, {
         string: "",
         size: 10,
@@ -13204,8 +13202,7 @@ Lux.Text.outline = function(opts) {
     if (_.isUndefined(opts.font)) {
         throw new Error("outline requires font parameter");
     }
-    var batch = loop_blinn_batch(opts);
-    old_opts.batch = batch;
+    var actor = loop_blinn_actor(opts);
 
     var result = {
         set: function(new_string) {
@@ -13229,42 +13226,40 @@ Lux.Text.outline = function(opts) {
                 throw new Error("align must be one of 'left', 'center' or 'right'");
             }
         },
-        // vertical_alignment_offset: function() {
-        //     switch (opts.vertical_align) {
-        //     case "baseline": return 0;
-        //     case "middle": return -opts.font.lineHeight/2;
-        //     case "top": return -opts.font.lineHeight;
-        //         default:
-        //         throw new Error("vertical_align must be one of 'baseline', 'middle' or 'top'");
-        //     };
-        // },
-        draw: function() {
-            batch.x_offset.set(this.alignment_offset(0));
-            batch.y_offset.set(0);
-            for (var i=0; i<opts.string.length; ++i) {
-                var c = opts.string[i];
-                if ("\n\r".indexOf(c) !== -1) {
-                    batch.x_offset.set(0);                    
-                    batch.y_offset.set(batch.y_offset.get() - opts.font.lineHeight);
-                    continue;
+        dress: function(scene) {
+            actor.internal_batch = actor.internal_actor.dress(scene);
+            actor.ears_batch = actor.ears_actor.dress(scene);
+            return {
+                draw: function() {
+                    actor.x_offset.set(result.alignment_offset(0));
+                    actor.y_offset.set(0);
+                    for (var i=0; i<opts.string.length; ++i) {
+                        var c = opts.string[i];
+                        if ("\n\r".indexOf(c) !== -1) {
+                            actor.x_offset.set(0);                    
+                            actor.y_offset.set(actor.y_offset.get() - opts.font.lineHeight);
+                            continue;
+                        }
+                        var glyph = opts.font.glyphs[c];
+                        if (_.isUndefined(glyph))
+                            glyph = opts.font.glyphs['?'];
+                        var model = glyph_to_model(glyph);
+                        if (model) {
+                            actor.ears_model.elements = model.ears_model.elements;
+                            actor.ears_model.uv.set(model.ears_model.uv.get());
+                            actor.ears_model.winding.set(model.ears_model.winding.get());
+                            actor.ears_model.position.set(model.ears_model.position.get());
+                            actor.internal_model.vertex.set(model.internal_model.vertex.get());
+                            actor.internal_model.elements.set(model.internal_model.elements.array);
+                            actor.ears_batch.draw();
+                            actor.internal_batch.draw();
+                        }
+                        actor.x_offset.set(actor.x_offset.get() + glyph.ha);
+                    }
                 }
-                var glyph = opts.font.glyphs[c];
-                if (_.isUndefined(glyph))
-                    glyph = opts.font.glyphs['?'];
-                var model = glyph_to_model(glyph);
-                if (model) {
-                    batch.ears_model.elements = model.ears_model.elements;
-                    batch.ears_model.uv.set(model.ears_model.uv.get());
-                    batch.ears_model.winding.set(model.ears_model.winding.get());
-                    batch.ears_model.position.set(model.ears_model.position.get());
-                    batch.internal_model.vertex.set(model.internal_model.vertex.get());
-                    batch.internal_model.elements.set(model.internal_model.elements.array);
-                    batch.ears_batch.draw();
-                    batch.internal_batch.draw();
-                }
-                batch.x_offset.set(batch.x_offset.get() + glyph.ha);
-            }
-        }
+            };
+        },
+        on: function() { return true; }
     };
     return result;
 };
@@ -13272,7 +13267,10 @@ Lux.Text.outline = function(opts) {
 })();
 (function() {
 
-function internal_batch(opts, texture) {
+function internal_actor(opts) {
+    var texture = opts.font.texture;
+    var texture_width = opts.font.texture_width;
+    var texture_height = opts.font.texture_height;
     
     var position_function = opts.position;
     var color_function = opts.color;
@@ -13292,7 +13290,7 @@ function internal_batch(opts, texture) {
     });
     var world_position = Shade.add(model.position, offset).div(opts.font.ascender).mul(opts.size);
     var opacity = Shade.texture2D(texture, model.uv).r();
-    var uv_gradmag = model.uv.x().mul(texture.width).dFdx().pow(2).add(model.uv.y().mul(texture.height).dFdy().pow(2)).sqrt();
+    var uv_gradmag = model.uv.x().mul(texture_width).dFdx().pow(2).add(model.uv.y().mul(texture_height).dFdy().pow(2)).sqrt();
 
     var blur_compensation = Shade.Scale.linear(
         {domain: [Shade.max(Shade(0.5).sub(uv_gradmag), 0), Shade.min(Shade(0.5).add(uv_gradmag), 1)],
@@ -13301,14 +13299,15 @@ function internal_batch(opts, texture) {
     var final_opacity = Shade.ifelse(opts.compensate_blur, blur_compensation, opacity);
 
     var final_color = color_function(world_position).mul(Shade.vec(1,1,1, final_opacity));
-    var batch = Lux.bake(model, {
-        position: position_function(world_position),
-        color: final_color,
-        elements: model.elements,
-        mode: Lux.DrawingMode.over_with_depth
-    });
+    var actor = Lux.actor({
+        model: model, 
+        appearance: {
+            position: position_function(world_position),
+            color: final_color,
+            elements: model.elements,
+            mode: Lux.DrawingMode.over_with_depth }});
     return {
-        batch: batch,
+        actor: actor,
         model: model,
         x_offset: x_offset,
         y_offset: y_offset
@@ -13338,16 +13337,13 @@ function glyph_to_model(glyph, font)
 }
 
 Lux.Text.texture = function(opts) {
-    var old_opts = opts;
-    if (!_.isUndefined(opts.batch)) {
-        return opts.batch;
-    }
     opts = _.defaults(opts, {
         string: "",
         size: 10,
         align: "left",
         position: function(pos) { return Shade.vec(pos, 0, 1); },
         color: function(pos) { return Shade.color("white"); },
+        onload: function() { Lux.Scene.invalidate(); },
         compensate_blur: true
     });
 
@@ -13355,19 +13351,18 @@ Lux.Text.texture = function(opts) {
         throw new Error("Lux.Text.texture requires font parameter");
     }
 
-    var batch = {};
+    var actor = {};
 
     if (!opts.font.texture) {
         opts.font.texture = Lux.texture({
             src: opts.font.image_url,
-            onload: function() { 
-                batch = internal_batch(opts, this);
-                old_opts.batch = batch;
-                Lux.Scene.invalidate(); 
+            mipmaps: false,
+            onload: function() {
+                return opts.onload();
             }
         });
     }
-    old_opts.batch = batch;
+    actor = internal_actor(opts);
 
     var result = {
         set: function(new_string) {
@@ -13393,32 +13388,35 @@ Lux.Text.texture = function(opts) {
                 throw new Error("align must be one of 'left', 'center' or 'right'");
             }
         },
-        draw: function() {
-            if (_.isUndefined(batch.batch))
-                return;
-
-            batch.x_offset.set(this.alignment_offset(0));
-            batch.y_offset.set(0);
-            for (var i=0; i<opts.string.length; ++i) {
-                var c = opts.string[i];
-                if ("\n\r".indexOf(c) !== -1) {
-                    batch.x_offset.set(0);
-                    batch.y_offset.set(batch.y_offset.get() - opts.font.lineheight);
-                    continue;
+        dress: function(scene) {
+            actor.batch = actor.actor.dress(scene);
+            return {
+                draw: function() {
+                    actor.x_offset.set(result.alignment_offset(0));
+                    actor.y_offset.set(0);
+                    for (var i=0; i<opts.string.length; ++i) {
+                        var c = opts.string[i];
+                        if ("\n\r".indexOf(c) !== -1) {
+                            actor.x_offset.set(0);
+                            actor.y_offset.set(actor.y_offset.get() - opts.font.lineheight);
+                            continue;
+                        }
+                        var glyph = opts.font.glyphs[String(c.charCodeAt(0))];
+                        if (_.isUndefined(glyph))
+                            glyph = opts.font.glyphs[String('?'.charCodeAt(0))];
+                        var model = glyph_to_model(glyph, opts.font);
+                        if (model) {
+                            actor.model.elements = model.elements;
+                            actor.model.uv.set(model.uv.get());
+                            actor.model.position.set(model.position.get());
+                            actor.batch.draw();
+                        }
+                        actor.x_offset.set(actor.x_offset.get() + glyph.ha);
+                    }
                 }
-                var glyph = opts.font.glyphs[String(c.charCodeAt(0))];
-                if (_.isUndefined(glyph))
-                    glyph = opts.font.glyphs[String('?'.charCodeAt(0))];
-                var model = glyph_to_model(glyph, opts.font);
-                if (model) {
-                    batch.model.elements = model.elements;
-                    batch.model.uv.set(model.uv.get());
-                    batch.model.position.set(model.position.get());
-                    batch.batch.draw();
-                }
-                batch.x_offset.set(batch.x_offset.get() + glyph.ha);
-            }
-        }
+            };
+        },
+        on: function() { return true; }
     };
     return result;
 };
