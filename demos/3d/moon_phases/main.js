@@ -11,6 +11,7 @@ $().ready(function() {
 
     // this is actually not accurate, but it's probably close enough.
     var eccentricity_libration = angle.cos().mul(0.05);
+
     var camera = Shade.Camera.ortho({
         left:   -1.2, right: 1.2,
         bottom: -1.2, top: 1.2,

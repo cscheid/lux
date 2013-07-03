@@ -3917,17 +3917,11 @@ Lux.conditional_batch = function(batch, condition)
 
 Lux.conditional_actor = function(opts)
 {
-    var appearance = opts.appearance;
-    var model = opts.model;
-    var condition = opts.condition;
-    var actor = Lux.actor(opts);
-    actor.dress = function(scene) {
-        var xform = scene.get_transform();
-        var this_appearance = xform(appearance);
-        var batch = Lux.bake(model, this_appearance);
-        return Lux.conditional_batch(batch, condition);
+    opts = _.clone(opts);
+    opts.bake = function(model, changed_appearance) {
+        return Lux.conditional_batch(Lux.bake(model, changed_appearance), opts.condition);
     };
-    return actor;
+    return Lux.actor(opts);
 };
 Lux.bake_many = function(model_list, 
                          appearance_function,
@@ -4579,7 +4573,9 @@ Lux.render_buffer = function(opts)
         mipmaps: false,
         max_anisotropy: 1,
         wrap_s: Lux.texture.clamp_to_edge,
-        wrap_t: Lux.texture.clamp_to_edge
+        wrap_t: Lux.texture.clamp_to_edge,
+        clearColor: [0,0,0,1],
+        clearDepth: 1.0
     });
     var ctx = opts.context;
     var frame_buffer = ctx.createFramebuffer();
@@ -4650,7 +4646,12 @@ Lux.render_buffer = function(opts)
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
-    frame_buffer.screen_actor = function(with_texel_at_uv, mode) {
+    frame_buffer.screen_actor = function(opts) {
+        opts = _.defaults(opts, {
+            mode: Lux.DrawingMode.standard
+        });
+        var with_texel_at_uv = opts.texel_function;
+        var mode = opts.mode;
         var that = this;
         var sq = Lux.Models.square();
         mode = mode || Lux.DrawingMode.standard;
@@ -4665,7 +4666,8 @@ Lux.render_buffer = function(opts)
                     return Shade.texture2D(that.texture, texcoord);
                 }),
                 mode: mode
-            }
+            },
+            bake: opts.bake
         });
     };
     
@@ -16183,7 +16185,7 @@ Lux.actor = function(opts)
             return bake(model, this_appearance);
         },
         on: function(event_name, event) {
-            opts.on(event_name, event);
+            return opts.on(event_name, event);
         }
     };
 };
