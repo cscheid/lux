@@ -4278,7 +4278,15 @@ Lux.init = function(opts)
     gl._lux_globals.scene = Lux.default_scene({
         context: gl,
         clearColor: opts.clearColor,
-        clearDepth: opts.clearDepth
+        clearDepth: opts.clearDepth,
+        pre_draw: function() {
+            var raw_t = new Date().getTime() / 1000;
+            var new_t = raw_t - gl._lux_globals.epoch;
+            var old_t = gl.parameters.now.get();
+            gl.parameters.frame_duration.set(new_t - old_t);
+            gl.parameters.now.set(new_t);
+            gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        }
     });
 
     return gl;
@@ -4569,10 +4577,11 @@ Lux.render_buffer = function(opts)
         mag_filter: Lux.texture.linear,
         min_filter: Lux.texture.linear,
         mipmaps: false,
+        max_anisotropy: 1,
         wrap_s: Lux.texture.clamp_to_edge,
         wrap_t: Lux.texture.clamp_to_edge
     });
-    var ctx = opts.ctx;
+    var ctx = opts.context;
     var frame_buffer = ctx.createFramebuffer();
 
     // Weird:
@@ -4641,24 +4650,41 @@ Lux.render_buffer = function(opts)
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
-    frame_buffer.make_screen_batch = function(with_texel_at_uv, mode) {
+    frame_buffer.screen_actor = function(with_texel_at_uv, mode) {
         var that = this;
-        return Lux.Transform.saving(function() {
-            Lux.Transform.clear();
-            mode = mode || Lux.DrawingMode.standard;
-            var sq = Lux.Models.square();
-            return Lux.bake(sq, {
+        var sq = Lux.Models.square();
+        mode = mode || Lux.DrawingMode.standard;
+        return Lux.actor({
+            model: sq,
+            appearance: {
                 position: sq.vertex.mul(2).sub(1),
-                color: with_texel_at_uv(function(offset) { 
+                color: with_texel_at_uv(function(offset) {
                     var texcoord = sq.tex_coord;
                     if (arguments.length > 0)
                         texcoord = texcoord.add(offset);
                     return Shade.texture2D(that.texture, texcoord);
-                }, sq.tex_coord),
+                }),
                 mode: mode
-            });
+            }
         });
     };
+    
+    var old_v;
+    frame_buffer.scene = Lux.default_scene({
+        clearColor: opts.clearColor,
+        clearDepth: opts.clearDepth,
+        context: ctx,
+        pre_draw: function() {
+            old_v = ctx.getParameter(ctx.VIEWPORT);
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, frame_buffer);
+            ctx.viewport(0, 0, frame_buffer.width, frame_buffer.height);
+        },
+        post_draw: function() {
+            ctx.viewport(old_v[0], old_v[1], old_v[2], old_v[3]);
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+        }
+    });
+
     return frame_buffer;
 };
 Lux.set_context = function(the_ctx)
@@ -4699,10 +4725,10 @@ Lux.texture = function(opts)
         var ctx = Lux._globals.ctx;
         opts = _.defaults(opts, {
             onload: function() {},
-            max_anisotropy: 2,
+            max_anisotropy: opts.mipmaps ? 2 : 1,
             mipmaps: true,
             mag_filter: Lux.texture.linear,
-            min_filter: Lux.texture.linear_mipmap_linear,
+            min_filter: opts.mipmaps ? Lux.texture.linear_mipmap_linear : Lux.texture.linear,
             wrap_s: Lux.texture.clamp_to_edge,
             wrap_t: Lux.texture.clamp_to_edge,
             format: Lux.texture.rgba,
@@ -16142,17 +16168,19 @@ Lux.Mesh.indexed = function(vertices, elements)
 Lux.actor = function(opts)
 {
     opts = _.defaults(opts, {
-        on: function() { return true; }
+        on: function() { return true; },
+        bake: Lux.bake
     });
     var appearance = opts.appearance;
     var model = opts.model;
     var on = opts.on;
+    var bake = opts.bake;
     var batch;
     return {
         dress: function(scene) {
             var xform = scene.get_transform();
             var this_appearance = xform(appearance);
-            return Lux.bake(model, this_appearance);
+            return bake(model, this_appearance);
         },
         on: function(event_name, event) {
             opts.on(event_name, event);
@@ -16160,7 +16188,7 @@ Lux.actor = function(opts)
     };
 };
 /*
- * Scenes conform to the actor interface. Since can then
+ * Scenes conform to the actor interface. Scenes can then
    contain other scenes, and have hierarchical structure. Currently,
    "sub-scenes" cannot have more than one parent. (If you're thinking
    about scene graphs and sharing, this means that, to you,Lux scenes
@@ -16171,7 +16199,9 @@ Lux.scene = function(opts)
 {
     opts = _.defaults(opts || {}, {
         context: Lux._globals.ctx,
-        transform: function(i) { return i; }
+        transform: function(i) { return i; },
+        pre_draw: function() {},
+        post_draw: function() {}
     });
     var ctx = opts.context;
     var transform = opts.transform;
@@ -16202,8 +16232,10 @@ Lux.scene = function(opts)
 
         add: function(actor) {
             actor_list.push(actor);
-            batch_list.push(actor.dress(this));
+            var result = actor.dress(this);
+            batch_list.push(result);
             this.invalidate(undefined, undefined, ctx);
+            return result;
         }, 
 
         //////////////////////////////////////////////////////////////////////
@@ -16320,9 +16352,11 @@ Lux.scene = function(opts)
         // batch interface
 
         draw: function() {
+            opts.pre_draw();
             for (var i=0; i<batch_list.length; ++i) {
                 batch_list[i].draw();
             }
+            opts.post_draw();
         }
 
     };
@@ -16359,15 +16393,9 @@ Lux.default_scene = function(opts)
         clearDepth = opts.clearDepth;
 
     function clear() {
-        ctx.viewport(0, 0, ctx.viewportWidth, ctx.viewportHeight);
         ctx.clearDepth(clearDepth);
         ctx.clearColor.apply(ctx, clearColor);
         ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
-        var raw_t = new Date().getTime() / 1000;
-        var new_t = raw_t - ctx._lux_globals.epoch;
-        var old_t = ctx.parameters.now.get();
-        ctx.parameters.frame_duration.set(new_t - old_t);
-        ctx.parameters.now.set(new_t);
     }
     scene.add({
         dress: function(scene) { return { draw: clear }; },
