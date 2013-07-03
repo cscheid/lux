@@ -33,7 +33,7 @@ Lux.actor = function(opts)
             return bake(model, this_appearance);
         },
         on: function(event_name, event) {
-            opts.on(event_name, event);
+            return opts.on(event_name, event);
         }
     };
 };
