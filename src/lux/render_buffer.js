@@ -7,10 +7,11 @@ Lux.render_buffer = function(opts)
         mag_filter: Lux.texture.linear,
         min_filter: Lux.texture.linear,
         mipmaps: false,
+        max_anisotropy: 1,
         wrap_s: Lux.texture.clamp_to_edge,
         wrap_t: Lux.texture.clamp_to_edge
     });
-    var ctx = opts.ctx;
+    var ctx = opts.context;
     var frame_buffer = ctx.createFramebuffer();
 
     // Weird:
@@ -79,23 +80,40 @@ Lux.render_buffer = function(opts)
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
-    frame_buffer.make_screen_batch = function(with_texel_at_uv, mode) {
+    frame_buffer.screen_actor = function(with_texel_at_uv, mode) {
         var that = this;
-        return Lux.Transform.saving(function() {
-            Lux.Transform.clear();
-            mode = mode || Lux.DrawingMode.standard;
-            var sq = Lux.Models.square();
-            return Lux.bake(sq, {
+        var sq = Lux.Models.square();
+        mode = mode || Lux.DrawingMode.standard;
+        return Lux.actor({
+            model: sq,
+            appearance: {
                 position: sq.vertex.mul(2).sub(1),
-                color: with_texel_at_uv(function(offset) { 
+                color: with_texel_at_uv(function(offset) {
                     var texcoord = sq.tex_coord;
                     if (arguments.length > 0)
                         texcoord = texcoord.add(offset);
                     return Shade.texture2D(that.texture, texcoord);
-                }, sq.tex_coord),
+                }),
                 mode: mode
-            });
+            }
         });
     };
+    
+    var old_v;
+    frame_buffer.scene = Lux.default_scene({
+        clearColor: opts.clearColor,
+        clearDepth: opts.clearDepth,
+        context: ctx,
+        pre_draw: function() {
+            old_v = ctx.getParameter(ctx.VIEWPORT);
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, frame_buffer);
+            ctx.viewport(0, 0, frame_buffer.width, frame_buffer.height);
+        },
+        post_draw: function() {
+            ctx.viewport(old_v[0], old_v[1], old_v[2], old_v[3]);
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+        }
+    });
+
     return frame_buffer;
 };
