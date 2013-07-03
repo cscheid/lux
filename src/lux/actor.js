@@ -37,3 +37,28 @@ Lux.actor = function(opts)
         }
     };
 };
+
+Lux.actor_list = function(actors_list)
+{
+    return {
+        dress: function(scene) {
+            var batch_list = _.map(actors_list, function(actor) {
+                return actor.dress(scene);
+            });
+            return {
+                draw: function() {
+                    _.each(batch_list, function(batch) {
+                        return batch.draw();
+                    });
+                }
+            };
+        },
+        on: function(event_name, event) {
+            for (var i=0; i<actors_list.length; ++i) {
+                if (!actors_list[i].on(event_name, event))
+                    return false;
+            }
+            return true;
+        }
+    };
+};
