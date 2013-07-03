@@ -49,13 +49,14 @@ Lux.Marks.dots = function(opts)
                     no_alpha)
         .discard_if(distance_to_center_in_pixels.gt(point_radius));
 
-    var result = Lux.bake(model, {
-        position: gl_Position,
-        point_size: point_diameter,
-        color: opts.plain.ifelse(plain_fill_color, alpha_fill_color),
-        mode: opts.mode,
-        pick_id: opts.pick_id
-    });
+    var result = Lux.actor({
+        model: model, 
+        appearance: {
+            position: gl_Position,
+            point_size: point_diameter,
+            color: opts.plain.ifelse(plain_fill_color, alpha_fill_color),
+            mode: opts.mode,
+            pick_id: opts.pick_id }});
 
     /* We pass the gl_Position attribute explicitly because some other
      call might want to explicitly use the same position of the dots marks.
