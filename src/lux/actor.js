@@ -18,17 +18,19 @@
 Lux.actor = function(opts)
 {
     opts = _.defaults(opts, {
-        on: function() { return true; }
+        on: function() { return true; },
+        bake: Lux.bake
     });
     var appearance = opts.appearance;
     var model = opts.model;
     var on = opts.on;
+    var bake = opts.bake;
     var batch;
     return {
         dress: function(scene) {
             var xform = scene.get_transform();
             var this_appearance = xform(appearance);
-            return Lux.bake(model, this_appearance);
+            return bake(model, this_appearance);
         },
         on: function(event_name, event) {
             opts.on(event_name, event);

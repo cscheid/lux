@@ -1,63 +1,60 @@
 var gl;
 var scene;
-var Models = Lux.Models;
 
 //////////////////////////////////////////////////////////////////////////////
+
+function rotated(angle, axis, m)
+{
+    return Shade.rotation(Shade(angle).neg(), axis)(m)(Shade.rotation(angle, axis));
+}
 
 function make_scene()
 {
     var drawable;
-    var mv;
-    var proj;
-    var color;
     var star_list;
-    var z_translate = -10;
-    var tilt = 90, spin = 0, twinkle = false;
+    var twinkle = false;
+    var tilt = 90;
+    var angle = Shade.parameter("float", 0);
+    var dist = Shade.parameter("float", 0);
+    var spin = Shade.parameter("float", 0);
+    var color = Shade.parameter("vec3", vec.make([0,0,0]));
 
-    mv = Shade.parameter("mat4");
-    proj = Shade.parameter("mat4");
-    color = Shade.parameter("vec3");
+    var proj = Shade.Camera.perspective({aspect_ratio: 1});
+    var mv = (Shade.rotation(spin, vec.make([0,0,1])))
+             (rotated(tilt, vec.make([1,0,0]),
+                      rotated(angle, vec.make([0,1,0]),
+                              Shade.translation(dist, 0, 0))))
+             (Shade.translation(0, 0, -10))
+    ;
 
-    function star_drawable()
+    function star_batch()
     {
-        var model = Models.square();
+        var model = Lux.Models.square();
+
         return Lux.bake(model, {
-            position: proj.mul(mv)
-                .mul(Shade.vec(model.vertex
-                               .mul(2)
-                               .sub(Shade.vec(1,1)),
-                               0, 1)),
-            color: Shade.texture2D(Lux.texture({
-                src: "../img/star.gif"
-            }), model.tex_coord).mul(Shade.vec(color, 1.0)),
+            position: proj(mv(Shade.vec(model.vertex.mul(2).sub(Shade.vec(1,1))))),
+            color: Shade.texture2D(Lux.texture({ src: "../img/star.gif" }), 
+                                   model.tex_coord).mul(Shade.vec(color, 1.0)),
             mode: Lux.DrawingMode.additive
         });
     }
 
     function star(startingDistance, rotationSpeed)
     {
-        var modelview = mat4.create();
         var result = {
             angle: 0,
             dist: startingDistance,
             rotationSpeed: rotationSpeed,
-            draw: function(tilt, spin, twinkle) {
-                mat4.set_identity(modelview);
-                mat4.translate(modelview, [0, 0, z_translate]);
-                mat4.rotate   (modelview,  tilt, [1,0,0]);
-                mat4.rotate   (modelview,  this.angle, [0,1,0]);
-                mat4.translate(modelview, [this.dist, 0, 0]);
-                mat4.rotate   (modelview, -this.angle, [0,1,0]);
-                mat4.rotate   (modelview, -tilt, [1,0,0]);
-                
+            draw: function(twinkle) {
+                var spin_amount = spin.get();
+                angle.set(this.angle);
+                dist.set(this.dist);
                 if (twinkle) {
-                    mv.set(modelview);
+                    spin.set(0);
                     color.set(this.twinkle);
                     drawable.draw();
                 }
-                
-                mat4.rotate(modelview, spin, [0,0,1]);
-                mv.set(modelview);
+                spin.set(spin_amount);
                 color.set(this.color);
                 drawable.draw();
             },
@@ -88,16 +85,15 @@ function make_scene()
         return result;
     }
 
-    drawable = star_drawable();
+    drawable = star_batch();
     star_list = init_star_list();
     
     return {
         draw: function() {
-            proj.set(Lux.perspective(45, 720/480, 0.1, 100));
             _.each(star_list, function(x) {
-                x.draw(tilt, spin, twinkle);
+                x.draw(twinkle);
             });
-            spin += 0.1 * (Math.PI / 180);
+            spin.set(spin.get() + 0.1 * (Math.PI / 180));
         },
         tick: function(elapsed) {
             _.each(star_list, function(x) {
@@ -107,16 +103,20 @@ function make_scene()
     };
 }
 
-function create_cube_drawable(texture, mv, proj)
+function cube_batch(texture)
 {
     var light_ambient = Shade.color('gray');
     var light_diffuse = Shade.color('white');
     var light_position = Shade.vec(0, 0, 2);
+    var proj = Shade.Camera.perspective();
+    var angle = gl.parameters.now.radians().mul(50);
+    var mv = Shade.translation(0,0,-6)(
+        Shade.rotation(angle, vec.make([1,1,1])));
     
     var mat_ambient = Shade.vec(0.2, 0.2, 0.2, 1);
     var background_color = Shade.vec(0.5, 0.5, 0.5, 1);
 
-    var cube_model = Models.flat_cube();
+    var cube_model = Lux.Models.flat_cube();
     var material_color = Shade.texture2D(texture, cube_model.tex_coord);
 
     var final_color;
@@ -130,10 +130,9 @@ function create_cube_drawable(texture, mv, proj)
         normal: mat3.mul(cube_model.normal.normalize())
     });
 
-    var mvp = proj.mul(mv);
     var eye_vertex = mv.mul(Shade.vec(cube_model.vertex, 1));
     return Lux.bake(cube_model, {
-        position: proj.mul(eye_vertex),
+        position: proj(eye_vertex),
         color: final_color
     });
 }
@@ -162,12 +161,9 @@ $().ready(function () {
     });
     gl.depthFunc(gl.LESS);
 
-    var mv = Shade.parameter("mat4");
-    var proj = Shade.parameter("mat4");
-    proj.set(Lux.perspective(45, 720/480, 0.1, 100.0));
     scene = make_scene();
     var rb = Lux.render_buffer();
-    var cube = create_cube_drawable(rb, mv, proj);
+    var cube = cube_batch(rb);
     var angle = 0;
     
     var start = new Date().getTime();
@@ -178,9 +174,6 @@ $().ready(function () {
         counter += 1;
         scene.tick(elapsed);
         angle += (elapsed / 20) * (Math.PI/180);
-        mv.set(mat4.product(Lux.translation(0,0,-6),
-                            Lux.rotation(angle, [1,1,1])));
-
         window.requestAnimFrame(f, canvas);
         gl.display();
     };
