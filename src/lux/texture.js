@@ -17,10 +17,10 @@ Lux.texture = function(opts)
         var ctx = Lux._globals.ctx;
         opts = _.defaults(opts, {
             onload: function() {},
-            max_anisotropy: 2,
+            max_anisotropy: opts.mipmaps ? 2 : 1,
             mipmaps: true,
             mag_filter: Lux.texture.linear,
-            min_filter: Lux.texture.linear_mipmap_linear,
+            min_filter: opts.mipmaps ? Lux.texture.linear_mipmap_linear : Lux.texture.linear,
             wrap_s: Lux.texture.clamp_to_edge,
             wrap_t: Lux.texture.clamp_to_edge,
             format: Lux.texture.rgba,
