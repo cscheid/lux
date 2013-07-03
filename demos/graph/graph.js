@@ -30,7 +30,7 @@ function graph_actors(model, center, zoom)
 {
     return Lux.actor_list([Lux.Marks.dots({
         elements: model.node_elements,
-        position: interactor.project(model.position),
+        position: model.position,
         stroke_color: Shade.color("white", 0.9),
         fill_color: Shade.color("slategray", 0.9),
         point_diameter: zoom.mul(2000),
@@ -39,7 +39,7 @@ function graph_actors(model, center, zoom)
         model: { type: 'lines',
                  elements: model.edge_elements },
         appearance: {
-            position: interactor.project(Shade(model.position, -0.1)),
+            position: Shade(model.position, -0.1),
             color: Shade.vec(0, 0, 0, 0.2)
         }
     })]);
