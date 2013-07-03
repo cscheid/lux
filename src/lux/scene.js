@@ -2,7 +2,7 @@
  * Scenes conform to the actor interface. Scenes can then
    contain other scenes, and have hierarchical structure. Currently,
    "sub-scenes" cannot have more than one parent. (If you're thinking
-   about scene graphs and sharing, this means that, to you,Lux scenes
+   about scene graphs and sharing, this means that, to you, Lux scenes
    are actually "scene trees".)
 
  */

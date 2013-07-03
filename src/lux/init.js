@@ -236,6 +236,11 @@ Lux.init = function(opts)
         }
     });
 
+    if ("interactor" in opts) {
+        gl._lux_globals.scene.add(opts.interactor.scene);
+        gl._lux_globals.scene = opts.interactor.scene;
+    }
+
     return gl;
 };
 
