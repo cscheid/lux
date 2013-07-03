@@ -48,10 +48,7 @@ function make_points_actor(x, y, width, height)
                 draw: function() {
                     rb.scene.draw();
                     points_batch.draw();
-                }
-            };
-        }
-    });
+                }};}});
 }
 
 function init_gui()
