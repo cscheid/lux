@@ -1,5 +1,5 @@
 /*
- * Scenes conform to the actor interface. Since can then
+ * Scenes conform to the actor interface. Scenes can then
    contain other scenes, and have hierarchical structure. Currently,
    "sub-scenes" cannot have more than one parent. (If you're thinking
    about scene graphs and sharing, this means that, to you,Lux scenes
@@ -10,7 +10,9 @@ Lux.scene = function(opts)
 {
     opts = _.defaults(opts || {}, {
         context: Lux._globals.ctx,
-        transform: function(i) { return i; }
+        transform: function(i) { return i; },
+        pre_draw: function() {},
+        post_draw: function() {}
     });
     var ctx = opts.context;
     var transform = opts.transform;
@@ -41,8 +43,10 @@ Lux.scene = function(opts)
 
         add: function(actor) {
             actor_list.push(actor);
-            batch_list.push(actor.dress(this));
+            var result = actor.dress(this);
+            batch_list.push(result);
             this.invalidate(undefined, undefined, ctx);
+            return result;
         }, 
 
         //////////////////////////////////////////////////////////////////////
@@ -159,9 +163,11 @@ Lux.scene = function(opts)
         // batch interface
 
         draw: function() {
+            opts.pre_draw();
             for (var i=0; i<batch_list.length; ++i) {
                 batch_list[i].draw();
             }
+            opts.post_draw();
         }
 
     };
@@ -198,15 +204,9 @@ Lux.default_scene = function(opts)
         clearDepth = opts.clearDepth;
 
     function clear() {
-        ctx.viewport(0, 0, ctx.viewportWidth, ctx.viewportHeight);
         ctx.clearDepth(clearDepth);
         ctx.clearColor.apply(ctx, clearColor);
         ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
-        var raw_t = new Date().getTime() / 1000;
-        var new_t = raw_t - ctx._lux_globals.epoch;
-        var old_t = ctx.parameters.now.get();
-        ctx.parameters.frame_duration.set(new_t - old_t);
-        ctx.parameters.now.set(new_t);
     }
     scene.add({
         dress: function(scene) { return { draw: clear }; },
