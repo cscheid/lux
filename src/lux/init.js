@@ -225,8 +225,21 @@ Lux.init = function(opts)
     gl._lux_globals.scene = Lux.default_scene({
         context: gl,
         clearColor: opts.clearColor,
-        clearDepth: opts.clearDepth
+        clearDepth: opts.clearDepth,
+        pre_draw: function() {
+            var raw_t = new Date().getTime() / 1000;
+            var new_t = raw_t - gl._lux_globals.epoch;
+            var old_t = gl.parameters.now.get();
+            gl.parameters.frame_duration.set(new_t - old_t);
+            gl.parameters.now.set(new_t);
+            gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        }
     });
+
+    if ("interactor" in opts) {
+        gl._lux_globals.scene.add(opts.interactor.scene);
+        gl._lux_globals.scene = opts.interactor.scene;
+    }
 
     return gl;
 };

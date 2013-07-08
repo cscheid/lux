@@ -18,20 +18,47 @@
 Lux.actor = function(opts)
 {
     opts = _.defaults(opts, {
-        on: function() { return true; }
+        on: function() { return true; },
+        bake: Lux.bake
     });
     var appearance = opts.appearance;
     var model = opts.model;
     var on = opts.on;
+    var bake = opts.bake;
     var batch;
     return {
         dress: function(scene) {
             var xform = scene.get_transform();
             var this_appearance = xform(appearance);
-            return Lux.bake(model, this_appearance);
+            return bake(model, this_appearance);
         },
         on: function(event_name, event) {
-            opts.on(event_name, event);
+            return opts.on(event_name, event);
+        }
+    };
+};
+
+Lux.actor_list = function(actors_list)
+{
+    return {
+        dress: function(scene) {
+            var batch_list = _.map(actors_list, function(actor) {
+                return actor.dress(scene);
+            });
+            return {
+                draw: function() {
+                    _.each(batch_list, function(batch) {
+                        return batch.draw();
+                    });
+                }
+            };
+        },
+        on: function(event_name, event) {
+            for (var i=0; i<actors_list.length; ++i) {
+                if (!actors_list[i].on(event_name, event))
+                    return false;
+            }
+            return true;
         }
     };
 };

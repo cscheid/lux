@@ -142,6 +142,10 @@ Lux.UI.center_zoom_interactor = function(opts)
 
         transform: transform,
 
+        scene: Lux.scene({
+            transform: transform
+        }),
+
         project: function(pt) {
             return this.camera.project(pt);
         },

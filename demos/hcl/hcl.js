@@ -35,13 +35,14 @@ $().ready(function () {
         hcl_mesh.tex_coord.r().mul(Math.PI*2),
         hcl_mesh.tex_coord.g().mul(100),
         luminance_parameter);
-    Lux.Scene.add(Lux.bake(hcl_mesh, {
-        mode: Lux.DrawingMode.over,
-        position: hcl_mesh.vertex,
-        color: Shade.ifelse(out_of_gamut(color).and(show_out_of_gamut),
-                            out_of_gamut_pattern(color),
-                            color)
-    }));
+    Lux.Scene.add(Lux.actor({
+        model: hcl_mesh,
+        appearance: {
+            mode: Lux.DrawingMode.over,
+            position: hcl_mesh.vertex,
+            color: Shade.ifelse(out_of_gamut(color).and(show_out_of_gamut),
+                                out_of_gamut_pattern(color),
+                                color)}}));
 });
 
 function switch_gamut()

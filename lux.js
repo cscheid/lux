@@ -3917,17 +3917,11 @@ Lux.conditional_batch = function(batch, condition)
 
 Lux.conditional_actor = function(opts)
 {
-    var appearance = opts.appearance;
-    var model = opts.model;
-    var condition = opts.condition;
-    var actor = Lux.actor(opts);
-    actor.dress = function(scene) {
-        var xform = scene.get_transform();
-        var this_appearance = xform(appearance);
-        var batch = Lux.bake(model, this_appearance);
-        return Lux.conditional_batch(batch, condition);
+    opts = _.clone(opts);
+    opts.bake = function(model, changed_appearance) {
+        return Lux.conditional_batch(Lux.bake(model, changed_appearance), opts.condition);
     };
-    return actor;
+    return Lux.actor(opts);
 };
 Lux.bake_many = function(model_list, 
                          appearance_function,
@@ -4278,8 +4272,21 @@ Lux.init = function(opts)
     gl._lux_globals.scene = Lux.default_scene({
         context: gl,
         clearColor: opts.clearColor,
-        clearDepth: opts.clearDepth
+        clearDepth: opts.clearDepth,
+        pre_draw: function() {
+            var raw_t = new Date().getTime() / 1000;
+            var new_t = raw_t - gl._lux_globals.epoch;
+            var old_t = gl.parameters.now.get();
+            gl.parameters.frame_duration.set(new_t - old_t);
+            gl.parameters.now.set(new_t);
+            gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        }
     });
+
+    if ("interactor" in opts) {
+        gl._lux_globals.scene.add(opts.interactor.scene);
+        gl._lux_globals.scene = opts.interactor.scene;
+    }
 
     return gl;
 };
@@ -4569,10 +4576,13 @@ Lux.render_buffer = function(opts)
         mag_filter: Lux.texture.linear,
         min_filter: Lux.texture.linear,
         mipmaps: false,
+        max_anisotropy: 1,
         wrap_s: Lux.texture.clamp_to_edge,
-        wrap_t: Lux.texture.clamp_to_edge
+        wrap_t: Lux.texture.clamp_to_edge,
+        clearColor: [0,0,0,1],
+        clearDepth: 1.0
     });
-    var ctx = opts.ctx;
+    var ctx = opts.context;
     var frame_buffer = ctx.createFramebuffer();
 
     // Weird:
@@ -4641,24 +4651,47 @@ Lux.render_buffer = function(opts)
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
-    frame_buffer.make_screen_batch = function(with_texel_at_uv, mode) {
+    frame_buffer.screen_actor = function(opts) {
+        opts = _.defaults(opts, {
+            mode: Lux.DrawingMode.standard
+        });
+        var with_texel_at_uv = opts.texel_function;
+        var mode = opts.mode;
         var that = this;
-        return Lux.Transform.saving(function() {
-            Lux.Transform.clear();
-            mode = mode || Lux.DrawingMode.standard;
-            var sq = Lux.Models.square();
-            return Lux.bake(sq, {
+        var sq = Lux.Models.square();
+        mode = mode || Lux.DrawingMode.standard;
+        return Lux.actor({
+            model: sq,
+            appearance: {
                 position: sq.vertex.mul(2).sub(1),
-                color: with_texel_at_uv(function(offset) { 
+                color: with_texel_at_uv(function(offset) {
                     var texcoord = sq.tex_coord;
                     if (arguments.length > 0)
                         texcoord = texcoord.add(offset);
                     return Shade.texture2D(that.texture, texcoord);
-                }, sq.tex_coord),
+                }),
                 mode: mode
-            });
+            },
+            bake: opts.bake
         });
     };
+    
+    var old_v;
+    frame_buffer.scene = Lux.default_scene({
+        clearColor: opts.clearColor,
+        clearDepth: opts.clearDepth,
+        context: ctx,
+        pre_draw: function() {
+            old_v = ctx.getParameter(ctx.VIEWPORT);
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, frame_buffer);
+            ctx.viewport(0, 0, frame_buffer.width, frame_buffer.height);
+        },
+        post_draw: function() {
+            ctx.viewport(old_v[0], old_v[1], old_v[2], old_v[3]);
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+        }
+    });
+
     return frame_buffer;
 };
 Lux.set_context = function(the_ctx)
@@ -4702,7 +4735,7 @@ Lux.texture = function(opts)
             max_anisotropy: opts.mipmaps ? 2 : 1,
             mipmaps: true,
             mag_filter: Lux.texture.linear,
-            min_filter: _.isUndefined(opts.mipmaps) || opts.mipmaps ? Lux.texture.linear_mipmap_linear : Lux.texture.linear,
+            min_filter: opts.mipmaps ? Lux.texture.linear_mipmap_linear : Lux.texture.linear,
             wrap_s: Lux.texture.clamp_to_edge,
             wrap_t: Lux.texture.clamp_to_edge,
             format: Lux.texture.rgba,
@@ -5851,6 +5884,10 @@ Lux.UI.center_zoom_interactor = function(opts)
         height: height,
 
         transform: transform,
+
+        scene: Lux.scene({
+            transform: transform
+        }),
 
         project: function(pt) {
             return this.camera.project(pt);
@@ -13062,7 +13099,7 @@ function parse_typeface_instructions(glyph)
     return paths;
 }
 
-var loop_blinn_batch = function(opts) {
+var loop_blinn_actor = function(opts) {
     var position_function = opts.position;
     var color_function = opts.color;
     
@@ -13094,24 +13131,26 @@ var loop_blinn_batch = function(opts) {
     var y_offset = Shade.parameter("float", 0);
     var offset = Shade.vec(x_offset, y_offset);
     var ears_position = Shade.add(ears_model.position, offset);
-    var ears_batch = Lux.bake(ears_model, {
-        position: position_function(ears_position.div(1000).mul(opts.size)),
-        color: quadratic_discard(color_function(ears_position), ears_model)
-    });
+    var ears_actor = Lux.actor({
+        model: ears_model, 
+        appearance: {
+            position: position_function(ears_position.div(1000).mul(opts.size)),
+            color: quadratic_discard(color_function(ears_position), ears_model)}});
     var internal_model = Lux.model({
         vertex: internal_position_attribute,
         elements: elements
     });
     var internal_position = Shade.add(internal_model.vertex, offset);
-    var internal_batch = Lux.bake(internal_model, {
-        position: position_function(internal_position.div(1000).mul(opts.size)),
-        elements: internal_model.elements,
-        color: color_function(internal_position)
-    });
+    var internal_actor = Lux.actor({
+        model: internal_model, 
+        appearance: {
+            position: position_function(internal_position.div(1000).mul(opts.size)),
+            elements: internal_model.elements,
+            color: color_function(internal_position)}});
     return {
-        ears_batch: ears_batch,
+        ears_actor: ears_actor,
         ears_model: ears_model,
-        internal_batch: internal_batch,
+        internal_actor: internal_actor,
         internal_model: internal_model,
         x_offset: x_offset,
         y_offset: y_offset
@@ -13163,10 +13202,6 @@ function glyph_to_model(glyph)
 }
 
 Lux.Text.outline = function(opts) {
-    var old_opts = opts;
-    if (opts.batch) {
-        return opts.batch;
-    }
     opts = _.defaults(opts, {
         string: "",
         size: 10,
@@ -13177,8 +13212,7 @@ Lux.Text.outline = function(opts) {
     if (_.isUndefined(opts.font)) {
         throw new Error("outline requires font parameter");
     }
-    var batch = loop_blinn_batch(opts);
-    old_opts.batch = batch;
+    var actor = loop_blinn_actor(opts);
 
     var result = {
         set: function(new_string) {
@@ -13202,42 +13236,40 @@ Lux.Text.outline = function(opts) {
                 throw new Error("align must be one of 'left', 'center' or 'right'");
             }
         },
-        // vertical_alignment_offset: function() {
-        //     switch (opts.vertical_align) {
-        //     case "baseline": return 0;
-        //     case "middle": return -opts.font.lineHeight/2;
-        //     case "top": return -opts.font.lineHeight;
-        //         default:
-        //         throw new Error("vertical_align must be one of 'baseline', 'middle' or 'top'");
-        //     };
-        // },
-        draw: function() {
-            batch.x_offset.set(this.alignment_offset(0));
-            batch.y_offset.set(0);
-            for (var i=0; i<opts.string.length; ++i) {
-                var c = opts.string[i];
-                if ("\n\r".indexOf(c) !== -1) {
-                    batch.x_offset.set(0);                    
-                    batch.y_offset.set(batch.y_offset.get() - opts.font.lineHeight);
-                    continue;
+        dress: function(scene) {
+            actor.internal_batch = actor.internal_actor.dress(scene);
+            actor.ears_batch = actor.ears_actor.dress(scene);
+            return {
+                draw: function() {
+                    actor.x_offset.set(result.alignment_offset(0));
+                    actor.y_offset.set(0);
+                    for (var i=0; i<opts.string.length; ++i) {
+                        var c = opts.string[i];
+                        if ("\n\r".indexOf(c) !== -1) {
+                            actor.x_offset.set(0);                    
+                            actor.y_offset.set(actor.y_offset.get() - opts.font.lineHeight);
+                            continue;
+                        }
+                        var glyph = opts.font.glyphs[c];
+                        if (_.isUndefined(glyph))
+                            glyph = opts.font.glyphs['?'];
+                        var model = glyph_to_model(glyph);
+                        if (model) {
+                            actor.ears_model.elements = model.ears_model.elements;
+                            actor.ears_model.uv.set(model.ears_model.uv.get());
+                            actor.ears_model.winding.set(model.ears_model.winding.get());
+                            actor.ears_model.position.set(model.ears_model.position.get());
+                            actor.internal_model.vertex.set(model.internal_model.vertex.get());
+                            actor.internal_model.elements.set(model.internal_model.elements.array);
+                            actor.ears_batch.draw();
+                            actor.internal_batch.draw();
+                        }
+                        actor.x_offset.set(actor.x_offset.get() + glyph.ha);
+                    }
                 }
-                var glyph = opts.font.glyphs[c];
-                if (_.isUndefined(glyph))
-                    glyph = opts.font.glyphs['?'];
-                var model = glyph_to_model(glyph);
-                if (model) {
-                    batch.ears_model.elements = model.ears_model.elements;
-                    batch.ears_model.uv.set(model.ears_model.uv.get());
-                    batch.ears_model.winding.set(model.ears_model.winding.get());
-                    batch.ears_model.position.set(model.ears_model.position.get());
-                    batch.internal_model.vertex.set(model.internal_model.vertex.get());
-                    batch.internal_model.elements.set(model.internal_model.elements.array);
-                    batch.ears_batch.draw();
-                    batch.internal_batch.draw();
-                }
-                batch.x_offset.set(batch.x_offset.get() + glyph.ha);
-            }
-        }
+            };
+        },
+        on: function() { return true; }
     };
     return result;
 };
@@ -13245,7 +13277,10 @@ Lux.Text.outline = function(opts) {
 })();
 (function() {
 
-function internal_batch(opts, texture) {
+function internal_actor(opts) {
+    var texture = opts.font.texture;
+    var texture_width = opts.font.texture_width;
+    var texture_height = opts.font.texture_height;
     
     var position_function = opts.position;
     var color_function = opts.color;
@@ -13265,7 +13300,7 @@ function internal_batch(opts, texture) {
     });
     var world_position = Shade.add(model.position, offset).div(opts.font.ascender).mul(opts.size);
     var opacity = Shade.texture2D(texture, model.uv).r();
-    var uv_gradmag = model.uv.x().mul(texture.width).dFdx().pow(2).add(model.uv.y().mul(texture.height).dFdy().pow(2)).sqrt();
+    var uv_gradmag = model.uv.x().mul(texture_width).dFdx().pow(2).add(model.uv.y().mul(texture_height).dFdy().pow(2)).sqrt();
 
     var blur_compensation = Shade.Scale.linear(
         {domain: [Shade.max(Shade(0.5).sub(uv_gradmag), 0), Shade.min(Shade(0.5).add(uv_gradmag), 1)],
@@ -13274,14 +13309,15 @@ function internal_batch(opts, texture) {
     var final_opacity = Shade.ifelse(opts.compensate_blur, blur_compensation, opacity);
 
     var final_color = color_function(world_position).mul(Shade.vec(1,1,1, final_opacity));
-    var batch = Lux.bake(model, {
-        position: position_function(world_position),
-        color: final_color,
-        elements: model.elements,
-        mode: Lux.DrawingMode.over_with_depth
-    });
+    var actor = Lux.actor({
+        model: model, 
+        appearance: {
+            position: position_function(world_position),
+            color: final_color,
+            elements: model.elements,
+            mode: Lux.DrawingMode.over_with_depth }});
     return {
-        batch: batch,
+        actor: actor,
         model: model,
         x_offset: x_offset,
         y_offset: y_offset
@@ -13311,16 +13347,13 @@ function glyph_to_model(glyph, font)
 }
 
 Lux.Text.texture = function(opts) {
-    var old_opts = opts;
-    if (!_.isUndefined(opts.batch)) {
-        return opts.batch;
-    }
     opts = _.defaults(opts, {
         string: "",
         size: 10,
         align: "left",
         position: function(pos) { return Shade.vec(pos, 0, 1); },
         color: function(pos) { return Shade.color("white"); },
+        onload: function() { Lux.Scene.invalidate(); },
         compensate_blur: true
     });
 
@@ -13328,19 +13361,18 @@ Lux.Text.texture = function(opts) {
         throw new Error("Lux.Text.texture requires font parameter");
     }
 
-    var batch = {};
+    var actor = {};
 
     if (!opts.font.texture) {
         opts.font.texture = Lux.texture({
             src: opts.font.image_url,
-            onload: function() { 
-                batch = internal_batch(opts, this);
-                old_opts.batch = batch;
-                Lux.Scene.invalidate(); 
+            mipmaps: false,
+            onload: function() {
+                return opts.onload();
             }
         });
     }
-    old_opts.batch = batch;
+    actor = internal_actor(opts);
 
     var result = {
         set: function(new_string) {
@@ -13366,32 +13398,35 @@ Lux.Text.texture = function(opts) {
                 throw new Error("align must be one of 'left', 'center' or 'right'");
             }
         },
-        draw: function() {
-            if (_.isUndefined(batch.batch))
-                return;
-
-            batch.x_offset.set(this.alignment_offset(0));
-            batch.y_offset.set(0);
-            for (var i=0; i<opts.string.length; ++i) {
-                var c = opts.string[i];
-                if ("\n\r".indexOf(c) !== -1) {
-                    batch.x_offset.set(0);
-                    batch.y_offset.set(batch.y_offset.get() - opts.font.lineheight);
-                    continue;
+        dress: function(scene) {
+            actor.batch = actor.actor.dress(scene);
+            return {
+                draw: function() {
+                    actor.x_offset.set(result.alignment_offset(0));
+                    actor.y_offset.set(0);
+                    for (var i=0; i<opts.string.length; ++i) {
+                        var c = opts.string[i];
+                        if ("\n\r".indexOf(c) !== -1) {
+                            actor.x_offset.set(0);
+                            actor.y_offset.set(actor.y_offset.get() - opts.font.lineheight);
+                            continue;
+                        }
+                        var glyph = opts.font.glyphs[String(c.charCodeAt(0))];
+                        if (_.isUndefined(glyph))
+                            glyph = opts.font.glyphs[String('?'.charCodeAt(0))];
+                        var model = glyph_to_model(glyph, opts.font);
+                        if (model) {
+                            actor.model.elements = model.elements;
+                            actor.model.uv.set(model.uv.get());
+                            actor.model.position.set(model.position.get());
+                            actor.batch.draw();
+                        }
+                        actor.x_offset.set(actor.x_offset.get() + glyph.ha);
+                    }
                 }
-                var glyph = opts.font.glyphs[String(c.charCodeAt(0))];
-                if (_.isUndefined(glyph))
-                    glyph = opts.font.glyphs[String('?'.charCodeAt(0))];
-                var model = glyph_to_model(glyph, opts.font);
-                if (model) {
-                    batch.model.elements = model.elements;
-                    batch.model.uv.set(model.uv.get());
-                    batch.model.position.set(model.position.get());
-                    batch.batch.draw();
-                }
-                batch.x_offset.set(batch.x_offset.get() + glyph.ha);
-            }
-        }
+            };
+        },
+        on: function() { return true; }
     };
     return result;
 };
@@ -13572,13 +13607,14 @@ Lux.Marks.dots = function(opts)
                     no_alpha)
         .discard_if(distance_to_center_in_pixels.gt(point_radius));
 
-    var result = Lux.bake(model, {
-        position: gl_Position,
-        point_size: point_diameter,
-        color: opts.plain.ifelse(plain_fill_color, alpha_fill_color),
-        mode: opts.mode,
-        pick_id: opts.pick_id
-    });
+    var result = Lux.actor({
+        model: model, 
+        appearance: {
+            position: gl_Position,
+            point_size: point_diameter,
+            color: opts.plain.ifelse(plain_fill_color, alpha_fill_color),
+            mode: opts.mode,
+            pick_id: opts.pick_id }});
 
     /* We pass the gl_Position attribute explicitly because some other
      call might want to explicitly use the same position of the dots marks.
@@ -16143,28 +16179,55 @@ Lux.Mesh.indexed = function(vertices, elements)
 Lux.actor = function(opts)
 {
     opts = _.defaults(opts, {
-        on: function() { return true; }
+        on: function() { return true; },
+        bake: Lux.bake
     });
     var appearance = opts.appearance;
     var model = opts.model;
     var on = opts.on;
+    var bake = opts.bake;
     var batch;
     return {
         dress: function(scene) {
             var xform = scene.get_transform();
             var this_appearance = xform(appearance);
-            return Lux.bake(model, this_appearance);
+            return bake(model, this_appearance);
         },
         on: function(event_name, event) {
-            opts.on(event_name, event);
+            return opts.on(event_name, event);
+        }
+    };
+};
+
+Lux.actor_list = function(actors_list)
+{
+    return {
+        dress: function(scene) {
+            var batch_list = _.map(actors_list, function(actor) {
+                return actor.dress(scene);
+            });
+            return {
+                draw: function() {
+                    _.each(batch_list, function(batch) {
+                        return batch.draw();
+                    });
+                }
+            };
+        },
+        on: function(event_name, event) {
+            for (var i=0; i<actors_list.length; ++i) {
+                if (!actors_list[i].on(event_name, event))
+                    return false;
+            }
+            return true;
         }
     };
 };
 /*
- * Scenes conform to the actor interface. Since can then
+ * Scenes conform to the actor interface. Scenes can then
    contain other scenes, and have hierarchical structure. Currently,
    "sub-scenes" cannot have more than one parent. (If you're thinking
-   about scene graphs and sharing, this means that, to you,Lux scenes
+   about scene graphs and sharing, this means that, to you, Lux scenes
    are actually "scene trees".)
 
  */
@@ -16172,7 +16235,9 @@ Lux.scene = function(opts)
 {
     opts = _.defaults(opts || {}, {
         context: Lux._globals.ctx,
-        transform: function(i) { return i; }
+        transform: function(i) { return i; },
+        pre_draw: function() {},
+        post_draw: function() {}
     });
     var ctx = opts.context;
     var transform = opts.transform;
@@ -16203,8 +16268,10 @@ Lux.scene = function(opts)
 
         add: function(actor) {
             actor_list.push(actor);
-            batch_list.push(actor.dress(this));
+            var result = actor.dress(this);
+            batch_list.push(result);
             this.invalidate(undefined, undefined, ctx);
+            return result;
         }, 
 
         //////////////////////////////////////////////////////////////////////
@@ -16321,9 +16388,11 @@ Lux.scene = function(opts)
         // batch interface
 
         draw: function() {
+            opts.pre_draw();
             for (var i=0; i<batch_list.length; ++i) {
                 batch_list[i].draw();
             }
+            opts.post_draw();
         }
 
     };
@@ -16360,15 +16429,9 @@ Lux.default_scene = function(opts)
         clearDepth = opts.clearDepth;
 
     function clear() {
-        ctx.viewport(0, 0, ctx.viewportWidth, ctx.viewportHeight);
         ctx.clearDepth(clearDepth);
         ctx.clearColor.apply(ctx, clearColor);
         ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
-        var raw_t = new Date().getTime() / 1000;
-        var new_t = raw_t - ctx._lux_globals.epoch;
-        var old_t = ctx.parameters.now.get();
-        ctx.parameters.frame_duration.set(new_t - old_t);
-        ctx.parameters.now.set(new_t);
     }
     scene.add({
         dress: function(scene) { return { draw: clear }; },
