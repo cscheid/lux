@@ -16499,3 +16499,35 @@ Lux.Scene.invalidate = function(pre_display, post_display, ctx)
 
     return scene.invalidate(pre_display, post_display);
 };
+Lux.Scene.Transform = {};
+Lux.Scene.Transform.Geo = {};
+
+(function() {
+
+var two_d_position_xform = function(xform) {
+    return function(opts) {
+        opts = _.clone(opts || {});
+        opts.transform = function(appearance) {
+            var pos = appearance.position;
+            appearance = _.clone(appearance);
+            var lat = appearance.position.x();
+            var lon = appearance.position.y();
+            var out = xform(lat, lon);
+            if (pos.type.equals(Shade.Types.vec2))
+                appearance.position = out;
+            else if (pos.type.equals(Shade.Types.vec3))
+                appearance.position = Shade.vec(out, pos.at(2));
+            else if (pos.type.equals(Shade.Types.vec4))
+                appearance.position = Shade.vec(out, pos.swizzle("zw"));
+            return appearance;
+        };
+        return Lux.scene(opts);
+    };
+};
+Lux.Scene.Transform.Geo.latlong_to_spherical = 
+    two_d_position_xform(Shade.Scale.Geo.latlong_to_spherical);
+Lux.Scene.Transform.Geo.latlong_to_mercator = 
+    two_d_position_xform(Shade.Scale.Geo.latlong_to_mercator);
+Lux.Scene.Transform.Geo.mercator_to_latlong = 
+    two_d_position_xform(Shade.Scale.Geo.mercator_to_latlong);
+});
