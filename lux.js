@@ -12653,6 +12653,7 @@ Shade.Scale.Geo.latlong_to_hammer = Shade(function(lat, lon, B)
     var x = B.mul(Math.sqrt(2)).mul(phi.cos()).mul(lambda.div(B).sin()).div(eta);
     var y = phi.sin().mul(Math.sqrt(2)).div(eta);
     var out = Shade.vec(x, y);
+    return out;
 });
 Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
 {
@@ -12669,6 +12670,8 @@ Shade.Scale.Geo.latlong_to_spherical = Shade(function(lat, lon)
 Shade.Scale.Geo.mercator_to_latlong = Shade(function(x, y)
 {
     // http://stackoverflow.com/a/1166095
+    x = x.mul(2*Math.PI).sub(Math.PI);
+    y = y.mul(2*Math.PI).sub(Math.PI);
     return Shade.vec(y.sinh().atan(), x);
 });
 Shade.Scale.Geo.mercator_to_spherical = Shade(function(x, y)
@@ -16571,4 +16574,4 @@ Lux.Scene.Transform.Geo.latlong_to_spherical = function(opts) {
 };
 Lux.Scene.Transform.Geo.mercator_to_latlong = 
     two_d_position_xform(Shade.Scale.Geo.mercator_to_latlong);
-});
+})();

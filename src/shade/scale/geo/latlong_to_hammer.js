@@ -10,4 +10,5 @@ Shade.Scale.Geo.latlong_to_hammer = Shade(function(lat, lon, B)
     var x = B.mul(Math.sqrt(2)).mul(phi.cos()).mul(lambda.div(B).sin()).div(eta);
     var y = phi.sin().mul(Math.sqrt(2)).div(eta);
     var out = Shade.vec(x, y);
+    return out;
 });
