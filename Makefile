@@ -170,10 +170,11 @@ lux.js:								\
 	src/shade/scale/log10.js				\
 	src/shade/scale/log2.js					\
 	src/shade/scale/geo/_begin.js				\
-	src/shade/scale/geo/mercator_to_spherical.js		\
-	src/shade/scale/geo/mercator_to_latlong.js		\
-	src/shade/scale/geo/latlong_to_spherical.js		\
+	src/shade/scale/geo/latlong_to_hammer.js		\
 	src/shade/scale/geo/latlong_to_mercator.js		\
+	src/shade/scale/geo/latlong_to_spherical.js		\
+	src/shade/scale/geo/mercator_to_latlong.js		\
+	src/shade/scale/geo/mercator_to_spherical.js		\
 	src/shade/gl_light.js					\
 	src/shade/light/_begin.js				\
 	src/shade/light/ambient.js				\
@@ -217,8 +218,9 @@ lux.js:								\
 	src/lux/scene/invalidate.js				\
 	src/lux/scene/transform/_begin.js			\
 	src/lux/scene/transform/geo/_begin.js			\
-	src/lux/scene/transform/geo/latlong_to_spherical.js	\
+	src/lux/scene/transform/geo/latlong_to_hammer.js	\
 	src/lux/scene/transform/geo/latlong_to_mercator.js	\
+	src/lux/scene/transform/geo/latlong_to_spherical.js	\
 	src/lux/scene/transform/geo/mercator_to_latlong.js	\
 	src/lux/scene/transform/geo/_end.js
 

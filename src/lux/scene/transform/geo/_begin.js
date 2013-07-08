@@ -8,9 +8,7 @@ var two_d_position_xform = function(xform) {
         opts.transform = function(appearance) {
             var pos = appearance.position;
             appearance = _.clone(appearance);
-            var lat = appearance.position.x();
-            var lon = appearance.position.y();
-            var out = xform(lat, lon);
+            var out = xform(appearance.position.x(), appearance.position.y());
             if (pos.type.equals(Shade.Types.vec2))
                 appearance.position = out;
             else if (pos.type.equals(Shade.Types.vec3))

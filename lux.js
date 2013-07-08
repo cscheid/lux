@@ -5996,7 +5996,7 @@ Shade.debug = false;
 Shade.make = function(value)
 {
     if (_.isUndefined(value)) {
-        throw new Error("expected a value, got undefined instead");
+        return undefined;
     }
     var t = lux_typeOf(value);
     if (t === 'string') {
@@ -12641,16 +12641,23 @@ Shade.Scale.log2 = function(opts)
     return Shade.Scale.transformed(new_opts);
 };
 Shade.Scale.Geo = {};
-Shade.Scale.Geo.mercator_to_spherical = Shade(function(x, y)
+Shade.Scale.Geo.latlong_to_hammer = Shade(function(lat, lon, B)
 {
-    var lat = y.sinh().atan();
-    var lon = x;
-    return Shade.Scale.Geo.latlong_to_spherical(lat, lon);
+    if (_.isUndefined(B))
+        B = Shade(2);
+    else if (!B.type.equals(Shade.Types.float_t))
+        throw new Error("B should have type float");
+    var phi = lat,
+        lambda = lon;
+    var eta = phi.cos().mul(lambda.div(B).cos()).add(1).sqrt();
+    var x = B.mul(Math.sqrt(2)).mul(phi.cos()).mul(lambda.div(B).sin()).div(eta);
+    var y = phi.sin().mul(Math.sqrt(2)).div(eta);
+    var out = Shade.vec(x, y);
 });
-Shade.Scale.Geo.mercator_to_latlong = Shade(function(x, y)
+Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
 {
-    // http://stackoverflow.com/a/1166095
-    return Shade.vec(y.sinh().atan(), x);
+    lat = lat.div(2).add(Math.PI/4).tan().log();
+    return Shade.vec(lon, lat);
 });
 Shade.Scale.Geo.latlong_to_spherical = Shade(function(lat, lon)
 {
@@ -12659,10 +12666,16 @@ Shade.Scale.Geo.latlong_to_spherical = Shade(function(lat, lon)
                      lat.sin(),
                      lon.cos().mul(stretch), 1);
 });
-Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
+Shade.Scale.Geo.mercator_to_latlong = Shade(function(x, y)
 {
-    lat = lat.div(2).add(Math.PI/4).tan().log();
-    return Shade.vec(lon, lat);
+    // http://stackoverflow.com/a/1166095
+    return Shade.vec(y.sinh().atan(), x);
+});
+Shade.Scale.Geo.mercator_to_spherical = Shade(function(x, y)
+{
+    var lat = y.sinh().atan();
+    var lon = x;
+    return Shade.Scale.Geo.latlong_to_spherical(lat, lon);
 });
 // replicates something like an opengl light. 
 // Fairly bare-bones for now (only diffuse, no attenuation)
@@ -16510,9 +16523,7 @@ var two_d_position_xform = function(xform) {
         opts.transform = function(appearance) {
             var pos = appearance.position;
             appearance = _.clone(appearance);
-            var lat = appearance.position.x();
-            var lon = appearance.position.y();
-            var out = xform(lat, lon);
+            var out = xform(appearance.position.x(), appearance.position.y());
             if (pos.type.equals(Shade.Types.vec2))
                 appearance.position = out;
             else if (pos.type.equals(Shade.Types.vec3))
@@ -16524,10 +16535,40 @@ var two_d_position_xform = function(xform) {
         return Lux.scene(opts);
     };
 };
-Lux.Scene.Transform.Geo.latlong_to_spherical = 
-    two_d_position_xform(Shade.Scale.Geo.latlong_to_spherical);
+Lux.Scene.Transform.Geo.latlong_to_hammer = function(opts) {
+    opts = _.clone(opts || {});
+    opts.transform = function(appearance) {
+        var pos = appearance.position;
+        appearance = _.clone(appearance);
+        var out = Shade.Scale.Geo.latlong_to_hammer(appearance.position.x(), appearance.position.y(), opts.B);
+        if (pos.type.equals(Shade.Types.vec2))
+            appearance.position = out;
+        else if (pos.type.equals(Shade.Types.vec3))
+            appearance.position = Shade.vec(out, pos.at(2));
+        else if (pos.type.equals(Shade.Types.vec4))
+            appearance.position = Shade.vec(out, pos.swizzle("zw"));
+        return appearance;
+    };
+    return Lux.scene(opts);
+};
 Lux.Scene.Transform.Geo.latlong_to_mercator = 
     two_d_position_xform(Shade.Scale.Geo.latlong_to_mercator);
+Lux.Scene.Transform.Geo.latlong_to_spherical = function(opts) {
+    opts = _.clone(opts || {});
+    opts.transform = function(appearance) {
+        var pos = appearance.position;
+        appearance = _.clone(appearance);
+        var lat = appearance.position.x();
+        var lon = appearance.position.y();
+        var out = Shade.Scale.Geo.latlong_to_spherical(lat, lon);
+        if (pos.type.equals(Shade.Types.vec3))
+            appearance.position = out;
+        else if (pos.type.equals(Shade.Types.vec4))
+            appearance.position = Shade.vec(out, pos.w());
+        return appearance;
+    };
+    return Lux.scene(opts);
+};
 Lux.Scene.Transform.Geo.mercator_to_latlong = 
     two_d_position_xform(Shade.Scale.Geo.mercator_to_latlong);
 });

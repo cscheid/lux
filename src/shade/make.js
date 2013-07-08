@@ -6,7 +6,7 @@
 Shade.make = function(value)
 {
     if (_.isUndefined(value)) {
-        throw new Error("expected a value, got undefined instead");
+        return undefined;
     }
     var t = lux_typeOf(value);
     if (t === 'string') {
