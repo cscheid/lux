@@ -151,6 +151,11 @@ Lux.scene = function(opts)
                 appearance = parent_scene.get_transform()(appearance);
                 return appearance;
             };
+            transform.inverse = function(appearance) {
+                appearance = parent_scene.get_transform().inverse(appearance);
+                appearance = opts.transform.inverse(appearance);
+                return appearance;
+            };
             // FIXME ideally we'd have a well-defined cleanup of batches; I
             // think the current implementation below might leak.
             batch_list = _.map(actor_list, function(actor) {
@@ -180,6 +185,7 @@ Lux.default_scene = function(opts)
     opts.transform = function(appearance) {
         return Shade.canonicalize_program_object(appearance);
     };
+    opts.transform.inverse = function(i) { return i; };
     var scene = Lux.scene(opts);
     var ctx = scene.context;
 
