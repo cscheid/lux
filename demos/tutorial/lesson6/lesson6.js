@@ -1,13 +1,7 @@
-var angle;
-var texture = [];
-var sampler;
-
-function add_actors(texture)
+function actors(texture)
 {
-    var camera = Shade.Camera.perspective({
-        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
-    });
-
+    var gl = Lux._globals.ctx;
+    var angle = gl.parameters.now.mul(50).radians();
     var model = Lux.Models.flat_cube();
     var material_color = Shade.texture2D(texture, model.tex_coord);
     var light_model_mat = Shade.rotation(angle, Shade.vec(1, 1, 1));
@@ -46,25 +40,25 @@ function add_actors(texture)
         normal: cube_model_mat(model.normal)
     };
 
-    Lux.Scene.add(Lux.actor({
-        model: model, 
-        appearance: {
-            position: camera(cube_model_mat)(model.vertex),
-            color: ambient_light(material_opts)
-                .add(diffuse_light(material_opts))
-        }}));
-
-    // draw a little flying lamp to make it somewhat more obvious where the light is coming from
     var sphere = Lux.Models.sphere();
-    Lux.Scene.add(Lux.actor({
-        model: sphere, 
-        appearance: {
-            position: camera
-                      (Shade.translation(light_position.swizzle("xyz")))
-                      (Shade.scaling(0.05))
-                      (sphere.vertex),
-            color: Shade.vec(diffuse_light_color, 1)
-        }}));
+
+    return [
+        Lux.actor({
+            model: model, 
+            appearance: {
+                position: cube_model_mat(model.vertex),
+                color: ambient_light(material_opts)
+                    .add(diffuse_light(material_opts))
+            }}),
+        // draw a little flying lamp to make it somewhat more obvious where the light is coming from
+        Lux.actor({
+            model: sphere, 
+            appearance: {
+                position: Shade.translation(light_position.swizzle("xyz"))
+                (Shade.scaling(0.05))
+                (sphere.vertex),
+                color: Shade.vec(diffuse_light_color, 1)
+            }})];
 }
 
 $().ready(function () {
@@ -74,12 +68,14 @@ $().ready(function () {
 
     var cube_model = Lux.Models.flat_cube();
 
-    angle = gl.parameters.now.mul(50).radians();
-
-    texture = Lux.texture({ 
+    Lux.texture({ 
         src: "../../img/crate.jpg",
         onload: function() {
-            add_actors(this);
+            var camera = Lux.Scene.Transform.Camera.perspective({
+                look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
+            });
+            Lux.Scene.add(camera);
+            _.each(actors(this), function(actor) { camera.add(actor); });
             Lux.Scene.animate();
         }
     });

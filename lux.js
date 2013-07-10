@@ -4468,15 +4468,11 @@ Lux.Picker = {
             });
         }
 
-        callback = callback || ctx._lux_globals.display_callback;
+        callback = callback || function() { Lux._globals.ctx._lux_globals.scene.draw(); };
         var old_scene_render_mode = ctx._lux_globals.batch_render_mode;
         ctx._lux_globals.batch_render_mode = 1;
         try {
-            rb.with_bound_buffer(function() {
-                ctx.clearColor(0,0,0,0);
-                ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
-                callback();
-            });
+            rb.with_bound_buffer(callback);
         } finally {
             ctx._lux_globals.batch_render_mode = old_scene_render_mode;
         }
@@ -16399,9 +16395,23 @@ Lux.default_scene = function(opts)
     } else
         clearDepth = opts.clearDepth;
 
+    // FIXME this is kind of ugly, but will require changing the picker infrastructure
+    // quite a bit. Since the picker infrastructure should be overhauled anyway,
+    // we stick with this hack until we fix everything.
     function clear() {
-        ctx.clearDepth(clearDepth);
-        ctx.clearColor.apply(ctx, clearColor);
+        switch (ctx._lux_globals.batch_render_mode) {
+        case 1:
+        case 2:
+            ctx.clearDepth(clearDepth);
+            ctx.clearColor(0,0,0,0);
+            break;
+        case 0:
+            ctx.clearDepth(clearDepth);
+            ctx.clearColor.apply(ctx, clearColor);
+            break;
+        default:
+            throw new Error("Unknown batch rendering mode");
+        }
         ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
     }
     scene.add({
