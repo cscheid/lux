@@ -4072,10 +4072,6 @@ function initialize_context_globals(gl)
         new DataView(buffer).setInt16(0, 256, true);
         return new Int16Array(buffer)[0] === 256;
     })();
-
-    // the transform stack is honored by Lux.bake and can be used to implement
-    // a matrix stack, etc. 
-    gl._lux_globals.transform_stack = [];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5032,90 +5028,6 @@ Lux.Unprojector = {
 };
 
 })();
-Lux.Transform = {};
-Lux.Transform.change = function(field, f)
-{
-    return function(appearance) {
-        var result = _.clone(appearance);
-        result[field] = f(appearance[field]);
-        return result;
-    };
-};
-Lux.Transform.saving = function(what, ctx) {
-    if (_.isUndefined(ctx))
-        ctx = Lux._globals.ctx;
-    var old_stack = ctx._lux_globals.transform_stack;
-    try {
-        return what();
-    } finally {
-        ctx._lux_globals.transform_stack = old_stack;
-    }
-};
-Lux.Transform.using = function(transformation, what, ctx)
-{
-    if (_.isUndefined(ctx))
-        ctx = Lux._globals.ctx;
-    return Lux.Transform.saving(function() {
-        Lux.Transform.push(transformation, ctx);
-        return what();
-    });
-};
-Lux.Transform.push = function(transform, ctx) {
-    if (_.isUndefined(ctx))
-        ctx = Lux._globals.ctx;
-    var new_stack = ctx._lux_globals.transform_stack.slice();
-    new_stack.push(transform);
-    ctx._lux_globals.transform_stack = new_stack;
-};
-Lux.Transform.pop = function(ctx) {
-    if (_.isUndefined(ctx))
-        ctx = Lux._globals.ctx;
-    var new_stack = ctx._lux_globals.transform_stack.slice();
-    var result = new_stack.pop();
-    ctx._lux_globals.transform_stack = new_stack;
-    return result;
-};
-Lux.Transform.clear = function(ctx) {
-    // The last transformation on the stack canonicalizes
-    // the appearance object to always have gl_Position, gl_FragColor
-    // and gl_PointSize fields.
-    if (_.isUndefined(ctx))
-        ctx = Lux._globals.ctx;
-    ctx._lux_globals.transform_stack = [Shade.canonicalize_program_object];
-};
-Lux.Transform.apply = function(appearance, ctx) 
-{
-    return Lux.Transform.get(ctx)(appearance);
-};
-Lux.Transform.apply_inverse = function(appearance, ctx) 
-{
-    return Lux.Transform.get_inverse(ctx)(appearance);
-};
-Lux.Transform.get = function(ctx)
-{
-    if (_.isUndefined(ctx))
-        ctx = Lux._globals.ctx;
-    var s = ctx._lux_globals.transform_stack;
-    return function(appearance) {
-        var i = s.length;
-        while (--i >= 0) {
-            appearance = s[i](appearance);
-        }
-        return appearance;
-    };
-};
-Lux.Transform.get_inverse = function(ctx)
-{
-    if (_.isUndefined(ctx))
-        ctx = Lux._globals.ctx;
-    var s = ctx._lux_globals.transform_stack;
-    return function(appearance) {
-        for (var i=0; i<s.length; ++i) {
-            appearance = (s[i].inverse || function(i) { return i; })(appearance);
-        }
-        return appearance;
-    };
-};
 Lux.Net = {};
 
 (function() {
