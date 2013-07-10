@@ -46,13 +46,17 @@ Lux.Marks.aligned_rects = function(opts)
     var index_array = Shade.array([0, 2, 3, 0, 1, 2]);
     var index_in_vertex_primitive = index_array.at(vertex_in_primitive);
 
-    return Lux.bake({
+    var model = Lux.model({
         type: "triangles",
         elements: vertex_index
-    }, {
+    });
+
+    var appearance = {
         position: Shade.vec(vertex_map.at(vertex_in_primitive), z),
         color: color,
         pick_id: opts.pick_id,
         mode: opts.mode
-    });
+    };
+
+    return Lux.actor({ model: model, appearance: appearance });
 };
