@@ -15,8 +15,9 @@ Lux.Marks.aligned_rects = function(opts)
     if (!opts.bottom)   throw new Error("bottom is a required field");
     if (!opts.color)    throw new Error("color is a required field");
 
+    var index = _.range(opts.elements * 6);
     var vertex_index = Lux.attribute_buffer({ 
-        vertex_array: _.range(opts.elements * 6), 
+        vertex_array: index, 
         item_size: 1
     });
     var primitive_index = Shade.div(vertex_index, 6).floor();
@@ -48,7 +49,7 @@ Lux.Marks.aligned_rects = function(opts)
 
     var model = Lux.model({
         type: "triangles",
-        elements: vertex_index
+        elements: index
     });
 
     var appearance = {

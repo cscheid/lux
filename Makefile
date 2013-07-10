@@ -196,7 +196,7 @@ lux.js:								\
 	src/lux/marks/lines.js					\
 	src/lux/marks/dots.js					\
 	src/lux/marks/scatterplot.js				\
-	src/lux/marks/center_zoom_interactor_brush.js		\
+	src/lux/marks/rectangle_brush.js			\
 	src/lux/marks/globe.js					\
 	src/lux/marks/globe_2d.js				\
 	src/lux/models/_begin.js				\

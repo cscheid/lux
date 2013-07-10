@@ -13491,8 +13491,9 @@ Lux.Marks.aligned_rects = function(opts)
     if (!opts.bottom)   throw new Error("bottom is a required field");
     if (!opts.color)    throw new Error("color is a required field");
 
+    var index = _.range(opts.elements * 6);
     var vertex_index = Lux.attribute_buffer({ 
-        vertex_array: _.range(opts.elements * 6), 
+        vertex_array: index, 
         item_size: 1
     });
     var primitive_index = Shade.div(vertex_index, 6).floor();
@@ -13522,15 +13523,19 @@ Lux.Marks.aligned_rects = function(opts)
     var index_array = Shade.array([0, 2, 3, 0, 1, 2]);
     var index_in_vertex_primitive = index_array.at(vertex_in_primitive);
 
-    return Lux.bake({
+    var model = Lux.model({
         type: "triangles",
-        elements: vertex_index
-    }, {
+        elements: index
+    });
+
+    var appearance = {
         position: Shade.vec(vertex_map.at(vertex_in_primitive), z),
         color: color,
         pick_id: opts.pick_id,
         mode: opts.mode
-    });
+    };
+
+    return Lux.actor({ model: model, appearance: appearance });
 };
 Lux.Marks.lines = function(opts)
 {
@@ -13567,10 +13572,11 @@ Lux.Marks.lines = function(opts)
     if (opts.line_width) {
         appearance.line_width = opts.line_width;
     }
-    return Lux.bake({
+    var model = {
         type: "lines",
         elements: vertex_index
-    }, appearance);
+    };
+    return Lux.actor({ model: model, appearance: appearance });
 };
 Lux.Marks.dots = function(opts)
 {
@@ -13681,43 +13687,21 @@ Lux.Marks.scatterplot = function(opts)
         pick_id: opts.pick_id
     });
 };
-// Lux.Marks.center_zoom_interactor_brush needs the transformation stack
-// to have appropriate inverses for the position. If it doesn't have them,
-// then do not use the transformation stack, and instead use
-// opts.project and opts.unproject, which need to be inverses of each other.
-Lux.Marks.center_zoom_interactor_brush = function(opts)
+Lux.Marks.rectangle_brush = function(opts)
 {
     opts = _.defaults(opts || {}, {
         color: Shade.vec(1,1,1,0.5),
         mode: Lux.DrawingMode.over,
-        project: function(v) { return v; },
-        unproject: function(v) { return v; },
         on: {}
     });
-
-    var inverter = Lux.Transform.get_inverse();
-    var unproject = Shade(function(p) {
-        return opts.unproject(inverter({ position: p }).position);
-    }).js_evaluate;
-    var selection_pt1 = Shade.parameter("vec2", vec.make([0,0]));
-    var selection_pt2 = Shade.parameter("vec2", vec.make([0,0]));
-    var proj_pt1 = opts.project(selection_pt1);
-    var proj_pt2 = opts.project(selection_pt2);
-
-    var brush_batch = Lux.Marks.aligned_rects({
-        elements: 1,
-        left: proj_pt1.x(),
-        right: proj_pt2.x(),
-        top: proj_pt1.y(),
-        bottom: proj_pt2.y(),
-        color: opts.color,
-        mode: opts.mode
-    });
-
     var gl = Lux._globals.ctx;
     var brush_is_active = false;
+    var unproject;
+    var selection_pt1 = Shade.parameter("vec2", vec.make([0,0]));
+    var selection_pt2 = Shade.parameter("vec2", vec.make([0,0]));
     var b1;
-    brush_batch.on = {
+
+    var handlers = {
         mousedown: function(event) {
             if (opts.accept_event(event)) {
                 var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
@@ -13755,7 +13739,30 @@ Lux.Marks.center_zoom_interactor_brush = function(opts)
         }
     };
 
-    return brush_batch;
+    var brush_actor = Lux.Marks.aligned_rects({
+        elements: 1,
+        left: selection_pt1.x(),
+        right: selection_pt2.x(),
+        top: selection_pt1.y(),
+        bottom: selection_pt2.y(),
+        color: opts.color,
+        mode: opts.mode
+    });
+
+    return {
+        dress: function(scene) {
+            var xform = scene.get_transform();
+            unproject = Shade(function(p) {
+                return xform.inverse({position: p}).position;
+            }).js_evaluate;
+            return brush_actor.dress(scene);
+        }, on: function(ename, event) {
+            var handler = handlers[ename];
+            if (_.isUndefined(handler))
+                return true;
+            return handler(event);
+        }
+    };
 };
 function spherical_mercator_patch(tess)
 {
@@ -14146,9 +14153,14 @@ Lux.Marks.globe_2d = function(opts)
         post_process: function(c) { return c; }
     });
 
+    var has_interactor = false, get_center_zoom;
     if (opts.interactor) {
-        opts.center = opts.interactor.center;
-        opts.zoom   = opts.interactor.zoom;
+        has_interactor = true;
+        get_center_zoom = function() {
+            return [opts.interactor.center.get()[0], 
+                    opts.interactor.center.get()[1], 
+                    opts.interactor.zoom.get()];
+        };
     }
     if (opts.no_network) {
         opts.debug = true; // no_network implies debug;
@@ -14237,15 +14249,13 @@ Lux.Marks.globe_2d = function(opts)
         lat_lon_position: Lux.Marks.globe_2d.lat_lon_to_tile_mercator,
         resolution_bias: opts.resolution_bias,
         new_center: function() {
-            // var center_x = opts.center.get()[0];
-            // var center_y = opts.center.get()[1];
-            var center_zoom = opts.zoom.get();
             // ctx.viewport* here is bad...
             // var mn = unproject(vec.make([0, 0]));
             // var mx = unproject(vec.make([ctx.viewportWidth, ctx.viewportHeight]));
-            var center = unproject(vec.make([ctx.viewportWidth/2, ctx.viewportHeight]));
-            var center_x = center[0];
-            var center_y = center[1];
+            var t = get_center_zoom();
+            var center_x = t[0];
+            var center_y = t[1];
+            var center_zoom = t[2]; // opts.zoom.get();
 
             var screen_resolution_bias = Math.log(ctx.viewportHeight / 256) / Math.log(2);
             var zoom = this.resolution_bias + screen_resolution_bias + (Math.log(center_zoom) / Math.log(2));
@@ -14395,9 +14405,17 @@ Lux.Marks.globe_2d = function(opts)
         dress: function(scene) {
             var tile_batch = tile_actor.dress(scene);
             var xf = scene.get_transform().inverse;
-            unproject = Shade(function(p) {
-                return xf({position: p}).position;
-            }).js_evaluate;
+            if (!has_interactor) {
+                get_center_zoom = function() {
+                    var p1 = unproject(vec.make([ctx.viewportWidth/2, ctx.viewportHeight/2]));
+                    var p2 = unproject(vec.make([ctx.viewportWidth, ctx.viewportHeight]));
+                    var zoom = 1.0/(p2[1] - p1[1]);
+                    return [p1[0], p1[1], zoom];
+                };
+                unproject = Shade(function(p) {
+                    return xf({position: p}).position;
+                }).js_evaluate;
+            }
             var that = this;
             return {
                 draw: function() {

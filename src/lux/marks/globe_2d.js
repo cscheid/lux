@@ -14,9 +14,14 @@ Lux.Marks.globe_2d = function(opts)
         post_process: function(c) { return c; }
     });
 
+    var has_interactor = false, get_center_zoom;
     if (opts.interactor) {
-        opts.center = opts.interactor.center;
-        opts.zoom   = opts.interactor.zoom;
+        has_interactor = true;
+        get_center_zoom = function() {
+            return [opts.interactor.center.get()[0], 
+                    opts.interactor.center.get()[1], 
+                    opts.interactor.zoom.get()];
+        };
     }
     if (opts.no_network) {
         opts.debug = true; // no_network implies debug;
@@ -105,15 +110,13 @@ Lux.Marks.globe_2d = function(opts)
         lat_lon_position: Lux.Marks.globe_2d.lat_lon_to_tile_mercator,
         resolution_bias: opts.resolution_bias,
         new_center: function() {
-            // var center_x = opts.center.get()[0];
-            // var center_y = opts.center.get()[1];
-            var center_zoom = opts.zoom.get();
             // ctx.viewport* here is bad...
             // var mn = unproject(vec.make([0, 0]));
             // var mx = unproject(vec.make([ctx.viewportWidth, ctx.viewportHeight]));
-            var center = unproject(vec.make([ctx.viewportWidth/2, ctx.viewportHeight]));
-            var center_x = center[0];
-            var center_y = center[1];
+            var t = get_center_zoom();
+            var center_x = t[0];
+            var center_y = t[1];
+            var center_zoom = t[2]; // opts.zoom.get();
 
             var screen_resolution_bias = Math.log(ctx.viewportHeight / 256) / Math.log(2);
             var zoom = this.resolution_bias + screen_resolution_bias + (Math.log(center_zoom) / Math.log(2));
@@ -263,9 +266,17 @@ Lux.Marks.globe_2d = function(opts)
         dress: function(scene) {
             var tile_batch = tile_actor.dress(scene);
             var xf = scene.get_transform().inverse;
-            unproject = Shade(function(p) {
-                return xf({position: p}).position;
-            }).js_evaluate;
+            if (!has_interactor) {
+                get_center_zoom = function() {
+                    var p1 = unproject(vec.make([ctx.viewportWidth/2, ctx.viewportHeight/2]));
+                    var p2 = unproject(vec.make([ctx.viewportWidth, ctx.viewportHeight]));
+                    var zoom = 1.0/(p2[1] - p1[1]);
+                    return [p1[0], p1[1], zoom];
+                };
+                unproject = Shade(function(p) {
+                    return xf({position: p}).position;
+                }).js_evaluate;
+            }
             var that = this;
             return {
                 draw: function() {
