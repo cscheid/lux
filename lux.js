@@ -3678,8 +3678,6 @@ Lux.bake = function(model, appearance, opts)
     });
     var ctx = model._ctx || Lux._globals.ctx;
 
-    appearance = Lux.Transform.apply(appearance, ctx);
-
     if (_.isUndefined(appearance.gl_FragColor)) {
         appearance.gl_FragColor = Shade.vec(1,1,1,1);
     }
@@ -16532,3 +16530,17 @@ Lux.Scene.Transform.Geo.latlong_to_spherical = function(opts) {
 Lux.Scene.Transform.Geo.mercator_to_latlong = 
     two_d_position_xform(Shade.Scale.Geo.mercator_to_latlong);
 })();
+Lux.Scene.Transform.Camera = {};
+Lux.Scene.Transform.Camera.perspective = function(opts)
+{
+    opts = _.clone(opts || {});
+    var camera = Shade.Camera.perspective(opts);
+    opts.transform = function(appearance) {
+        appearance = _.clone(appearance);
+        appearance.position = camera(appearance.position);
+        return appearance;
+    };
+    var scene = Lux.scene(opts);
+    scene.camera = camera;
+    return scene;
+};
