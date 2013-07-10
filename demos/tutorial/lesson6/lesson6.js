@@ -4,6 +4,10 @@ var sampler;
 
 function add_actors(texture)
 {
+    var camera = Shade.Camera.perspective({
+        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
+    });
+
     var model = Lux.Models.flat_cube();
     var material_color = Shade.texture2D(texture, model.tex_coord);
     var light_model_mat = Shade.rotation(angle, Shade.vec(1, 1, 1));
@@ -66,10 +70,6 @@ function add_actors(texture)
 $().ready(function () {
     var gl = Lux.init({
         clearColor: [0,0,0,0.2]
-    });
-
-    var camera = Shade.Camera.perspective({
-        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
     });
 
     var cube_model = Lux.Models.flat_cube();

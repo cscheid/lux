@@ -211,7 +211,9 @@ lux.js:								\
 	src/lux/scene/transform/geo/latlong_to_mercator.js	\
 	src/lux/scene/transform/geo/latlong_to_spherical.js	\
 	src/lux/scene/transform/geo/mercator_to_latlong.js	\
-	src/lux/scene/transform/geo/_end.js
+	src/lux/scene/transform/geo/_end.js			\
+	src/lux/scene/transform/camera/_begin.js		\
+	src/lux/scene/transform/camera/perspective.js
 
 # If the chmods below don't make sense to you right now, wait until
 # you fix a bug on the compilation output instead of the source :)
