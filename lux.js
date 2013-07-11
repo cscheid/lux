@@ -16485,13 +16485,14 @@ Lux.Scene.Transform.Geo = {};
 
 (function() {
 
-var two_d_position_xform = function(xform) {
-    return function(opts) {
-        opts = _.clone(opts || {});
-        opts.transform = function(appearance) {
-            var pos = appearance.position;
+var two_d_position_xform = function(xform, inverse_xform) {
+    function make_it(xf) {
+        return function(appearance) {
+            if (_.isUndefined(appearance.position))
+                return appearance;
             appearance = _.clone(appearance);
-            var out = xform(appearance.position.x(), appearance.position.y());
+            var pos = appearance.position;
+            var out = xf(appearance.position.x(), appearance.position.y());
             if (pos.type.equals(Shade.Types.vec2))
                 appearance.position = out;
             else if (pos.type.equals(Shade.Types.vec3))
@@ -16500,14 +16501,24 @@ var two_d_position_xform = function(xform) {
                 appearance.position = Shade.vec(out, pos.swizzle("zw"));
             return appearance;
         };
+    };
+    return function(opts) {
+        opts = _.clone(opts || {});
+        opts.transform = make_it(xform);
+        if (!_.isUndefined(inverse_xform)) {
+            opts.transform.inverse = make_it(inverse_xform);
+            opts.transform.inverse.inverse = opts.transform;
+        }
         return Lux.scene(opts);
     };
 };
 Lux.Scene.Transform.Geo.latlong_to_hammer = function(opts) {
     opts = _.clone(opts || {});
     opts.transform = function(appearance) {
-        var pos = appearance.position;
+        if (_.isUndefined(appearance.position))
+            return appearance;
         appearance = _.clone(appearance);
+        var pos = appearance.position;
         var out = Shade.Scale.Geo.latlong_to_hammer(appearance.position.x(), appearance.position.y(), opts.B);
         if (pos.type.equals(Shade.Types.vec2))
             appearance.position = out;
@@ -16520,12 +16531,15 @@ Lux.Scene.Transform.Geo.latlong_to_hammer = function(opts) {
     return Lux.scene(opts);
 };
 Lux.Scene.Transform.Geo.latlong_to_mercator = 
-    two_d_position_xform(Shade.Scale.Geo.latlong_to_mercator);
+    two_d_position_xform(Shade.Scale.Geo.latlong_to_mercator,
+                         Shade.Scale.Geo.mercator_to_latlong);
 Lux.Scene.Transform.Geo.latlong_to_spherical = function(opts) {
     opts = _.clone(opts || {});
     opts.transform = function(appearance) {
-        var pos = appearance.position;
+        if (_.isUndefined(appearance.position))
+            return appearance;
         appearance = _.clone(appearance);
+        var pos = appearance.position;
         var lat = appearance.position.x();
         var lon = appearance.position.y();
         var out = Shade.Scale.Geo.latlong_to_spherical(lat, lon);
@@ -16538,7 +16552,8 @@ Lux.Scene.Transform.Geo.latlong_to_spherical = function(opts) {
     return Lux.scene(opts);
 };
 Lux.Scene.Transform.Geo.mercator_to_latlong = 
-    two_d_position_xform(Shade.Scale.Geo.mercator_to_latlong);
+    two_d_position_xform(Shade.Scale.Geo.mercator_to_latlong,
+                         Shade.Scale.Geo.latlong_to_mercator);
 })();
 Lux.Scene.Transform.Camera = {};
 Lux.Scene.Transform.Camera.perspective = function(opts)
@@ -16546,6 +16561,8 @@ Lux.Scene.Transform.Camera.perspective = function(opts)
     opts = _.clone(opts || {});
     var camera = Shade.Camera.perspective(opts);
     opts.transform = function(appearance) {
+        if (_.isUndefined(appearance.position))
+            return appearance;
         appearance = _.clone(appearance);
         appearance.position = camera(appearance.position);
         return appearance;

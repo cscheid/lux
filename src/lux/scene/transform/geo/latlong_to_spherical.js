@@ -1,8 +1,10 @@
 Lux.Scene.Transform.Geo.latlong_to_spherical = function(opts) {
     opts = _.clone(opts || {});
     opts.transform = function(appearance) {
-        var pos = appearance.position;
+        if (_.isUndefined(appearance.position))
+            return appearance;
         appearance = _.clone(appearance);
+        var pos = appearance.position;
         var lat = appearance.position.x();
         var lon = appearance.position.y();
         var out = Shade.Scale.Geo.latlong_to_spherical(lat, lon);

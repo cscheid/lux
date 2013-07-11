@@ -1,8 +1,10 @@
 Lux.Scene.Transform.Geo.latlong_to_hammer = function(opts) {
     opts = _.clone(opts || {});
     opts.transform = function(appearance) {
-        var pos = appearance.position;
+        if (_.isUndefined(appearance.position))
+            return appearance;
         appearance = _.clone(appearance);
+        var pos = appearance.position;
         var out = Shade.Scale.Geo.latlong_to_hammer(appearance.position.x(), appearance.position.y(), opts.B);
         if (pos.type.equals(Shade.Types.vec2))
             appearance.position = out;
