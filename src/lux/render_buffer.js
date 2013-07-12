@@ -94,7 +94,7 @@ Lux.render_buffer = function(opts)
         return Lux.actor({
             model: sq,
             appearance: {
-                position: sq.vertex.mul(2).sub(1),
+                screen_position: sq.vertex.mul(2).sub(1),
                 color: with_texel_at_uv(function(offset) {
                     var texcoord = sq.tex_coord;
                     if (arguments.length > 0)
