@@ -20,7 +20,7 @@ function make_points_actor(x, y, width, height)
     var internal_points_actor = Lux.actor({
         model: points_model, 
         appearance: {
-            position: interactor.project(pt),
+            position: pt,
             mode: Lux.DrawingMode.additive,
             color: Shade.pointCoord().sub(Shade.vec(0.5, 0.5))
                 .norm().pow(2).neg()
@@ -33,7 +33,7 @@ function make_points_actor(x, y, width, height)
 
     rb.scene.add(internal_points_actor);
 
-    return rb.screen_actor({
+    return Lux.actor_list([rb.scene, rb.screen_actor({
         texel_function: function(texel_accessor) {
             return Shade.vec(1,1,1,2)
                 .sub(Shade.Utils.lerp([
@@ -41,14 +41,8 @@ function make_points_actor(x, y, width, height)
                     Shade.color("#d29152"),
                     Shade.color("sienna"),
                     Shade.color("black")])(texel_accessor().at(0).add(1).log()));
-        },
-        bake: function(model, changed_appearance) {
-            var points_batch = Lux.bake(model, changed_appearance);
-            return {
-                draw: function() {
-                    rb.scene.draw();
-                    points_batch.draw();
-                }};}});
+        }
+    })]);
 }
 
 function init_gui()
@@ -61,8 +55,6 @@ function init_gui()
             y = Number($("#imagvalue").val());
         if (!isNaN(x) && !isNaN(y)) {
             interactor.transition_to(vec.make([x, y]), interactor.zoom.get(), 3);
-            // interactor.center.set();
-            // Lux.Scene.invalidate();
         }
     });
     $(window).resize(function(eventObject) {

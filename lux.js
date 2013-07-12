@@ -3671,6 +3671,7 @@ var largest_batch_id = 1;
 
 Lux.bake = function(model, appearance, opts)
 {
+    appearance = Shade.canonicalize_program_object(appearance);
     opts = _.defaults(opts || {}, {
         force_no_draw: false,
         force_no_pick: false,
@@ -4653,7 +4654,7 @@ Lux.render_buffer = function(opts)
         return Lux.actor({
             model: sq,
             appearance: {
-                position: sq.vertex.mul(2).sub(1),
+                screen_position: sq.vertex.mul(2).sub(1),
                 color: with_texel_at_uv(function(offset) {
                     var texcoord = sq.tex_coord;
                     if (arguments.length > 0)
@@ -5771,11 +5772,15 @@ Lux.UI.center_zoom_interactor = function(opts)
 
     // implement transform stack inverse requirements
     var transform = function(appearance) {
+        if (_.isUndefined(appearance.position))
+            return appearance;
         var new_appearance = _.clone(appearance);
         new_appearance.position = result.project(new_appearance.position);
         return new_appearance;
     };
     transform.inverse = function(appearance) {
+        if (_.isUndefined(appearance.position))
+            return appearance;
         var new_appearance = _.clone(appearance);
         new_appearance.position = result.unproject(new_appearance.position);
         return new_appearance;
@@ -10501,6 +10506,7 @@ Shade.canonicalize_program_object = function(program_obj)
     var canonicalization_map = {
         'color': 'gl_FragColor',
         'position': 'gl_Position',
+        'screen_position': 'gl_Position',
         'point_size': 'gl_PointSize'
     };
 
@@ -16369,7 +16375,11 @@ Lux.default_scene = function(opts)
 {
     opts = _.clone(opts);
     opts.transform = function(appearance) {
-        return Shade.canonicalize_program_object(appearance);
+        appearance = _.clone(appearance);
+        if (!_.isUndefined(appearance.screen_position))
+            appearance.position = appearance.screen_position;
+        // return Shade.canonicalize_program_object(appearance);
+        return appearance;
     };
     opts.transform.inverse = function(i) { return i; };
     var scene = Lux.scene(opts);
