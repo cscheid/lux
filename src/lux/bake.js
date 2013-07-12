@@ -111,6 +111,7 @@ var largest_batch_id = 1;
 
 Lux.bake = function(model, appearance, opts)
 {
+    appearance = Shade.canonicalize_program_object(appearance);
     opts = _.defaults(opts || {}, {
         force_no_draw: false,
         force_no_pick: false,
