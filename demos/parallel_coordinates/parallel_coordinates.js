@@ -3,7 +3,7 @@ var pc_batch;
 
 //////////////////////////////////////////////////////////////////////////////
 
-function create_parallel_coords_batch()
+function parallel_coords()
 {
     var raw_table = Data.cars();
     var table = Lux.Data.texture_table(raw_table);
@@ -50,26 +50,20 @@ function create_parallel_coords_batch()
     return Lux.Marks.lines({
         position: position,
         elements: table.n_rows * (table.n_cols - 1),
-        color: color_from_index
+        color: color_from_index,
+        line_width: 2
     });
 }
 
 function draw_it()
 {
-    gl.lineWidth(2);
     pc_batch.draw();
 }
 
 $().ready(function () {
     var canvas = document.getElementById("webgl");
     gl = Lux.init({
-        display: draw_it,
-        attributes: { alpha: true,
-                      depth: true
-                    },
         clearColor: [0, 0, 0, 0.2]
     });
-    pc_batch = create_parallel_coords_batch();
-    var start = new Date().getTime();
-    gl.display();
+    Lux.Scene.add(parallel_coords());
 });
