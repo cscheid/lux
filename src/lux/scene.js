@@ -183,7 +183,11 @@ Lux.default_scene = function(opts)
 {
     opts = _.clone(opts);
     opts.transform = function(appearance) {
-        return Shade.canonicalize_program_object(appearance);
+        appearance = _.clone(appearance);
+        if (!_.isUndefined(appearance.screen_position))
+            appearance.position = appearance.screen_position;
+        // return Shade.canonicalize_program_object(appearance);
+        return appearance;
     };
     opts.transform.inverse = function(i) { return i; };
     var scene = Lux.scene(opts);
