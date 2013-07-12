@@ -213,7 +213,7 @@ Lux.default_scene = function(opts)
     } else
         clearDepth = opts.clearDepth;
 
-    // FIXME this is kind of ugly, but will require changing the picker infrastructure
+    // FIXME this is kind of ugly, but would otherwise requiring changing the picker infrastructure
     // quite a bit. Since the picker infrastructure should be overhauled anyway,
     // we stick with this hack until we fix everything.
     function clear() {
