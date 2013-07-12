@@ -1,26 +1,33 @@
 $().ready(function() {
-
+    var foo = 1;
     function handle_mouse(event) {
-        var r = Lux.Picker.pick(event.offsetX, gl.viewportHeight - event.offsetY);
+        Lux.Picker.draw_pick_scene();
+        var r = Lux.Picker.pick(event.luxX, event.luxY);
         $("#pickresult").html(strings[r]);
         var r_id = Shade.id(r);
         if (!vec.equal(r_id, current_pick_id.get())) {
             current_pick_id.set(r_id);
-            gl.display();
+            Lux.Scene.invalidate();
         }
     }
 
     var pick_id_val = Lux.fresh_pick_id(3);
     var strings = {};
-    strings[0] = "Miss";
+    strings[0] = "Nothing";
     strings[pick_id_val]   = "Wedge 0";
     strings[pick_id_val+1] = "Wedge 1";
     strings[pick_id_val+2] = "Wedge 2";
 
     var gl = Lux.init({
         clearColor: [0,0,0,0.2],
+        clearDepth: 1.0,
         mousedown: handle_mouse,
-        mousemove: handle_mouse
+        mousemove: handle_mouse,
+        attributes: {
+            alpha: true,
+            depth: true,
+            preserveDrawingBuffer: true
+        }
     });
 
     var square = Lux.Models.square();
@@ -59,22 +66,29 @@ $().ready(function() {
         [  2, 5, Shade.id(pick_id_val+2), 4]
     ];
 
-    var wedge_batch = Lux.bake(square, {
-        position: camera(vertex),
-        color: hcl(wedge_hue, intensity, intensity)
-            .discard_if(distance_from_origin.gt(1).or(hit.not())),
-        pick_id: wedge_id
-    });
+    var wedge_actor = Lux.actor({
+        model: square, 
+        appearance: {
+            position: camera(vertex),
+            color: hcl(wedge_hue, intensity, intensity)
+                .discard_if(distance_from_origin.gt(1).or(hit.not())),
+            pick_id: wedge_id }});
 
-    var wedge_set_batch = {
-        draw: function() {
-            _.each(states, function(lst) {
-                _.each(lst, function(v, i) { uniforms[i].set(v); });
-                wedge_batch.draw();
-            });
-        }
+    var wedge_set_actor = {
+        dress: function(scene) {
+            var batch = wedge_actor.dress(scene);
+            return {
+                draw: function() {
+                    _.each(states, function(lst) {
+                        _.each(lst, function(v, i) { uniforms[i].set(v); });
+                        batch.draw();
+                    });
+                }
+            };
+        },
+        on: function() { return true; }
     };
 
-    Lux.Scene.add(wedge_set_batch);
-    Lux.Picker.draw_pick_scene();
+    Lux.Scene.add(wedge_set_actor);
+    // Lux.Picker.draw_pick_scene();
 });
