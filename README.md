@@ -1,4 +1,4 @@
-# Lux: the DSEL for WebGL Graphics
+# Lux: the DSL for WebGL Graphics
 
 **Lux** provides a set of primitives that make WebGL programming
 easier and cleaner.

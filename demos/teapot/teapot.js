@@ -1,16 +1,3 @@
-var gl;
-var teapot;
-var model_mat;
-var Models = Lux.Models;
-var angle;
-
-//////////////////////////////////////////////////////////////////////////////
-
-function draw_it()
-{
-    teapot.draw();
-}
-
 $().ready(function () {
     var canvas = document.getElementById("webgl");
     var camera = Shade.Camera.perspective({
@@ -20,17 +7,16 @@ $().ready(function () {
         near_distance: 0.1,
         far_distance: 100
     });
-    angle = Shade.parameter("float");
-    gl = Lux.init({
+    var gl = Lux.init({
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
-        display: draw_it,
         attributes: {
             alpha: true,
             depth: true
         }
     });
-    var teapot_model = Models.teapot();
+    var angle = gl.parameters.now;
+    var teapot_model = Lux.Models.teapot();
 
     var model_matrix = (Shade.rotation(0.3, Shade.vec(1,0,0)))(Shade.rotation(angle, Shade.vec(0,1,0)));
     var model_vertex = model_matrix.mul(teapot_model.vertex);
@@ -49,17 +35,12 @@ $().ready(function () {
         position: Shade.vec(5,5,10)
     });
 
-    teapot = Lux.bake(teapot_model, {
-        position: camera(model_vertex),
-        color: diffuse_light(material).add(ambient_light(material))
-    });
+    Lux.Scene.add(Lux.actor({
+        model: teapot_model, 
+        appearance: {
+            position: camera(model_vertex),
+            color: diffuse_light(material).add(ambient_light(material))
+        }}));
 
-    var start = new Date().getTime();
-    var f = function() {
-        window.requestAnimFrame(f, canvas);
-        var elapsed = new Date().getTime() - start;
-        angle.set((elapsed / 20) * (Math.PI/180));
-        gl.display();
-    };
-    f();
+    Lux.Scene.animate();
 });

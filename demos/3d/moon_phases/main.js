@@ -11,6 +11,7 @@ $().ready(function() {
 
     // this is actually not accurate, but it's probably close enough.
     var eccentricity_libration = angle.cos().mul(0.05);
+
     var camera = Shade.Camera.ortho({
         left:   -1.2, right: 1.2,
         bottom: -1.2, top: 1.2,
@@ -69,16 +70,19 @@ $().ready(function() {
         color: Shade.vec(Shade.texture2D(moon, uv).x().pow(0.7).mul(Shade.vec(1,1,1)),1)
     };
 
-    Lux.Scene.add(Lux.conditional_batch(Lux.bake(sphere, {
-        position: camera(pos),
-        color: Shade.ifelse(
-            surfnorm.normalize().dot(light_pos.normalize()).gt(0),
-            ambient_light(material)
-                .add(diffuse_light(material)),
-            Shade.vec(ambient_light(material).swizzle("xyz").mul(Shade.vec(0.2,0.18,0.15)),1))
-
-    }), function() {
-        return moon.ready && moon_bump.ready;
+    Lux.Scene.add(Lux.conditional_actor({ 
+        model: sphere, 
+        appearance: {
+            position: camera(pos),
+            color: Shade.ifelse(
+                surfnorm.normalize().dot(light_pos.normalize()).gt(0),
+                ambient_light(material)
+                    .add(diffuse_light(material)),
+                Shade.vec(ambient_light(material).swizzle("xyz").mul(Shade.vec(0.2,0.18,0.15)),1))
+        },
+        condition: function() {
+            return moon.ready && moon_bump.ready;
+        }
     }));
 
     Lux.Scene.animate();

@@ -14,9 +14,14 @@ Lux.Marks.globe_2d = function(opts)
         post_process: function(c) { return c; }
     });
 
+    var has_interactor = false, get_center_zoom;
     if (opts.interactor) {
-        opts.center = opts.interactor.center;
-        opts.zoom   = opts.interactor.zoom;
+        has_interactor = true;
+        get_center_zoom = function() {
+            return [opts.interactor.center.get()[0], 
+                    opts.interactor.center.get()[1], 
+                    opts.interactor.zoom.get()];
+        };
     }
     if (opts.no_network) {
         opts.debug = true; // no_network implies debug;
@@ -84,11 +89,12 @@ Lux.Marks.globe_2d = function(opts)
         .mul(texture_scale)
     ;
 
-    var tile_batch = Lux.bake(patch, {
-        position: opts.camera(v),
-        color: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
-        mode: Lux.DrawingMode.pass
-    });
+    var tile_actor = Lux.actor({
+        model: patch, 
+        appearance: {
+            position: opts.camera(v),
+            color: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
+            mode: Lux.DrawingMode.pass }});
 
     if (lux_typeOf(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
@@ -96,13 +102,23 @@ Lux.Marks.globe_2d = function(opts)
         throw new Error("zoom must be either a number or a parameter");
     }
 
+    var unproject;
+
     var result = {
         tiles: tiles,
         queue: [],
-        current_osm_zoom: opts.zoom.get(),
+        current_osm_zoom: 0,
         lat_lon_position: Lux.Marks.globe_2d.lat_lon_to_tile_mercator,
         resolution_bias: opts.resolution_bias,
-        new_center: function(center_x, center_y, center_zoom) {
+        new_center: function() {
+            // ctx.viewport* here is bad...
+            // var mn = unproject(vec.make([0, 0]));
+            // var mx = unproject(vec.make([ctx.viewportWidth, ctx.viewportHeight]));
+            var t = get_center_zoom();
+            var center_x = t[0];
+            var center_y = t[1];
+            var center_zoom = t[2]; // opts.zoom.get();
+
             var screen_resolution_bias = Math.log(ctx.viewportHeight / 256) / Math.log(2);
             var zoom = this.resolution_bias + screen_resolution_bias + (Math.log(center_zoom) / Math.log(2));
             zoom = ~~zoom;
@@ -248,33 +264,49 @@ Lux.Marks.globe_2d = function(opts)
             }
             tiles[id].texture.load(obj);
         },
-        draw: function() {
-            this.new_center(opts.center.get()[0],
-                            opts.center.get()[1],
-                            opts.zoom.get());
-            var lst = _.range(cache_size);
-            var that = this;
-            lst.sort(function(id1, id2) { 
-                var g1 = Math.abs(tiles[id1].zoom - that.current_osm_zoom);
-                var g2 = Math.abs(tiles[id2].zoom - that.current_osm_zoom);
-                return g2 - g1;
-            });
-
-            sampler.set(texture);
-            for (var i=0; i<cache_size; ++i) {
-                var t = tiles[lst[i]];
-                if (t.active !== 2)
-                    continue;
-                var z = (1 << t.zoom);
-                min_x.set(t.x / z);
-                min_y.set(1 - (t.y + 1) / z);
-                max_x.set((t.x + 1) / z);
-                max_y.set(1 - t.y / z);
-                offset_x.set(t.offset_x);
-                offset_y.set(t.offset_y);
-                tile_batch.draw();
+        dress: function(scene) {
+            var tile_batch = tile_actor.dress(scene);
+            var xf = scene.get_transform().inverse;
+            if (!has_interactor) {
+                get_center_zoom = function() {
+                    var p1 = unproject(vec.make([ctx.viewportWidth/2, ctx.viewportHeight/2]));
+                    var p2 = unproject(vec.make([ctx.viewportWidth, ctx.viewportHeight]));
+                    var zoom = 1.0/(p2[1] - p1[1]);
+                    return [p1[0], p1[1], zoom];
+                };
+                unproject = Shade(function(p) {
+                    return xf({position: p}).position;
+                }).js_evaluate;
             }
-        }
+            var that = this;
+            return {
+                draw: function() {
+                    that.new_center();
+                    var lst = _.range(cache_size);
+                    lst.sort(function(id1, id2) { 
+                        var g1 = Math.abs(tiles[id1].zoom - that.current_osm_zoom);
+                        var g2 = Math.abs(tiles[id2].zoom - that.current_osm_zoom);
+                        return g2 - g1;
+                    });
+
+                    sampler.set(texture);
+                    for (var i=0; i<cache_size; ++i) {
+                        var t = tiles[lst[i]];
+                        if (t.active !== 2)
+                            continue;
+                        var z = (1 << t.zoom);
+                        min_x.set(t.x / z);
+                        min_y.set(1 - (t.y + 1) / z);
+                        max_x.set((t.x + 1) / z);
+                        max_y.set(1 - t.y / z);
+                        offset_x.set(t.offset_x);
+                        offset_y.set(t.offset_y);
+                        tile_batch.draw();
+                    }
+                }
+            };
+        },
+        on: function() { return true; }
     };
     result.init();
 

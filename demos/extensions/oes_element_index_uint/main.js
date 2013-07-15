@@ -20,25 +20,30 @@ $().ready(function() {
         var camera = Shade.Camera.perspective({
             look_at: [Shade.vec(0,0,0.5), Shade.vec(0,0,0), Shade.vec(0, 1, 0)]
         });
-        // var light_position = Shade.vec(0, 3, 8);
-        // var ambient_light = Shade.Light.ambient({ 
-        //     color: Shade.vec(0.3, 0.3, 0.3)
-        // });
-        // var diffuse_light = Shade.Light.diffuse({
-        //     position: light_position,
-        //     color: Shade.light(1, 0.9, 0.8)
-        // });
+        var light_position = Shade.vec(0, 3, 8);
+        var ambient_light = Shade.Light.ambient({ 
+            color: Shade.vec(0.2, 0.2, 0.2)
+        });
+        var diffuse_light = Shade.Light.diffuse({
+            position: light_position,
+            color: Shade.vec(0.7, 0.6, 0.5)
+        });
         var dragon_model = Lux.model({
             position: Shade.rotation(gl.parameters.now, Shade.vec(0,1,0))
                      (Shade.translation(Shade.vec(-cx, -cy, -cz)))
                      (Shade.vec(position, 1)),
             elements: elements
         });
-        Lux.Scene.add(Lux.bake(dragon_model, {
-            position: camera(dragon_model.position),
+        var material = {
+            position: dragon_model.position,
+            normal: Shade.ThreeD.normal(dragon_model.position),
             color: Shade.color("red")
-        }));
+        };
+        Lux.Scene.add(Lux.actor({
+            model: dragon_model, 
+            appearance: {
+                position: camera(dragon_model.position),
+                color: diffuse_light(material).add(ambient_light(material)) }}));
         Lux.Scene.animate();
     });
-    Lux.Scene.invalidate();
 });

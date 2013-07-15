@@ -121,11 +121,13 @@ Lux.Marks.globe = function(opts)
         .mul(texture_scale)
     ;
 
-    var sphere_batch = Lux.bake(patch, {
-        gl_Position: mvp(v),
-        gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
-        mode: Lux.DrawingMode.pass
-    });
+    var sphere_actor = Lux.actor({
+        model: patch, 
+        appearance: {
+            gl_Position: mvp(v),
+            gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
+            mode: Lux.DrawingMode.pass
+        }});
 
     function inertia_tick() {
         var f = function() {
@@ -343,29 +345,35 @@ Lux.Marks.globe = function(opts)
                 onload: f(x, y, zoom, id)
             });
         },
-        draw: function() {
-            var lst = _.range(cache_size);
-            var that = this;
-            lst.sort(function(id1, id2) { 
-                var g1 = Math.abs(tiles[id1].zoom - that.current_osm_zoom);
-                var g2 = Math.abs(tiles[id2].zoom - that.current_osm_zoom);
-                return g2 - g1;
-            });
+        dress: function(scene) {
+            var sphere_batch = sphere_actor.dress(scene);
+            return {
+                draw: function() {
+                    var lst = _.range(cache_size);
+                    var that = this;
+                    lst.sort(function(id1, id2) { 
+                        var g1 = Math.abs(tiles[id1].zoom - that.current_osm_zoom);
+                        var g2 = Math.abs(tiles[id2].zoom - that.current_osm_zoom);
+                        return g2 - g1;
+                    });
 
-            sampler.set(texture);
-            for (var i=0; i<cache_size; ++i) {
-                var t = tiles[lst[i]];
-                if (t.active !== 2)
-                    continue;
-                min_x.set((t.x / (1 << t.zoom))           * Math.PI*2 + Math.PI);
-                min_y.set((1 - (t.y + 1) / (1 << t.zoom)) * Math.PI*2 - Math.PI);
-                max_x.set(((t.x + 1) / (1 << t.zoom))     * Math.PI*2 + Math.PI);
-                max_y.set((1 - t.y / (1 << t.zoom))       * Math.PI*2 - Math.PI);
-                offset_x.set(t.offset_x);
-                offset_y.set(t.offset_y);
-                sphere_batch.draw();
-            }
-        }
+                    sampler.set(texture);
+                    for (var i=0; i<cache_size; ++i) {
+                        var t = tiles[lst[i]];
+                        if (t.active !== 2)
+                            continue;
+                        min_x.set((t.x / (1 << t.zoom))           * Math.PI*2 + Math.PI);
+                        min_y.set((1 - (t.y + 1) / (1 << t.zoom)) * Math.PI*2 - Math.PI);
+                        max_x.set(((t.x + 1) / (1 << t.zoom))     * Math.PI*2 + Math.PI);
+                        max_y.set((1 - t.y / (1 << t.zoom))       * Math.PI*2 - Math.PI);
+                        offset_x.set(t.offset_x);
+                        offset_y.set(t.offset_y);
+                        sphere_batch.draw();
+                    }
+                }
+            };
+        },
+        on: function() { return true; }
     };
     result.init();
 

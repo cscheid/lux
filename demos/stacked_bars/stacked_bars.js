@@ -51,7 +51,6 @@ function data_buffers()
 
 function init_webgl()
 {
-    var canvas = document.getElementById("canvas");
     gl = Lux.init({ 
         clearColor: [0, 0, 0, 0.2]
     });
@@ -86,11 +85,8 @@ function init_webgl()
 $().ready(function() {
     init_webgl();
     var start = new Date().getTime();
-    var f = function() {
-        window.requestAnimFrame(f);
+    Lux.Scene.animate(function() {
         var elapsed = (new Date().getTime() - start) / 1000;
         t.set(Math.min(elapsed * 2, 1));
-        gl.display();
-    };
-    f();
+    });
 });

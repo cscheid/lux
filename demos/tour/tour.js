@@ -6,19 +6,10 @@ var point_diameter;
 var point_alpha;
 var data;
 var tour_batch;
-var alive = true;
+
 var axis_1_parameters, axis_2_parameters;
 
 //////////////////////////////////////////////////////////////////////////////
-
-function display()
-{
-    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-    gl.clearDepth(1.0);
-    gl.clearColor(0,0,0,0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    tour_batch.draw();
-}
 
 function data_buffers()
 {
@@ -74,7 +65,6 @@ function random_2d_frame(dimension)
 
 function init_webgl()
 {
-    Lux.set_context(gl);
     data = data_buffers();
 
     point_diameter = S.parameter("float", 10);
@@ -105,35 +95,35 @@ function init_webgl()
         name: "Set1"
     })(data.species);
 
-    tour_batch = Lux.Marks.scatterplot({
+    Lux.Scene.add(Lux.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
         xy: xy_expression,
         xy_scale: S.Scale.linear({ domain: [xy_center.sub(xy_distance),
                                             xy_center.add(xy_distance)],
                                    range: [S.vec(0,0), 
                                            S.vec(1,1)] }),
-        fill_color: species_color,
-        stroke_color: S.mix(Shade.color("black"), species_color, 0.5),
+        fill_color: S.vec(species_color.swizzle("rgb"), point_alpha),
+        stroke_color: S.vec(S.mix(Shade.color("black"), species_color, 0.5).swizzle("rgb"), point_alpha),
         stroke_width: stroke_width,
         point_diameter: point_diameter
-    });
+    }));
 }
 
 $().ready(function() {
     function change_pointsize() {
         var new_value = $("#pointsize").slider("value") / 10.0;
         point_diameter.set(new_value);
-        display();
+        Lux.Scene.invalidate();
     };
     function change_alpha() {
         var new_value = $("#pointalpha").slider("value") / 100.0;
         point_alpha.set(new_value);
-        display();
+        Lux.Scene.invalidate();
     };
     function change_stroke_width() {
         var new_value = $("#strokewidth").slider("value") / 10.0;
         stroke_width.set(new_value);
-        display();
+        Lux.Scene.invalidate();
     };
     $("#pointsize").slider({
         min: 0, 
@@ -160,13 +150,13 @@ $().ready(function() {
         change: change_stroke_width
     });
     var canvas = document.getElementById("scatterplot");
-    gl = Lux.init();
+    gl = Lux.init({clearColor:[0,0,0,0.1]});
     init_webgl();
     var frame_1 = random_2d_frame(4);
     var frame_2 = random_2d_frame(4);
     var start = new Date().getTime();
     var prev_u = 1;
-    var f = function () {
+    Lux.Scene.animate(function () {
         var elapsed = (new Date().getTime() - start) / 1000;
         var u = elapsed/3;
         u -= Math.floor(u);
@@ -179,10 +169,5 @@ $().ready(function() {
             axis_1_parameters[i].set(u*frame_2[0][i] + (1-u) * frame_1[0][i]);
             axis_2_parameters[i].set(u*frame_2[1][i] + (1-u) * frame_1[1][i]);
         }
-        if (alive) {
-            window.requestAnimFrame(f, canvas);
-        }
-        display();
-    };
-    f();
+    });
 });

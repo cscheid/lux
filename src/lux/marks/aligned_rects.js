@@ -15,8 +15,9 @@ Lux.Marks.aligned_rects = function(opts)
     if (!opts.bottom)   throw new Error("bottom is a required field");
     if (!opts.color)    throw new Error("color is a required field");
 
+    var index = _.range(opts.elements * 6);
     var vertex_index = Lux.attribute_buffer({ 
-        vertex_array: _.range(opts.elements * 6), 
+        vertex_array: index, 
         item_size: 1
     });
     var primitive_index = Shade.div(vertex_index, 6).floor();
@@ -46,13 +47,17 @@ Lux.Marks.aligned_rects = function(opts)
     var index_array = Shade.array([0, 2, 3, 0, 1, 2]);
     var index_in_vertex_primitive = index_array.at(vertex_in_primitive);
 
-    return Lux.bake({
+    var model = Lux.model({
         type: "triangles",
-        elements: vertex_index
-    }, {
+        elements: index
+    });
+
+    var appearance = {
         position: Shade.vec(vertex_map.at(vertex_in_primitive), z),
         color: color,
         pick_id: opts.pick_id,
         mode: opts.mode
-    });
+    };
+
+    return Lux.actor({ model: model, appearance: appearance });
 };

@@ -1,40 +1,18 @@
-// Lux.Marks.center_zoom_interactor_brush needs the transformation stack
-// to have appropriate inverses for the position. If it doesn't have them,
-// then do not use the transformation stack, and instead use
-// opts.project and opts.unproject, which need to be inverses of each other.
-Lux.Marks.center_zoom_interactor_brush = function(opts)
+Lux.Marks.rectangle_brush = function(opts)
 {
     opts = _.defaults(opts || {}, {
         color: Shade.vec(1,1,1,0.5),
         mode: Lux.DrawingMode.over,
-        project: function(v) { return v; },
-        unproject: function(v) { return v; },
         on: {}
     });
-
-    var inverter = Lux.Transform.get_inverse();
-    var unproject = Shade(function(p) {
-        return opts.unproject(inverter({ position: p }).position);
-    }).js_evaluate;
-    var selection_pt1 = Shade.parameter("vec2", vec.make([0,0]));
-    var selection_pt2 = Shade.parameter("vec2", vec.make([0,0]));
-    var proj_pt1 = opts.project(selection_pt1);
-    var proj_pt2 = opts.project(selection_pt2);
-
-    var brush_batch = Lux.Marks.aligned_rects({
-        elements: 1,
-        left: proj_pt1.x(),
-        right: proj_pt2.x(),
-        top: proj_pt1.y(),
-        bottom: proj_pt2.y(),
-        color: opts.color,
-        mode: opts.mode
-    });
-
     var gl = Lux._globals.ctx;
     var brush_is_active = false;
+    var unproject;
+    var selection_pt1 = Shade.parameter("vec2", vec.make([0,0]));
+    var selection_pt2 = Shade.parameter("vec2", vec.make([0,0]));
     var b1;
-    brush_batch.on = {
+
+    var handlers = {
         mousedown: function(event) {
             if (opts.accept_event(event)) {
                 var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
@@ -72,5 +50,28 @@ Lux.Marks.center_zoom_interactor_brush = function(opts)
         }
     };
 
-    return brush_batch;
+    var brush_actor = Lux.Marks.aligned_rects({
+        elements: 1,
+        left: selection_pt1.x(),
+        right: selection_pt2.x(),
+        top: selection_pt1.y(),
+        bottom: selection_pt2.y(),
+        color: opts.color,
+        mode: opts.mode
+    });
+
+    return {
+        dress: function(scene) {
+            var xform = scene.get_transform();
+            unproject = Shade(function(p) {
+                return xform.inverse({position: p}).position;
+            }).js_evaluate;
+            return brush_actor.dress(scene);
+        }, on: function(ename, event) {
+            var handler = handlers[ename];
+            if (_.isUndefined(handler))
+                return true;
+            return handler(event);
+        }
+    };
 };

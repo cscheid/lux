@@ -33,8 +33,9 @@ Lux.Marks.lines = function(opts)
     if (opts.line_width) {
         appearance.line_width = opts.line_width;
     }
-    return Lux.bake({
+    var model = {
         type: "lines",
         elements: vertex_index
-    }, appearance);
+    };
+    return Lux.actor({ model: model, appearance: appearance });
 };

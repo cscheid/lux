@@ -29,7 +29,19 @@ function sphere_mercator_coords(tess)
     });
 }
 
+
 $().ready(function () {
+    function draw_it() {
+        var r1 = Lux.rotation(latitude_center * (Math.PI/180), [1, 0, 0]);
+        var r2 = Lux.rotation((longitude_center + 180) * (Math.PI/180), [0,-1, 0]);
+        var earth_model = mat4.product(r1, r2);
+        var view = Lux.translation(0.0, 0.0, -6.0);
+        gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+        mv.set(mat4.product(view, earth_model));
+        proj.set(Lux.perspective(22.5 / zoom, 720/480, 4.0, 8.0));
+        sphere_drawable.draw();
+    };
+
     var canvas = document.getElementById("webgl");
     var longitude_center = -98;
     var latitude_center = 38;
@@ -40,16 +52,6 @@ $().ready(function () {
     var gl = Lux.init({
         clearDepth: 1.0,
         clearColor: [0,0,0,1],
-        display: function() {
-            var r1 = Lux.rotation(latitude_center * (Math.PI/180), [1, 0, 0]);
-            var r2 = Lux.rotation((longitude_center + 180) * (Math.PI/180), [0,-1, 0]);
-            var earth_model = mat4.product(r1, r2);
-            var view = Lux.translation(0.0, 0.0, -6.0);
-            gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-            mv.set(mat4.product(view, earth_model));
-            proj.set(Lux.perspective(22.5 / zoom, 720/480, 4.0, 8.0));
-            sphere_drawable.draw();
-        },
         attributes: {
             alpha: true,
             depth: true
@@ -69,7 +71,7 @@ $().ready(function () {
                 zoom *= 1.0 + (event.offsetY - prev_mouse_pos[1]) / 240;
             }
             prev_mouse_pos = [event.offsetX, event.offsetY];
-            gl.display();
+            draw_it();
         }
     });
     gl.enable(gl.DEPTH_TEST);
@@ -84,12 +86,12 @@ $().ready(function () {
             crossOrigin: "anonymous",
             x_offset: i * 256,
             y_offset: 2048 - (j+1) * 256,
-            onload: function() { gl.display(); }
+            onload: function() { draw_it(); }
         });
 
     var sphere_drawable = Lux.bake(sphere, {
         position: proj.mul(mv).mul(sphere.vertex()),
         color: Shade.texture2D(texture, sphere.tex_coord)
     });
-    gl.display();
+    draw_it();
 });

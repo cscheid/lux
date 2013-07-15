@@ -1,16 +1,20 @@
 Lux.render_buffer = function(opts)
 {
-    var ctx = Lux._globals.ctx;
-    var frame_buffer = ctx.createFramebuffer();
     opts = _.defaults(opts || {}, {
+        context: Lux._globals.ctx,
         width: 512,
         height: 512,
         mag_filter: Lux.texture.linear,
         min_filter: Lux.texture.linear,
         mipmaps: false,
+        max_anisotropy: 1,
         wrap_s: Lux.texture.clamp_to_edge,
-        wrap_t: Lux.texture.clamp_to_edge
+        wrap_t: Lux.texture.clamp_to_edge,
+        clearColor: [0,0,0,1],
+        clearDepth: 1.0
     });
+    var ctx = opts.context;
+    var frame_buffer = ctx.createFramebuffer();
 
     // Weird:
     // http://www.khronos.org/registry/gles/specs/2.0/es_full_spec_2.0.25.pdf
@@ -78,23 +82,46 @@ Lux.render_buffer = function(opts)
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
-    frame_buffer.make_screen_batch = function(with_texel_at_uv, mode) {
+    frame_buffer.screen_actor = function(opts) {
+        opts = _.defaults(opts, {
+            mode: Lux.DrawingMode.standard
+        });
+        var with_texel_at_uv = opts.texel_function;
+        var mode = opts.mode;
         var that = this;
-        return Lux.Transform.saving(function() {
-            Lux.Transform.clear();
-            mode = mode || Lux.DrawingMode.standard;
-            var sq = Lux.Models.square();
-            return Lux.bake(sq, {
-                position: sq.vertex.mul(2).sub(1),
-                color: with_texel_at_uv(function(offset) { 
+        var sq = Lux.Models.square();
+        mode = mode || Lux.DrawingMode.standard;
+        return Lux.actor({
+            model: sq,
+            appearance: {
+                screen_position: sq.vertex.mul(2).sub(1),
+                color: with_texel_at_uv(function(offset) {
                     var texcoord = sq.tex_coord;
                     if (arguments.length > 0)
                         texcoord = texcoord.add(offset);
                     return Shade.texture2D(that.texture, texcoord);
-                }, sq.tex_coord),
+                }),
                 mode: mode
-            });
+            },
+            bake: opts.bake
         });
     };
+    
+    var old_v;
+    frame_buffer.scene = Lux.default_scene({
+        clearColor: opts.clearColor,
+        clearDepth: opts.clearDepth,
+        context: ctx,
+        pre_draw: function() {
+            old_v = ctx.getParameter(ctx.VIEWPORT);
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, frame_buffer);
+            ctx.viewport(0, 0, frame_buffer.width, frame_buffer.height);
+        },
+        post_draw: function() {
+            ctx.viewport(old_v[0], old_v[1], old_v[2], old_v[3]);
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
+        }
+    });
+
     return frame_buffer;
 };

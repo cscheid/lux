@@ -4,13 +4,6 @@ function initialize_context_globals(gl)
 {
     gl._lux_globals = {};
 
-    // when Lux.init is called with a display callback, that gets stored in
-    // gl._globals.display_callback
-    gl._lux_globals.display_callback = Lux.Scene.render;
-
-    // Objects stored in the scene are automatically drawn
-    gl._lux_globals.scene = [];
-
     // batches can currently be rendered in "draw" or "pick" mode.
     // draw: 0
     // pick: 1
@@ -20,14 +13,6 @@ function initialize_context_globals(gl)
 
     // epoch is the initial time being tracked by the context.
     gl._lux_globals.epoch = new Date().getTime() / 1000;
-
-    // pre and post_display_list are callback lists managed by Lux.Scene.invalidate
-    // to avoid multiple invocations of requestAnimFrame in the same frame (which will
-    // guarantee that multiple invocations of Lux.Scene.invalidate will be triggered
-    // on the very next requestAnimFrame issued)
-
-    gl._lux_globals.pre_display_list = [];
-    gl._lux_globals.post_display_list = [];
 
     gl._lux_globals.devicePixelRatio = undefined;
 
@@ -40,10 +25,6 @@ function initialize_context_globals(gl)
         new DataView(buffer).setInt16(0, 256, true);
         return new Int16Array(buffer)[0] === 256;
     })();
-
-    // the transform stack is honored by Lux.bake and can be used to implement
-    // a matrix stack, etc. 
-    gl._lux_globals.transform_stack = [];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -90,26 +71,6 @@ Lux.init = function(opts)
     canvas.unselectable = true;
     canvas.onselectstart = function() { return false; };
     var gl;
-    var clearColor, clearDepth;
-
-    if (Lux.is_shade_expression(opts.clearColor)) {
-        if (!opts.clearColor.is_constant())
-            throw new Error("clearColor must be constant expression");
-        if (!opts.clearColor.type.equals(Shade.Types.vec4))
-            throw new Error("clearColor must be vec4");
-        clearColor = _.toArray(opts.clearColor.constant_value());
-    } else
-        clearColor = opts.clearColor;
-
-    // FIXME This should be a "is Shade expression" check
-    if (Lux.is_shade_expression(opts.clearDepth)) {
-        if (!opts.clearDepth.is_constant())
-            throw new Error("clearDepth must be constant expression");
-        if (!opts.clearDepth.type.equals(Shade.Types.float_t))
-            throw new Error("clearDepth must be float");
-        clearDepth = opts.clearDepth.constant_value();
-    } else
-        clearDepth = opts.clearDepth;
 
     var devicePixelRatio = 1;
 
@@ -172,7 +133,7 @@ Lux.init = function(opts)
             var listener = opts[ename];
             function internal_listener(event) {
                 polyfill_event(event, gl);
-                if (!Lux.Scene.on(ename)(event))
+                if (!Lux.Scene.on(ename, event, gl))
                     return false;
                 if (listener)
                     return listener(event);
@@ -226,24 +187,6 @@ Lux.init = function(opts)
 
     Lux.set_context(gl);
 
-    Lux.Transform.clear();
-
-    if (opts.display) {
-        gl._lux_globals.display_callback = opts.display;
-    }
-
-    gl.display = function() {
-        this.viewport(0, 0, this.viewportWidth, this.viewportHeight);
-        this.clearDepth(clearDepth);
-        this.clearColor.apply(this, clearColor);
-        this.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        var raw_t = new Date().getTime() / 1000;
-        var new_t = raw_t - this._lux_globals.epoch;
-        var old_t = this.parameters.now.get();
-        this.parameters.frame_duration.set(new_t - old_t);
-        this.parameters.now.set(new_t);
-        this._lux_globals.display_callback();
-    };
     gl.resize = function(width, height) {
         this.parameters.width.set(width);
         this.parameters.height.set(height);
@@ -264,7 +207,6 @@ Lux.init = function(opts)
             if (opts.resize)
                 opts.resize(width, height);
         }
-        Lux.Scene.invalidate();
     };
     gl.parameters = {};
     if (opts.highDPS) {
@@ -276,6 +218,25 @@ Lux.init = function(opts)
     }
     gl.parameters.now = Shade.parameter("float", gl._lux_globals.epoch);
     gl.parameters.frame_duration = Shade.parameter("float", 0);
+
+    gl._lux_globals.scene = Lux.default_scene({
+        context: gl,
+        clearColor: opts.clearColor,
+        clearDepth: opts.clearDepth,
+        pre_draw: function() {
+            var raw_t = new Date().getTime() / 1000;
+            var new_t = raw_t - gl._lux_globals.epoch;
+            var old_t = gl.parameters.now.get();
+            gl.parameters.frame_duration.set(new_t - old_t);
+            gl.parameters.now.set(new_t);
+            gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        }
+    });
+
+    if ("interactor" in opts) {
+        gl._lux_globals.scene.add(opts.interactor.scene);
+        gl._lux_globals.scene = opts.interactor.scene;
+    }
 
     return gl;
 };

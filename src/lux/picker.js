@@ -14,15 +14,11 @@ Lux.Picker = {
             });
         }
 
-        callback = callback || ctx._lux_globals.display_callback;
+        callback = callback || function() { Lux._globals.ctx._lux_globals.scene.draw(); };
         var old_scene_render_mode = ctx._lux_globals.batch_render_mode;
         ctx._lux_globals.batch_render_mode = 1;
         try {
-            rb.with_bound_buffer(function() {
-                ctx.clearColor(0,0,0,0);
-                ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
-                callback();
-            });
+            rb.with_bound_buffer(callback);
         } finally {
             ctx._lux_globals.batch_render_mode = old_scene_render_mode;
         }

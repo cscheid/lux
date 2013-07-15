@@ -1,0 +1,39 @@
+<html>
+<head><title></title>
+  <link rel="stylesheet" href="css/bootstrap.css"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/mchighlight-javascript.css"/>
+  <link type="text/css" href="css/ui-lightness/jquery-ui-1.8.21.custom.css" rel="stylesheet" />
+  <script src="lib/jquery-1.6.2.min.js"></script>
+  <script src="lib/jquery.mousewheel.js"></script>
+  <script src="lib/jquery-ui-1.8.16.custom.min.js"></script>
+  <script src="src/lux.js"></script> <!-- replace with lux.min.js when you're done debugging -->
+  <script src="main.js"></script>
+  <style>
+  .ui-slider .ui-slider-handle { 
+      width: 18px; 
+      height: 18px;
+  }
+  .slider-div {
+     top: 7px;
+     width: 300px;
+     height: 10px;
+     float: left;
+     clear: left;
+     margin-right: 18px;
+     margin-left: 18px;
+  }
+  </style>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>IP visualization</h1>
+<div><canvas id="webgl" width="720" height="480"></canvas></div>
+<div style="padding-top: 1em; padding-bottom: 1em">
+  <div><div class="slider-div" id="slider"></div>Component <span id="which">1</span></div>
+</div>
+</div>
+</div>
+</body>
+</html>

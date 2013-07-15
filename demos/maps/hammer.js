@@ -1,4 +1,4 @@
-function sphere_coords(tess, B)
+function sphere_model(tess)
 {
     var tex_coord = [];
     var elements = [];
@@ -16,23 +16,17 @@ function sphere_coords(tess, B)
     return Lux.model({
         type: "triangles",
         tex_coord: [tex_coord, 2],
-        elements: elements,
-        vertex: function() {
-            var xf = this.tex_coord.mul(2*Math.PI).add(Shade.vec(0, -Math.PI));
-            var lat = xf.at(1).sinh().atan();
-            var lon = xf.at(0);
-            var phi = lat, lambda = lon.sub(Math.PI);
-
-            var eta = phi.cos().mul(lambda.div(B).cos()).add(1).sqrt();
-            var x = B.mul(Math.sqrt(2)).mul(phi.cos()).mul(lambda.div(B).sin()).div(eta);
-            var y = phi.sin().mul(Math.sqrt(2)).div(eta);
-
-            return Shade.vec(x, y, 0, 1);
-        }
+        elements: elements
     });
 }
 
 $().ready(function () {
+    var B = Shade.parameter("float", 2);
+    $("#azimuthal").click(function() { B.set(1); Lux.Scene.invalidate(); });
+    $("#hammer").click(function() { B.set(2); Lux.Scene.invalidate(); });
+    $("#eckert-greifendorff").click(function() { B.set(4); Lux.Scene.invalidate(); });
+    $("#siemon").click(function() { B.set(10000); Lux.Scene.invalidate(); });
+
     var canvas = document.getElementById("webgl");
     var width = canvas.width, height = canvas.height;
     var interactor = Lux.UI.center_zoom_interactor({
@@ -45,15 +39,14 @@ $().ready(function () {
         interactor: interactor
     });
 
-    var B = Shade.parameter("float", 2);
+    var mercator_to_latlon = Lux.Scene.Transform.Geo.mercator_to_latlong();
+    var latlon_to_worldspace = Lux.Scene.Transform.Geo.latlong_to_hammer({ B: B });
 
-    $("#azimuthal").click(function() { B.set(1); Lux.Scene.invalidate(); });
-    $("#hammer").click(function() { B.set(2); Lux.Scene.invalidate(); });
-    $("#eckert-greifendorff").click(function() { B.set(4); Lux.Scene.invalidate(); });
-    $("#siemon").click(function() { B.set(10000); Lux.Scene.invalidate(); });
+    Lux.Scene.add(latlon_to_worldspace);
+    latlon_to_worldspace.add(mercator_to_latlon);
 
-    var sphere = sphere_coords(200, B);
-    var texture = Lux.texture({ width: 2048, height: 2048, mipmaps: false });
+    var sphere = sphere_model(200);
+    var texture = Lux.texture({ width: 2048, height: 2048 });
 
     for (var i=0; i<8; ++i)
     for (var j=0; j<8; ++j)
@@ -62,13 +55,14 @@ $().ready(function () {
             crossOrigin: "anonymous",
             x_offset: i * 256,
             y_offset: 2048 - (j+1) * 256,
-            onload: function() { gl.display(); }
+            onload: function() { Lux.Scene.invalidate(); }
         });
 
-    var c = Shade.texture2D(texture, sphere.tex_coord);
-    var sphere_drawable = Lux.bake(sphere, {
-        position: interactor.project(sphere.vertex()),
-        color: Shade.vec(c.swizzle("rgb").div(c.a()), 1)
-    });
-    Lux.Scene.add(sphere_drawable);
+    var sphere_actor = Lux.actor({ 
+        model: sphere, 
+        appearance: {
+            position: sphere.tex_coord.swizzle("xy"),
+            color: Shade.texture2D(texture, sphere.tex_coord)}});
+
+    mercator_to_latlon.add(sphere_actor);
 });

@@ -279,6 +279,7 @@ Shade.canonicalize_program_object = function(program_obj)
     var canonicalization_map = {
         'color': 'gl_FragColor',
         'position': 'gl_Position',
+        'screen_position': 'gl_Position',
         'point_size': 'gl_PointSize'
     };
 

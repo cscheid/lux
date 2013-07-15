@@ -1,0 +1,102 @@
+<html>
+<head><title>Lux tutorial, Lesson 2: Batch colors</title>
+  <link rel="stylesheet" href="/lux/demos/css/bootstrap.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/style.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/mchighlight-javascript.css"/>
+  <script src="/lux/lib/jquery-1.6.2.min.js"></script>
+  <script src="/lux/lux.js"></script>
+  <script src="/lux/demos/js/mclexer.js"></script>
+  <script src="/lux/demos/js/mchighlight.js"></script>
+  <script src="/lux/demos/js/mchighlight-javascript.js"></script>
+  <script src="lesson2.js"></script>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>Lesson 2: Batch colors</h1>
+<canvas id="webgl" width="720" height="480"></canvas>
+<div style="text-align: right">View the <a href="lesson2.js">full source</a>.</div>
+
+<p>In the last lesson, you drew white triangles and squares on the
+screen. In this lesson, you will learn how to give control how batches
+are painted on the screen by changing their colors.</p>
+
+<p>If all vertices in the model share the same color, then the color
+can be specified directly in the appearance, at the site of
+the <span class="inline-highlight">bake</span> call. This produces the bluish triangle on the right:</p>
+
+<pre class="highlight">
+var square = Lux.model({
+    type: "triangles",
+    elements: [0, 1, 2, 0, 2, 3],
+    vertex: [[-1,-1, 1,-1, 1,1, -1,1], 2]
+});
+Lux.Scene.add(Lux.bake(square, {
+    position: camera(Shade.translation( 1.5, 0, -6)(square.vertex)),
+    color: Shade.color('#88f')
+}));
+</pre>
+
+</p>The field <span class="inline-highlight">elements</span> tells Lux how
+to build the triangles in the model, three at a time. So the first
+triangle is comprised of the vertices at indices 0, 1, and 2, while
+the second triangle has indices 0, 2, and 3.</p>
+
+<p>Now, recall that models are specified vertex by vertex. In the same
+way that model vertices have positions (given by
+the <span class="inline-highlight">vertex</span> field), they can
+have <em>colors</em> as well. These colors can then be specified on
+the model itself:</p>
+
+<pre class="highlight">
+var triangle = Lux.model({
+    type: "triangles",
+    elements: [0, 1, 2],
+    vertex: [[0,1, -1,-1, 1,-1], 2],
+    color: [Shade.color('red'),
+            Shade.color('green'),
+            Shade.color('blue')]
+});
+</pre>
+
+<p>For convenience, <span class="inline-highlight">Shade.color</span>
+accepts
+all <a href="https://developer.mozilla.org/en-US/docs/CSS/color_value">CSS
+color names</a>. In addition, color attributes can also be specified
+as an array of values, exactly like positions. This snippet is exactly
+equivalent to the above:</p>
+
+<pre class="highlight">
+var triangle = Lux.model({
+    type: "triangles",
+    elements: [0, 1, 2],
+    vertex: [[0,1, -1,-1, 1,-1], 2],
+    color: [[1,0,0,1, 0,0.5,0,1, 0,0,1,1], 4]
+});
+</pre>
+
+<p>Notice that each color has four components, the last of which is
+the <i>opacity</i> component, or alpha (More about alpha
+on <a href="../lesson8/lesson8.html">lesson 8</a>).</p>
+
+<p>To draw the square with different colors, you need to
+tell <span class="inline-highlight">Lux.bake</span> to use those
+colors:</p>
+
+<pre class="highlight">
+Lux.Scene.add(Lux.bake(triangle, {
+    position: camera(Shade.translation(-1.5, 0, -6)(triangle.vertex)),
+    color: triangle.color
+}));
+</pre>
+
+<hr>
+<p>Back to the <a href="../index.html">index</a>.</p>
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+$('.inline-highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</body>
+</html>
+

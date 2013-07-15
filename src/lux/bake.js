@@ -111,14 +111,13 @@ var largest_batch_id = 1;
 
 Lux.bake = function(model, appearance, opts)
 {
+    appearance = Shade.canonicalize_program_object(appearance);
     opts = _.defaults(opts || {}, {
         force_no_draw: false,
         force_no_pick: false,
         force_no_unproject: false
     });
     var ctx = model._ctx || Lux._globals.ctx;
-
-    appearance = Lux.Transform.apply(appearance, ctx);
 
     if (_.isUndefined(appearance.gl_FragColor)) {
         appearance.gl_FragColor = Shade.vec(1,1,1,1);

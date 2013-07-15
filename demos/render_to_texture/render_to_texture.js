@@ -1,14 +1,15 @@
 var gl;
-var scene;
 
 //////////////////////////////////////////////////////////////////////////////
 
 function rotated(angle, axis, m)
 {
-    return Shade.rotation(Shade(angle).neg(), axis)(m)(Shade.rotation(angle, axis));
+    var forward = Shade.rotation(Shade(angle).neg(), axis),
+       backward = Shade.rotation(angle,              axis);
+    return (forward)(m)(backward);
 }
 
-function make_scene()
+function make_stars_actor(star_texture)
 {
     var drawable;
     var star_list;
@@ -26,18 +27,6 @@ function make_scene()
                               Shade.translation(dist, 0, 0))))
              (Shade.translation(0, 0, -10))
     ;
-
-    function star_batch()
-    {
-        var model = Lux.Models.square();
-
-        return Lux.bake(model, {
-            position: proj(mv(Shade.vec(model.vertex.mul(2).sub(Shade.vec(1,1))))),
-            color: Shade.texture2D(Lux.texture({ src: "../img/star.gif" }), 
-                                   model.tex_coord).mul(Shade.vec(color, 1.0)),
-            mode: Lux.DrawingMode.additive
-        });
-    }
 
     function star(startingDistance, rotationSpeed)
     {
@@ -85,25 +74,33 @@ function make_scene()
         return result;
     }
 
-    drawable = star_batch();
     star_list = init_star_list();
-    
-    return {
-        draw: function() {
-            _.each(star_list, function(x) {
-                x.draw(twinkle);
-            });
-            spin.set(spin.get() + 0.1 * (Math.PI / 180));
+    var model = Lux.Models.square();
+    var star_actor = Lux.actor({
+        model: model,
+        appearance: {
+            position: proj(mv(Shade.vec(model.vertex.mul(2).sub(Shade.vec(1,1))))),
+            color: Shade.texture2D(star_texture, model.tex_coord).mul(Shade.vec(color, 1.0)),
+            mode: Lux.DrawingMode.additive
         },
-        tick: function(elapsed) {
-            _.each(star_list, function(x) {
-                x.animate(elapsed);
-            });
+        bake: function(model, changed_appearance) {
+            drawable = Lux.bake(model, changed_appearance);
+            return {
+                draw: function() {
+                    console.log("draw");
+                    _.each(star_list, function(x) { x.draw(twinkle); });
+                },
+                tick: function(elapsed) {
+                    console.log("tick");
+                   _.each(star_list, function(x) { x.animate(elapsed); });
+                }
+            };
         }
-    };
+    });
+    return star_actor;
 }
 
-function cube_batch(texture)
+function cube_actor(texture)
 {
     var light_ambient = Shade.color('gray');
     var light_diffuse = Shade.color('white');
@@ -131,9 +128,12 @@ function cube_batch(texture)
     });
 
     var eye_vertex = mv.mul(Shade.vec(cube_model.vertex, 1));
-    return Lux.bake(cube_model, {
-        position: proj(eye_vertex),
-        color: final_color
+    return Lux.actor({ 
+        model: cube_model, 
+        appearance: {
+            position: proj(eye_vertex),
+            color: final_color
+        }
     });
 }
 
@@ -144,38 +144,40 @@ $().ready(function () {
     gl = Lux.init({
         clearDepth: 1.0,
         clearColor: [0,0,0,0.1],
-        display: function() {
-            cube.draw();
-
-            rb.with_bound_buffer(function() {
-                gl.clearColor(0.1,0.2,0.3,1);
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                scene.draw();
-            });
-        },
-        attributes:
-        {
+        attributes: {
             alpha: true,
             depth: true
         }
     });
-    gl.depthFunc(gl.LESS);
 
-    scene = make_scene();
-    var rb = Lux.render_buffer();
-    var cube = cube_batch(rb);
-    var angle = 0;
-    
+    var stars_batch;
+    var stars_actor;
+    var rb = Lux.render_buffer({
+        clearColor: [0.1, 0.2, 0.3, 1],
+        clearDepth: 1.0
+    });
+    var rb_scene = rb.scene;
+
+    Lux.texture({ 
+        src: "../img/star.gif",
+        onload: function() {
+            stars_actor = make_stars_actor(this);
+            stars_batch = rb_scene.add(stars_actor);
+        }
+    });
+
+    var cube = cube_actor(rb);
+    Lux.Scene.add(cube);
+
     var start = new Date().getTime();
-    var f = function() {
+    var angle = 0;
+    Lux.Scene.animate(function() {
         var now = new Date().getTime();
         var elapsed = now - start;
         start = now;
         counter += 1;
-        scene.tick(elapsed);
+        stars_batch && stars_batch.tick(elapsed);
         angle += (elapsed / 20) * (Math.PI/180);
-        window.requestAnimFrame(f, canvas);
-        gl.display();
-    };
-    f();
+        rb_scene.invalidate();
+    });
 });

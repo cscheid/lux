@@ -81,7 +81,7 @@ function init_webgl()
     var selection_color = inside_box.ifelse(species_color, Shade.color("gray", 0.3));
     var dot_color = has_selection.ne(0).ifelse(selection_color, species_color);
 
-    var scatterplot_batch = Lux.Marks.scatterplot({
+    var scatterplot_actor = Lux.Marks.scatterplot({
         elements: data.n_rows,
         x: data.at(data.index, splom_col),
         y: data.at(data.index, splom_row),
@@ -121,20 +121,29 @@ function init_webgl()
         mode: Lux.DrawingMode.over
     });
 
+    var scatterplot_batch, aligned_rects_batch, selection_rect_batch;
     Lux.Scene.add({
-        draw: function() {
-            aligned_rects.draw();
-            for (var i=0; i<4; ++i) {
-                for (var j=0; j<4; ++j) {
-                    splom_row.set(i);
-                    splom_col.set(j);
-                    scatterplot_batch.draw();
+        dress: function(scene) {
+            scatterplot_batch = scatterplot_actor.dress(scene);
+            aligned_rects_batch = aligned_rects.dress(scene);
+            selection_rect_batch = selection_rect.dress(scene);
+            return {
+                draw: function() {
+                    aligned_rects_batch.draw();
+                    for (var i=0; i<4; ++i) {
+                        for (var j=0; j<4; ++j) {
+                            splom_row.set(i);
+                            splom_col.set(j);
+                            scatterplot_batch.draw();
+                        }
+                    }
+                    if (has_selection.get()) {
+                        selection_rect_batch.draw();
+                    }
                 }
-            }
-            if (has_selection.get()) {
-                selection_rect.draw();
-            }
-        }
+            };
+        },
+        on: function() { return true; }
     });
 }
 

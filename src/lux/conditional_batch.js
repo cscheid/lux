@@ -6,3 +6,12 @@ Lux.conditional_batch = function(batch, condition)
         }
     };
 };
+
+Lux.conditional_actor = function(opts)
+{
+    opts = _.clone(opts);
+    opts.bake = function(model, changed_appearance) {
+        return Lux.conditional_batch(Lux.bake(model, changed_appearance), opts.condition);
+    };
+    return Lux.actor(opts);
+};
