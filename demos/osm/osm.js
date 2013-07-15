@@ -16,7 +16,7 @@ $().ready(function () {
         }
     });
 
-    var globe_zoom = Shade.parameter("float", 3.0);
+    var globe_zoom = Shade.parameter("float", 1.0);
     var view_proj = Shade.Camera.perspective({
         look_at: [Shade.vec(0, 0,  6),
                   Shade.vec(0, 0, -1),
@@ -27,10 +27,10 @@ $().ready(function () {
     var globe = Lux.Marks.globe({ 
         view_proj: view_proj,
         zoom: globe_zoom
-        ,
-        tile_pattern: function(zoom, x, y) {
-            return "http://oatile1.mqcdn.com/tiles/1.0.0/sat/" + zoom + "/" + x + "/" + y + ".jpg";
-        }
+        // ,
+        // tile_pattern: function(zoom, x, y) {
+        //     return "http://oatile1.mqcdn.com/tiles/1.0.0/sat/" + zoom + "/" + x + "/" + y + ".jpg";
+        // }
     });
 
     Lux.Scene.add(globe);

@@ -102,8 +102,8 @@ function init_webgl()
                                             xy_center.add(xy_distance)],
                                    range: [S.vec(0,0), 
                                            S.vec(1,1)] }),
-        fill_color: species_color,
-        stroke_color: S.mix(Shade.color("black"), species_color, 0.5),
+        fill_color: S.vec(species_color.swizzle("rgb"), point_alpha),
+        stroke_color: S.vec(S.mix(Shade.color("black"), species_color, 0.5).swizzle("rgb"), point_alpha),
         stroke_width: stroke_width,
         point_diameter: point_diameter
     }));
