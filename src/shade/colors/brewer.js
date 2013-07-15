@@ -85,7 +85,7 @@ Shade.Colors.Brewer.qualitative = function(opts) {
     return Shade.Scale.ordinal({range: range});
 };
 
-Shade.Colors.Brewer.diverging = function(opts) {
+Shade.Colors.Brewer.divergent = function(opts) {
     opts = _.defaults(opts || {}, {
         alpha: 1,
         low: -1,
@@ -94,9 +94,9 @@ Shade.Colors.Brewer.diverging = function(opts) {
     });
     if (_.isUndefined(opts.name))
         throw new Error("'name' is a required option");
-    var a = schemes.diverging[opts.name];
+    var a = schemes.divergent[opts.name];
     if (_.isUndefined(a))
-        throw new Error("Unknown diverging colormap " + opts.name);
+        throw new Error("Unknown divergent colormap " + opts.name);
     var range = _.map(a, function(lst) {
         return Shade.vec(lst[0] / 255, lst[1]/255, lst[2]/255, opts.alpha);
     });
