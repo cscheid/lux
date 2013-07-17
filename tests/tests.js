@@ -10,7 +10,11 @@ function random_int(mn, mx) {
 
 function almost_equal(expected, got, msg, eps) {
     eps = eps || 1e-4;
-    ok(Math.abs(expected - got) < eps, msg + " expected: " + expected + " got: " + got);
+    if (Shade(expected).type.is_vec()) {
+        ok(vec.length(vec.minus(expected,  got)) < eps, msg + " expected: " + vec.str(expected) + " got: " + vec.str(got));
+    } else {
+        ok(Math.abs(expected - got) < eps, msg + " expected: " + expected + " got: " + got);
+    }
 }
 
 test("lux_typeOf", function() {
@@ -915,4 +919,17 @@ test("Lux.attribute_buffer", function() {
     raises(function() {
         x.set_region(2, [1,2,3]);
     });
+});
+
+test("Lux transforms", function() {
+    var ll_to_m = Lux.Scene.Transform.Geo.latlong_to_mercator().get_transform();
+    for (var i=0; i<100; ++i) {
+        var v = vec.make([Math.random(), Math.random()]);
+        var fw = ll_to_m({ position: Shade(v) }).position.evaluate();
+        var bw = ll_to_m.inverse({ position: Shade(fw) }).position.evaluate();
+        almost_equal(v, bw, "latlong_to_mercator inverse mismatch");
+        var fw2 = ll_to_m.inverse({ position: Shade(v) }).position.evaluate();
+        var bw2 = ll_to_m({ position: Shade(fw2) }).position.evaluate();
+        almost_equal(v, bw2, "latlong_to_mercator inverse mismatch");
+    }
 });

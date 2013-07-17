@@ -61,7 +61,7 @@ $().ready(function () {
     var sphere_actor = Lux.actor({ 
         model: sphere, 
         appearance: {
-            position: sphere.tex_coord.swizzle("xy"),
+            position: sphere.tex_coord.swizzle("xy").mul(2*Math.PI).sub(Math.PI),
             color: Shade.texture2D(texture, sphere.tex_coord)}});
 
     mercator_to_latlon.add(sphere_actor);
