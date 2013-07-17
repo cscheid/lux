@@ -15,10 +15,12 @@
       <p>This tutorial is a series of thoroughly annotated examples of increasing complexity, so you can see which parts of the Lux API are responsible for what behavior. If you've never used Lux before, you should at least skim through the lessons.</p>
 
       <h2>The lessons</h2>
-      <h3><a name="fundamentals"></a>Fundamentals</h3>
+      <h3><a name="Basics"></a>Basics</h3>
+      <p>In these lessons, you learn the very basics on how to setup
+      basic objects for Lux to draw.</p>
       <ul>
-	<li><a href="lesson1/lesson1.html">Lesson 1: Models and Batches</a></li>
-	<li><a href="lesson2/lesson2.html">Lesson 2: Batch colors</a></li>
+	<li><a href="lesson1/lesson1.html">Lesson 1: Models and Actors</a></li>
+	<li><a href="lesson2/lesson2.html">Lesson 2: Colors</a></li>
 	<li><a href="lesson3/lesson3.html">Lesson 3: Parameters, Lux expressions, and basic animation</a></li>
       </ul>
 
@@ -29,8 +31,36 @@
 	<li><a href="lesson6/lesson6.html">Lesson 6: Lighting</a></li>
       </ul>
 
+      <h3><a name="transforms"></a>Transforms and the Lux scene graph</h3>
+      <p>As you've seen in the previous lessons, Lux actors are
+      specified by matching models with appearances. One of the unique
+      features in Lux is the way in which its scene graph works. The
+      scene graph infrastructure in Lux extends the idea
+      of <em>transform nodes</em> (and the related <em>matrix
+      stacks</em>) you might have seen in OpenGL or in other scene
+      graph libraries like OpenSceneGraph. Specifically, a transform
+      node in a Lux scene graph applies an arbitrary transformation to
+      an appearance. It can be a multiplication by a matrix (giving
+      the matrix stack), it can be a more complicated coordinate
+      transform (eg map projections), or even more. By providing Lux
+      with richer information about the transformations your code is
+      specifying, Lux in turn can give you nicer things (like
+      automatic unprojecting).</p>
+      <p>The following examples illustrate some of the possibilities
+      by iteratively creating a simple interactive geographical
+      visualization, and iteratively refactoring the program so it 
+      better reflects the structure of the different pieces.</p>
+
+      <ul>
+	<li><a href="transforms/lesson1.html">Lesson 1</a></li>
+	<li><a href="transforms/lesson2.html">Lesson 2</a></li>
+	<li><a href="transforms/lesson3.html">Lesson 3</a></li>
+	<li><a href="transforms/lesson4.html">Lesson 4</a></li>
+	<li><a href="transforms/lesson5.html">Lesson 5</a></li>
+      </ul>
+
       <h3>Acknowledgments</h3>
-      <p>The lessons in this tutorial are based on the venerable <a href="http://nehe.gamedev.net">neHe OpenGL examples</a>, the babiest in OpenGL baby steps. There are <a href="http://learningwebgl.com">WebGL equivalents</a> you can use to compare to as well.</p>
+      <p>Some lessons in this tutorial are based on the venerable <a href="http://nehe.gamedev.net">neHe OpenGL examples</a>, the babiest in OpenGL baby steps. There are <a href="http://learningwebgl.com">WebGL equivalents</a> you can use to compare to as well.</p>
     </div>
   </div>
 </body>

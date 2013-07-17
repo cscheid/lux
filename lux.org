@@ -89,7 +89,7 @@ It should be possible to implement some form of static checking for
 Shade.make when passing functions.
 
 * Documentation
-** TODO NeHe Lessons
+** TODO document coordinate systems (eg mercator is "radian-based")
 ** TODO We need a "pitfalls". For example, zoom.get() vs. zoom...
 * Expressions
 ** TODO precision declarations

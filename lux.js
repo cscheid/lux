@@ -12615,8 +12615,6 @@ Shade.Scale.Geo.latlong_to_spherical = Shade(function(lat, lon)
 Shade.Scale.Geo.mercator_to_latlong = Shade(function(x, y)
 {
     // http://stackoverflow.com/a/1166095
-    x = x.mul(2*Math.PI).sub(Math.PI);
-    y = y.mul(2*Math.PI).sub(Math.PI);
     return Shade.vec(y.sinh().atan(), x);
 });
 Shade.Scale.Geo.mercator_to_spherical = Shade(function(x, y)
@@ -13664,6 +13662,8 @@ Lux.Marks.rectangle_brush = function(opts)
             if (opts.accept_event(event)) {
                 var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
                 selection_pt2.set(xy_v);
+                var b2 = xy_v;
+                opts.on_brush_changed && opts.on_brush_changes(b1, b2);
                 Lux.Scene.invalidate();
                 return false;
             }
