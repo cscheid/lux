@@ -1,14 +1,8 @@
 function add_scatterplot(json)
 {
-    function make_buffer(field) {
-        return Lux.attribute_buffer({
-            vertex_array: _.map(json, function(o) { return o[field]; }), 
-            item_size: 1
-        });
-    };
-    var lats = make_buffer("lat"),
-        lons = make_buffer("lon"),
-        ids = make_buffer("id");
+    var lats = make_buffer(json, "lat"),
+        lons = make_buffer(json, "lon"),
+        ids = make_buffer(json, "id");
     var scale = Shade.Scale.linear(
         {domain: [Shade.vec(-180, -90), Shade.vec(180, 90)],
          range: [Shade.vec(-1, -1), Shade.vec(1, 1)]});
@@ -28,3 +22,12 @@ $().ready(function () {
     });
     Lux.Net.json("airports.json", add_scatterplot);
 });
+
+//////////////////////////////////////////////////////////////////////////////
+
+function make_buffer(json, field) {
+    return Lux.attribute_buffer({
+        vertex_array: _.map(json, function(o) { return o[field]; }), 
+        item_size: 1
+    });
+};

@@ -3,9 +3,17 @@ function add_scatterplot(json)
     var lats = make_buffer(json, "lat"),
         lons = make_buffer(json, "lon"),
         ids = make_buffer(json, "id");
+    var min_lat = Shade.parameter("float",0),
+        min_lon = Shade.parameter("float",0),
+        max_lat = Shade.parameter("float",0),
+        max_lon = Shade.parameter("float",0);
+    var selected = Shade(function(lat, lon) {
+        return lat.gt(min_lat).and(lat.lt(max_lat))
+            .and(lon.gt(min_lon)).and(lon.lt(max_lon));
+    });
     var dots = Lux.Marks.dots({
         position: Shade.vec(lats, lons),
-        fill_color: Shade.color("white"),
+        fill_color: selected(lats, lons).ifelse(Shade.color("red"), Shade.color("white")),
         stroke_width: 1,
         elements: json.length,
         pick_id: Shade.shade_id(ids)
@@ -24,7 +32,13 @@ function add_scatterplot(json)
         $("#max-lat").text(max[0]);
         $("#min-lon").text(min[1]);
         $("#max-lon").text(max[1]);        
+        min_lat.set(min[0]);
+        max_lat.set(max[0]);
+        min_lon.set(min[1]);
+        max_lon.set(max[1]);
+        Lux.Scene.invalidate();
     }
+
     degrees_scene.add(Lux.Marks.rectangle_brush({
         on: { brush_changed: brush },
         accept_event: function(event) { return event.shiftKey; }

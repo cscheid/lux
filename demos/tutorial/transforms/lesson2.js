@@ -1,14 +1,8 @@
 function add_scatterplot(json)
 {
-    function make_buffer(field) {
-        return Lux.attribute_buffer({
-            vertex_array: _.map(json, function(o) { return o[field]; }), 
-            item_size: 1
-        });
-    };
-    var lats = make_buffer("lat"),
-        lons = make_buffer("lon"),
-        ids = make_buffer("id");
+    var lats = make_buffer(json, "lat"),
+        lons = make_buffer(json, "lon"),
+        ids = make_buffer(json, "id");
     var dots = Lux.Marks.dots({
         position: Shade.vec(lats, lons).radians(),
         fill_color: Shade.color("white"),
@@ -21,16 +15,6 @@ function add_scatterplot(json)
     var lat_lon_scene = Lux.Scene.Transform.Geo.latlong_to_mercator();
     scene.add(lat_lon_scene);
 
-/*
-    var zoom_scene = Lux.scene({transform: function(appearance) {
-        appearance.position = appearance.position.div(3);
-        return appearance;
-    }});
-    scene.add(zoom_scene);
-    var lat_lon_scene = Lux.Scene.Transform.Geo.latlong_to_mercator();
-    zoom_scene.add(lat_lon_scene);
-*/
-
     lat_lon_scene.add(dots);
 }
 
@@ -41,3 +25,12 @@ $().ready(function () {
     });
     Lux.Net.json("airports.json", add_scatterplot);
 });
+
+//////////////////////////////////////////////////////////////////////////////
+
+function make_buffer(json, field) {
+    return Lux.attribute_buffer({
+        vertex_array: _.map(json, function(o) { return o[field]; }), 
+        item_size: 1
+    });
+};
