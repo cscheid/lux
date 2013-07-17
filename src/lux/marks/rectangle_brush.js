@@ -29,6 +29,8 @@ Lux.Marks.rectangle_brush = function(opts)
             if (opts.accept_event(event)) {
                 var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
                 selection_pt2.set(xy_v);
+                var b2 = xy_v;
+                opts.on_brush_changed && opts.on_brush_changes(b1, b2);
                 Lux.Scene.invalidate();
                 return false;
             }
