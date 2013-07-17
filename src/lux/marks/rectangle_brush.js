@@ -19,6 +19,7 @@ Lux.Marks.rectangle_brush = function(opts)
                 b1 = xy_v;
                 selection_pt1.set(xy_v);
                 brush_is_active = true;
+                opts.on.brush_started && opts.on.brush_started(b1);
                 return false;
             }
             return true;
@@ -30,7 +31,7 @@ Lux.Marks.rectangle_brush = function(opts)
                 var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
                 selection_pt2.set(xy_v);
                 var b2 = xy_v;
-                opts.on_brush_changed && opts.on_brush_changes(b1, b2);
+                opts.on.brush_changed && opts.on.brush_changed(b1, b2);
                 Lux.Scene.invalidate();
                 return false;
             }
@@ -44,7 +45,11 @@ Lux.Marks.rectangle_brush = function(opts)
                 var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
                 selection_pt2.set(xy_v);
                 var b2 = xy_v;
-                opts.on.brush_updated && opts.on.brush_updated(b1, b2);
+                if (opts.on.brush_changed) {
+                    opts.on.brush_changed(b1, b2);
+                } else if (opts.on.brush_ended) {
+                    opts.on.brush_ended(b1, b2);
+                }
                 Lux.Scene.invalidate();
                 return false;
             }
