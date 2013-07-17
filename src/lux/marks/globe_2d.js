@@ -269,8 +269,8 @@ Lux.Marks.globe_2d = function(opts)
             var xf = scene.get_transform().inverse;
             if (!has_interactor) {
                 get_center_zoom = function() {
-                    var p1 = unproject(vec.make([ctx.viewportWidth/2, ctx.viewportHeight/2]));
-                    var p2 = unproject(vec.make([ctx.viewportWidth, ctx.viewportHeight]));
+                    var p1 = unproject(vec.make([0, 0]));
+                    var p2 = unproject(vec.make([1, 1]));
                     var zoom = 1.0/(p2[1] - p1[1]);
                     return [p1[0], p1[1], zoom];
                 };

@@ -90,7 +90,10 @@ Lux.UI.center_zoom_interactor = function(opts)
     }).js_evaluate;
 
     var internal_move = function(dx, dy) {
-        var negdelta = f(vec.make([dx, dy]));
+        var ctx = Lux._globals.ctx;
+        var v = vec.make([2*dx/ctx.parameters.width.get(), 
+                          2*dy/ctx.parameters.height.get()]);
+        var negdelta = f(v);
         // we use a kahan compensated sum here:
         // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
         // to accumulate minute changes in the center that come from deep zooms.

@@ -52,23 +52,25 @@ Shade.Camera.ortho = function(opts)
     var b = l_or_p.ifelse(cy.sub(corrected_half_height), bottom);
     var t = l_or_p.ifelse(cy.add(corrected_half_height), top);
     var m = Shade.ortho(l, r, b, t, near, far);
-    
-    var view_xform = Shade(function(model_vertex) {
-        if (model_vertex.type === Shade.Types.vec2) {
-            return model_vertex.sub(opts.center).mul(opts.zoom);
-        } else if (model_vertex.type === Shade.Types.vec3) {
-            return Shade.vec(
-                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
-                model_vertex.z());
-        } else if (model_vertex.type === Shade.Types.vec4) {
-            return Shade.vec(
-                model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom),
-                model_vertex.z());
-        } else 
+
+    function replace_xy_with(vec, new_vec) {
+        if (vec.type === Shade.Types.vec2)
+            return new_vec;
+        else if (vec.type === Shade.Types.vec3)
+            return Shade.vec(new_vec, vec.z());
+        else if (vec.type === Shade.Types.vec4)
+            return Shade.vec(new_vec, vec.swizzle("zw"));
+        else
             throw new Error("Shade.ortho requires vec2, vec3, or vec4s");
+    };
+
+    var view_xform = Shade(function(model_vertex) {
+        var new_v = model_vertex.swizzle("xy").sub(opts.center).mul(opts.zoom);
+        return replace_xy_with(model_vertex, new_v);
     });
     var view_xform_invert = Shade(function(view_vertex) {
-        return view_vertex.swizzle("xy").div(opts.zoom).add(opts.center);
+        var new_v = view_vertex.swizzle("xy").div(opts.zoom).add(opts.center);
+        return replace_xy_with(view_vertex, new_v);
     });
 
     function result(obj) {
@@ -81,13 +83,22 @@ Shade.Camera.ortho = function(opts)
     result.project = function(model_vertex) {
         return m.mul(view_xform(model_vertex));
     };
-    result.unproject = function(screen_pos) {
-        var ctx = Lux._globals.ctx;
-        var screen_size = Shade.vec(ctx.parameters.width, ctx.parameters.height);
-        var min = Shade.vec(l, b);
-        var max = Shade.vec(r, t);
-        var view_vtx = min.add(max.sub(min).mul(screen_pos.div(screen_size)));
-        return view_xform_invert(view_vtx);
+    result.unproject = function(normalized_view_pos) {
+        // var inv_m = Shade.Scale.linear({
+        //     domain: [Shade.vec(-1,-1,-1),
+        //              Shade.vec( 1, 1, 1)],
+        //     range: [Shade.vec(l, b, near),
+        //             Shade.vec(r, t, far)]});
+        var inv_m = Shade.Scale.linear({
+            domain: [Shade.vec(-1,-1),
+                     Shade.vec( 1, 1)],
+            range: [Shade.vec(l, b),
+                    Shade.vec(r, t)]});
+        return view_xform_invert(inv_m(normalized_view_pos));
+        // var ctx = Lux._globals.ctx;
+        // var screen_size = Shade.vec(ctx.parameters.width, ctx.parameters.height);
+        // var view_vtx = min.add(max.sub(min).mul(screen_pos.div(screen_size)));
+        // return view_xform_invert(view_vtx);
     };
     return result;
 };

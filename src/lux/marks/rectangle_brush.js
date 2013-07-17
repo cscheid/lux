@@ -2,7 +2,7 @@ Lux.Marks.rectangle_brush = function(opts)
 {
     opts = _.defaults(opts || {}, {
         color: Shade.vec(1,1,1,0.5),
-        mode: Lux.DrawingMode.over,
+        mode: Lux.DrawingMode.over_no_depth,
         on: {}
     });
     var gl = Lux._globals.ctx;
@@ -62,9 +62,11 @@ Lux.Marks.rectangle_brush = function(opts)
 
     return {
         dress: function(scene) {
+            var ctx = Lux._globals.ctx;
             var xform = scene.get_transform();
+            var half_screen_size = Shade.vec(ctx.parameters.width, ctx.parameters.height).div(2);
             unproject = Shade(function(p) {
-                return xform.inverse({position: p}).position;
+                return xform.inverse({position: p.div(half_screen_size).sub(Shade.vec(1,1))}).position;
             }).js_evaluate;
             return brush_actor.dress(scene);
         }, on: function(ename, event) {
