@@ -1,0 +1,32 @@
+<html>
+<head><title>Transforms, interlude 3</title>
+  <link rel="stylesheet" href="/lux/demos/css/bootstrap.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/style.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/mchighlight-javascript.css"/>
+  <script src="/lux/lib/jquery-1.6.2.min.js"></script>
+  <script src="/lux/lib/jquery.mousewheel.js"></script>
+  <script src="/lux/lux.js"></script>
+  <script src="/lux/demos/js/mclexer.js"></script>
+  <script src="/lux/demos/js/mchighlight.js"></script>
+  <script src="/lux/demos/js/mchighlight-javascript.js"></script>
+  <script src="lesson3.js"></script>
+  <script src="extras.js"></script>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>Interlude 3</h1>
+
+<canvas id="webgl" width="720" height="300"></canvas>
+<script>build_navigation()</script>
+<p>With a window-to-viewport transformation, canvases of different
+  sizes work fine, with no shape distortion. In fact,
+  the <a href="lesson3b.js">source code for this</a> is identical to
+  the one in <a href="lesson3.js">lesson 3</a>.</p>
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</div>
+</body>
+</html>

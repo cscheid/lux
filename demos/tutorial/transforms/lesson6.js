@@ -1,8 +1,7 @@
 function add_scatterplot(json)
 {
     var lats = make_buffer(json, "lat"),
-        lons = make_buffer(json, "lon"),
-        ids = make_buffer(json, "id");
+        lons = make_buffer(json, "lon");
     var min_lat = Shade.parameter("float",0),
         min_lon = Shade.parameter("float",0),
         max_lat = Shade.parameter("float",0),
@@ -15,8 +14,7 @@ function add_scatterplot(json)
         position: Shade.vec(lats, lons),
         fill_color: selected(lats, lons).ifelse(Shade.color("red"), Shade.color("white")),
         stroke_width: 1,
-        elements: json.length,
-        pick_id: Shade.shade_id(ids)
+        elements: json.length
     });
     var scene = Lux.Scene;
     var lat_lon_scene = Lux.Scene.Transform.Geo.latlong_to_mercator();

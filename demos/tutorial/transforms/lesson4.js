@@ -1,14 +1,12 @@
 function add_scatterplot(json)
 {
     var lats = make_buffer(json, "lat"),
-        lons = make_buffer(json, "lon"),
-        ids = make_buffer(json, "id");
+        lons = make_buffer(json, "lon");
     var dots = Lux.Marks.dots({
         position: Shade.vec(lats, lons).radians(),
         fill_color: Shade.color("white"),
         stroke_width: 1,
-        elements: json.length,
-        pick_id: Shade.shade_id(ids)
+        elements: json.length
     });
     var scene = Lux.Scene;
     var lat_lon_scene = Lux.Scene.Transform.Geo.latlong_to_mercator();

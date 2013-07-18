@@ -86,11 +86,7 @@ Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
 <pre class="highlight">
 var dots = Lux.Marks.dots({
     position: Shade.vec(lats, lons).radians(),
-    fill_color: Shade.color("white"),
-    stroke_width: 1,
-    elements: json.length,
-    pick_id: Shade.shade_id(ids)
-});
+// ...
 </pre>
 
 <p>you'd write:</p>
@@ -99,11 +95,7 @@ var dots = Lux.Marks.dots({
 // This is not how the current example works!
 var dots = Lux.Marks.dots({
     position: Shade.Scale.Geo.latlong_to_mercator(lats.radians(), lons.radians()),
-    fill_color: Shade.color("white"),
-    stroke_width: 1,
-    elements: json.length,
-    pick_id: Shade.shade_id(ids)
-});
+// ...
 </pre>
 
 <p>With a simple piece of code like we have right now, this would
@@ -121,10 +113,7 @@ var dots = Lux.Marks.dots({
 <pre class="highlight">
 var dots = Lux.Marks.dots({
     position: Shade.vec(lats, lons).radians(),
-    fill_color: Shade.color("white"),
-    stroke_width: 1,
-    elements: json.length,
-    pick_id: Shade.shade_id(ids)
+    // ...
 });
 var lat_lon_scene = Lux.Scene.Transform.Geo.latlong_to_mercator();
 lat_lon_scene.add(dots);
@@ -174,7 +163,7 @@ zoom_scene.add(lat_lon_scene);
   coordinate system and transform to another, from latitudes and
   longitudes to projected Mercator coordinates to screen
   coordinates. This separation of concerns will bring concrete
-  advantages very soon. In the next lesson, we will start adding
+  advantages very soon. In the <a href="lesson3.html">next lesson</a>, we will start adding
   interactive capabilities to the visualization.</p>
 
 <hr>
