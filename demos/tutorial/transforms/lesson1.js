@@ -1,8 +1,7 @@
-function add_scatterplot(json)
+function create(json)
 {
     var lats = make_buffer(json, "lat"),
-        lons = make_buffer(json, "lon"),
-        ids = make_buffer(json, "id");
+        lons = make_buffer(json, "lon");
     var scale = Shade.Scale.linear(
         {domain: [Shade.vec(-180, -90), Shade.vec(180, 90)],
          range: [Shade.vec(-1, -1), Shade.vec(1, 1)]});
@@ -11,16 +10,13 @@ function add_scatterplot(json)
         position: position,
         fill_color: Shade.color("white"),
         stroke_width: 1,
-        elements: json.length,
-        pick_id: Shade.shade_id(ids)
+        elements: json.length
     }));
 }
 
 $().ready(function () {
-    Lux.init({
-        clearColor: [0, 0, 0, 0.2]
-    });
-    Lux.Net.json("airports.json", add_scatterplot);
+    Lux.init();
+    Lux.Net.json("airports.json", create);
 });
 
 //////////////////////////////////////////////////////////////////////////////
