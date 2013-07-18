@@ -20,7 +20,7 @@ function add_scatterplot(json)
 
 $().ready(function () {
     Lux.init({
-        interactor: Lux.UI.center_zoom_interactor({width: 720, height: 720, zoom: 0.5}),
+        // interactor: Lux.UI.center_zoom_interactor({width: 720, height: 480, zoom: 0.5}),
         clearColor: [0, 0, 0, 0.2]
     });
     Lux.Net.json("airports.json", add_scatterplot);
@@ -34,4 +34,3 @@ function make_buffer(json, field) {
         item_size: 1
     });
 };
-

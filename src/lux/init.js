@@ -99,6 +99,7 @@ Lux.init = function(opts)
             throw new Error("failed context creation");
         initialize_context_globals(gl);
         if ("interactor" in opts) {
+            opts.interactor.resize && opts.interactor.resize(canvas.width, canvas.height);
             for (var key in opts.interactor.events) {
                 if (opts[key]) {
                     opts[key] = (function(handler, interactor_handler) {

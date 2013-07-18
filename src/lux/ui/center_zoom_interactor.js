@@ -22,18 +22,13 @@ Lux.UI.center_zoom_interactor = function(opts)
         dblclick: function() {},
         center: vec.make([0,0]),
         zoom: 1,
-        widest_zoom: 0.1
+        widest_zoom: 0.1,
+        width: 100,
+        height: 100
     });
 
     var height = opts.height;
     var width = opts.width;
-
-    if (_.isUndefined(width)) {
-        throw new Error("Lux.UI.center_zoom_interactor requires width parameter");
-    }
-    if (_.isUndefined(height)) {
-        throw new Error("Lux.UI.center_zoom_interactor requires height parameter");
-    }
 
     var aspect_ratio = Shade.parameter("float", width/height);
     var center = Shade.parameter("vec2", opts.center);
