@@ -15,15 +15,15 @@ function create(json)
 }
 
 $().ready(function () {
-    Lux.init();
+    Lux.init({clearColor: [0,0,0,0.2]});
     Lux.Net.json("airports.json", create);
 });
 
 //////////////////////////////////////////////////////////////////////////////
 
 function make_buffer(json, field) {
-    return Lux.attribute_buffer({
+    return Shade(Lux.attribute_buffer({
         vertex_array: _.map(json, function(o) { return o[field]; }), 
         item_size: 1
-    });
+    }));
 };

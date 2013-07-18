@@ -4,7 +4,7 @@ function add_scatterplot(json)
         lons = make_buffer(json, "lon"),
         ids = make_buffer(json, "id");
     var dots = Lux.Marks.dots({
-        position: Shade.vec(lats, lons).radians(),
+        position: Shade.vec(lats.radians(), lons.radians()),
         fill_color: Shade.color("white"),
         stroke_width: 1,
         elements: json.length,
@@ -21,29 +21,18 @@ function add_scatterplot(json)
     zoom_scene.add(lat_lon_scene);
 
     lat_lon_scene.add(dots);
-
-    Lux.Scene.add(Lux.Marks.rectangle_brush({
-        on: {
-            brush_updated: function(b1, b2) { console.log(b1, b2); }
-        },
-        accept_event: function(event) {
-            return event.shiftKey;
-        }}));
 }
 
 $().ready(function () {
-    Lux.init({
-        // interactor: Lux.UI.center_zoom_interactor({width: 720, height: 72, zoom: 0.5}),
-        clearColor: [0, 0, 0, 0.2]
-    });
+    Lux.init({clearColor: [0,0,0,0.2]});
     Lux.Net.json("airports.json", add_scatterplot);
 });
 
 //////////////////////////////////////////////////////////////////////////////
 
 function make_buffer(json, field) {
-    return Lux.attribute_buffer({
+    return Shade(Lux.attribute_buffer({
         vertex_array: _.map(json, function(o) { return o[field]; }), 
         item_size: 1
-    });
+    }));
 };

@@ -10,6 +10,7 @@
   <script src="/lux/demos/js/mchighlight.js"></script>
   <script src="/lux/demos/js/mchighlight-javascript.js"></script>
   <script src="lesson5.js"></script>
+  <script src="extras.js"></script>
 </head>
 <body>
 <div class="body">
@@ -17,10 +18,9 @@
 <h1>Lesson 5</h1>
 
 <canvas id="webgl" width="720" height="720"></canvas>
+<script>build_navigation()</script>
 <div>Latitude: [<span id="min-lat">-</span> : <span id="max-lat">-</span>]</div>
 <div>Longitude: [<span id="min-lon">-</span> : <span id="max-lon">-</span>]</div>
-<div style="text-align: right">View the <a href="lesson5.js">full source</a>.</div>
-<hr>
 <p>Back to the <a href="../index.html">index</a>.</p>
 <script>
 $('.highlight').each(function(i, v) { Highlighter.highlight(v); });

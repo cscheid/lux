@@ -10,19 +10,23 @@
   <script src="/lux/demos/js/mchighlight.js"></script>
   <script src="/lux/demos/js/mchighlight-javascript.js"></script>
   <script src="lesson1.js"></script>
+  <script src="extras.js"></script>
 </head>
 <body>
 <div class="body">
 <div class="content">
 <h1>Lesson 1</h1>
 <canvas id="webgl" width="720" height="720"></canvas>
+<script>build_navigation();</script>
 <p>
   In this series of examples, we will build an interactive
   visualization of the locations of US airports. Little by little, we
   will build features that showcase the Lux scene graph
   infrastructure, walk through its features, and show how they
   simplify many of the typical programming tasks underlying
-  interactive features.
+  interactive features. If you like diving in the code to get a feel
+  for what it looks like, I encourage you to skip the text below and
+  read the source right away. Otherwise, read on for longer explanations.
 </p>
 <p>We start by initializing Lux and loading a JSON file containing the
   airport information:</p>

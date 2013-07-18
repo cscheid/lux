@@ -1,5 +1,5 @@
 <html>
-<head><title>Transforms, lesson 3</title>
+<head><title>Transforms, lesson 2</title>
   <link rel="stylesheet" href="/lux/demos/css/bootstrap.css"/>
   <link rel="stylesheet" href="/lux/demos/css/style.css"/>
   <link rel="stylesheet" href="/lux/demos/css/mchighlight-javascript.css"/>
@@ -9,16 +9,176 @@
   <script src="/lux/demos/js/mclexer.js"></script>
   <script src="/lux/demos/js/mchighlight.js"></script>
   <script src="/lux/demos/js/mchighlight-javascript.js"></script>
-  <script src="lesson3.js"></script>
+  <script src="lesson2.js"></script>
+  <script src="extras.js"></script>
+<style>
+ul {
+  list-style-type: disc;
+  margin-left: 3em;
+  margin-right: 2em;
+}
+</style>
 </head>
 <body>
 <div class="body">
 <div class="content">
-<h1>Lesson 3</h1>
+<h1>Lesson 2</h1>
 
 <canvas id="webgl" width="720" height="720"></canvas>
-<div style="text-align: right">View the <a href="lesson3.js">full source</a>.</div>
+<script>build_navigation()</script>
+<p>
+  In the <a href="lesson1.html">previous lesson</a>, we drew the
+  airport locations by manually transforming latitudes and longitudes
+  into screen coordinates. In this lesson, we will start
+  looking at Lux transformation nodes. Tranformation nodes make
+  programs simpler and more expressive by giving Lux more information
+  about the structure of the scene.
+</p>
+
+<p>
+  For example, it is rarely the case that we will want to plot
+  latitudes and longitudes like we did in lesson 1 by simply mapping
+  them directly to window coordinates. There are several features
+  we want in our visualization related to transformations:
+</p>
+
+<ul>
+  <li>We want to use a real map projection, like
+  the <a href="http://en.wikipedia.org/wiki/Mercator_projection">Mercator</a> or
+  the <a href="http://en.wikipedia.org/wiki/Albers_projection">Albers</a>. These
+  define the way latitudes and longitudes become screen coordinates,
+  and can be more complicated than an affine transformation.</li>
+  <li>We want to control aspect ratio distortion: what if the window
+  is 900x300 pixels?</li>
+  <li>We want to be able to zoom in to specific regions of the map, or
+  zoom out to have a global view. Similarly, we want to drag the map
+  around to change the viewing window.</li>
+  <li>We want to select regions of the map by clicking with the mouse.
+  Mouse events are fundamentally in screen coordinates, but we want to have
+  programmatic access to the region coordinates in the coordinate
+  system that the data is defined, so we can do things
+  like <a href="http://www.infovis-wiki.net/index.php?title=Linking_and_Brushing">brushing
+  and linking</a>.</li>
+</ul>
+
+<p>
+  We start by picking a map projection. In this tutorial we will use
+  the venerable (<a href="http://xkcd.com/977/">if understandably
+  frowned upon</a>) Mercator projection. This means that at some point
+  in the code, latitudes and longitudes must be transformed into
+  Mercator coordinates. The straightforward way to do it would be to
+  encode the new values directly on the position attribute of the
+  <span class="inline-highlight">dots</span> object. You'd call a
+  function like the following:
+</p>
+
+<pre class="highlight">
+// from <a href="https://github.com/cscheid/lux/blob/master/src/shade/scale/geo/latlong_to_mercator.js">Lux's source code</a>
+Shade.Scale.Geo.latlong_to_mercator = Shade(function(lat, lon)
+{
+    lat = lat.div(2).add(Math.PI/4).tan().log();
+    return Shade.vec(lon, lat);
+});
+</pre>
+
+<p>Then, instead of writing</p>
+
+<pre class="highlight">
+var dots = Lux.Marks.dots({
+    position: Shade.vec(lats, lons).radians(),
+    fill_color: Shade.color("white"),
+    stroke_width: 1,
+    elements: json.length,
+    pick_id: Shade.shade_id(ids)
+});
+</pre>
+
+<p>you'd write:</p>
+
+<pre class="highlight">
+// This is not how the current example works!
+var dots = Lux.Marks.dots({
+    position: Shade.Scale.Geo.latlong_to_mercator(lats.radians(), lons.radians()),
+    fill_color: Shade.color("white"),
+    stroke_width: 1,
+    elements: json.length,
+    pick_id: Shade.shade_id(ids)
+});
+</pre>
+
+<p>With a simple piece of code like we have right now, this would
+  almost be good enough, but there's a variety of reasons you don't
+  want to do it. First, imagine you needed to add a new element to
+  your visualization that also uses latitude and longitude as
+  coordinates. Then you'd have to manually make sure that the same
+  transformation is applied to this element. And what happens if you
+  change the map projection? Instead, the current example works by
+  adding a new <em>subscene</em> to Lux's main scene; one that
+  specifies that we are in fact working with latitudes and
+  longitudes, and that we want to see the result of a Mercator
+  projection:</p>
+
+<pre class="highlight">
+var dots = Lux.Marks.dots({
+    position: Shade.vec(lats, lons).radians(),
+    fill_color: Shade.color("white"),
+    stroke_width: 1,
+    elements: json.length,
+    pick_id: Shade.shade_id(ids)
+});
+var lat_lon_scene = Lux.Scene.Transform.Geo.latlong_to_mercator();
+lat_lon_scene.add(dots);
+</pre>
+
+<p>Notice that the <span class="inline-highlight">dots</span> object
+  is unchanged. The way this works is simple and general. Remember
+  that Lux uses <a href="/lux/demos/tutorial/lesson1.js">actors with
+  appearances</a> to specify how things are drawn. When actors are
+  added to a scene, their appearances are transformed depending on the
+  scene they are in. In addition, if scene A contains scene B, then
+  the apperances of actors in scene B are transformed by scene B, then
+  by scene A (and so on for arbitrarily nested transformations).
+</p>
+
+<p>The Mercator projection implemented in Lux leaves longitudes
+  unchanged, which means that the traditional Mercator square
+  (covering latitudes roughly in the range [-85, 85]) is mapped to a
+  square with range [-&pi;, &pi;] in both coordinates. This puts the
+  United States area outside the WebGL normalized view extent of [-1,
+  1], so if we were to leave the visualization like that, you
+  <a href="lesson1b.html">would not see much</a>. </p>
+
+<p>In order to see the US airports, we need an additional
+  transformation to take the Mercator coordinates into the [-1, 1]
+  range. We will do this by creating a new subscene with an explicit
+  transformation function:
+</p>
+
+<pre class="highlight">
+var zoom_scene = Lux.scene({transform: function(appearance) {
+    appearance.position = appearance.position.div(3);
+    return appearance;
+}});
+</pre>
+  
+<p>We then add the mercator projection scene to the zooming scene, and
+  the zooming scene to the main scene:
+</p>
+
+<pre class="highlight">
+Lux.Scene.add(zoom_scene);
+zoom_scene.add(lat_lon_scene);
+</pre>
+
+<p>Notice that the each scene now contains objects that take one
+  coordinate system and transform to another, from latitudes and
+  longitudes to projected Mercator coordinates to screen
+  coordinates. This separation of concerns will bring concrete
+  advantages very soon. In the next lesson, we will start adding
+  interactive capabilities to the visualization.</p>
+
 <hr>
+<div style="text-align: right">View the <a href="lesson2.js">full source</a>.</div>
 <p>Back to the <a href="../index.html">index</a>.</p>
 <script>
 $('.highlight').each(function(i, v) { Highlighter.highlight(v); });
