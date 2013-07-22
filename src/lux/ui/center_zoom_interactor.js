@@ -43,7 +43,7 @@ Lux.UI.center_zoom_interactor = function(opts)
         aspect_ratio: aspect_ratio
     });
 
-    var prev_mouse_pos;
+    var prev_mouse_pos, down_mouse_pos;
     var current_button = 0;
 
     function dblclick(event) {
@@ -64,6 +64,7 @@ Lux.UI.center_zoom_interactor = function(opts)
         }
 
         prev_mouse_pos = [event.offsetX, event.offsetY];
+        down_mouse_pos = [event.offsetX, event.offsetY];
         opts.mousedown(event);
     }
 
@@ -104,7 +105,10 @@ Lux.UI.center_zoom_interactor = function(opts)
                         -(event.offsetY - prev_mouse_pos[1]));
             Lux.Scene.invalidate();
         } else if ((current_button & 1) && event.shiftKey) {
-            zoom.set(Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240)));
+            internal_move(result.width/2-down_mouse_pos[0], down_mouse_pos[1]-result.height/2);
+            var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
+            zoom.set(new_value);
+            internal_move(down_mouse_pos[0]-result.width/2, result.height/2-down_mouse_pos[1]);
             Lux.Scene.invalidate();
         }
         prev_mouse_pos = [ event.offsetX, event.offsetY ];
