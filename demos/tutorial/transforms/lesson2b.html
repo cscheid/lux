@@ -1,0 +1,50 @@
+<html>
+<head><title>Transforms, interlude 2</title>
+  <link rel="stylesheet" href="/lux/demos/css/bootstrap.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/style.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/mchighlight-javascript.css"/>
+  <script src="/lux/lib/jquery-1.6.2.min.js"></script>
+  <script src="/lux/lib/jquery.mousewheel.js"></script>
+  <script src="/lux/lux.js"></script>
+  <script src="/lux/demos/js/mclexer.js"></script>
+  <script src="/lux/demos/js/mchighlight.js"></script>
+  <script src="/lux/demos/js/mchighlight-javascript.js"></script>
+  <script src="lesson2.js"></script>
+  <script src="extras.js"></script>
+<style>
+ul {
+  list-style-type: disc;
+  margin-left: 3em;
+  margin-right: 2em;
+}
+</style>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>Interlude 2</h1>
+
+<canvas id="webgl" width="720" height="200"></canvas>
+<script>build_navigation()</script>
+<p>
+  In <a href="lesson2.html">lesson 2</a>, we used the
+  scaled projected Mercator coordinates as our final position. That
+  worked fine because the canvas was square, but if it weren't the
+  case, like in this interlude, then you'd see unwanted distortion
+  like in the canvas above. To
+  deal with this issue robustly, the transformation step that performs
+  the zooming must take into account the proportions of the canvas
+  it's projecting to, and <a href="http://www-users.aston.ac.uk/~cornford/cs2150/pdf/window2vp_lec_8up.pdf">adjust the transformation
+  accordingly</a>. The next <a href="lesson3b.html">interlude</a> uses
+  the a window-to-viewport transformation.
+</p>
+<hr>
+<div style="text-align: right">View the <a href="lesson2b.js">full source</a>.</div>
+<p>Back to the <a href="../index.html">index</a>.</p>
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</div>
+</body>
+</html>

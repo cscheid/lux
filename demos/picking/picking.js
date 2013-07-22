@@ -4,12 +4,6 @@ var angle;
 
 //////////////////////////////////////////////////////////////////////////////
 
-function draw_it()
-{
-    cube.draw();
-    pyramid.draw();
-}
-
 $().ready(function () {
     var canvas = document.getElementById("webgl");
     var camera = Shade.Camera.perspective({
@@ -28,7 +22,6 @@ $().ready(function () {
     gl = Lux.init({
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
-        display: draw_it,
         attributes: {
             alpha: true,
             depth: true,
@@ -90,7 +83,7 @@ $().ready(function () {
 
     // one id per face of the cube
     var ids = Lux.id_buffer([1,1,1,1,2,2,2,2,3,3,3,3,
-                               4,4,4,4,5,5,5,5,6,6,6,6]);
+                             4,4,4,4,5,5,5,5,6,6,6,6]);
 
     var cube_xformed_vertex = Shade.translation(Shade.vec(1.5, 0, 0))
         .mul(Shade.rotation(angle, Shade.vec(1,1,1)))
@@ -100,24 +93,26 @@ $().ready(function () {
         .mul(Shade.rotation(angle, Shade.vec(0,1,0)))
         .mul(pyramid_model.vertex);
 
-    cube = Lux.bake(cube_model, {
-        position: camera(cube_xformed_vertex),
-        color: cube_model.color,
-        pick_id: ids
-    });
+    cube = Lux.actor({
+        model: cube_model, 
+        appearance: {
+            position: camera(cube_xformed_vertex),
+            color: cube_model.color,
+            pick_id: ids }});
 
-    pyramid = Lux.bake(pyramid_model, {
-        position: camera(pyramid_xformed_vertex),
-        color: pyramid_model.color,
-        pick_id: Shade.id(7)
-    });
+    pyramid = Lux.actor({
+        model: pyramid_model, 
+        appearance: {
+            position: camera(pyramid_xformed_vertex),
+            color: pyramid_model.color,
+            pick_id: Shade.id(7)}});
+
+    Lux.Scene.add(cube);
+    Lux.Scene.add(pyramid);
 
     var start = new Date().getTime();
-    var f = function() {
-        window.requestAnimFrame(f, canvas);
+    Lux.Scene.animate(function() {
         var elapsed = new Date().getTime() - start;
         angle.set((elapsed / 20) * (Math.PI / 180));
-        gl.display();
-    };
-    f();
+    });
 });

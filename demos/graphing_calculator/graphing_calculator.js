@@ -35,21 +35,18 @@ $().ready(function () {
     update_mesh();
 
     var start_time = (new Date().getTime()) / 1000;
-    var f = function() {
-        window.requestAnimFrame(f);
+    Lux.Scene.animate(function() {
         var this_time = (new Date().getTime()) / 1000;
         var elapsed = this_time - start_time;
         t_parameter.set(elapsed);
-        gl.display();
-    };
-    f();
+    });
 });
 
-var current_batch;
+var current_actor;
 function create_mesh(position, normal, color)
 {
-    if (current_batch) {
-        Lux.Scene.remove(current_batch);
+    if (current_actor) {
+        Lux.Scene.remove(current_actor);
     }
 
     var final_color = Shade.gl_light({
@@ -61,11 +58,13 @@ function create_mesh(position, normal, color)
         normal: model_xform(normal),
         two_sided: true
     });
-    current_batch = Lux.bake(mesh, {
-        position: camera(view_xform)(model_xform)(position),
-        color: final_color
-    });
-    Lux.Scene.add(current_batch);
+    current_actor = Lux.actor({
+        model: mesh, 
+        appearance: {
+            position: camera(view_xform)(model_xform)(position),
+            color: final_color
+        }});
+    Lux.Scene.add(current_actor);
 }
 
 function parse_expression(v)

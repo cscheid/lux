@@ -1,12 +1,12 @@
 var gl;
-var points_batch;
+var points_actor;
 var rb;
 var pointsize, pointweight;
 var interactor;
 
 //////////////////////////////////////////////////////////////////////////////
 
-function make_points_batch(x, y, width, height)
+function make_points_actor(x, y, width, height)
 {
     var points_model = Lux.model({
         x: x,
@@ -16,38 +16,33 @@ function make_points_batch(x, y, width, height)
     var pt = Shade.vec(points_model.x, points_model.y);
 
     rb = Lux.render_buffer({ width: width, height: height, type: gl.FLOAT });
-    var rb_batch = rb.make_screen_batch(function(texel_accessor) {
-        return Shade.vec(1,1,1,2)
-            .sub(Shade.Utils.lerp([
-                Shade.color("white"),
-                Shade.color("#d29152"),
-                Shade.color("sienna"),
-                Shade.color("black")])(texel_accessor().at(0).add(1).log()));
-    });
 
-    var batch = Lux.bake(points_model, {
-        position: interactor.project(pt),
-        mode: Lux.DrawingMode.additive,
-        color: Shade.pointCoord().sub(Shade.vec(0.5, 0.5))
-            .norm().pow(2).neg()
-            .mul(20)
-            .exp()
-            .mul(pointweight)
-            .mul(interactor.zoom.pow(0.33))
-            .mul(Shade.color("white")),
-        point_size: interactor.zoom.pow(0.5).mul(pointsize)
-    });
+    var internal_points_actor = Lux.actor({
+        model: points_model, 
+        appearance: {
+            position: pt,
+            mode: Lux.DrawingMode.additive,
+            color: Shade.pointCoord().sub(Shade.vec(0.5, 0.5))
+                .norm().pow(2).neg()
+                .mul(20)
+                .exp()
+                .mul(pointweight)
+                .mul(interactor.zoom.pow(0.33))
+                .mul(Shade.color("white")),
+            point_size: interactor.zoom.pow(0.5).mul(pointsize)}});
 
-    return {
-        draw: function() {
-            rb.with_bound_buffer(function() {
-                gl.clear(gl.COLOR_BUFFER_BIT);
-                if (batch)
-                    batch.draw();
-            });
-            rb_batch.draw();
+    rb.scene.add(internal_points_actor);
+
+    return Lux.actor_list([rb.scene, rb.screen_actor({
+        texel_function: function(texel_accessor) {
+            return Shade.vec(1,1,1,2)
+                .sub(Shade.Utils.lerp([
+                    Shade.color("white"),
+                    Shade.color("#d29152"),
+                    Shade.color("sienna"),
+                    Shade.color("black")])(texel_accessor().at(0).add(1).log()));
         }
-    };
+    })]);
 }
 
 function init_gui()
@@ -60,8 +55,6 @@ function init_gui()
             y = Number($("#imagvalue").val());
         if (!isNaN(x) && !isNaN(y)) {
             interactor.transition_to(vec.make([x, y]), interactor.zoom.get(), 3);
-            // interactor.center.set();
-            // Lux.Scene.invalidate();
         }
     });
     $(window).resize(function(eventObject) {
@@ -123,11 +116,10 @@ $().ready(function() {
     Lux.Net.binary(["data/roots_real.raw", "data/roots_imag.raw"], function (obj) {
         var x = Lux.attribute_buffer({ vertex_array: new Float32Array(obj["data/roots_real.raw"]), item_size: 1});
         var y = Lux.attribute_buffer({ vertex_array: new Float32Array(obj["data/roots_imag.raw"]), item_size: 1});
-        points_batch = make_points_batch(x, y, width, height);
+        points_actor = make_points_actor(x, y, width, height);
 
         $("#loading").fadeOut(500);
-        Lux.Scene.add(points_batch);
+        Lux.Scene.add(points_actor);
         Lux.Scene.invalidate();
     });
-    Lux.Scene.invalidate();
 });

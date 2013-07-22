@@ -22,18 +22,22 @@ $().ready(function () {
     var now = ctx.parameters.now;
     var angle = now.mul(50).radians();
 
-    Lux.Scene.add(Lux.bake(square, {
-        position: camera(Shade.translation( 1.5, 0, -6))
-                        (Shade.rotation(angle, Shade.vec(1, 0, 0)))
-                        (square.vertex),
-        color: Shade.color('#88f')
-    }));
-    Lux.Scene.add(Lux.bake(triangle, {
-        position: camera(Shade.translation(-1.5, 0, -6))
-                        (Shade.rotation(angle, Shade.vec(0, 1, 0)))
-                        (triangle.vertex),
-        color: triangle.color
-    }));
+    Lux.Scene.add(Lux.actor({ 
+        model: square, 
+        appearance: {
+            position: camera(Shade.translation( 1.5, 0, -6))
+            (Shade.rotation(angle, Shade.vec(1, 0, 0)))
+            (square.vertex),
+            color: Shade.color('#88f')
+    }}));
+    Lux.Scene.add(Lux.actor({
+        model: triangle, 
+        appearance: {
+            position: camera(Shade.translation(-1.5, 0, -6))
+            (Shade.rotation(angle, Shade.vec(0, 1, 0)))
+            (triangle.vertex),
+            color: triangle.color
+    }}));
 
     Lux.Scene.animate();
 });

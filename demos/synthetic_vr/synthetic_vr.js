@@ -39,19 +39,18 @@ $().ready(function () {
 
     var color = Shade.vec(Shade.vec(1,1,1).mul(volume_samples.average().mul(2)), 1);
     
-    var square = Lux.bake(square_model, {
-        position: vertex_pos,
-        color: color, // Shade.vec(vertex_pos.swizzle("xy").add(1).div(2), rerange.average(), 1),
-        mode: Lux.DrawingMode.over
-    });
+    var square = Lux.actor({
+        model: square_model, 
+        appearance: {
+            position: vertex_pos,
+            color: color, // Shade.vec(vertex_pos.swizzle("xy").add(1).div(2), rerange.average(), 1),
+            mode: Lux.DrawingMode.over
+        }});
 
     Lux.Scene.add(square);
     var start = new Date().getTime();
-    var f = function() {
-        window.requestAnimFrame(f);
+    Lux.Scene.animate(function() {
         var elapsed = new Date().getTime() - start;
         angle_y.set((elapsed / 40) * (Math.PI/180));
-        Lux.Scene.invalidate();
-    };
-    f();
+    });
 });

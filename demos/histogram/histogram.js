@@ -23,6 +23,7 @@ function histo_buffer(opts)
 
     var ctx = Lux._globals.ctx;
     var render_buffer = Lux.render_buffer({
+        clearColor: [0,0,0,0],
         width: sz,
         height: sz,
         type: ctx.FLOAT // enable render to floating-point texture
@@ -43,18 +44,23 @@ function histo_buffer(opts)
         return Shade.vec(map(xy), 0, 1);
     }
 
-    var convert_batch = render_buffer.make_screen_batch(function(texel_accessor) {
-        return Shade.Bits.encode_float(texel_accessor().r());
-    });
+    var convert_actor = render_buffer.screen_actor({
+        texel_function: function(texel_accessor) {
+            return Shade.Bits.encode_float(texel_accessor().r());
+        }});
     
-    var batch = Lux.bake({
-        type: "points",
-        elements: opts.elements
-    }, {
-        mode: Lux.DrawingMode.additive,
-        color: opts.weight,
-        position: bin_to_screen(opts.bin)
-    });
+    var draw_actor = Lux.actor({
+        model: {
+            type: "points",
+            elements: opts.elements
+        }, 
+        appearance: {
+            mode: Lux.DrawingMode.additive,
+            color: opts.weight,
+            screen_position: bin_to_screen(opts.bin)
+        }});
+    render_buffer.scene.add(draw_actor);
+    read_render_buffer.scene.add(convert_actor);
 
     return {
         buffer: render_buffer,
@@ -65,37 +71,31 @@ function histo_buffer(opts)
             return Shade.texture2D(this.buffer, this.bin_address(pos)).r();
         }),
         compute: function() {
-            render_buffer.with_bound_buffer(function() {
-                var ctx = Lux._globals.ctx;
-                ctx.clearColor(0,0,0,0);
-                ctx.clear(ctx.COLOR_BUFFER_BIT);
-                batch.draw();
-            });
+            render_buffer.scene.draw();
         },
         read: function() {
+            read_render_buffer.scene.draw();
+            /* In a sane world, we would do this:
+
+             var floatb = new Float32Array(sz * sz);
+             ctx.readPixels(0, 0, sz, sz, ctx.RGBA, ctx.FLOAT, floatb);
+             return floatb;
+
+             or some rough equivalent. In this crazy WebGL world we
+             live in, you can render to a floating point texture,
+             you can fetch floating point values in texture
+             samplers, but you cannot call readPixels on an FBO
+             when it is bound to a floating-point texture.
+             
+             This upgrades GPGPU from mere torture to a
+             particularly exquisite form of torture.
+
+             So we're reduced to doing silly things like Shade.Bits.convert_to_float
+             and casting to Float32Array, one channel at a time. Le sigh.
+
+            */
             return read_render_buffer.with_bound_buffer(function() {
                 var ctx = Lux._globals.ctx;
-                /* In a sane world, we would do this:
-
-                var floatb = new Float32Array(sz * sz);
-                ctx.readPixels(0, 0, sz, sz, ctx.RGBA, ctx.FLOAT, floatb);
-                return floatb;
-
-                or some rough equivalent. In this crazy WebGL world we
-                live in, you can render to a floating point texture,
-                you can fetch floating point values in texture
-                samplers, but you cannot call readPixels on an FBO
-                when it is bound to a floating-point texture.
-                
-                This upgrades GPGPU from mere torture to a
-                particularly exquisite form of torture.
-
-                So we're reduced to doing silly things like Shade.Bits.convert_to_float
-                and casting to Float32Array, one channel at a time. Le sigh.
-
-                */
-
-                convert_batch.draw();
                 var buffer = new ArrayBuffer(4*sz*sz);
                 var uint8 = new Uint8Array(buffer);
                 ctx.readPixels(0, 0, sz, sz,
@@ -151,7 +151,7 @@ function init_webgl()
 
     var project = Shade(function(x) { return x.mul(2).sub(1); });
 
-    bars_batch = Lux.Marks.aligned_rects({
+    Lux.Scene.add(Lux.Marks.aligned_rects({
         elements: bin_count,
         bottom: _.compose(project, function(i) { return 0; }),
         top:    _.compose(project, function(i) { return histo.bin_value(i).div(30); }),
@@ -160,17 +160,9 @@ function init_webgl()
         color:  function(i) {
             return Shade.Colors.shadetable.hcl.create(0, 50, histo.bin_value(i).mul(3)).as_shade();
         }
-    });
+    }));
 }
 
 $().ready(function() {
     init_webgl();
-    var start = new Date().getTime();
-    var f = function () {
-        if (alive) {
-            window.requestAnimFrame(f, canvas);
-        }
-        gl.display();
-    };
-    f();
 });

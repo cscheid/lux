@@ -1,0 +1,33 @@
+<html>
+<head><title>Transforms, interlude 1</title>
+  <link rel="stylesheet" href="/lux/demos/css/bootstrap.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/style.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/mchighlight-javascript.css"/>
+  <script src="/lux/lib/jquery-1.6.2.min.js"></script>
+  <script src="/lux/lib/jquery.mousewheel.js"></script>
+  <script src="/lux/lux.js"></script>
+  <script src="/lux/demos/js/mclexer.js"></script>
+  <script src="/lux/demos/js/mchighlight.js"></script>
+  <script src="/lux/demos/js/mchighlight-javascript.js"></script>
+  <script src="lesson1b.js"></script>
+</head>
+<body>
+<div class="body">
+<div class="content">
+<h1>Interlude 1</h1>
+
+<canvas id="webgl" width="720" height="720"></canvas>
+<p>If you were to use the mercator transformation alone, you would not
+  see the United States, because it lies outside the default WebGL
+  range of [-1, 1]. (The lone point you see in the middle comes from
+  bad data, at latitude and longitude 0) </p>
+<div style="text-align: right">View the <a href="lesson2.js">full source</a>.</div>
+<hr>
+<p>Back to the <a href="../index.html">index</a>.</p>
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</div>
+</div>
+</body>
+</html>
