@@ -5994,11 +5994,17 @@ Shade.Debug.from_json = function(json)
             return Shade.attribute(json_node.attribute_type);
         case "varying":
             return Shade.varying(json_node.varying_name, json_node.varying_type);
+        case "index":
+            return parent_nodes[0].at(parent_nodes[1]);
         };
 
         // swizzle
         var m = json_node.type.match(/swizzle{(.+)}$/);
         if (m) return parent_nodes[0].swizzle(m[1]);
+
+        // field
+        m = json_node.type.match(/struct-accessor{(.+)}$/);
+        if (m) return parent_nodes[0].field(m[1]);
 
         var f = Shade[json_node.type];
         if (_.isUndefined(f)) {
@@ -7894,7 +7900,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [this],
             type: this.type.fields[field_name],
-            expression_type: "struct-accessor",
+            expression_type: "struct-accessor{" + field_name + "}",
             value: function() {
                 return "(" + this.parents[0].glsl_expression() + "." + field_name + ")";
             },

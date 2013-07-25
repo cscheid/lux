@@ -126,7 +126,7 @@ test("Shade expressions", function() {
         Shade.parameter("float", 1),
         Shade.add(Shade.varying("varying_1", "float"),
                   Shade.attribute("float")),
-        Shade.ifelse(Shade.lt(3, 5), Shade.mul(3, 5), 3)).json()),
+        Shade.ifelse(Shade.lt(3, 5), Shade.mul(3, 5), Shade.vec(2,3).at(1))).json()),
        "calling json() and from_json() on basic expressions");
 });
 

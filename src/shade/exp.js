@@ -384,7 +384,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [this],
             type: this.type.fields[field_name],
-            expression_type: "struct-accessor",
+            expression_type: "struct-accessor{" + field_name + "}",
             value: function() {
                 return "(" + this.parents[0].glsl_expression() + "." + field_name + ")";
             },
