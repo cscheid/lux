@@ -61,6 +61,15 @@ Shade.attribute = function(type)
             }
             bound_buffer = buffer;
         },
-        _attribute_name: name
+        _attribute_name: name,
+
+        //////////////////////////////////////////////////////////////////////
+        // debugging
+
+        _json_helper: Shade.Debug._json_builder("attribute", function(obj) {
+            obj.attribute_type = type.repr();
+            return obj;
+        })
+
     });
 };

@@ -5990,6 +5990,10 @@ Shade.Debug.from_json = function(json)
             return Shade.struct(_.build(_.zip(json_node.fields, json_node.parents)));
         case "parameter":
             return Shade.parameter(json_node.parameter_type);
+        case "attribute":
+            return Shade.attribute(json_node.attribute_type);
+        case "varying":
+            return Shade.varying(json_node.varying_name, json_node.varying_type);
         };
 
         // swizzle
@@ -8711,7 +8715,16 @@ Shade.attribute = function(type)
             }
             bound_buffer = buffer;
         },
-        _attribute_name: name
+        _attribute_name: name,
+
+        //////////////////////////////////////////////////////////////////////
+        // debugging
+
+        _json_helper: Shade.Debug._json_builder("attribute", function(obj) {
+            obj.attribute_type = type.repr();
+            return obj;
+        })
+
     });
 };
 Shade.varying = function(name, type)
@@ -8762,7 +8775,16 @@ Shade.varying = function(name, type)
                 ctx.add_initialization(this.precomputed_value_glsl_name + " = " + name);
                 ctx.value_function(this, this.precomputed_value_glsl_name);
             }
-        }
+        },
+
+        //////////////////////////////////////////////////////////////////////
+        // debugging
+
+        _json_helper: Shade.Debug._json_builder("varying", function(obj) {
+            obj.varying_type = type.repr();
+            obj.varying_name = name;
+            return obj;
+        })
     });
 };
 

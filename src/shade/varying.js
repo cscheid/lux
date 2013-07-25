@@ -46,7 +46,16 @@ Shade.varying = function(name, type)
                 ctx.add_initialization(this.precomputed_value_glsl_name + " = " + name);
                 ctx.value_function(this, this.precomputed_value_glsl_name);
             }
-        }
+        },
+
+        //////////////////////////////////////////////////////////////////////
+        // debugging
+
+        _json_helper: Shade.Debug._json_builder("varying", function(obj) {
+            obj.varying_type = type.repr();
+            obj.varying_name = name;
+            return obj;
+        })
     });
 };
 

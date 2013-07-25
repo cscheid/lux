@@ -20,6 +20,10 @@ Shade.Debug.from_json = function(json)
             return Shade.struct(_.build(_.zip(json_node.fields, json_node.parents)));
         case "parameter":
             return Shade.parameter(json_node.parameter_type);
+        case "attribute":
+            return Shade.attribute(json_node.attribute_type);
+        case "varying":
+            return Shade.varying(json_node.varying_name, json_node.varying_type);
         };
 
         // swizzle
