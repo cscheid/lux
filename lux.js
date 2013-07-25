@@ -5977,7 +5977,6 @@ Shade.Debug.walk = function(exp, visit, revisit) {
  */
 Shade.Debug.from_json = function(json)
 {
-    debugger;
     var refs = {};
     function build_node(json_node) {
         var parent_nodes = _.map(json_node.parents, function(parent) {
@@ -12961,6 +12960,13 @@ Shade.ThreeD.normal = function(position)
     var dPos_dpixely = Shade.dFdy(position);
     return Shade.normalize(Shade.cross(dPos_dpixelx, dPos_dpixely));
 };
+Shade.ThreeD.cull_backface = Shade(function(position, ccw)
+{
+    if (_.isUndefined(ccw)) ccw = Shade(true);
+    ccw = ccw.ifelse(1, -1);
+    var n = Shade.ThreeD.normal(position);
+    return position.discard_if(n.cross(Shade.vec(0,0,ccw)).z().gt(0));
+});
 Lux.Geometry = {};
 Lux.Geometry.triangulate = function(opts) {
     var poly = _.map(opts.contour, function(contour) {
@@ -14041,7 +14047,7 @@ Lux.Marks.globe = function(opts)
     var sphere_actor = Lux.actor({
         model: patch, 
         appearance: {
-            gl_Position: mvp(v),
+            gl_Position: Shade.ThreeD.cull_backface(mvp(v)),
             gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
             mode: Lux.DrawingMode.pass
         }});
