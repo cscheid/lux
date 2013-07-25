@@ -384,7 +384,13 @@ Shade.program = function(program_obj)
 
     var used_varying_names = [];
     _.each(fp_obj, function(v, k) {
-        v = fp_optimize(v);
+        try {
+            v = fp_optimize(v);
+        } catch (e) {
+            console.error("fragment program optimization crashed. This is a bug. Please send the following JSON object in the bug report:");
+            console.error(JSON.stringify(v.json()));
+            throw e;
+        }
         used_varying_names.push.apply(used_varying_names,
                                       _.map(v.find_if(is_varying),
                                             function (v) { 
@@ -394,9 +400,18 @@ Shade.program = function(program_obj)
     });
 
     _.each(vp_obj, function(v, k) {
+        var new_v;
         if ((varying_names.indexOf(k) === -1) ||
-            (used_varying_names.indexOf(k) !== -1))
-            vp_exprs.push(Shade.set(vp_optimize(v), k));
+            (used_varying_names.indexOf(k) !== -1)) {
+            try {
+                new_v = vp_optimize(v);
+            } catch (e) {
+                console.error("vertex program optimization crashed. This is a bug. Please send the following JSON object in the bug report:");
+                console.error(JSON.stringify(v.json()));
+                throw e;
+            }
+            vp_exprs.push(Shade.set(new_v, k));
+        }
     });
 
     var vp_exp = Shade.seq(vp_exprs);

@@ -8935,7 +8935,7 @@ Shade.add = function() {
             v2 = e2.element(i);
         else
             v2 = e2;
-        return operator(v1, v2, "+", add_type_resolver, evaluator, element_evaluator);
+        return operator(v1, v2, "+", add_type_resolver, evaluator, element_evaluator, "add");
     }
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
@@ -9038,7 +9038,7 @@ Shade.sub = function() {
             v2 = e2.element(i);
         else
             v2 = e2;
-        return operator(v1, v2, "-", sub_type_resolver, evaluator, element_evaluator);
+        return operator(v1, v2, "-", sub_type_resolver, evaluator, element_evaluator, "sub");
     }
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
@@ -9167,7 +9167,7 @@ Shade.div = function() {
             v2 = e2.element(i);
         else
             v2 = e2;
-        return operator(v1, v2, "/", div_type_resolver, evaluator, element_evaluator);
+        return operator(v1, v2, "/", div_type_resolver, evaluator, element_evaluator, "div");
     }
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
@@ -9293,21 +9293,21 @@ Shade.mul = function() {
                 },
                 "vec": function() { 
                     v1 = e1; v2 = e2.element(i); 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
                 },
                 "mat": function() { 
                     v1 = e1; v2 = e2.element(i); 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
                 }
             },
             "vec": { 
                 "pod": function() { 
                     v1 = e1.element(i); v2 = e2; 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
                 },
                 "vec": function() { 
                     v1 = e1.element(i); v2 = e2.element(i); 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
                 },
                 "mat": function() {
                     // FIXME should we have a mat_dimension?
@@ -9317,7 +9317,7 @@ Shade.mul = function() {
             "mat": { 
                 "pod": function() { 
                     v1 = e1.element(i); v2 = e2;
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
                 },
                 "vec": function() {
                     // FIXME should we have a mat_dimension?
@@ -9360,7 +9360,7 @@ Shade.mul = function() {
             }
         }
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "*", mul_type_resolver, evaluator, element_evaluator);
+                                  "*", mul_type_resolver, evaluator, element_evaluator, "mul");
     }
     return current_result;
 };

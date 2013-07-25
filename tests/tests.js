@@ -122,7 +122,7 @@ test("Shade expressions", function() {
         return e.message === "discard_if expects two parameters";
     }, "discard_if requires two parameters");
 
-    ok(Shade.Debug.from_json(Shade.vec(1,Shade.add(3, 4), Shade.ifelse(Shade.lt(3, 5), 1, 3)).json()),
+    ok(Shade.Debug.from_json(Shade.vec(1,Shade.add(3, 4), Shade.ifelse(Shade.lt(3, 5), Shade.mul(3, 5), 3)).json()),
        "calling json() and from_json() on basic expressions");
 });
 
