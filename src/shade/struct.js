@@ -59,7 +59,11 @@ Shade.struct = function(obj)
         },
         call_operator: function(v) {
             return this.field(v);
-        }
+        },
+        _json_helper: Shade.Debug._json_builder("struct", function(obj) {
+            obj.fields = ks;
+            return obj;
+        })
     });
 
     // _.each(ks, function(k) {

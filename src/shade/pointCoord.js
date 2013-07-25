@@ -8,6 +8,7 @@ Shade.pointCoord = function() {
         },
         evaluate: function() {
             throw new Error("evaluate undefined for pointCoord");
-        }
+        },
+        _json_key: function() { return 'pointCoord'; }
     });
 };

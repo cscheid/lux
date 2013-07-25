@@ -18,6 +18,7 @@ function zipWith3(f, v1, v2, v3)
 function builtin_glsl_function(opts)
 {
     var name = opts.name;
+    var shade_name = opts.shade_name || opts.name;
     var evaluator = opts.evaluator;
     var type_resolving_list = opts.type_resolving_list;
     var element_function = opts.element_function;
@@ -80,7 +81,8 @@ function builtin_glsl_function(opts)
                             return t.glsl_expression(); 
                         }).join(", "),
                         ")"].join(" ");
-            }
+            },
+            _json_helper: Shade.Debug._json_builder(shade_name)
         };
 
         if (evaluator) {
@@ -429,6 +431,7 @@ Shade.smoothstep = smoothstep;
 
 var norm = builtin_glsl_function({
     name: "length", 
+    shade_name: "norm",
     type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,    Shade.Types.float_t],

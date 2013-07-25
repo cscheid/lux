@@ -57,6 +57,8 @@ Shade.array = function(v)
             var that = this;
             xform = xform || function(x) { return x; };
             return Shade.locate(function(i) { return xform(that.at(i.as_int())); }, target, 0, array_size-1);
-        }
+        },
+
+        _json_key: function() { return "array"; }
     });
 };

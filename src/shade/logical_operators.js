@@ -1,7 +1,7 @@
 (function() {
 
 var logical_operator_binexp = function(exp1, exp2, operator_name, evaluator,
-                                       parent_is_unconditional)
+                                       parent_is_unconditional, shade_name)
 {
     parent_is_unconditional = parent_is_unconditional ||
         function (i) { return true; };
@@ -16,7 +16,8 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, evaluator,
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
             return evaluator(this, cache);
         }),
-        parent_is_unconditional: parent_is_unconditional
+        parent_is_unconditional: parent_is_unconditional,
+        _json_key: function() { return shade_name; }
     });
 };
 
@@ -28,7 +29,7 @@ var lift_binfun_to_evaluator = function(binfun) {
 };
 
 var logical_operator_exp = function(operator_name, binary_evaluator,
-                                    parent_is_unconditional)
+                                    parent_is_unconditional, shade_name)
 {
     return function() {
         if (arguments.length === 0) 
@@ -50,7 +51,7 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
             current_result = logical_operator_binexp(
                 current_result, next,
                 operator_name, binary_evaluator,
-                parent_is_unconditional);
+                parent_is_unconditional, shade_name);
         }
         return current_result;
     };
@@ -58,7 +59,7 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
 
 Shade.or = logical_operator_exp(
     "||", lift_binfun_to_evaluator(function(a, b) { return a || b; }),
-    function(i) { return i === 0; }
+    function(i) { return i === 0; }, "or"
 );
 
 Shade.Exp.or = function(other)
@@ -68,7 +69,7 @@ Shade.Exp.or = function(other)
 
 Shade.and = logical_operator_exp(
     "&&", lift_binfun_to_evaluator(function(a, b) { return a && b; }),
-    function(i) { return i === 0; }
+    function(i) { return i === 0; }, "and"
 );
 
 Shade.Exp.and = function(other)
@@ -77,7 +78,7 @@ Shade.Exp.and = function(other)
 };
 
 Shade.xor = logical_operator_exp(
-    "^^", lift_binfun_to_evaluator(function(a, b) { return ~~(a ^ b); }));
+    "^^", lift_binfun_to_evaluator(function(a, b) { return ~~(a ^ b); }), undefined, "xor");
 Shade.Exp.xor = function(other)
 {
     return Shade.xor(this, other);
@@ -97,19 +98,21 @@ Shade.not = Shade(function(exp)
         },
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
             return !this.parents[0].evaluate(cache);
-        })
+        }),
+        _json_key: function() { return "not"; }
     });
 });
 
 Shade.Exp.not = function() { return Shade.not(this); };
 
-var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator)
+var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator, shade_name)
 {
+    console.log(operator_name, shade_name);
     return Shade(function(first, second) {
         type_checker(first.type, second.type);
 
         return logical_operator_binexp(
-            first, second, operator_name, binary_evaluator);
+            first, second, operator_name, binary_evaluator, undefined, shade_name);
     });
 };
 
@@ -140,19 +143,19 @@ var equality_type_checker = function(name) {
 };
 
 Shade.lt = comparison_operator_exp("<", inequality_type_checker("<"),
-    lift_binfun_to_evaluator(function(a, b) { return a < b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a < b; }), "lt");
 Shade.Exp.lt = function(other) { return Shade.lt(this, other); };
 
 Shade.le = comparison_operator_exp("<=", inequality_type_checker("<="),
-    lift_binfun_to_evaluator(function(a, b) { return a <= b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a <= b; }), "le");
 Shade.Exp.le = function(other) { return Shade.le(this, other); };
 
 Shade.gt = comparison_operator_exp(">", inequality_type_checker(">"),
-    lift_binfun_to_evaluator(function(a, b) { return a > b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a > b; }), "gt");
 Shade.Exp.gt = function(other) { return Shade.gt(this, other); };
 
 Shade.ge = comparison_operator_exp(">=", inequality_type_checker(">="),
-    lift_binfun_to_evaluator(function(a, b) { return a >= b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a >= b; }), "ge");
 Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
@@ -163,7 +166,7 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
                          function (x) { return x; });
         }
         return Shade.Types.type_of(a).value_equals(a, b);
-    }));
+    }), "eq");
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
@@ -174,7 +177,7 @@ Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
                          function (x) { return x; });
         }
         return !Shade.Types.type_of(a).value_equals(a, b);
-    }));
+    }), "ne");
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 
 // component-wise comparisons are defined on builtins.js

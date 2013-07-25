@@ -5921,6 +5921,111 @@ var Shade = function(exp)
 (function() {
 
 Shade.debug = false;
+Shade.Debug = {};
+/*
+ * Shade.Debug.walk walks an expression dag and calls 'visit' on each
+ * expression in a bottom-up order. The return values of 'visit' are
+ * passed to the higher-level invocations of 'visit', and so is the
+ * dictionary of references that is used to resolve multiple node
+ * references. Shade.Debug.walk will only call 'visit' once per node,
+ * even if visit can be reached by many different paths in the dag.
+ * 
+ * If 'revisit' is passed, then it is called every time a node is 
+ * revisited. 
+ * 
+ * Shade.Debug.walk returns the dictionary of references.
+ */
+
+Shade.Debug.walk = function(exp, visit, revisit) {
+    var refs = {};
+    function internal_walk_no_revisit(node) {
+        if (!_.isUndefined(refs[node.guid])) {
+            return refs[node.guid];
+        }
+        var parent_results = _.map(node.parents, internal_walk_no_revisit);
+        var result = visit(node, parent_results, refs);
+        refs[node.guid] = result;
+        return result;
+    };
+    function internal_walk_revisit(node) {
+        if (!_.isUndefined(refs[node.guid])) {
+            return revisit(node, _.map(node.parents, function(exp) {
+                return refs[exp.guid];
+            }), refs);
+        }
+        var parent_results = _.map(node.parents, internal_walk_revisit);
+        var result = visit(node, parent_results, refs);
+        refs[node.guid] = result;
+        return result;
+    }
+    if (!_.isUndefined(revisit))
+        internal_walk_revisit(exp);
+    else
+        internal_walk_no_revisit(exp);
+    return refs;
+};
+/*
+ * from_json produces a JSON object that satisfies the following property:
+ * 
+ * if j is a Shade expresssion,
+ * 
+ * Shade.Debug.from_json(f.json()) equals f, up to guid renaming
+ */
+Shade.Debug.from_json = function(json)
+{
+    debugger;
+    var refs = {};
+    function build_node(json_node) {
+        var parent_nodes = _.map(json_node.parents, function(parent) {
+            return refs[parent.guid];
+        });
+        switch (json_node.type) {
+        case "constant": 
+            return Shade.constant.apply(undefined, json_node.values);
+        case "struct":
+            return Shade.struct(_.build(_.zip(json_node.fields, json_node.parents)));
+        };
+
+        // swizzle
+        var m = json_node.type.match(/swizzle{(.+)}$/);
+        if (m) return parent_nodes[0].swizzle(m[1]);
+
+        var f = Shade[json_node.type];
+        if (_.isUndefined(f)) {
+            throw new Error("from_json: unimplemented type '" + json_node.type + "'");
+        }
+        return f.apply(undefined, parent_nodes);
+    }
+    function walk_json(json_node) {
+        if (json_node.type === 'reference')
+            return refs[json_node.guid];
+        _.each(json_node.parents, walk_json);
+        var new_node = build_node(json_node);
+        refs[json_node.guid] = new_node;
+        return new_node;
+    }
+    return walk_json(json);
+};
+/*
+ * Shade.Debug._json_builder is a helper function used internally by
+ * the Shade infrastructure to build JSON objects through
+ * Shade.Debug.walk visitors.
+ * 
+ */
+Shade.Debug._json_builder = function(type, parent_reprs_fun) {
+    parent_reprs_fun = parent_reprs_fun || function (i) { return i; };
+    return function(parent_reprs, refs) {
+        if (!_.isUndefined(refs[this.guid]))
+            return { type: "reference",
+                     guid: this.guid };
+        else {
+            var result = { type: type || this._json_key(),
+                           guid: this.guid,
+                           parents: parent_reprs };
+            return parent_reprs_fun.call(this, result);
+        }
+    };
+};
 //////////////////////////////////////////////////////////////////////////////
 // make converts objects which can be meaningfully interpreted as
 // Exp values to the appropriate Exp values, giving us some poor-man
@@ -7865,6 +7970,14 @@ Shade.Exp = {
 
     //////////////////////////////////////////////////////////////////////////
     // debugging infrastructure
+
+    json: function() {
+        function helper_f(node, parents, refs) { return node._json_helper(parents, refs); };
+        var refs = Shade.Debug.walk(this, helper_f, helper_f);
+        return refs[this.guid];
+    },
+    _json_helper: Shade.Debug._json_builder(),    
+    _json_key: function() { return this.expression_type; },
     
     debug_print: function(do_what) {
         var lst = [];
@@ -8161,7 +8274,15 @@ Shade.constant = function(v, type)
             }),
             compile: function(ctx) {},
             parents: [],
-            type: type
+            type: type,
+
+            //////////////////////////////////////////////////////////////////
+            // debugging
+
+            _json_helper: Shade.Debug._json_builder("constant", function(obj) {
+                obj.values = args;
+                return obj;
+            })
         });
     };
 
@@ -8283,7 +8404,9 @@ Shade.array = function(v)
             var that = this;
             xform = xform || function(x) { return x; };
             return Shade.locate(function(i) { return xform(that.at(i.as_int())); }, target, 0, array_size-1);
-        }
+        },
+
+        _json_key: function() { return "array"; }
     });
 };
 // Shade.struct denotes a heterogeneous structure of Shade values:
@@ -8347,7 +8470,11 @@ Shade.struct = function(obj)
         },
         call_operator: function(v) {
             return this.field(v);
-        }
+        },
+        _json_helper: Shade.Debug._json_builder("struct", function(obj) {
+            obj.fields = ks;
+            return obj;
+        })
     });
 
     // _.each(ks, function(k) {
@@ -8635,7 +8762,8 @@ Shade.fragCoord = function() {
             throw new Error("evaluate undefined for fragCoord");
         },
         compile: function(ctx) {
-        }
+        },
+        json_key: function() { return "fragCoord"; }
     });
 };
 Shade.pointCoord = function() {
@@ -8648,7 +8776,8 @@ Shade.pointCoord = function() {
         },
         evaluate: function() {
             throw new Error("evaluate undefined for pointCoord");
-        }
+        },
+        _json_key: function() { return 'pointCoord'; }
     });
 };
 Shade.round_dot = function(color) {
@@ -8660,13 +8789,15 @@ Shade.round_dot = function(color) {
 var operator = function(exp1, exp2, 
                         operator_name, type_resolver,
                         evaluator,
-                        element_evaluator)
+                        element_evaluator,
+                        shade_name)
 {
     var resulting_type = type_resolver(exp1.type, exp2.type);
     return Shade._create_concrete_value_exp( {
         parents: [exp1, exp2],
         type: resulting_type,
         expression_type: "operator" + operator_name,
+        _json_key: function() { return shade_name; },
         value: function () {
             var p1 = this.parents[0], p2 = this.parents[1];
             if (this.type.is_struct()) {
@@ -8805,7 +8936,7 @@ Shade.add = function() {
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
                                   "+", add_type_resolver, evaluator,
-                                  element_evaluator);
+                                  element_evaluator, "add");
     }
     return current_result;
 };
@@ -8909,7 +9040,7 @@ Shade.sub = function() {
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
                                   "-", sub_type_resolver, evaluator,
-                                  element_evaluator);
+                                  element_evaluator, "sub");
     }
     return current_result;
 };
@@ -9037,7 +9168,8 @@ Shade.div = function() {
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "/", div_type_resolver, evaluator, element_evaluator);
+                                  "/", div_type_resolver, evaluator, element_evaluator,
+                                  "div");
     }
     return current_result;
 };
@@ -9207,7 +9339,8 @@ Shade.mul = function() {
                 },
                 "mat": function() {
                     var col = e2.element(i);
-                    return operator(e1, col, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(e1, col, "*", mul_type_resolver, evaluator, element_evaluator,
+                                    "mul");
                 }
             }
         };
@@ -9435,6 +9568,7 @@ function zipWith3(f, v1, v2, v3)
 function builtin_glsl_function(opts)
 {
     var name = opts.name;
+    var shade_name = opts.shade_name || opts.name;
     var evaluator = opts.evaluator;
     var type_resolving_list = opts.type_resolving_list;
     var element_function = opts.element_function;
@@ -9497,7 +9631,8 @@ function builtin_glsl_function(opts)
                             return t.glsl_expression(); 
                         }).join(", "),
                         ")"].join(" ");
-            }
+            },
+            _json_helper: Shade.Debug._json_builder(shade_name)
         };
 
         if (evaluator) {
@@ -9846,6 +9981,7 @@ Shade.smoothstep = smoothstep;
 
 var norm = builtin_glsl_function({
     name: "length", 
+    shade_name: "norm",
     type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,    Shade.Types.float_t],
@@ -10818,7 +10954,7 @@ Shade.Exp.tanh = function() { return Shade.tanh(this); };
 (function() {
 
 var logical_operator_binexp = function(exp1, exp2, operator_name, evaluator,
-                                       parent_is_unconditional)
+                                       parent_is_unconditional, shade_name)
 {
     parent_is_unconditional = parent_is_unconditional ||
         function (i) { return true; };
@@ -10833,7 +10969,8 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, evaluator,
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
             return evaluator(this, cache);
         }),
-        parent_is_unconditional: parent_is_unconditional
+        parent_is_unconditional: parent_is_unconditional,
+        _json_key: function() { return shade_name; }
     });
 };
 
@@ -10845,7 +10982,7 @@ var lift_binfun_to_evaluator = function(binfun) {
 };
 
 var logical_operator_exp = function(operator_name, binary_evaluator,
-                                    parent_is_unconditional)
+                                    parent_is_unconditional, shade_name)
 {
     return function() {
         if (arguments.length === 0) 
@@ -10867,7 +11004,7 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
             current_result = logical_operator_binexp(
                 current_result, next,
                 operator_name, binary_evaluator,
-                parent_is_unconditional);
+                parent_is_unconditional, shade_name);
         }
         return current_result;
     };
@@ -10875,7 +11012,7 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
 
 Shade.or = logical_operator_exp(
     "||", lift_binfun_to_evaluator(function(a, b) { return a || b; }),
-    function(i) { return i === 0; }
+    function(i) { return i === 0; }, "or"
 );
 
 Shade.Exp.or = function(other)
@@ -10885,7 +11022,7 @@ Shade.Exp.or = function(other)
 
 Shade.and = logical_operator_exp(
     "&&", lift_binfun_to_evaluator(function(a, b) { return a && b; }),
-    function(i) { return i === 0; }
+    function(i) { return i === 0; }, "and"
 );
 
 Shade.Exp.and = function(other)
@@ -10894,7 +11031,7 @@ Shade.Exp.and = function(other)
 };
 
 Shade.xor = logical_operator_exp(
-    "^^", lift_binfun_to_evaluator(function(a, b) { return ~~(a ^ b); }));
+    "^^", lift_binfun_to_evaluator(function(a, b) { return ~~(a ^ b); }), undefined, "xor");
 Shade.Exp.xor = function(other)
 {
     return Shade.xor(this, other);
@@ -10914,19 +11051,21 @@ Shade.not = Shade(function(exp)
         },
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
             return !this.parents[0].evaluate(cache);
-        })
+        }),
+        _json_key: function() { return "not"; }
     });
 });
 
 Shade.Exp.not = function() { return Shade.not(this); };
 
-var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator)
+var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator, shade_name)
 {
+    console.log(operator_name, shade_name);
     return Shade(function(first, second) {
         type_checker(first.type, second.type);
 
         return logical_operator_binexp(
-            first, second, operator_name, binary_evaluator);
+            first, second, operator_name, binary_evaluator, undefined, shade_name);
     });
 };
 
@@ -10957,19 +11096,19 @@ var equality_type_checker = function(name) {
 };
 
 Shade.lt = comparison_operator_exp("<", inequality_type_checker("<"),
-    lift_binfun_to_evaluator(function(a, b) { return a < b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a < b; }), "lt");
 Shade.Exp.lt = function(other) { return Shade.lt(this, other); };
 
 Shade.le = comparison_operator_exp("<=", inequality_type_checker("<="),
-    lift_binfun_to_evaluator(function(a, b) { return a <= b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a <= b; }), "le");
 Shade.Exp.le = function(other) { return Shade.le(this, other); };
 
 Shade.gt = comparison_operator_exp(">", inequality_type_checker(">"),
-    lift_binfun_to_evaluator(function(a, b) { return a > b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a > b; }), "gt");
 Shade.Exp.gt = function(other) { return Shade.gt(this, other); };
 
 Shade.ge = comparison_operator_exp(">=", inequality_type_checker(">="),
-    lift_binfun_to_evaluator(function(a, b) { return a >= b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a >= b; }), "ge");
 Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
@@ -10980,7 +11119,7 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
                          function (x) { return x; });
         }
         return Shade.Types.type_of(a).value_equals(a, b);
-    }));
+    }), "eq");
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
@@ -10991,7 +11130,7 @@ Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
                          function (x) { return x; });
         }
         return !Shade.Types.type_of(a).value_equals(a, b);
-    }));
+    }), "ne");
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 
 // component-wise comparisons are defined on builtins.js
@@ -11317,6 +11456,9 @@ performance problem into an actual bug.
 
 Shade.discard_if = function(exp, condition)
 {
+    if (_.isUndefined(exp) ||
+        _.isUndefined(condition))
+        throw new Error("discard_if expects two parameters");
     exp = Shade.make(exp);
     condition = Shade.make(condition);
 
@@ -11325,19 +11467,19 @@ Shade.discard_if = function(exp, condition)
             var cond = _.all(this.parents, function(v) {
                 return v.is_constant();
             });
-            return (cond && !this.parents[0].constant_value());
+            return (cond && !this.parents[1].constant_value());
         }),
         _must_be_function_call: true,
         type: exp.type,
         expression_type: "discard_if",
-        parents: [condition, exp],
+        parents: [exp, condition],
         parent_is_unconditional: function(i) {
             return i === 0;
         },
         compile: function(ctx) {
-            ctx.strings.push(exp.type.repr(), this.glsl_name, "(void) {\n",
-                             "    if (",this.parents[0].glsl_expression(),") discard;\n",
-                             "    return ", this.parents[1].glsl_expression(), ";\n}\n");
+            ctx.strings.push(this.parents[0].type.repr(), this.glsl_name, "(void) {\n",
+                             "    if (",this.parents[1].glsl_expression(),") discard;\n",
+                             "    return ", this.parents[0].glsl_expression(), ";\n}\n");
         },
         // FIXME How does evaluate interact with fragment discarding?
         // I still need to define the value of a discarded fragment. Currently evaluate

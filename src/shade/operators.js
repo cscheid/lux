@@ -3,13 +3,15 @@
 var operator = function(exp1, exp2, 
                         operator_name, type_resolver,
                         evaluator,
-                        element_evaluator)
+                        element_evaluator,
+                        shade_name)
 {
     var resulting_type = type_resolver(exp1.type, exp2.type);
     return Shade._create_concrete_value_exp( {
         parents: [exp1, exp2],
         type: resulting_type,
         expression_type: "operator" + operator_name,
+        _json_key: function() { return shade_name; },
         value: function () {
             var p1 = this.parents[0], p2 = this.parents[1];
             if (this.type.is_struct()) {
@@ -148,7 +150,7 @@ Shade.add = function() {
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
                                   "+", add_type_resolver, evaluator,
-                                  element_evaluator);
+                                  element_evaluator, "add");
     }
     return current_result;
 };
@@ -252,7 +254,7 @@ Shade.sub = function() {
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
                                   "-", sub_type_resolver, evaluator,
-                                  element_evaluator);
+                                  element_evaluator, "sub");
     }
     return current_result;
 };
@@ -380,7 +382,8 @@ Shade.div = function() {
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "/", div_type_resolver, evaluator, element_evaluator);
+                                  "/", div_type_resolver, evaluator, element_evaluator,
+                                  "div");
     }
     return current_result;
 };
@@ -550,7 +553,8 @@ Shade.mul = function() {
                 },
                 "mat": function() {
                     var col = e2.element(i);
-                    return operator(e1, col, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(e1, col, "*", mul_type_resolver, evaluator, element_evaluator,
+                                    "mul");
                 }
             }
         };

@@ -71,6 +71,9 @@ performance problem into an actual bug.
 
 Shade.discard_if = function(exp, condition)
 {
+    if (_.isUndefined(exp) ||
+        _.isUndefined(condition))
+        throw new Error("discard_if expects two parameters");
     exp = Shade.make(exp);
     condition = Shade.make(condition);
 
@@ -79,19 +82,19 @@ Shade.discard_if = function(exp, condition)
             var cond = _.all(this.parents, function(v) {
                 return v.is_constant();
             });
-            return (cond && !this.parents[0].constant_value());
+            return (cond && !this.parents[1].constant_value());
         }),
         _must_be_function_call: true,
         type: exp.type,
         expression_type: "discard_if",
-        parents: [condition, exp],
+        parents: [exp, condition],
         parent_is_unconditional: function(i) {
             return i === 0;
         },
         compile: function(ctx) {
-            ctx.strings.push(exp.type.repr(), this.glsl_name, "(void) {\n",
-                             "    if (",this.parents[0].glsl_expression(),") discard;\n",
-                             "    return ", this.parents[1].glsl_expression(), ";\n}\n");
+            ctx.strings.push(this.parents[0].type.repr(), this.glsl_name, "(void) {\n",
+                             "    if (",this.parents[1].glsl_expression(),") discard;\n",
+                             "    return ", this.parents[0].glsl_expression(), ";\n}\n");
         },
         // FIXME How does evaluate interact with fragment discarding?
         // I still need to define the value of a discarded fragment. Currently evaluate

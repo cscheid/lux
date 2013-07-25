@@ -116,6 +116,14 @@ test("Shade expressions", function() {
 
     ok(Shade(Shade.id(1)).type.equals(Shade.vec(1,1,1,1).type), "Shade id is of type vec4");
 
+    raises(function() {
+        Shade.discard_if(Shade(1));
+    }, function(e) {
+        return e.message === "discard_if expects two parameters";
+    }, "discard_if requires two parameters");
+
+    ok(Shade.Debug.from_json(Shade.vec(1,Shade.add(3, 4), Shade.ifelse(Shade.lt(3, 5), 1, 3)).json()),
+       "calling json() and from_json() on basic expressions");
 });
 
 test("Shade compilation", function() {

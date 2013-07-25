@@ -470,6 +470,14 @@ Shade.Exp = {
 
     //////////////////////////////////////////////////////////////////////////
     // debugging infrastructure
+
+    json: function() {
+        function helper_f(node, parents, refs) { return node._json_helper(parents, refs); };
+        var refs = Shade.Debug.walk(this, helper_f, helper_f);
+        return refs[this.guid];
+    },
+    _json_helper: Shade.Debug._json_builder(),    
+    _json_key: function() { return this.expression_type; },
     
     debug_print: function(do_what) {
         var lst = [];

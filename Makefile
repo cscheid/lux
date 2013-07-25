@@ -76,6 +76,10 @@ lux.js:								\
 	src/lux/ui/parameter_checkbox.js			\
 	src/lux/ui/center_zoom_interactor.js			\
 	src/shade/_begin.js					\
+	src/shade/debug/_begin.js				\
+	src/shade/debug/walk.js					\
+	src/shade/debug/from_json.js				\
+	src/shade/debug/_json_builder.js			\
 	src/shade/make.js					\
 	src/shade/memoize_on_field.js				\
 	src/shade/memoize_on_guid_dict.js			\

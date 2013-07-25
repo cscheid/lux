@@ -94,7 +94,15 @@ Shade.constant = function(v, type)
             }),
             compile: function(ctx) {},
             parents: [],
-            type: type
+            type: type,
+
+            //////////////////////////////////////////////////////////////////
+            // debugging
+
+            _json_helper: Shade.Debug._json_builder("constant", function(obj) {
+                obj.values = args;
+                return obj;
+            })
         });
     };
 
