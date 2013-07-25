@@ -107,7 +107,6 @@ Shade.Exp.not = function() { return Shade.not(this); };
 
 var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator, shade_name)
 {
-    console.log(operator_name, shade_name);
     return Shade(function(first, second) {
         type_checker(first.type, second.type);
 
