@@ -3,8 +3,6 @@
 **Lux** provides a set of primitives that make WebGL programming
 easier and cleaner.
 
-(**Lux** used to be called Facet)
-
 ### Using Lux
 
 Lux is under heavy development, so the current state of 
