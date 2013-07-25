@@ -84,7 +84,15 @@ Shade.parameter = function(type, v)
             this.watchers.splice(this.watchers.indexOf(callback), 1);
         },
         uniform_call: call,
-        uniform_name: uniform_name
+        uniform_name: uniform_name,
+
+        //////////////////////////////////////////////////////////////////////
+        // debugging
+
+        _json_helper: Shade.Debug._json_builder("parameter", function(obj) {
+            obj.parameter_type = type.repr();
+            return obj;
+        })
     });
     result._uniforms = [result];
     result.set(v);

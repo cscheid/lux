@@ -5988,6 +5988,8 @@ Shade.Debug.from_json = function(json)
             return Shade.constant.apply(undefined, json_node.values);
         case "struct":
             return Shade.struct(_.build(_.zip(json_node.fields, json_node.parents)));
+        case "parameter":
+            return Shade.parameter(json_node.parameter_type);
         };
 
         // swizzle
@@ -8621,7 +8623,15 @@ Shade.parameter = function(type, v)
             this.watchers.splice(this.watchers.indexOf(callback), 1);
         },
         uniform_call: call,
-        uniform_name: uniform_name
+        uniform_name: uniform_name,
+
+        //////////////////////////////////////////////////////////////////////
+        // debugging
+
+        _json_helper: Shade.Debug._json_builder("parameter", function(obj) {
+            obj.parameter_type = type.repr();
+            return obj;
+        })
     });
     result._uniforms = [result];
     result.set(v);
