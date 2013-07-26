@@ -14047,7 +14047,7 @@ Lux.Marks.globe = function(opts)
     var sphere_actor = Lux.actor({
         model: patch, 
         appearance: {
-            gl_Position: Shade.ThreeD.cull_backface(mvp(v)),
+            gl_Position: mvp(v), // Shade.ThreeD.cull_backface(mvp(v)),
             gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
             mode: Lux.DrawingMode.pass
         }});
