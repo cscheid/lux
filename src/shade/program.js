@@ -291,6 +291,47 @@ Shade.canonicalize_program_object = function(program_obj)
     return result;
 };
 
+//////////////////////////////////////////////////////////////////////////////
+/*
+ * Shade.program is the main procedure that compiles a Shade
+ * appearance object (which is an object with fields containing Shade
+ * expressions like 'position' and 'color') to a WebGL program (a pair
+ * of vertex and fragment shaders). It performs a variety of optimizations and
+ * program transformations to support a more uniform programming model.
+ * 
+ * The sequence of transformations is as follows:
+ * 
+ *  - An appearance object is first canonicalized (which transforms names like 
+ *    color to gl_FragColor)
+ * 
+ *  - There are some expressions that are valid in vertex shader contexts but 
+ *    invalid in fragment shader contexts, and vice-versa (eg. attributes can 
+ *    only be read in vertex shaders; dFdx can only be evaluated in fragment 
+ *    shaders; the discard statement can only appear in a fragment shader). 
+ *    This means we must move expressions around:
+ * 
+ *    - expressions that can be hoisted from the vertex shader to the fragment 
+ *      shader are hoisted. Currently, this only includes discard_if 
+ *      statements.
+ * 
+ *    - expressions that must be hoisted from the fragment-shader computations 
+ *      to the vertex-shader computations are hoisted. For example, WebGL 
+ *      attributes can only be read on vertex shaders, and so Shade.program 
+ *      introduces a varying variable to communicate the value to the fragment 
+ *      shader.
+ * 
+ *  - At the end of this stage, some fragment-shader only expressions might 
+ *    remain on vertex-shader computations. These are invalid WebGL programs and
+ *    Shade.program must fail here (The canonical example is: 
+ *
+ *    {
+ *        position: Shade.dFdx(attribute)
+ *    })
+ * 
+ *  - After relocating expressions, vertex and fragment shaders are optimized
+ *    using a variety of simple expression rewriting (constant folding, etc).
+ */
+
 Shade.program = function(program_obj)
 {
     program_obj = Shade.canonicalize_program_object(program_obj);
@@ -349,9 +390,32 @@ Shade.program = function(program_obj)
         return result;
     }
 
-    // explicit per-vertex hoisting must happen before is_attribute hoisting,
-    // otherwise we might end up reading from a varying in the vertex program,
-    // which is undefined behavior
+    //////////////////////////////////////////////////////////////////////////
+    // moving discard statements on vertex program to fragment program
+
+    var shade_values_vp_obj = Shade(_.object(_.filter(
+        _.pairs(vp_obj), function(lst) {
+            var k = lst[0], v = lst[1];
+            return Lux.is_shade_expression(v);
+        })));
+
+    var vp_discard_conditions = {};
+    shade_values_vp_obj = shade_values_vp_obj.replace_if(function(x) {
+        return x.expression_type === 'discard_if';
+    }, function(exp) {
+        vp_discard_conditions[exp.parents[1].guid] = exp.parents[1];
+        return exp.parents[0];
+    });
+
+    vp_obj = _.object(shade_values_vp_obj.fields, shade_values_vp_obj.parents);
+    vp_discard_conditions = _.values(vp_discard_conditions);
+
+    if (vp_discard_conditions.length) {
+        var vp_discard_condition = _.reduce(vp_discard_conditions, function(a, b) {
+            return a.or(b);
+        }).ifelse(1, 0).gt(0);
+        fp_obj.gl_FragColor = fp_obj.gl_FragColor.discard_if(vp_discard_condition);
+    }
 
     var common_sequence = [
         [Shade.Optimizer.is_times_zero, Shade.Optimizer.replace_with_zero, 
@@ -373,6 +437,9 @@ Shade.program = function(program_obj)
         [Shade.Optimizer.is_logical_and_with_constant,
          Shade.Optimizer.replace_logical_and_with_constant, "constant&&v", true]];
 
+    // explicit per-vertex hoisting must happen before is_attribute hoisting,
+    // otherwise we might end up reading from a varying in the vertex program,
+    // which is undefined behavior
     var fp_sequence = [
         [is_per_vertex, hoist_to_varying, "per-vertex hoisting"],
         [is_attribute, hoist_to_varying, "attribute hoisting"]  

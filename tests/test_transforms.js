@@ -10,3 +10,4 @@ test("Lux transforms", function() {
         almost_equal(v, bw2, "latlong_to_mercator inverse mismatch");
     }
 });
+
