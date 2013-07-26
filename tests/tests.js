@@ -671,6 +671,12 @@ test("Shade programs", function() {
         color: Shade.vec(1,1,1,1),
         position: Shade.vec(1,1,1,1)
     }), "Basic program");
+
+    raises(function() {
+        Shade.program({
+            position: Shade.dFdx(Shade.attribute("vec4"))
+        });
+    }, "'builtin_function{dFdx}' not allowed in vertex expression");
 });
 
 test("Shade loops", function() {

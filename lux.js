@@ -10844,6 +10844,16 @@ Shade.program = function(program_obj)
         return exp.parents[0];
     });
 
+    var disallowed_vertex_expressions = shade_values_vp_obj.find_if(function(x) {
+        if (x.expression_type === 'builtin_function{dFdx}') return true;
+        if (x.expression_type === 'builtin_function{dFdy}') return true;
+        if (x.expression_type === 'builtin_function{fwidth}') return true;
+        return false;
+    });
+    if (disallowed_vertex_expressions.length > 0) {
+        throw "'" + disallowed_vertex_expressions[0] + "' not allowed in vertex expression";
+    }
+
     vp_obj = _.object(shade_values_vp_obj.fields, shade_values_vp_obj.parents);
     vp_discard_conditions = _.values(vp_discard_conditions);
 
@@ -10853,6 +10863,8 @@ Shade.program = function(program_obj)
         }).ifelse(1, 0).gt(0);
         fp_obj.gl_FragColor = fp_obj.gl_FragColor.discard_if(vp_discard_condition);
     }
+
+    
 
     var common_sequence = [
         [Shade.Optimizer.is_times_zero, Shade.Optimizer.replace_with_zero, 
