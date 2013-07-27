@@ -202,7 +202,7 @@ function atan1_evaluator(exp, cache)
     if (exp.type.equals(Shade.Types.float_t))
         return Math.atan(v1);
     else {
-        return vec.map(c, Math.atan);
+        return vec.map(v1, Math.atan);
     }
 }
 
@@ -421,7 +421,6 @@ var smoothstep = builtin_glsl_function({
         var edge1 = exp.parents[1];
         var x = exp.parents[2];
         var t = Shade.clamp(x.sub(edge0).div(edge1.sub(edge0)), 0, 1);
-        // FIXME this is cute but will be inefficient
         return t.mul(t).mul(Shade.sub(3, t.mul(2))).evaluate(cache);
     }, element_function: function(exp, i) {
         return Shade.smoothstep.apply(this, broadcast_elements(exp, i));

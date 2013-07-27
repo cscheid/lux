@@ -17,4 +17,21 @@ test("Test Shade builtins", function() {
             {"type":"constant","guid":240,"parents":[],"values":[0]},
             {"type":"constant","guid":241,"parents":[],"values":[1]}]}]};
     ok(Shade.Debug.from_json(exp2).element(0));
+
+    equal(Shade.cross(Shade.vec(1,0,0),
+                      Shade.vec(0,1,0)).element(0).constant_value(), 0);
+    equal(Shade.cross(Shade.vec(1,0,0),
+                      Shade.vec(0,1,0)).element(1).constant_value(), 0);
+    equal(Shade.cross(Shade.vec(1,0,0),
+                      Shade.vec(0,1,0)).element(2).constant_value(), 1);
+    equal(Shade.cross(Shade.vec(0,1,0),
+                      Shade.vec(1,0,0)).element(2).constant_value(), -1);
+
+    almost_equal(Shade.atan(Shade.vec(0,0,0)).evaluate(), vec.make([0,0,0]));
+
+    equal(Shade.clamp(0.5, 0, 1).evaluate(), 0.5);
+    equal(Shade.clamp(-0.5, 0, 1).evaluate(), 0);
+    equal(Shade.clamp(1.5, 0, 1).evaluate(), 1);
+    almost_equal(Shade.clamp(Shade.vec(0.5, -0.5, 1.5), 0, 1).evaluate(), vec.make([0.5, 0, 1]));
+
 });
