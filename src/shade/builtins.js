@@ -109,9 +109,9 @@ function builtin_glsl_function(opts)
                 };
             } else {
                 obj.element_is_constant = function(i) {
-                    if (this.guid === 489) {
-                        debugger;
-                    }
+                    // if (this.guid === 489) {
+                    //     debugger;
+                    // }
                     return this.element(i).is_constant();
                 };
             }
@@ -483,8 +483,8 @@ var cross = builtin_glsl_function({
         return vec3.cross(exp.parents[0].evaluate(cache),
                           exp.parents[1].evaluate(cache));
     }, element_function: function (exp, i) {
-        var v1 = exp.parents[0].length;
-        var v2 = exp.parents[1].length;
+        var v1 = exp.parents[0];
+        var v2 = exp.parents[1];
         if        (i === 0) { return v1.at(1).mul(v2.at(2)).sub(v1.at(2).mul(v2.at(1)));
         } else if (i === 1) { return v1.at(2).mul(v2.at(0)).sub(v1.at(0).mul(v2.at(2)));
         } else if (i === 2) { return v1.at(0).mul(v2.at(1)).sub(v1.at(1).mul(v2.at(0)));

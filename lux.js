@@ -9700,9 +9700,9 @@ function builtin_glsl_function(opts)
                 };
             } else {
                 obj.element_is_constant = function(i) {
-                    if (this.guid === 489) {
-                        debugger;
-                    }
+                    // if (this.guid === 489) {
+                    //     debugger;
+                    // }
                     return this.element(i).is_constant();
                 };
             }
@@ -10074,8 +10074,8 @@ var cross = builtin_glsl_function({
         return vec3.cross(exp.parents[0].evaluate(cache),
                           exp.parents[1].evaluate(cache));
     }, element_function: function (exp, i) {
-        var v1 = exp.parents[0].length;
-        var v2 = exp.parents[1].length;
+        var v1 = exp.parents[0];
+        var v2 = exp.parents[1];
         if        (i === 0) { return v1.at(1).mul(v2.at(2)).sub(v1.at(2).mul(v2.at(1)));
         } else if (i === 1) { return v1.at(2).mul(v2.at(0)).sub(v1.at(0).mul(v2.at(2)));
         } else if (i === 2) { return v1.at(0).mul(v2.at(1)).sub(v1.at(1).mul(v2.at(0)));
@@ -10868,23 +10868,24 @@ Shade.program = function(program_obj)
 
     var common_sequence = [
         [Shade.Optimizer.is_times_zero, Shade.Optimizer.replace_with_zero, 
-         "v * 0", true],
-        [Shade.Optimizer.is_times_one, Shade.Optimizer.replace_with_notone, 
-         "v * 1", true],
-        [Shade.Optimizer.is_plus_zero, Shade.Optimizer.replace_with_nonzero,
-         "v + 0", true],
-        [Shade.Optimizer.is_never_discarding,
-         Shade.Optimizer.remove_discard, "discard_if(false)"],
-        [Shade.Optimizer.is_known_branch,
-         Shade.Optimizer.prune_ifelse_branch, "constant?a:b", true],
-        [Shade.Optimizer.vec_at_constant_index, 
-         Shade.Optimizer.replace_vec_at_constant_with_swizzle, "vec[constant_ix]"],
-        [Shade.Optimizer.is_constant,
-         Shade.Optimizer.replace_with_constant, "constant folding"],
-        [Shade.Optimizer.is_logical_or_with_constant,
-         Shade.Optimizer.replace_logical_or_with_constant, "constant||v", true],
-        [Shade.Optimizer.is_logical_and_with_constant,
-         Shade.Optimizer.replace_logical_and_with_constant, "constant&&v", true]];
+         "v * 0", true]
+       ,[Shade.Optimizer.is_times_one, Shade.Optimizer.replace_with_notone, 
+         "v * 1", true]
+       ,[Shade.Optimizer.is_plus_zero, Shade.Optimizer.replace_with_nonzero,
+         "v + 0", true]
+       ,[Shade.Optimizer.is_never_discarding,
+         Shade.Optimizer.remove_discard, "discard_if(false)"]
+       ,[Shade.Optimizer.is_known_branch,
+         Shade.Optimizer.prune_ifelse_branch, "constant?a:b", true]
+       ,[Shade.Optimizer.vec_at_constant_index, 
+         Shade.Optimizer.replace_vec_at_constant_with_swizzle, "vec[constant_ix]"]
+       ,[Shade.Optimizer.is_constant,
+         Shade.Optimizer.replace_with_constant, "constant folding"]
+       ,[Shade.Optimizer.is_logical_or_with_constant,
+         Shade.Optimizer.replace_logical_or_with_constant, "constant||v", true]
+       ,[Shade.Optimizer.is_logical_and_with_constant,
+         Shade.Optimizer.replace_logical_and_with_constant, "constant&&v", true]
+    ];
 
     // explicit per-vertex hoisting must happen before is_attribute hoisting,
     // otherwise we might end up reading from a varying in the vertex program,

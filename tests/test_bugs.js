@@ -36,9 +36,11 @@ test("Tests from previous Lux bugs", function() {
                     {"type":"constant","guid":241,"parents":[],"values":[1]}]}]}]},
         {"type":"constant","guid":244,"parents":[],"values":[0]}]};
 
+    var cond_exp = Shade.Debug.from_json(condition2);
+
     var prog2 = { position: Shade.vec(0,0,0,0),
-                  color: Shade.Debug.from_json(condition2).ifelse(Shade.vec(1,0,0,0),
-                                                                  Shade.vec(0,1,0,0)) };
+                  color: cond_exp.ifelse(Shade.vec(1,0,0,0),
+                                         Shade.vec(0,1,0,0)) };
 
     ok(Shade.program(prog2), "backface culling should not crash optimizer");
 });
