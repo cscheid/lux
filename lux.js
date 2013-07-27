@@ -3579,10 +3579,12 @@ Lux.unload_batch = function()
             delete uniform._lux_active_uniform;
         });
     }
-    // FIXME setting line width belongs somewhere else, but I'm not quite sure where.
-    // resets line width
+
     if (previous_batch_opts.line_width)
         ctx.lineWidth(1.0);
+    if (previous_batch_opts.polygon_offset) {
+        ctx.disable(ctx.POLYGON_OFFSET_FILL);
+    }
 
     // reset the opengl capabilities which are determined by
     // Lux.DrawingMode.*
@@ -3856,12 +3858,22 @@ Lux.bake = function(model, appearance, opts)
                 if (this.line_width) {
                     ctx.lineWidth(this.line_width.get());
                 }
+                if (this.polygon_offset) {
+                    ctx.enable(ctx.POLYGON_OFFSET_FILL);
+                    ctx.polygonOffset(this.polygon_offset.factor.get(), 
+                                      this.polygon_offset.units.get());
+                }
             },
             draw_chunk: draw_chunk,
             batch_id: largest_batch_id++
         };
         if (!_.isUndefined(appearance.line_width))
             result.line_width = ensure_parameter(appearance.line_width);
+        if (!_.isUndefined(appearance.polygon_offset))
+            result.polygon_offset = {
+                factor: ensure_parameter(appearance.polygon_offset.factor),
+                units: ensure_parameter(appearance.polygon_offset.units)
+            };
         return result;
     }
 
@@ -13039,12 +13051,11 @@ Shade.ThreeD.normal = function(position)
     var dPos_dpixely = Shade.dFdy(position);
     return Shade.normalize(Shade.cross(dPos_dpixelx, dPos_dpixely));
 };
-Shade.ThreeD.cull_backface = Shade(function(position, ccw)
+Shade.ThreeD.cull_backface = Shade(function(position, normal, ccw)
 {
     if (_.isUndefined(ccw)) ccw = Shade(true);
     ccw = ccw.ifelse(1, -1);
-    var n = Shade.ThreeD.normal(position);
-    return position.discard_if(n.cross(Shade.vec(0,0,ccw)).z().gt(0));
+    return position.discard_if(normal.dot(Shade.vec(0,0,ccw)).le(0));
 });
 Lux.Geometry = {};
 Lux.Geometry.triangulate = function(opts) {
@@ -14000,6 +14011,8 @@ Lux.Marks.rectangle_brush = function(opts)
         }
     };
 };
+(function() {
+
 function spherical_mercator_patch(tess)
 {
     var uv = [];
@@ -14126,9 +14139,9 @@ Lux.Marks.globe = function(opts)
     var sphere_actor = Lux.actor({
         model: patch, 
         appearance: {
-            gl_Position: mvp(v), // Shade.ThreeD.cull_backface(mvp(v)),
+            gl_Position: mvp(v),
             gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
-            mode: Lux.DrawingMode.pass
+            polygon_offset: opts.polygon_offset
         }});
 
     function inertia_tick() {
@@ -14381,6 +14394,8 @@ Lux.Marks.globe = function(opts)
 
     return result;
 };
+
+})();
 Lux.Marks.globe_2d = function(opts)
 {
     opts = _.defaults(opts || {}, {
