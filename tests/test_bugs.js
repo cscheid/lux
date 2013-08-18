@@ -1,3 +1,22 @@
+function aug_17_2013()
+{
+    var exp = {"type":"mul","guid":98,"parents":[
+        {"type":"swizzle{x}","guid":96,"parents":[
+            {"type":"sub","guid":95,"parents":[
+                {"type":"mul","guid":93,"parents":[
+                    {"type":"div","guid":91,"parents":[
+                        {"type":"swizzle{xy}","guid":90,"parents":[
+                            {"type":"fragCoord","guid":89,"parents":[]}]},
+                        {"type":"parameter","guid":79,"parents":[],"parameter_type":"vec2"}]},
+                    {"type":"constant","guid":92,"parents":[],"values":[2]}]},
+                {"type":"constant","guid":94,"parents":[],"values":[1]}]}]},
+        {"type":"swizzle{x}","guid":97,"parents":[{"type":"reference","guid":79}]}]};
+    exp = Shade.Debug.from_json(exp);
+    console.log(exp.debug_print());
+
+    exp.is_constant();
+}
+
 test("Tests from previous Lux bugs", function() {
     var exp = {"type": "vec", guid: 227, "parents": [
         {"type": "parameter", "parameter_type": "float", "guid":9999, "parents": []},
@@ -43,4 +62,6 @@ test("Tests from previous Lux bugs", function() {
                                          Shade.vec(0,1,0,0)) };
 
     ok(Shade.program(prog2), "backface culling should not crash optimizer");
+
+    aug_17_2013();
 });
