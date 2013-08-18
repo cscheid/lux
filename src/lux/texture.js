@@ -18,10 +18,10 @@ Lux.texture = function(opts)
         var has_mipmaps = _.isUndefined(opts.mipmaps) || opts.mipmaps;
         opts = _.defaults(opts, {
             onload: function() {},
-            max_anisotropy: opts.mipmaps ? 2 : 1,
+            max_anisotropy: has_mipmaps ? 2 : 1,
             mipmaps: true,
             mag_filter: Lux.texture.linear,
-            min_filter: opts.mipmaps ? Lux.texture.linear_mipmap_linear : Lux.texture.linear,
+            min_filter: has_mipmaps ? Lux.texture.linear_mipmap_linear : Lux.texture.linear,
             wrap_s: Lux.texture.clamp_to_edge,
             wrap_t: Lux.texture.clamp_to_edge,
             format: Lux.texture.rgba,
