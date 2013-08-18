@@ -7,8 +7,11 @@ Shade.fragCoord = function() {
         evaluate: function() {
             throw new Error("evaluate undefined for fragCoord");
         },
+        element: function(i) {
+            return this.at(i);
+        },
         compile: function(ctx) {
         },
-        json_key: function() { return "fragCoord"; }
+        _json_key: function() { return 'fragCoord'; }
     });
 };
