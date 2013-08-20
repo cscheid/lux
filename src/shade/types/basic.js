@@ -51,7 +51,7 @@ Shade.Types._create_basic = function(repr) {
                 group_res = [ /[rgb]/, /[xyz]/, /[stp]/ ];
                 break;
             case 4:
-                valid_re = /[rgbazxyzwstpq]+/;
+                valid_re = /[rgbaxyzwstpq]+/;
                 group_res = [ /[rgba]/, /[xyzw]/, /[stpq]/ ];
                 break;
             default:
