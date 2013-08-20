@@ -1,11 +1,5 @@
-// vec2 map( vec2 p )
-// {
-// 	p.x += 0.1*sin( iGlobalTime + 2.0*p.y ) ;
-// 	p.y += 0.1*sin( iGlobalTime + 2.0*p.x ) ;
-// 	float a = noise(p*1.5 + sin(0.1*iGlobalTime))*6.2831;
-// 	a -= iGlobalTime + gl_FragCoord.x/iResolution.x;
-// 	return vec2( cos(a), sin(a) );
-// }
+/// Original shader by inigo quilez - iq/2013
+// License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 function map(p)
 {
@@ -75,62 +69,7 @@ Shadertoy.iq.noise_blur = function()
     return Shade.vec(col, 1.0);
 };
 
-/// Created by inigo quilez - iq/2013
-// License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-/*
-void main( void )
-{
-	vec2 p = gl_FragCoord.xy / iResolution.xy;
-	vec2 uv = -1.0 + 2.0*p;
-	uv.x *= iResolution.x / iResolution.y;
-		
-	float acc = 0.0;
-	vec3  col = vec3(0.0);
-	for( int i=0; i<32; i++ )
-	{
-		vec2 dir = map( uv );
-		
-		float h = float(i)/32.0;
-		float w = 4.0*h*(1.0-h);
-		
-		vec3 ttt = w*texture2D( iChannel0, uv ).xyz;
-		ttt *= mix( vec3(0.6,0.7,0.7), vec3(1.0,0.95,0.9), 0.5 - 0.5*dot( reflect(vec3(dir,0.0), vec3(1.0,0.0,0.0)).xy, vec2(0.707) ) );
-		col += w*ttt;
-		acc += w;
-		
-		uv += 0.008*dir;
-	}
-	col /= acc;
-    
-	float gg = dot( col, vec3(0.333) );
-	vec3 nor = normalize( vec3( dFdx(gg), 0.5, dFdy(gg) ) );
-	col += vec3(0.4)*dot( nor, vec3(0.7,0.01,0.7) );
-
-	vec2 di = map( uv );
-	col *= 0.65 + 0.35*dot( di, vec2(0.707) );
-	col *= 0.20 + 0.80*pow( 4.0*p.x*(1.0-p.x), 0.1 );
-	col *= 1.7;
-
-	gl_FragColor = vec4( col, 1.0 );
-}
-*/
-
-$(function() {
-    Lux.init();
-    Shadertoy.init({
-        channel0: "tex01",
-        on_load: function() {
-            var square = Lux.Models.square();
-
-            Lux.Scene.add(Lux.actor({
-                model: square,
-                appearance: {
-                    position: square.vertex.mul(2).sub(1),
-                    color: Shadertoy.iq.noise_blur()
-                }
-            }));
-
-            Lux.Scene.animate(Shadertoy.tick);
-        }
-    });
+Shadertoy.main({
+    channel0: "tex01",
+    shader_function: Shadertoy.iq.noise_blur
 });

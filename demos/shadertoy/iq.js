@@ -28,8 +28,18 @@ Shadertoy.iq.noise = Shade(function(x)
     var p = x.floor();
     var f = x.fract();
     f = f.mul(f).mul(Shade.sub(3, Shade.mul(2, f)));
-    var n = p.x().add(p.y().mul(57));
-    return Shade.mix(Shade.mix(hash(n),         hash(n.add(1)), f.x()),
-                     Shade.mix(hash(n.add(57)), hash(n.add(58)), f.x()), f.y());
+    if (x.type.equals(Shade.Types.vec2)) {
+        var n = p.x().add(p.y().mul(57));
+        return Shade.mix(Shade.mix(hash(n),         hash(n.add(1)), f.x()),
+                         Shade.mix(hash(n.add(57)), hash(n.add(58)), f.x()), f.y());
+    } else if (x.type.equals(Shade.Types.vec3)) {
+        var n = p.x().add(p.y().mul(57)).add(p.z().mul(113));
+        return Shade.mix(Shade.mix(Shade.mix(hash(n),          hash(n.add(1)),   f.x()),
+                                   Shade.mix(hash(n.add(57)),  hash(n.add(58)),  f.x()), f.y()),
+                         Shade.mix(Shade.mix(hash(n.add(113)), hash(n.add(114)), f.x()),
+                                   Shade.mix(hash(n.add(170)), hash(n.add(171)), f.x()), f.y()), f.z());
+        
+    } else
+        throw new Error("requires either vec2 or vec3");
 });
 
