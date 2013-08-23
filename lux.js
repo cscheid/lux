@@ -4219,7 +4219,7 @@ Lux.init = function(opts)
 
         var ext;
         var exts = gl.getSupportedExtensions();
-        _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
+        _.each(["OES_texture_float", "OES_texture_float_linear", "OES_standard_derivatives"], function(ext) {
             if (exts.indexOf(ext) === -1 ||
                 (gl.getExtension(ext)) === null) { // must call this to enable extension
                 alert(ext + " is not available on your browser/computer! " +
