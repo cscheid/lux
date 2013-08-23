@@ -87,6 +87,7 @@ Lux.UI.center_zoom_interactor = function(opts)
 
     var internal_move = function(dx, dy) {
         var ctx = Lux._globals.ctx;
+        // FIXME This doesn't work with highDPS: true
         var v = vec.make([2*dx/ctx.parameters.width.get(), 
                           2*dy/ctx.parameters.height.get()]);
         var negdelta = f(v);
