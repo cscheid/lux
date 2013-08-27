@@ -313,16 +313,31 @@ Lux.Marks.globe_2d = function(opts)
     return result;
 };
 
+Lux.Marks.globe_2d.scene = function(opts)
+{
+    opts = _.clone(opts || {});
+    opts.transform = function(appearance) {
+        if (_.isUndefined(appearance.position))
+            return appearance;
+        appearance = _.clone(appearance);
+        var lat = appearance.position.x();
+        var lon = appearance.position.y();
+        appearance.position = Lux.Marks.globe_2d.lat_lon_to_tile_mercator(lat, lon);
+        return appearance;
+    };
+    return Lux.scene(opts);
+};
+
 Lux.Marks.globe_2d.lat_lon_to_tile_mercator = Shade(function(lat, lon) {
     return Shade.Scale.Geo.latlong_to_mercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
 });
 
-Lux.Marks.globe_2d.transform = function(appearance) {
-    var new_appearance = _.clone(appearance);
-    new_appearance.position = Shade.vec(Lux.Marks.globe_2d.lat_lon_to_tile_mercator(
-        appearance.position.x(),
-        appearance.position.y()), appearance.position.swizzle("xw"));
-    return new_appearance;
-};
+// Lux.Marks.globe_2d.transform = function(appearance) {
+//     var new_appearance = _.clone(appearance);
+//     new_appearance.position = Shade.vec(Lux.Marks.globe_2d.lat_lon_to_tile_mercator(
+//         appearance.position.x(),
+//         appearance.position.y()), appearance.position.swizzle("xw"));
+//     return new_appearance;
+// };
 
-Lux.Marks.globe_2d.transform.inverse = function() { throw new Error("unimplemented"); };
+// Lux.Marks.globe_2d.transform.inverse = function() { throw new Error("unimplemented"); };

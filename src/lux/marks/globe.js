@@ -45,13 +45,14 @@ Lux.Marks.globe = function(opts)
         zoom: 3,
         resolution_bias: 0,
         patch_size: 10,
+        cache_size: 3,
         tile_pattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         }
     });
     var model = Shade.parameter("mat4");
     var patch = spherical_mercator_patch(opts.patch_size);
-    var cache_size = 64; // cache size must be (2^n)^2
+    var cache_size = 1 << (2 * opts.cache_size); // cache size must be (2^n)^2
     var tile_size = 256;
     var tiles_per_line  = 1 << (~~Math.round(Math.log(Math.sqrt(cache_size))/Math.log(2)));
     var super_tile_size = tile_size * tiles_per_line;
@@ -59,7 +60,8 @@ Lux.Marks.globe = function(opts)
     var ctx = Lux._globals.ctx;
     var texture = Lux.texture({
         width: super_tile_size,
-        height: super_tile_size
+        height: super_tile_size,
+        mipmaps: false
     });
 
     function new_tile(i) {
@@ -112,7 +114,6 @@ Lux.Marks.globe = function(opts)
 
     var v = patch.vertex(Shade.vec(min_x, min_y), 
                          Shade.vec(max_x, max_y));
-    var mvp = opts.view_proj(model);
 
     var xformed_patch = patch.uv 
     // These two lines work around the texture seams on the texture atlas
@@ -126,8 +127,8 @@ Lux.Marks.globe = function(opts)
     var sphere_actor = Lux.actor({
         model: patch, 
         appearance: {
-            gl_Position: mvp(v),
-            gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
+            position: model(v),
+            color: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
             polygon_offset: opts.polygon_offset
         }});
 
@@ -150,6 +151,7 @@ Lux.Marks.globe = function(opts)
     } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
         throw new Error("zoom must be either a number or a parameter");
     }
+    var foo = Shade.parameter("vec4");
 
     var result = {
         tiles: tiles,
@@ -159,10 +161,9 @@ Lux.Marks.globe = function(opts)
         latitude_center: opts.latitude_center,
         zoom: opts.zoom,
         model_matrix: model,
-        mvp: mvp,
-        lat_lon_position: function(lat, lon) {
-            return mvp(Shade.Scale.Geo.latlong_to_spherical(lat, lon));
-        },
+        // lat_lon_position: function(lat, lon) {
+        //     return model(Shade.Scale.Geo.latlong_to_spherical(lat, lon));
+        // },
         resolution_bias: opts.resolution_bias,
         update_model_matrix: function() {
             while (this.longitude_center < 0)
@@ -346,6 +347,19 @@ Lux.Marks.globe = function(opts)
                 y_offset: tiles[id].offset_y * tile_size,
                 onload: f(x, y, zoom, id)
             });
+        },
+        scene: function(opts) {
+            opts = _.clone(opts || {});
+            opts.transform = function(appearance) {
+                if (_.isUndefined(appearance.position))
+                    return appearance;
+                appearance = _.clone(appearance);
+                var lat = appearance.position.x();
+                var lon = appearance.position.y();
+                appearance.position = model(Shade.Scale.Geo.latlong_to_spherical(lat, lon));
+                return appearance;
+            };
+            return Lux.scene(opts);
         },
         dress: function(scene) {
             var sphere_batch = sphere_actor.dress(scene);

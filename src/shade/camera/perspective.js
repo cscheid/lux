@@ -20,6 +20,7 @@ Shade.Camera.perspective = function(opts)
         if (_.isUndefined(ctx)) {
             throw new Error("aspect_ratio is only optional with an active Lux context");
         }
+        // FIXME why is this not using parameters.width and parameters.height?
         aspect_ratio = ctx.viewportWidth / ctx.viewportHeight;
     }
 
