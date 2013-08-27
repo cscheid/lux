@@ -1,3 +1,6 @@
+// DEPRECATED, possibly useless. actor_many is what you're probably looking for,
+// but that has a horrible name. There's got to be a better API for this kind of thing.
+
 Lux.bake_many = function(model_list, 
                          appearance_function,
                          model_callback)
