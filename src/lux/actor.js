@@ -62,3 +62,52 @@ Lux.actor_list = function(actors_list)
         }
     };
 };
+
+Lux.actor_many = function(opts)
+{
+    opts = _.defaults(opts, {
+        on: function() { return true; }
+    });
+    var appearance_function = opts.appearance_function;
+    var model_list = opts.model_list;
+    var on = opts.on;
+    var model_callback = opts.model_callback;
+    var scratch_model = _.clone(model_list[0]);
+    var scratch_actor = Lux.actor({
+        model: scratch_model,
+        appearance: appearance_function(scratch_model)
+    });
+    var batch;
+
+    return {
+        dress: function(scene) {
+            batch = scratch_actor.dress(scene);
+            return model_callback ? {
+                draw: function() {
+                    _.each(model_list, function(model, i) {
+                        _.each(scratch_model.attributes, function(v, k) {
+                            v.set(model[k].get());
+                        });
+                        scratch_model.elements.set(model.elements.array);
+                        model_callback(model, i);
+                        batch.draw();
+                    });
+                }
+            } : {
+                draw: function() {
+                    _.each(model_list, function(model, i) {
+                        _.each(scratch_model.attributes, function(v, k) {
+                            v.set(model[k].get());
+                        });
+                        scratch_model.elements.set(model.elements.array);
+                        // model_callback(model, i); -- only difference to above
+                        batch.draw();
+                    });
+                }
+            };
+        },
+        on: function(event_name, event) {
+            return opts.on(event_name, event);
+        }
+    };
+};
