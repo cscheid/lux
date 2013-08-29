@@ -4222,7 +4222,14 @@ Lux.init = function(opts)
 
         var ext;
         var exts = gl.getSupportedExtensions();
-        _.each(["OES_texture_float", "OES_texture_float_linear", "OES_standard_derivatives"], function(ext) {
+
+        function enable_if_existing(name) {
+            if (exts.indexOf(name) !== -1 &&
+                gl.getExtension(name) !== null) {
+                gl._lux_globals.webgl_extensions[name] = true;
+            }
+        }
+        _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
             if (exts.indexOf(ext) === -1 ||
                 (gl.getExtension(ext)) === null) { // must call this to enable extension
                 alert(ext + " is not available on your browser/computer! " +
@@ -4230,6 +4237,7 @@ Lux.init = function(opts)
                 throw new Error("insufficient GPU support");
             }
         });
+        _.each(["OES_texture_float_linear"], enable_if_existing);
         _.each(["WEBKIT_EXT_texture_filter_anisotropic",
                 "EXT_texture_filter_anisotropic"], 
                function(ext) {
