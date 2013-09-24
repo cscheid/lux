@@ -3579,10 +3579,12 @@ Lux.unload_batch = function()
             delete uniform._lux_active_uniform;
         });
     }
-    // FIXME setting line width belongs somewhere else, but I'm not quite sure where.
-    // resets line width
+
     if (previous_batch_opts.line_width)
         ctx.lineWidth(1.0);
+    if (previous_batch_opts.polygon_offset) {
+        ctx.disable(ctx.POLYGON_OFFSET_FILL);
+    }
 
     // reset the opengl capabilities which are determined by
     // Lux.DrawingMode.*
@@ -3856,12 +3858,22 @@ Lux.bake = function(model, appearance, opts)
                 if (this.line_width) {
                     ctx.lineWidth(this.line_width.get());
                 }
+                if (this.polygon_offset) {
+                    ctx.enable(ctx.POLYGON_OFFSET_FILL);
+                    ctx.polygonOffset(this.polygon_offset.factor.get(), 
+                                      this.polygon_offset.units.get());
+                }
             },
             draw_chunk: draw_chunk,
             batch_id: largest_batch_id++
         };
         if (!_.isUndefined(appearance.line_width))
             result.line_width = ensure_parameter(appearance.line_width);
+        if (!_.isUndefined(appearance.polygon_offset))
+            result.polygon_offset = {
+                factor: ensure_parameter(appearance.polygon_offset.factor),
+                units: ensure_parameter(appearance.polygon_offset.units)
+            };
         return result;
     }
 
@@ -3929,6 +3941,9 @@ Lux.conditional_actor = function(opts)
     };
     return Lux.actor(opts);
 };
+// DEPRECATED, possibly useless. actor_many is what you're probably looking for,
+// but that has a horrible name. There's got to be a better API for this kind of thing.
+
 Lux.bake_many = function(model_list, 
                          appearance_function,
                          model_callback)
@@ -4207,6 +4222,13 @@ Lux.init = function(opts)
 
         var ext;
         var exts = gl.getSupportedExtensions();
+
+        function enable_if_existing(name) {
+            if (exts.indexOf(name) !== -1 &&
+                gl.getExtension(name) !== null) {
+                gl._lux_globals.webgl_extensions[name] = true;
+            }
+        }
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
             if (exts.indexOf(ext) === -1 ||
                 (gl.getExtension(ext)) === null) { // must call this to enable extension
@@ -4215,6 +4237,7 @@ Lux.init = function(opts)
                 throw new Error("insufficient GPU support");
             }
         });
+        _.each(["OES_texture_float_linear"], enable_if_existing);
         _.each(["WEBKIT_EXT_texture_filter_anisotropic",
                 "EXT_texture_filter_anisotropic"], 
                function(ext) {
@@ -4733,10 +4756,10 @@ Lux.texture = function(opts)
         var has_mipmaps = _.isUndefined(opts.mipmaps) || opts.mipmaps;
         opts = _.defaults(opts, {
             onload: function() {},
-            max_anisotropy: opts.mipmaps ? 2 : 1,
+            max_anisotropy: has_mipmaps ? 2 : 1,
             mipmaps: true,
             mag_filter: Lux.texture.linear,
-            min_filter: opts.mipmaps ? Lux.texture.linear_mipmap_linear : Lux.texture.linear,
+            min_filter: has_mipmaps ? Lux.texture.linear_mipmap_linear : Lux.texture.linear,
             wrap_s: Lux.texture.clamp_to_edge,
             wrap_t: Lux.texture.clamp_to_edge,
             format: Lux.texture.rgba,
@@ -5747,6 +5770,7 @@ Lux.UI.center_zoom_interactor = function(opts)
 
     var internal_move = function(dx, dy) {
         var ctx = Lux._globals.ctx;
+        // FIXME This doesn't work with highDPS: true
         var v = vec.make([2*dx/ctx.parameters.width.get(), 
                           2*dy/ctx.parameters.height.get()]);
         var negdelta = f(v);
@@ -5921,6 +5945,126 @@ var Shade = function(exp)
 (function() {
 
 Shade.debug = false;
+/*
+ * Shade.Debug contains code that helps with debugging Shade
+   expressions, the Shade-to-GLSL compiler, etc.
+ */
+Shade.Debug = {};
+/*
+ * Shade.Debug.walk walks an expression dag and calls 'visit' on each
+ * expression in a bottom-up order. The return values of 'visit' are
+ * passed to the higher-level invocations of 'visit', and so is the
+ * dictionary of references that is used to resolve multiple node
+ * references. Shade.Debug.walk will only call 'visit' once per node,
+ * even if visit can be reached by many different paths in the dag.
+ * 
+ * If 'revisit' is passed, then it is called every time a node is 
+ * revisited. 
+ * 
+ * Shade.Debug.walk returns the dictionary of references.
+ */
+
+Shade.Debug.walk = function(exp, visit, revisit) {
+    var refs = {};
+    function internal_walk_no_revisit(node) {
+        if (!_.isUndefined(refs[node.guid])) {
+            return refs[node.guid];
+        }
+        var parent_results = _.map(node.parents, internal_walk_no_revisit);
+        var result = visit(node, parent_results, refs);
+        refs[node.guid] = result;
+        return result;
+    };
+    function internal_walk_revisit(node) {
+        if (!_.isUndefined(refs[node.guid])) {
+            return revisit(node, _.map(node.parents, function(exp) {
+                return refs[exp.guid];
+            }), refs);
+        }
+        var parent_results = _.map(node.parents, internal_walk_revisit);
+        var result = visit(node, parent_results, refs);
+        refs[node.guid] = result;
+        return result;
+    }
+    if (!_.isUndefined(revisit))
+        internal_walk_revisit(exp);
+    else
+        internal_walk_no_revisit(exp);
+    return refs;
+};
+/*
+ * from_json produces a JSON object that satisfies the following property:
+ * 
+ * if j is a Shade expresssion,
+ * 
+ * Shade.Debug.from_json(f.json()) equals f, up to guid renaming
+ */
+Shade.Debug.from_json = function(json)
+{
+    var refs = {};
+    function build_node(json_node) {
+        var parent_nodes = _.map(json_node.parents, function(parent) {
+            return refs[parent.guid];
+        });
+        switch (json_node.type) {
+        case "constant": 
+            return Shade.constant.apply(undefined, json_node.values);
+        case "struct":
+            return Shade.struct(_.build(_.zip(json_node.fields, json_node.parents)));
+        case "parameter":
+            return Shade.parameter(json_node.parameter_type);
+        case "attribute":
+            return Shade.attribute(json_node.attribute_type);
+        case "varying":
+            return Shade.varying(json_node.varying_name, json_node.varying_type);
+        case "index":
+            return parent_nodes[0].at(parent_nodes[1]);
+        };
+
+        // swizzle
+        var m = json_node.type.match(/swizzle{(.+)}$/);
+        if (m) return parent_nodes[0].swizzle(m[1]);
+
+        // field
+        m = json_node.type.match(/struct-accessor{(.+)}$/);
+        if (m) return parent_nodes[0].field(m[1]);
+
+        var f = Shade[json_node.type];
+        if (_.isUndefined(f)) {
+            throw new Error("from_json: unimplemented type '" + json_node.type + "'");
+        }
+        return f.apply(undefined, parent_nodes);
+    }
+    function walk_json(json_node) {
+        if (json_node.type === 'reference')
+            return refs[json_node.guid];
+        _.each(json_node.parents, walk_json);
+        var new_node = build_node(json_node);
+        refs[json_node.guid] = new_node;
+        return new_node;
+    }
+    return walk_json(json);
+};
+/*
+ * Shade.Debug._json_builder is a helper function used internally by
+ * the Shade infrastructure to build JSON objects through
+ * Shade.Debug.walk visitors.
+ * 
+ */
+Shade.Debug._json_builder = function(type, parent_reprs_fun) {
+    parent_reprs_fun = parent_reprs_fun || function (i) { return i; };
+    return function(parent_reprs, refs) {
+        if (!_.isUndefined(refs[this.guid]))
+            return { type: "reference",
+                     guid: this.guid };
+        else {
+            var result = { type: type || this._json_key(),
+                           guid: this.guid,
+                           parents: parent_reprs };
+            return parent_reprs_fun.call(this, result);
+        }
+    };
+};
 //////////////////////////////////////////////////////////////////////////////
 // make converts objects which can be meaningfully interpreted as
 // Exp values to the appropriate Exp values, giving us some poor-man
@@ -6081,6 +6225,7 @@ Shade.Camera.perspective = function(opts)
         if (_.isUndefined(ctx)) {
             throw new Error("aspect_ratio is only optional with an active Lux context");
         }
+        // FIXME why is this not using parameters.width and parameters.height?
         aspect_ratio = ctx.viewportWidth / ctx.viewportHeight;
     }
 
@@ -6879,7 +7024,7 @@ Shade.Types._create_basic = function(repr) {
                 group_res = [ /[rgb]/, /[xyz]/, /[stp]/ ];
                 break;
             case 4:
-                valid_re = /[rgbazxyzwstpq]+/;
+                valid_re = /[rgbaxyzwstpq]+/;
                 group_res = [ /[rgba]/, /[xyzw]/, /[stpq]/ ];
                 break;
             default:
@@ -7779,7 +7924,7 @@ Shade.Exp = {
         return Shade._create_concrete_value_exp({
             parents: [this],
             type: this.type.fields[field_name],
-            expression_type: "struct-accessor",
+            expression_type: "struct-accessor{" + field_name + "}",
             value: function() {
                 return "(" + this.parents[0].glsl_expression() + "." + field_name + ")";
             },
@@ -7865,6 +8010,14 @@ Shade.Exp = {
 
     //////////////////////////////////////////////////////////////////////////
     // debugging infrastructure
+
+    json: function() {
+        function helper_f(node, parents, refs) { return node._json_helper(parents, refs); };
+        var refs = Shade.Debug.walk(this, helper_f, helper_f);
+        return refs[this.guid];
+    },
+    _json_helper: Shade.Debug._json_builder(),    
+    _json_key: function() { return this.expression_type; },
     
     debug_print: function(do_what) {
         var lst = [];
@@ -8161,7 +8314,15 @@ Shade.constant = function(v, type)
             }),
             compile: function(ctx) {},
             parents: [],
-            type: type
+            type: type,
+
+            //////////////////////////////////////////////////////////////////
+            // debugging
+
+            _json_helper: Shade.Debug._json_builder("constant", function(obj) {
+                obj.values = args;
+                return obj;
+            })
         });
     };
 
@@ -8283,7 +8444,9 @@ Shade.array = function(v)
             var that = this;
             xform = xform || function(x) { return x; };
             return Shade.locate(function(i) { return xform(that.at(i.as_int())); }, target, 0, array_size-1);
-        }
+        },
+
+        _json_key: function() { return "array"; }
     });
 };
 // Shade.struct denotes a heterogeneous structure of Shade values:
@@ -8347,7 +8510,11 @@ Shade.struct = function(obj)
         },
         call_operator: function(v) {
             return this.field(v);
-        }
+        },
+        _json_helper: Shade.Debug._json_builder("struct", function(obj) {
+            obj.fields = ks;
+            return obj;
+        })
     });
 
     // _.each(ks, function(k) {
@@ -8490,7 +8657,15 @@ Shade.parameter = function(type, v)
             this.watchers.splice(this.watchers.indexOf(callback), 1);
         },
         uniform_call: call,
-        uniform_name: uniform_name
+        uniform_name: uniform_name,
+
+        //////////////////////////////////////////////////////////////////////
+        // debugging
+
+        _json_helper: Shade.Debug._json_builder("parameter", function(obj) {
+            obj.parameter_type = type.repr();
+            return obj;
+        })
     });
     result._uniforms = [result];
     result.set(v);
@@ -8570,7 +8745,16 @@ Shade.attribute = function(type)
             }
             bound_buffer = buffer;
         },
-        _attribute_name: name
+        _attribute_name: name,
+
+        //////////////////////////////////////////////////////////////////////
+        // debugging
+
+        _json_helper: Shade.Debug._json_builder("attribute", function(obj) {
+            obj.attribute_type = type.repr();
+            return obj;
+        })
+
     });
 };
 Shade.varying = function(name, type)
@@ -8621,7 +8805,16 @@ Shade.varying = function(name, type)
                 ctx.add_initialization(this.precomputed_value_glsl_name + " = " + name);
                 ctx.value_function(this, this.precomputed_value_glsl_name);
             }
-        }
+        },
+
+        //////////////////////////////////////////////////////////////////////
+        // debugging
+
+        _json_helper: Shade.Debug._json_builder("varying", function(obj) {
+            obj.varying_type = type.repr();
+            obj.varying_name = name;
+            return obj;
+        })
     });
 };
 
@@ -8634,8 +8827,12 @@ Shade.fragCoord = function() {
         evaluate: function() {
             throw new Error("evaluate undefined for fragCoord");
         },
+        element: function(i) {
+            return this.at(i);
+        },
         compile: function(ctx) {
-        }
+        },
+        _json_key: function() { return 'fragCoord'; }
     });
 };
 Shade.pointCoord = function() {
@@ -8648,7 +8845,11 @@ Shade.pointCoord = function() {
         },
         evaluate: function() {
             throw new Error("evaluate undefined for pointCoord");
-        }
+        },
+        element: function(i) {
+            return this.at(i);
+        },
+        _json_key: function() { return 'pointCoord'; }
     });
 };
 Shade.round_dot = function(color) {
@@ -8660,13 +8861,15 @@ Shade.round_dot = function(color) {
 var operator = function(exp1, exp2, 
                         operator_name, type_resolver,
                         evaluator,
-                        element_evaluator)
+                        element_evaluator,
+                        shade_name)
 {
     var resulting_type = type_resolver(exp1.type, exp2.type);
     return Shade._create_concrete_value_exp( {
         parents: [exp1, exp2],
         type: resulting_type,
         expression_type: "operator" + operator_name,
+        _json_key: function() { return shade_name; },
         value: function () {
             var p1 = this.parents[0], p2 = this.parents[1];
             if (this.type.is_struct()) {
@@ -8800,12 +9003,12 @@ Shade.add = function() {
             v2 = e2.element(i);
         else
             v2 = e2;
-        return operator(v1, v2, "+", add_type_resolver, evaluator, element_evaluator);
+        return operator(v1, v2, "+", add_type_resolver, evaluator, element_evaluator, "add");
     }
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
                                   "+", add_type_resolver, evaluator,
-                                  element_evaluator);
+                                  element_evaluator, "add");
     }
     return current_result;
 };
@@ -8903,13 +9106,13 @@ Shade.sub = function() {
             v2 = e2.element(i);
         else
             v2 = e2;
-        return operator(v1, v2, "-", sub_type_resolver, evaluator, element_evaluator);
+        return operator(v1, v2, "-", sub_type_resolver, evaluator, element_evaluator, "sub");
     }
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
                                   "-", sub_type_resolver, evaluator,
-                                  element_evaluator);
+                                  element_evaluator, "sub");
     }
     return current_result;
 };
@@ -9032,12 +9235,13 @@ Shade.div = function() {
             v2 = e2.element(i);
         else
             v2 = e2;
-        return operator(v1, v2, "/", div_type_resolver, evaluator, element_evaluator);
+        return operator(v1, v2, "/", div_type_resolver, evaluator, element_evaluator, "div");
     }
     var current_result = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "/", div_type_resolver, evaluator, element_evaluator);
+                                  "/", div_type_resolver, evaluator, element_evaluator,
+                                  "div");
     }
     return current_result;
 };
@@ -9157,21 +9361,21 @@ Shade.mul = function() {
                 },
                 "vec": function() { 
                     v1 = e1; v2 = e2.element(i); 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
                 },
                 "mat": function() { 
                     v1 = e1; v2 = e2.element(i); 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
                 }
             },
             "vec": { 
                 "pod": function() { 
                     v1 = e1.element(i); v2 = e2; 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
                 },
                 "vec": function() { 
                     v1 = e1.element(i); v2 = e2.element(i); 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
                 },
                 "mat": function() {
                     // FIXME should we have a mat_dimension?
@@ -9181,7 +9385,7 @@ Shade.mul = function() {
             "mat": { 
                 "pod": function() { 
                     v1 = e1.element(i); v2 = e2;
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
                 },
                 "vec": function() {
                     // FIXME should we have a mat_dimension?
@@ -9207,7 +9411,8 @@ Shade.mul = function() {
                 },
                 "mat": function() {
                     var col = e2.element(i);
-                    return operator(e1, col, "*", mul_type_resolver, evaluator, element_evaluator);
+                    return operator(e1, col, "*", mul_type_resolver, evaluator, element_evaluator,
+                                    "mul");
                 }
             }
         };
@@ -9223,7 +9428,7 @@ Shade.mul = function() {
             }
         }
         current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "*", mul_type_resolver, evaluator, element_evaluator);
+                                  "*", mul_type_resolver, evaluator, element_evaluator, "mul");
     }
     return current_result;
 };
@@ -9435,6 +9640,7 @@ function zipWith3(f, v1, v2, v3)
 function builtin_glsl_function(opts)
 {
     var name = opts.name;
+    var shade_name = opts.shade_name || opts.name;
     var evaluator = opts.evaluator;
     var type_resolving_list = opts.type_resolving_list;
     var element_function = opts.element_function;
@@ -9497,7 +9703,8 @@ function builtin_glsl_function(opts)
                             return t.glsl_expression(); 
                         }).join(", "),
                         ")"].join(" ");
-            }
+            },
+            _json_helper: Shade.Debug._json_builder(shade_name)
         };
 
         if (evaluator) {
@@ -9524,9 +9731,9 @@ function builtin_glsl_function(opts)
                 };
             } else {
                 obj.element_is_constant = function(i) {
-                    if (this.guid === 489) {
-                        debugger;
-                    }
+                    // if (this.guid === 489) {
+                    //     debugger;
+                    // }
                     return this.element(i).is_constant();
                 };
             }
@@ -9617,7 +9824,7 @@ function atan1_evaluator(exp, cache)
     if (exp.type.equals(Shade.Types.float_t))
         return Math.atan(v1);
     else {
-        return vec.map(c, Math.atan);
+        return vec.map(v1, Math.atan);
     }
 }
 
@@ -9836,7 +10043,6 @@ var smoothstep = builtin_glsl_function({
         var edge1 = exp.parents[1];
         var x = exp.parents[2];
         var t = Shade.clamp(x.sub(edge0).div(edge1.sub(edge0)), 0, 1);
-        // FIXME this is cute but will be inefficient
         return t.mul(t).mul(Shade.sub(3, t.mul(2))).evaluate(cache);
     }, element_function: function(exp, i) {
         return Shade.smoothstep.apply(this, broadcast_elements(exp, i));
@@ -9846,6 +10052,7 @@ Shade.smoothstep = smoothstep;
 
 var norm = builtin_glsl_function({
     name: "length", 
+    shade_name: "norm",
     type_resolving_list: [
         [Shade.Types.float_t, Shade.Types.float_t],
         [Shade.Types.vec2,    Shade.Types.float_t],
@@ -9897,8 +10104,8 @@ var cross = builtin_glsl_function({
         return vec3.cross(exp.parents[0].evaluate(cache),
                           exp.parents[1].evaluate(cache));
     }, element_function: function (exp, i) {
-        var v1 = exp.parents[0].length;
-        var v2 = exp.parents[1].length;
+        var v1 = exp.parents[0];
+        var v2 = exp.parents[1];
         if        (i === 0) { return v1.at(1).mul(v2.at(2)).sub(v1.at(2).mul(v2.at(1)));
         } else if (i === 1) { return v1.at(2).mul(v2.at(0)).sub(v1.at(0).mul(v2.at(2)));
         } else if (i === 2) { return v1.at(0).mul(v2.at(1)).sub(v1.at(1).mul(v2.at(0)));
@@ -10275,6 +10482,9 @@ Shade.Optimizer.transform_expression = function(operations)
             var test = operations[i][0];
             var fun = operations[i][1];
             var old_guid = v.guid;
+            if (Shade.debug && Shade.Optimizer._debug_passes) {
+                console.log("Pass",operations[i][2],"starting");
+            }
             if (operations[i][3]) {
                 var this_old_guid;
                 do {
@@ -10285,13 +10495,14 @@ Shade.Optimizer.transform_expression = function(operations)
                 v = v.replace_if(test, fun);
             }
             var new_guid = v.guid;
-            if (Shade.debug && Shade.Optimizer._debug_passes &&
-                old_guid != new_guid) {
+            if (Shade.debug && Shade.Optimizer._debug_passes) {
                 console.log("Pass",operations[i][2],"succeeded");
-                console.log("Before: ");
-                old_v.debug_print();
-                console.log("After: ");
-                v.debug_print();
+                if (old_guid != new_guid) {
+                    console.log("Before: ");
+                    old_v.debug_print();
+                    console.log("After: ");
+                    v.debug_print();
+                }
             }
         }
         return v;
@@ -10551,6 +10762,47 @@ Shade.canonicalize_program_object = function(program_obj)
     return result;
 };
 
+//////////////////////////////////////////////////////////////////////////////
+/*
+ * Shade.program is the main procedure that compiles a Shade
+ * appearance object (which is an object with fields containing Shade
+ * expressions like 'position' and 'color') to a WebGL program (a pair
+ * of vertex and fragment shaders). It performs a variety of optimizations and
+ * program transformations to support a more uniform programming model.
+ * 
+ * The sequence of transformations is as follows:
+ * 
+ *  - An appearance object is first canonicalized (which transforms names like 
+ *    color to gl_FragColor)
+ * 
+ *  - There are some expressions that are valid in vertex shader contexts but 
+ *    invalid in fragment shader contexts, and vice-versa (eg. attributes can 
+ *    only be read in vertex shaders; dFdx can only be evaluated in fragment 
+ *    shaders; the discard statement can only appear in a fragment shader). 
+ *    This means we must move expressions around:
+ * 
+ *    - expressions that can be hoisted from the vertex shader to the fragment 
+ *      shader are hoisted. Currently, this only includes discard_if 
+ *      statements.
+ * 
+ *    - expressions that must be hoisted from the fragment-shader computations 
+ *      to the vertex-shader computations are hoisted. For example, WebGL 
+ *      attributes can only be read on vertex shaders, and so Shade.program 
+ *      introduces a varying variable to communicate the value to the fragment 
+ *      shader.
+ * 
+ *  - At the end of this stage, some fragment-shader only expressions might 
+ *    remain on vertex-shader computations. These are invalid WebGL programs and
+ *    Shade.program must fail here (The canonical example is: 
+ *
+ *    {
+ *        position: Shade.dFdx(attribute)
+ *    })
+ * 
+ *  - After relocating expressions, vertex and fragment shaders are optimized
+ *    using a variety of simple expression rewriting (constant folding, etc).
+ */
+
 Shade.program = function(program_obj)
 {
     program_obj = Shade.canonicalize_program_object(program_obj);
@@ -10609,30 +10861,69 @@ Shade.program = function(program_obj)
         return result;
     }
 
-    // explicit per-vertex hoisting must happen before is_attribute hoisting,
-    // otherwise we might end up reading from a varying in the vertex program,
-    // which is undefined behavior
+    //////////////////////////////////////////////////////////////////////////
+    // moving discard statements on vertex program to fragment program
+
+    var shade_values_vp_obj = Shade(_.object(_.filter(
+        _.pairs(vp_obj), function(lst) {
+            var k = lst[0], v = lst[1];
+            return Lux.is_shade_expression(v);
+        })));
+
+    var vp_discard_conditions = {};
+    shade_values_vp_obj = shade_values_vp_obj.replace_if(function(x) {
+        return x.expression_type === 'discard_if';
+    }, function(exp) {
+        vp_discard_conditions[exp.parents[1].guid] = exp.parents[1];
+        return exp.parents[0];
+    });
+
+    var disallowed_vertex_expressions = shade_values_vp_obj.find_if(function(x) {
+        if (x.expression_type === 'builtin_function{dFdx}') return true;
+        if (x.expression_type === 'builtin_function{dFdy}') return true;
+        if (x.expression_type === 'builtin_function{fwidth}') return true;
+        return false;
+    });
+    if (disallowed_vertex_expressions.length > 0) {
+        throw "'" + disallowed_vertex_expressions[0] + "' not allowed in vertex expression";
+    }
+
+    vp_obj = _.object(shade_values_vp_obj.fields, shade_values_vp_obj.parents);
+    vp_discard_conditions = _.values(vp_discard_conditions);
+
+    if (vp_discard_conditions.length) {
+        var vp_discard_condition = _.reduce(vp_discard_conditions, function(a, b) {
+            return a.or(b);
+        }).ifelse(1, 0).gt(0);
+        fp_obj.gl_FragColor = fp_obj.gl_FragColor.discard_if(vp_discard_condition);
+    }
+
+    
 
     var common_sequence = [
         [Shade.Optimizer.is_times_zero, Shade.Optimizer.replace_with_zero, 
-         "v * 0", true],
-        [Shade.Optimizer.is_times_one, Shade.Optimizer.replace_with_notone, 
-         "v * 1", true],
-        [Shade.Optimizer.is_plus_zero, Shade.Optimizer.replace_with_nonzero,
-         "v + 0", true],
-        [Shade.Optimizer.is_never_discarding,
-         Shade.Optimizer.remove_discard, "discard_if(false)"],
-        [Shade.Optimizer.is_known_branch,
-         Shade.Optimizer.prune_ifelse_branch, "constant?a:b", true],
-        [Shade.Optimizer.vec_at_constant_index, 
-         Shade.Optimizer.replace_vec_at_constant_with_swizzle, "vec[constant_ix]"],
-        [Shade.Optimizer.is_constant,
-         Shade.Optimizer.replace_with_constant, "constant folding"],
-        [Shade.Optimizer.is_logical_or_with_constant,
-         Shade.Optimizer.replace_logical_or_with_constant, "constant||v", true],
-        [Shade.Optimizer.is_logical_and_with_constant,
-         Shade.Optimizer.replace_logical_and_with_constant, "constant&&v", true]];
+         "v * 0", true]
+       ,[Shade.Optimizer.is_times_one, Shade.Optimizer.replace_with_notone, 
+         "v * 1", true]
+       ,[Shade.Optimizer.is_plus_zero, Shade.Optimizer.replace_with_nonzero,
+         "v + 0", true]
+       ,[Shade.Optimizer.is_never_discarding,
+         Shade.Optimizer.remove_discard, "discard_if(false)"]
+       ,[Shade.Optimizer.is_known_branch,
+         Shade.Optimizer.prune_ifelse_branch, "constant?a:b", true]
+       ,[Shade.Optimizer.vec_at_constant_index, 
+         Shade.Optimizer.replace_vec_at_constant_with_swizzle, "vec[constant_ix]"]
+       ,[Shade.Optimizer.is_constant,
+         Shade.Optimizer.replace_with_constant, "constant folding"]
+       ,[Shade.Optimizer.is_logical_or_with_constant,
+         Shade.Optimizer.replace_logical_or_with_constant, "constant||v", true]
+       ,[Shade.Optimizer.is_logical_and_with_constant,
+         Shade.Optimizer.replace_logical_and_with_constant, "constant&&v", true]
+    ];
 
+    // explicit per-vertex hoisting must happen before is_attribute hoisting,
+    // otherwise we might end up reading from a varying in the vertex program,
+    // which is undefined behavior
     var fp_sequence = [
         [is_per_vertex, hoist_to_varying, "per-vertex hoisting"],
         [is_attribute, hoist_to_varying, "attribute hoisting"]  
@@ -10644,7 +10935,13 @@ Shade.program = function(program_obj)
 
     var used_varying_names = [];
     _.each(fp_obj, function(v, k) {
-        v = fp_optimize(v);
+        try {
+            v = fp_optimize(v);
+        } catch (e) {
+            console.error("fragment program optimization crashed. This is a bug. Please send the following JSON object in the bug report:");
+            console.error(JSON.stringify(v.json()));
+            throw e;
+        }
         used_varying_names.push.apply(used_varying_names,
                                       _.map(v.find_if(is_varying),
                                             function (v) { 
@@ -10654,9 +10951,18 @@ Shade.program = function(program_obj)
     });
 
     _.each(vp_obj, function(v, k) {
+        var new_v;
         if ((varying_names.indexOf(k) === -1) ||
-            (used_varying_names.indexOf(k) !== -1))
-            vp_exprs.push(Shade.set(vp_optimize(v), k));
+            (used_varying_names.indexOf(k) !== -1)) {
+            try {
+                new_v = vp_optimize(v);
+            } catch (e) {
+                console.error("vertex program optimization crashed. This is a bug. Please send the following JSON object in the bug report:");
+                console.error(JSON.stringify(v.json()));
+                throw e;
+            }
+            vp_exprs.push(Shade.set(new_v, k));
+        }
     });
 
     var vp_exp = Shade.seq(vp_exprs);
@@ -10818,7 +11124,7 @@ Shade.Exp.tanh = function() { return Shade.tanh(this); };
 (function() {
 
 var logical_operator_binexp = function(exp1, exp2, operator_name, evaluator,
-                                       parent_is_unconditional)
+                                       parent_is_unconditional, shade_name)
 {
     parent_is_unconditional = parent_is_unconditional ||
         function (i) { return true; };
@@ -10833,7 +11139,8 @@ var logical_operator_binexp = function(exp1, exp2, operator_name, evaluator,
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
             return evaluator(this, cache);
         }),
-        parent_is_unconditional: parent_is_unconditional
+        parent_is_unconditional: parent_is_unconditional,
+        _json_key: function() { return shade_name; }
     });
 };
 
@@ -10845,7 +11152,7 @@ var lift_binfun_to_evaluator = function(binfun) {
 };
 
 var logical_operator_exp = function(operator_name, binary_evaluator,
-                                    parent_is_unconditional)
+                                    parent_is_unconditional, shade_name)
 {
     return function() {
         if (arguments.length === 0) 
@@ -10867,7 +11174,7 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
             current_result = logical_operator_binexp(
                 current_result, next,
                 operator_name, binary_evaluator,
-                parent_is_unconditional);
+                parent_is_unconditional, shade_name);
         }
         return current_result;
     };
@@ -10875,7 +11182,7 @@ var logical_operator_exp = function(operator_name, binary_evaluator,
 
 Shade.or = logical_operator_exp(
     "||", lift_binfun_to_evaluator(function(a, b) { return a || b; }),
-    function(i) { return i === 0; }
+    function(i) { return i === 0; }, "or"
 );
 
 Shade.Exp.or = function(other)
@@ -10885,7 +11192,7 @@ Shade.Exp.or = function(other)
 
 Shade.and = logical_operator_exp(
     "&&", lift_binfun_to_evaluator(function(a, b) { return a && b; }),
-    function(i) { return i === 0; }
+    function(i) { return i === 0; }, "and"
 );
 
 Shade.Exp.and = function(other)
@@ -10894,7 +11201,7 @@ Shade.Exp.and = function(other)
 };
 
 Shade.xor = logical_operator_exp(
-    "^^", lift_binfun_to_evaluator(function(a, b) { return ~~(a ^ b); }));
+    "^^", lift_binfun_to_evaluator(function(a, b) { return ~~(a ^ b); }), undefined, "xor");
 Shade.Exp.xor = function(other)
 {
     return Shade.xor(this, other);
@@ -10914,19 +11221,20 @@ Shade.not = Shade(function(exp)
         },
         evaluate: Shade.memoize_on_guid_dict(function(cache) {
             return !this.parents[0].evaluate(cache);
-        })
+        }),
+        _json_key: function() { return "not"; }
     });
 });
 
 Shade.Exp.not = function() { return Shade.not(this); };
 
-var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator)
+var comparison_operator_exp = function(operator_name, type_checker, binary_evaluator, shade_name)
 {
     return Shade(function(first, second) {
         type_checker(first.type, second.type);
 
         return logical_operator_binexp(
-            first, second, operator_name, binary_evaluator);
+            first, second, operator_name, binary_evaluator, undefined, shade_name);
     });
 };
 
@@ -10957,19 +11265,19 @@ var equality_type_checker = function(name) {
 };
 
 Shade.lt = comparison_operator_exp("<", inequality_type_checker("<"),
-    lift_binfun_to_evaluator(function(a, b) { return a < b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a < b; }), "lt");
 Shade.Exp.lt = function(other) { return Shade.lt(this, other); };
 
 Shade.le = comparison_operator_exp("<=", inequality_type_checker("<="),
-    lift_binfun_to_evaluator(function(a, b) { return a <= b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a <= b; }), "le");
 Shade.Exp.le = function(other) { return Shade.le(this, other); };
 
 Shade.gt = comparison_operator_exp(">", inequality_type_checker(">"),
-    lift_binfun_to_evaluator(function(a, b) { return a > b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a > b; }), "gt");
 Shade.Exp.gt = function(other) { return Shade.gt(this, other); };
 
 Shade.ge = comparison_operator_exp(">=", inequality_type_checker(">="),
-    lift_binfun_to_evaluator(function(a, b) { return a >= b; }));
+    lift_binfun_to_evaluator(function(a, b) { return a >= b; }), "ge");
 Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
@@ -10980,7 +11288,7 @@ Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
                          function (x) { return x; });
         }
         return Shade.Types.type_of(a).value_equals(a, b);
-    }));
+    }), "eq");
 Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
@@ -10991,7 +11299,7 @@ Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
                          function (x) { return x; });
         }
         return !Shade.Types.type_of(a).value_equals(a, b);
-    }));
+    }), "ne");
 Shade.Exp.ne = function(other) { return Shade.ne(this, other); };
 
 // component-wise comparisons are defined on builtins.js
@@ -11317,6 +11625,9 @@ performance problem into an actual bug.
 
 Shade.discard_if = function(exp, condition)
 {
+    if (_.isUndefined(exp) ||
+        _.isUndefined(condition))
+        throw new Error("discard_if expects two parameters");
     exp = Shade.make(exp);
     condition = Shade.make(condition);
 
@@ -11325,19 +11636,19 @@ Shade.discard_if = function(exp, condition)
             var cond = _.all(this.parents, function(v) {
                 return v.is_constant();
             });
-            return (cond && !this.parents[0].constant_value());
+            return (cond && !this.parents[1].constant_value());
         }),
         _must_be_function_call: true,
         type: exp.type,
         expression_type: "discard_if",
-        parents: [condition, exp],
+        parents: [exp, condition],
         parent_is_unconditional: function(i) {
             return i === 0;
         },
         compile: function(ctx) {
-            ctx.strings.push(exp.type.repr(), this.glsl_name, "(void) {\n",
-                             "    if (",this.parents[0].glsl_expression(),") discard;\n",
-                             "    return ", this.parents[1].glsl_expression(), ";\n}\n");
+            ctx.strings.push(this.parents[0].type.repr(), this.glsl_name, "(void) {\n",
+                             "    if (",this.parents[1].glsl_expression(),") discard;\n",
+                             "    return ", this.parents[0].glsl_expression(), ";\n}\n");
         },
         // FIXME How does evaluate interact with fragment discarding?
         // I still need to define the value of a discarded fragment. Currently evaluate
@@ -12763,6 +13074,12 @@ Shade.ThreeD.normal = function(position)
     var dPos_dpixely = Shade.dFdy(position);
     return Shade.normalize(Shade.cross(dPos_dpixelx, dPos_dpixely));
 };
+Shade.ThreeD.cull_backface = Shade(function(position, normal, ccw)
+{
+    if (_.isUndefined(ccw)) ccw = Shade(true);
+    ccw = ccw.ifelse(1, -1);
+    return position.discard_if(normal.dot(Shade.vec(0,0,ccw)).le(0));
+});
 Lux.Geometry = {};
 Lux.Geometry.triangulate = function(opts) {
     var poly = _.map(opts.contour, function(contour) {
@@ -13717,6 +14034,8 @@ Lux.Marks.rectangle_brush = function(opts)
         }
     };
 };
+(function() {
+
 function spherical_mercator_patch(tess)
 {
     var uv = [];
@@ -13762,13 +14081,14 @@ Lux.Marks.globe = function(opts)
         zoom: 3,
         resolution_bias: 0,
         patch_size: 10,
+        cache_size: 3,
         tile_pattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         }
     });
     var model = Shade.parameter("mat4");
     var patch = spherical_mercator_patch(opts.patch_size);
-    var cache_size = 64; // cache size must be (2^n)^2
+    var cache_size = 1 << (2 * opts.cache_size); // cache size must be (2^n)^2
     var tile_size = 256;
     var tiles_per_line  = 1 << (~~Math.round(Math.log(Math.sqrt(cache_size))/Math.log(2)));
     var super_tile_size = tile_size * tiles_per_line;
@@ -13776,7 +14096,8 @@ Lux.Marks.globe = function(opts)
     var ctx = Lux._globals.ctx;
     var texture = Lux.texture({
         width: super_tile_size,
-        height: super_tile_size
+        height: super_tile_size,
+        mipmaps: false
     });
 
     function new_tile(i) {
@@ -13829,7 +14150,6 @@ Lux.Marks.globe = function(opts)
 
     var v = patch.vertex(Shade.vec(min_x, min_y), 
                          Shade.vec(max_x, max_y));
-    var mvp = opts.view_proj(model);
 
     var xformed_patch = patch.uv 
     // These two lines work around the texture seams on the texture atlas
@@ -13843,9 +14163,9 @@ Lux.Marks.globe = function(opts)
     var sphere_actor = Lux.actor({
         model: patch, 
         appearance: {
-            gl_Position: mvp(v),
-            gl_FragColor: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
-            mode: Lux.DrawingMode.pass
+            position: model(v),
+            color: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
+            polygon_offset: opts.polygon_offset
         }});
 
     function inertia_tick() {
@@ -13867,6 +14187,7 @@ Lux.Marks.globe = function(opts)
     } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
         throw new Error("zoom must be either a number or a parameter");
     }
+    var foo = Shade.parameter("vec4");
 
     var result = {
         tiles: tiles,
@@ -13876,10 +14197,9 @@ Lux.Marks.globe = function(opts)
         latitude_center: opts.latitude_center,
         zoom: opts.zoom,
         model_matrix: model,
-        mvp: mvp,
-        lat_lon_position: function(lat, lon) {
-            return mvp(Shade.Scale.Geo.latlong_to_spherical(lat, lon));
-        },
+        // lat_lon_position: function(lat, lon) {
+        //     return model(Shade.Scale.Geo.latlong_to_spherical(lat, lon));
+        // },
         resolution_bias: opts.resolution_bias,
         update_model_matrix: function() {
             while (this.longitude_center < 0)
@@ -14064,6 +14384,19 @@ Lux.Marks.globe = function(opts)
                 onload: f(x, y, zoom, id)
             });
         },
+        scene: function(opts) {
+            opts = _.clone(opts || {});
+            opts.transform = function(appearance) {
+                if (_.isUndefined(appearance.position))
+                    return appearance;
+                appearance = _.clone(appearance);
+                var lat = appearance.position.x();
+                var lon = appearance.position.y();
+                appearance.position = model(Shade.Scale.Geo.latlong_to_spherical(lat, lon));
+                return appearance;
+            };
+            return Lux.scene(opts);
+        },
         dress: function(scene) {
             var sphere_batch = sphere_actor.dress(scene);
             return {
@@ -14098,6 +14431,8 @@ Lux.Marks.globe = function(opts)
 
     return result;
 };
+
+})();
 Lux.Marks.globe_2d = function(opts)
 {
     opts = _.defaults(opts || {}, {
@@ -14413,19 +14748,34 @@ Lux.Marks.globe_2d = function(opts)
     return result;
 };
 
+Lux.Marks.globe_2d.scene = function(opts)
+{
+    opts = _.clone(opts || {});
+    opts.transform = function(appearance) {
+        if (_.isUndefined(appearance.position))
+            return appearance;
+        appearance = _.clone(appearance);
+        var lat = appearance.position.x();
+        var lon = appearance.position.y();
+        appearance.position = Lux.Marks.globe_2d.lat_lon_to_tile_mercator(lat, lon);
+        return appearance;
+    };
+    return Lux.scene(opts);
+};
+
 Lux.Marks.globe_2d.lat_lon_to_tile_mercator = Shade(function(lat, lon) {
     return Shade.Scale.Geo.latlong_to_mercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
 });
 
-Lux.Marks.globe_2d.transform = function(appearance) {
-    var new_appearance = _.clone(appearance);
-    new_appearance.position = Shade.vec(Lux.Marks.globe_2d.lat_lon_to_tile_mercator(
-        appearance.position.x(),
-        appearance.position.y()), appearance.position.swizzle("xw"));
-    return new_appearance;
-};
+// Lux.Marks.globe_2d.transform = function(appearance) {
+//     var new_appearance = _.clone(appearance);
+//     new_appearance.position = Shade.vec(Lux.Marks.globe_2d.lat_lon_to_tile_mercator(
+//         appearance.position.x(),
+//         appearance.position.y()), appearance.position.swizzle("xw"));
+//     return new_appearance;
+// };
 
-Lux.Marks.globe_2d.transform.inverse = function() { throw new Error("unimplemented"); };
+// Lux.Marks.globe_2d.transform.inverse = function() { throw new Error("unimplemented"); };
 Lux.Models = {};
 Lux.Models.flat_cube = function() {
     return Lux.model({
@@ -16247,6 +16597,55 @@ Lux.actor_list = function(actors_list)
                     return false;
             }
             return true;
+        }
+    };
+};
+
+Lux.actor_many = function(opts)
+{
+    opts = _.defaults(opts, {
+        on: function() { return true; }
+    });
+    var appearance_function = opts.appearance_function;
+    var model_list = opts.model_list;
+    var on = opts.on;
+    var model_callback = opts.model_callback;
+    var scratch_model = _.clone(model_list[0]);
+    var scratch_actor = Lux.actor({
+        model: scratch_model,
+        appearance: appearance_function(scratch_model)
+    });
+    var batch;
+
+    return {
+        dress: function(scene) {
+            batch = scratch_actor.dress(scene);
+            return model_callback ? {
+                draw: function() {
+                    _.each(model_list, function(model, i) {
+                        _.each(scratch_model.attributes, function(v, k) {
+                            v.set(model[k].get());
+                        });
+                        scratch_model.elements.set(model.elements.array);
+                        model_callback(model, i);
+                        batch.draw();
+                    });
+                }
+            } : {
+                draw: function() {
+                    _.each(model_list, function(model, i) {
+                        _.each(scratch_model.attributes, function(v, k) {
+                            v.set(model[k].get());
+                        });
+                        scratch_model.elements.set(model.elements.array);
+                        // model_callback(model, i); -- only difference to above
+                        batch.draw();
+                    });
+                }
+            };
+        },
+        on: function(event_name, event) {
+            return opts.on(event_name, event);
         }
     };
 };
