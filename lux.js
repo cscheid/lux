@@ -16700,6 +16700,15 @@ Lux.scene = function(opts)
             return result;
         }, 
 
+        remove: function(actor) {
+            var i = actor_list.indexOf(actor);
+            if (i === -1)
+                throw new Error("actor not found in scene");
+            actor_list.splice(i, 1);
+            batch_list.splice(i, 1);
+            this.invalidate(undefined, undefined, ctx);
+        },
+
         //////////////////////////////////////////////////////////////////////
         /*
          * animate starts a continuous stream of animation
@@ -16905,15 +16914,16 @@ Lux.Scene.remove = function(obj, ctx)
         ctx = Lux._globals.ctx;
     }
     var scene = ctx._lux_globals.scene;
+    scene.remove(obj);
 
-    var i = scene.indexOf(obj);
+    // var i = scene.indexOf(obj);
 
-    if (i === -1) {
-        return undefined;
-    } else {
-        return scene.splice(i, 1)[0];
-    }
-    Lux.Scene.invalidate(undefined, undefined, ctx);
+    // if (i === -1) {
+    //     return undefined;
+    // } else {
+    //     return scene.splice(i, 1)[0];
+    // }
+    // Lux.Scene.invalidate(undefined, undefined, ctx);
 };
 Lux.Scene.render = function()
 {

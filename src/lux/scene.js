@@ -49,6 +49,15 @@ Lux.scene = function(opts)
             return result;
         }, 
 
+        remove: function(actor) {
+            var i = actor_list.indexOf(actor);
+            if (i === -1)
+                throw new Error("actor not found in scene");
+            actor_list.splice(i, 1);
+            batch_list.splice(i, 1);
+            this.invalidate(undefined, undefined, ctx);
+        },
+
         //////////////////////////////////////////////////////////////////////
         /*
          * animate starts a continuous stream of animation
