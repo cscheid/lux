@@ -1,0 +1,70 @@
+<html>
+<head><title>Attributes 1: Defining attribute buffers</title>
+  <link rel="stylesheet" href="/lux/demos/css/bootstrap.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/style.css"/>
+  <link rel="stylesheet" href="/lux/demos/css/mchighlight-javascript.css"/>
+  <script src="/lux/lib/jquery-1.6.2.min.js"></script>
+  <script src="/lux/lux.js"></script>
+  <script src="/lux/demos/js/mclexer.js"></script>
+  <script src="/lux/demos/js/mchighlight.js"></script>
+  <script src="/lux/demos/js/mchighlight-javascript.js"></script>
+  <script src="lesson1.js"></script>
+</head>
+<body>
+  <div class="body">
+    <div class="content">
+      <h1>Attributes 1: Defining attribute buffers</h1>
+      <canvas id="webgl" width="720" height="480"></canvas>
+      <p>Attribute buffers are Lux objects that encapsulate a stream
+      of values that will be combined a few at a time to make WebGL
+      primitives. For example, 3 contiguous attribute values would
+      make a triangle, or each value would make a separate point. In
+      cases where your data doesn't change very often, you don't need
+      to worry about attributes, since Lux will typically create one
+      for you automatically. </p>
+      <p>However, if you have dynamic data, you
+      don't want to have to create a new actor every time, since
+      creating an actor is slow (due to creating GPU programs
+      associated with it). With <b>attribute buffers</b>, you can
+      change the stream of values dynamically without changing the
+      actor (similarly to how Lux parameters work).
+      </p>
+      <h2>Creating attribute buffers</h2>
+<pre class="highlight">
+var x_array = new Float32Array(n_points);
+x_array[0] = 2; 
+// ... etc. in your code, initialize x_array as necessary.
+var x_buffer = Lux.attribute_buffer({
+    item_size: 1,
+    vertex_array: x_array
+});
+</pre>
+<p>The value of <span class="inline-highlight">item_size</span>
+  determines whether the stream of values will be interpreted as a
+  stream of float, vec2, vec3 or vec4 values.</p>
+      <h2>Using attribute buffers</h2>
+<p>Attribute buffers behave like Shade values of the appropriate type:</p>
+<pre class="highlight">
+var dots = Lux.Marks.dots({
+    position: scale(Shade.vec(x_buffer, y_buffer)),
+    elements: n_points
+});
+</pre>
+<h2>Changing attribute buffer values</h2>
+<p>Change attribute buffers by calling their set method:</p>
+<pre class="highlight">
+x_array[3] = 5;
+x_array[6] = 7; // etc
+x_buffer.set(x_array);
+Lux.Scene.invalidate();
+</pre>
+<p>Notice you need to request a redraw manually. Lux isn't yet smart
+  enough to know that a particular buffer is being used in a scene, so
+  if you don't call <span class="inline-highlight">invalidate</span>,
+  you will not see the changes in your scene.</p>
+    </div>
+  </div>
+<script>
+$('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+</script>
+</body>
