@@ -4293,7 +4293,7 @@ Lux.init = function(opts)
         gl.parameters.width = Shade.parameter("float", gl.viewportWidth);
         gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
     }
-    gl.parameters.now = Shade.parameter("float", gl._lux_globals.epoch);
+    gl.parameters.now = Shade.parameter("float", 0);
     gl.parameters.frame_duration = Shade.parameter("float", 0);
 
     gl._lux_globals.scene = Lux.default_scene({
@@ -4484,6 +4484,11 @@ Lux.model = function(input)
     }
     result._ctx = Lux._globals.ctx;
     return result;
+};
+Lux.now = function()
+{
+    var ctx = Lux._globals.ctx;
+    return ctx.parameters.now;
 };
 (function() {
 

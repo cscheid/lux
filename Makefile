@@ -48,6 +48,7 @@ lux.js:								\
 	src/lux/init.js						\
 	src/lux/matrix.js					\
 	src/lux/model.js					\
+	src/lux/now.js						\
 	src/lux/picker.js					\
 	src/lux/profile.js					\
 	src/lux/program.js					\
