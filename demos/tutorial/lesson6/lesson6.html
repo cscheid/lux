@@ -127,11 +127,11 @@ Shade.Light.ambient = function(light_opts)
 <h2>Putting it all together</h2>
 
 <pre class="highlight">
-Lux.bake(model, {
-    position: camera(cube_model_mat)(model.vertex),
-    color: ambient_light(material_opts)
-        .add(diffuse_light(material_opts))
-})
+Lux.actor({model: model, 
+    appearance: {
+        position: camera(cube_model_mat)(model.vertex),
+        color: ambient_light(material_opts)
+            .add(diffuse_light(material_opts))}});
 </pre>
 
 <h2>Addendum: Slider interaction</h2>

@@ -20,7 +20,7 @@
 <p>This very short lesson shows you how to create and display 3D
 objects. To put it shortly, there is very little to it: if your model
 contains vertices that specify a three-dimensional model (that is, if
-the <span class="inline-highlight">vertex</span> field , then the
+the <tt>vertex</tt> field , then the
 default drawing mode in Lux will make sure that the occluded pieces of
 the 3D model are not displayed.</p>
 
@@ -81,6 +81,7 @@ var pyramid_model = Lux.model({
 <p>Back to the <a href="../index.html">index</a>.</p>
 <script>
 $('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+$('tt').each(function(i, v) { Highlighter.highlight(v); });
 </script>
 </div>
 </body>
