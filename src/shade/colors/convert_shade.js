@@ -367,35 +367,51 @@ function flip(v) { return Shade(1).sub(v); }
 
 Shade.Colors.desaturate = Shade(function(amount) {
     return function(color) {
+        var a;
+        if (color.type(Shade.Types.vec4)) {
+            a = color.a();
+        }
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
         var hsv = table.rgb.hsv(rgb);
-        return table.hsv.create(hsv.h, hsv.s.mul(flip(amount)), hsv.v).as_shade(color.a());
+        return table.hsv.create(hsv.h, hsv.s.mul(flip(amount)), hsv.v).as_shade(a);
     };
 });
 
 Shade.Colors.brighten = Shade(function(amount) {
     return function(color) {
+        var a;
+        if (color.type(Shade.Types.vec4)) {
+            a = color.a();
+        }
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
         var hls = table.rgb.hls(rgb);
         var darkness = flip(hls.l);
         amount = flip(amount);
         var resulting_darkness = darkness.mul(amount);
-        return table.hls.create(hls.h, flip(resulting_darkness), hls.s).as_shade(color.a());
+        return table.hls.create(hls.h, flip(resulting_darkness), hls.s).as_shade(a);
     };
 });
 
 Shade.Colors.darken = Shade(function(amount) {
     return function(color) {
+        var a;
+        if (color.type(Shade.Types.vec4)) {
+            a = color.a();
+        }
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
         var hls = table.rgb.hls(rgb);
         var darkness = flip(hls.l);
         amount = flip(amount);
         var resulting_darkness = darkness.mul(amount);
-        return table.hls.create(hls.h, resulting_darkness, hls.s).as_shade(color.a());
+        return table.hls.create(hls.h, resulting_darkness, hls.s).as_shade(a);
     };
 });
 
 Shade.Colors.invert = Shade(function(c) {
+    var a;
+    if (color.type(Shade.Types.vec4)) {
+        a = color.a();
+    }
     var rgb = table.rgb.create(c.r(), c.g(), c.b());
     var hls = table.rgb.hls(rgb);
     return table.hls.create(hls.h, flip(hls.l), hls.s).as_shade(c.a()); 
