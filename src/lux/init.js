@@ -84,7 +84,7 @@ Lux.init = function(opts)
 
     try {
         if ("attributes" in opts) {
-            gl = WebGLUtils.setupWebGL(canvas, opts.attributes);
+            gl = Lux.Lib.WebGLUtils.setupWebGL(canvas, opts.attributes);
             var x = gl.getContextAttributes();
             for (var key in opts.attributes) {
                 if (opts.attributes[key] !== x[key]) {
@@ -94,7 +94,7 @@ Lux.init = function(opts)
                 }
             }
         } else
-            gl = WebGLUtils.setupWebGL(canvas);
+            gl = Lux.Lib.WebGLUtils.setupWebGL(canvas);
         if (!gl)
             throw new Error("failed context creation");
         initialize_context_globals(gl);
