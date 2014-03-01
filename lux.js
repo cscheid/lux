@@ -137,7 +137,7 @@ Lux.Lib = {};
 
 // Various functions for helping debug WebGL apps.
 
-WebGLDebugUtils = function() {
+Lux.Lib.WebGLDebugUtils = function() {
 
 /**
  * Wrapped logging function.
@@ -10253,10 +10253,10 @@ Lux.init = function(opts)
         
         if (opts.debugging) {
             var throwOnGLError = function(err, funcName, args) {
-                throw new Error(WebGLDebugUtils.glEnumToString(err) + 
+                throw new Error(Lux.Lib.WebGLDebugUtils.glEnumToString(err) + 
                     " was caused by call to " + funcName);
             };
-            gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
+            gl = Lux.Lib.WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
 
         gl.viewportWidth = canvas.width;
