@@ -192,7 +192,7 @@ Shade.Optimizer.vec_at_constant_index = function(exp)
     if (!exp.parents[1].is_constant())
         return false;
     var v = exp.parents[1].constant_value();
-    if (lux_typeOf(v) !== "number")
+    if (Lux.type_of(v) !== "number")
         return false;
     var t = exp.parents[0].type;
     if (t.equals(Shade.Types.vec2) && (v >= 0) && (v <= 1))

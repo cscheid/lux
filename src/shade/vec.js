@@ -73,7 +73,7 @@ Shade.vec = function()
             var result = [];
             var parent_values = _.each(this.parents, function(v) {
                 var c = v.evaluate(cache);
-                if (lux_typeOf(c) === 'number')
+                if (Lux.type_of(c) === 'number')
                     result.push(c);
                 else
                     for (var i=0; i<c.length; ++i)

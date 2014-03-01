@@ -146,7 +146,7 @@ Lux.Marks.globe = function(opts)
         f();
     }
 
-    if (lux_typeOf(opts.zoom) === "number") {
+    if (Lux.type_of(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
     } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
         throw new Error("zoom must be either a number or a parameter");

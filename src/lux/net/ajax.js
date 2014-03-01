@@ -18,7 +18,7 @@ Lux.Net.ajax = function(url, handler)
 {
     var current_context = Lux._globals.ctx;
 
-    if (lux_typeOf(url) === "array")
+    if (Lux.type_of(url) === "array")
         return handle_many(url, handler, Lux.Net.ajax);
 
     var xhr = new XMLHttpRequest;

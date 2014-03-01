@@ -1,7 +1,7 @@
 Shade.varying = function(name, type)
 {
     if (_.isUndefined(type)) throw new Error("varying requires type");
-    if (lux_typeOf(type) === 'string') type = Shade.Types[type];
+    if (Lux.type_of(type) === 'string') type = Shade.Types[type];
     if (_.isUndefined(type)) throw new Error("varying requires valid type");
     var allowed_types = [
         Shade.Types.float_t,

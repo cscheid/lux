@@ -33,7 +33,7 @@ Lux.attribute_buffer_view = function(opts)
     }
 
     var normalized = opts.normalized;
-    if (lux_typeOf(normalized) !== "boolean") {
+    if (Lux.type_of(normalized) !== "boolean") {
         throw new Error("opts.normalized must be boolean");
     }
 

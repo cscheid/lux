@@ -17,13 +17,13 @@ function almost_equal(expected, got, msg, eps) {
     }
 }
 
-test("lux_typeOf", function() {
+test("Lux.type_of", function() {
     expect(5);
-    equal(lux_typeOf(1), "number");
-    equal(lux_typeOf(Shade.vec(1, 2, 3)), "object");
-    equal(lux_typeOf({}), "object");
-    equal(lux_typeOf([1, 2, 3, 4]), "array");
-    equal(lux_typeOf(new Float32Array([1,2,3,4])), "object"); // this needs to be object, unfortunately, because of vec2, vec3, vec4, etc.. Sigh....
+    equal(Lux.type_of(1), "number");
+    equal(Lux.type_of(Shade.vec(1, 2, 3)), "object");
+    equal(Lux.type_of({}), "object");
+    equal(Lux.type_of([1, 2, 3, 4]), "array");
+    equal(Lux.type_of(new Float32Array([1,2,3,4])), "object"); // this needs to be object, unfortunately, because of vec2, vec3, vec4, etc.. Sigh....
 });
 
 test("Shade types", function() {

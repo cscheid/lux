@@ -43,7 +43,7 @@ Lux.Data.texture_array = function(opts)
     if (texture_width * texture_height === elements.length) {
         // no chance this will ever happen in practice, but hey, 
         // a man can dream
-        if (lux_typeOf(elements) === "array") {
+        if (Lux.type_of(elements) === "array") {
             new_elements = new Float32Array(elements);
         } else
             new_elements = elements;

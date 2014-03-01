@@ -9308,11 +9308,11 @@ Lux.is_shade_expression = function(obj)
 //////////////////////////////////////////////////////////////////////////////
 // http://javascript.crockford.com/remedial.html
 
-// Notice that lux_typeOf is NOT EXACTLY equal to
+// Notice that Lux.type_of is NOT EXACTLY equal to
 // 
 //   http://javascript.crockford.com/remedial.html
 //
-// In particular, lux_typeOf will return "object" if given Shade expressions
+// In particular, Lux.type_of will return "object" if given Shade expressions
 // 
 // Shade expressions are actually functions with a bunch of extra methods.
 // 
@@ -9320,7 +9320,7 @@ Lux.is_shade_expression = function(obj)
 // operator() overloading, which turns out to be notationally quite powerful.
 //
 
-function lux_typeOf(value) 
+Lux.type_of = function(value) 
 {
     var s = typeof value;
     if (s === 'function' && value._lux_expression)
@@ -9373,7 +9373,7 @@ Lux.attribute_buffer_view = function(opts)
     }
 
     var normalized = opts.normalized;
-    if (lux_typeOf(normalized) !== "boolean") {
+    if (Lux.type_of(normalized) !== "boolean") {
         throw new Error("opts.normalized must be boolean");
     }
 
@@ -9875,7 +9875,7 @@ Lux.bake = function(model, appearance, opts)
     var primitive_type = primitive_types[model.type];
     var elements = model.elements;
     var draw_chunk;
-    if (lux_typeOf(elements) === 'number') {
+    if (Lux.type_of(elements) === 'number') {
         draw_chunk = function() {
             // it's important to use "model.elements" here instead of "elements" because
             // the indirection captures the fact that the model might have been updated with
@@ -9909,7 +9909,7 @@ Lux.bake = function(model, appearance, opts)
 
     function create_batch_opts(program, caps_name) {
         function ensure_parameter(v) {
-            if (lux_typeOf(v) === 'number')
+            if (Lux.type_of(v) === 'number')
                 return Shade.parameter("float", v);
             else if (Lux.is_shade_expression(v) === 'parameter')
                 return v;
@@ -10124,7 +10124,7 @@ Lux.fresh_pick_id = function(quantity)
 })();
 Lux.id_buffer = function(vertex_array)
 {
-    if (lux_typeOf(vertex_array) !== 'array')
+    if (Lux.type_of(vertex_array) !== 'array')
         throw new Error("id_buffer expects array of integers");
     var typedArray = new Int32Array(vertex_array);
     var byteArray = new Uint8Array(typedArray.buffer);
@@ -10479,10 +10479,10 @@ Lux.model = function(input)
                 if (v._shade_type === 'element_buffer') {
                     // example: 'elements: Lux.element_buffer(...)'
                     result.elements = v;
-                } else if (lux_typeOf(v) === 'number') {
+                } else if (Lux.type_of(v) === 'number') {
                     // example: 'elements: 4'
                     result.elements = v;
-                } else { // if (lux_typeOf(v) === 'array') {
+                } else { // if (Lux.type_of(v) === 'array') {
                     // example: 'elements: [0, 1, 2, 3]'
                     // example: 'elements: new Int16Array([0, 1, 2, 3])'
                     // example: 'elements: new Int32Array([0, 1, 2, 3])' (WebGL only supports 16-bit elements, so Lux converts this to a 16-bit element array)
@@ -10495,10 +10495,10 @@ Lux.model = function(input)
                 result[k] = Shade(v);
                 result.attributes[k] = result[k];
                 n_elements = v.numItems;
-            } else if (lux_typeOf(v) === "array") { // ... or a list of per-vertex things
+            } else if (Lux.type_of(v) === "array") { // ... or a list of per-vertex things
                 var buffer;
                 // These things can be shade vecs
-                if (lux_typeOf(v[0]) !== "array" && v[0]._lux_expression) {
+                if (Lux.type_of(v[0]) !== "array" && v[0]._lux_expression) {
                     // example: 'color: [Shade.color('white'), Shade.color('blue'), ...]
                     // assume it's a list of shade vecs, assume they all have the same dimension
                     // FIXME: check this
@@ -11167,7 +11167,7 @@ Lux.Net.ajax = function(url, handler)
 {
     var current_context = Lux._globals.ctx;
 
-    if (lux_typeOf(url) === "array")
+    if (Lux.type_of(url) === "array")
         return handle_many(url, handler, Lux.Net.ajax);
 
     var xhr = new XMLHttpRequest;
@@ -11203,7 +11203,7 @@ Lux.Net.ajax = function(url, handler)
 
 Lux.Net.json = function(url, handler)
 {
-    if (lux_typeOf(url) === "array")
+    if (Lux.type_of(url) === "array")
         return handle_many(url, handler, Lux.Net.json);
 
     var xhr = new XMLHttpRequest;
@@ -11244,7 +11244,7 @@ Lux.Net.binary = function(url, handler)
 {
     var current_context = Lux._globals.ctx;
 
-    if (lux_typeOf(url) === "array")
+    if (Lux.type_of(url) === "array")
         return handle_many(url, handler, Lux.Net.binary);
 
     var xhr = new window.XMLHttpRequest();
@@ -11553,7 +11553,7 @@ Lux.Data.texture_array = function(opts)
     if (texture_width * texture_height === elements.length) {
         // no chance this will ever happen in practice, but hey, 
         // a man can dream
-        if (lux_typeOf(elements) === "array") {
+        if (Lux.type_of(elements) === "array") {
             new_elements = new Float32Array(elements);
         } else
             new_elements = elements;
@@ -11611,7 +11611,7 @@ Lux.Data.array_1d = function(array)
     var texture_height = Math.ceil(elements.length / (4 * texture_width));
     var new_elements;
     if (texture_width * texture_height === elements.length) {
-        if (lux_typeOf(elements) === "array") {
+        if (Lux.type_of(elements) === "array") {
             new_elements = new Float32Array(elements);
         } else
             new_elements = elements;
@@ -12149,7 +12149,7 @@ Shade.make = function(value)
     if (_.isUndefined(value)) {
         return undefined;
     }
-    var t = lux_typeOf(value);
+    var t = Lux.type_of(value);
     if (t === 'string') {
         // Did you accidentally say exp1 + exp2 when you meant
         // exp1.add(exp2)?
@@ -14015,7 +14015,7 @@ Shade.Exp = {
             }
         });
     },
-    _lux_expression: true, // used by lux_typeOf
+    _lux_expression: true, // used by Lux.type_of
     expression_type: "other",
     _uniforms: [],
 
@@ -14322,7 +14322,7 @@ Shade.constant = function(v, type)
 
             var string_args = _.map(args, function(arg) {
                 var v = String(arg);
-                if (lux_typeOf(arg) === "number" && v.indexOf(".") === -1) {
+                if (Lux.type_of(arg) === "number" && v.indexOf(".") === -1) {
                     return v + ".0";
                 } else
                     return v;
@@ -14419,7 +14419,7 @@ Shade.constant = function(v, type)
         d = v.length;
         if (d < 2 && d > 4)
             throw new Error("invalid length for constant vector: " + v);
-        var el_ts = _.map(v, function(t) { return lux_typeOf(t); });
+        var el_ts = _.map(v, function(t) { return Lux.type_of(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
             throw new Error("not all constant params have the same types");
         }
@@ -14465,7 +14465,7 @@ Shade.as_float = function(v) { return Shade.make(v).as_float(); };
 
 Shade.array = function(v)
 {
-    var t = lux_typeOf(v);
+    var t = Lux.type_of(v);
     if (t !== 'array')
         throw new Error("type error: need array");
 
@@ -14834,7 +14834,7 @@ Shade.attribute = function(type)
 Shade.varying = function(name, type)
 {
     if (_.isUndefined(type)) throw new Error("varying requires type");
-    if (lux_typeOf(type) === 'string') type = Shade.Types[type];
+    if (Lux.type_of(type) === 'string') type = Shade.Types[type];
     if (_.isUndefined(type)) throw new Error("varying requires valid type");
     var allowed_types = [
         Shade.Types.float_t,
@@ -15587,7 +15587,7 @@ Shade.vec = function()
             var result = [];
             var parent_values = _.each(this.parents, function(v) {
                 var c = v.evaluate(cache);
-                if (lux_typeOf(c) === 'number')
+                if (Lux.type_of(c) === 'number')
                     result.push(c);
                 else
                     for (var i=0; i<c.length; ++i)
@@ -16733,7 +16733,7 @@ Shade.Optimizer.vec_at_constant_index = function(exp)
     if (!exp.parents[1].is_constant())
         return false;
     var v = exp.parents[1].constant_value();
-    if (lux_typeOf(v) !== "number")
+    if (Lux.type_of(v) !== "number")
         return false;
     var t = exp.parents[0].type;
     if (t.equals(Shade.Types.vec2) && (v >= 0) && (v <= 1))
@@ -17356,7 +17356,7 @@ Shade.Exp.ge = function(other) { return Shade.ge(this, other); };
 
 Shade.eq = comparison_operator_exp("==", equality_type_checker("=="),
     lift_binfun_to_evaluator(function(a, b) {
-        if (lux_typeOf(a) === 'array') {
+        if (Lux.type_of(a) === 'array') {
             return _.all(_.map(_.zip(a, b),
                                function(v) { return v[0] === v[1]; }),
                          function (x) { return x; });
@@ -17367,7 +17367,7 @@ Shade.Exp.eq = function(other) { return Shade.eq(this, other); };
 
 Shade.ne = comparison_operator_exp("!=", equality_type_checker("!="),
     lift_binfun_to_evaluator(function(a, b) { 
-        if (lux_typeOf(a) === 'array') {
+        if (Lux.type_of(a) === 'array') {
             return _.any(_.map(_.zip(a, b),
                                function(v) { return v[0] !== v[1]; } ),
                          function (x) { return x; });
@@ -19820,7 +19820,7 @@ Lux.Marks.aligned_rects = function(opts)
 
     // aif == apply_if_function
     var aif = function(f, params) {
-        if (lux_typeOf(f) === 'function')
+        if (Lux.type_of(f) === 'function')
             return f.apply(this, params);
         else
             return f;
@@ -20240,7 +20240,7 @@ Lux.Marks.globe = function(opts)
         f();
     }
 
-    if (lux_typeOf(opts.zoom) === "number") {
+    if (Lux.type_of(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
     } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
         throw new Error("zoom must be either a number or a parameter");
@@ -20589,7 +20589,7 @@ Lux.Marks.globe_2d = function(opts)
             color: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
             mode: Lux.DrawingMode.pass }});
 
-    if (lux_typeOf(opts.zoom) === "number") {
+    if (Lux.type_of(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
     } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
         throw new Error("zoom must be either a number or a parameter");

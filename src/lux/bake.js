@@ -246,7 +246,7 @@ Lux.bake = function(model, appearance, opts)
     var primitive_type = primitive_types[model.type];
     var elements = model.elements;
     var draw_chunk;
-    if (lux_typeOf(elements) === 'number') {
+    if (Lux.type_of(elements) === 'number') {
         draw_chunk = function() {
             // it's important to use "model.elements" here instead of "elements" because
             // the indirection captures the fact that the model might have been updated with
@@ -280,7 +280,7 @@ Lux.bake = function(model, appearance, opts)
 
     function create_batch_opts(program, caps_name) {
         function ensure_parameter(v) {
-            if (lux_typeOf(v) === 'number')
+            if (Lux.type_of(v) === 'number')
                 return Shade.parameter("float", v);
             else if (Lux.is_shade_expression(v) === 'parameter')
                 return v;

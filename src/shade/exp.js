@@ -401,7 +401,7 @@ Shade.Exp = {
             }
         });
     },
-    _lux_expression: true, // used by lux_typeOf
+    _lux_expression: true, // used by Lux.type_of
     expression_type: "other",
     _uniforms: [],
 

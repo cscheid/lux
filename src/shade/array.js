@@ -4,7 +4,7 @@
 
 Shade.array = function(v)
 {
-    var t = lux_typeOf(v);
+    var t = Lux.type_of(v);
     if (t !== 'array')
         throw new Error("type error: need array");
 

@@ -28,7 +28,7 @@ Shade.constant = function(v, type)
 
             var string_args = _.map(args, function(arg) {
                 var v = String(arg);
-                if (lux_typeOf(arg) === "number" && v.indexOf(".") === -1) {
+                if (Lux.type_of(arg) === "number" && v.indexOf(".") === -1) {
                     return v + ".0";
                 } else
                     return v;
@@ -125,7 +125,7 @@ Shade.constant = function(v, type)
         d = v.length;
         if (d < 2 && d > 4)
             throw new Error("invalid length for constant vector: " + v);
-        var el_ts = _.map(v, function(t) { return lux_typeOf(t); });
+        var el_ts = _.map(v, function(t) { return Lux.type_of(t); });
         if (!_.all(el_ts, function(t) { return t === el_ts[0]; })) {
             throw new Error("not all constant params have the same types");
         }

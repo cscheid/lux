@@ -10,7 +10,7 @@ Lux.Data.array_1d = function(array)
     var texture_height = Math.ceil(elements.length / (4 * texture_width));
     var new_elements;
     if (texture_width * texture_height === elements.length) {
-        if (lux_typeOf(elements) === "array") {
+        if (Lux.type_of(elements) === "array") {
             new_elements = new Float32Array(elements);
         } else
             new_elements = elements;

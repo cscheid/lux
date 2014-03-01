@@ -21,10 +21,10 @@ Lux.model = function(input)
                 if (v._shade_type === 'element_buffer') {
                     // example: 'elements: Lux.element_buffer(...)'
                     result.elements = v;
-                } else if (lux_typeOf(v) === 'number') {
+                } else if (Lux.type_of(v) === 'number') {
                     // example: 'elements: 4'
                     result.elements = v;
-                } else { // if (lux_typeOf(v) === 'array') {
+                } else { // if (Lux.type_of(v) === 'array') {
                     // example: 'elements: [0, 1, 2, 3]'
                     // example: 'elements: new Int16Array([0, 1, 2, 3])'
                     // example: 'elements: new Int32Array([0, 1, 2, 3])' (WebGL only supports 16-bit elements, so Lux converts this to a 16-bit element array)
@@ -37,10 +37,10 @@ Lux.model = function(input)
                 result[k] = Shade(v);
                 result.attributes[k] = result[k];
                 n_elements = v.numItems;
-            } else if (lux_typeOf(v) === "array") { // ... or a list of per-vertex things
+            } else if (Lux.type_of(v) === "array") { // ... or a list of per-vertex things
                 var buffer;
                 // These things can be shade vecs
-                if (lux_typeOf(v[0]) !== "array" && v[0]._lux_expression) {
+                if (Lux.type_of(v[0]) !== "array" && v[0]._lux_expression) {
                     // example: 'color: [Shade.color('white'), Shade.color('blue'), ...]
                     // assume it's a list of shade vecs, assume they all have the same dimension
                     // FIXME: check this

@@ -8,7 +8,7 @@ Shade.make = function(value)
     if (_.isUndefined(value)) {
         return undefined;
     }
-    var t = lux_typeOf(value);
+    var t = Lux.type_of(value);
     if (t === 'string') {
         // Did you accidentally say exp1 + exp2 when you meant
         // exp1.add(exp2)?

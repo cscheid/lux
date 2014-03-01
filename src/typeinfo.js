@@ -19,11 +19,11 @@ Lux.is_shade_expression = function(obj)
 //////////////////////////////////////////////////////////////////////////////
 // http://javascript.crockford.com/remedial.html
 
-// Notice that lux_typeOf is NOT EXACTLY equal to
+// Notice that Lux.type_of is NOT EXACTLY equal to
 // 
 //   http://javascript.crockford.com/remedial.html
 //
-// In particular, lux_typeOf will return "object" if given Shade expressions
+// In particular, Lux.type_of will return "object" if given Shade expressions
 // 
 // Shade expressions are actually functions with a bunch of extra methods.
 // 
@@ -31,7 +31,7 @@ Lux.is_shade_expression = function(obj)
 // operator() overloading, which turns out to be notationally quite powerful.
 //
 
-function lux_typeOf(value) 
+Lux.type_of = function(value) 
 {
     var s = typeof value;
     if (s === 'function' && value._lux_expression)

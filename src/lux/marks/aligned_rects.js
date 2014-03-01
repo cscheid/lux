@@ -25,7 +25,7 @@ Lux.Marks.aligned_rects = function(opts)
 
     // aif == apply_if_function
     var aif = function(f, params) {
-        if (lux_typeOf(f) === 'function')
+        if (Lux.type_of(f) === 'function')
             return f.apply(this, params);
         else
             return f;

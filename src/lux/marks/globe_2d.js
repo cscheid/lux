@@ -96,7 +96,7 @@ Lux.Marks.globe_2d = function(opts)
             color: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
             mode: Lux.DrawingMode.pass }});
 
-    if (lux_typeOf(opts.zoom) === "number") {
+    if (Lux.type_of(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
     } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
         throw new Error("zoom must be either a number or a parameter");
