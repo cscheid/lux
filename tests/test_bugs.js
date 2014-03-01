@@ -64,4 +64,13 @@ test("Tests from previous Lux bugs", function() {
     ok(Shade.program(prog2), "backface culling should not crash optimizer");
 
     aug_17_2013();
+
+    ok(Shade.Colors.darken(0.5)(Shade.vec(1,1,1,1)), "shade darken should accept vec4");
+    ok(Shade.Colors.darken(0.5)(Shade.vec(1,1,1)), "shade darken should accept vec3");
+    ok(Shade.Colors.brighten(0.5)(Shade.vec(1,1,1,1)), "shade brighten should accept vec4");
+    ok(Shade.Colors.brighten(0.5)(Shade.vec(1,1,1)), "shade brighten should accept vec3");
+    ok(Shade.Colors.desaturate(0.5)(Shade.vec(1,1,1,1)), "shade desaturate should accept vec4");
+    ok(Shade.Colors.desaturate(0.5)(Shade.vec(1,1,1)), "shade desaturate should accept vec3");
+    ok(Shade.Colors.invert(Shade.vec(1,1,1,1)), "shade invert should accept vec4");
+    ok(Shade.Colors.invert(Shade.vec(1,1,1)), "shade invert should accept vec3");
 });

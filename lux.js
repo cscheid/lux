@@ -18636,7 +18636,7 @@ function flip(v) { return Shade(1).sub(v); }
 Shade.Colors.desaturate = Shade(function(amount) {
     return function(color) {
         var a;
-        if (color.type(Shade.Types.vec4)) {
+        if (color.type.equals(Shade.Types.vec4)) {
             a = color.a();
         }
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
@@ -18648,7 +18648,7 @@ Shade.Colors.desaturate = Shade(function(amount) {
 Shade.Colors.brighten = Shade(function(amount) {
     return function(color) {
         var a;
-        if (color.type(Shade.Types.vec4)) {
+        if (color.type.equals(Shade.Types.vec4)) {
             a = color.a();
         }
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
@@ -18663,7 +18663,7 @@ Shade.Colors.brighten = Shade(function(amount) {
 Shade.Colors.darken = Shade(function(amount) {
     return function(color) {
         var a;
-        if (color.type(Shade.Types.vec4)) {
+        if (color.type.equals(Shade.Types.vec4)) {
             a = color.a();
         }
         var rgb = table.rgb.create(color.r(), color.g(), color.b());
@@ -18677,12 +18677,12 @@ Shade.Colors.darken = Shade(function(amount) {
 
 Shade.Colors.invert = Shade(function(c) {
     var a;
-    if (color.type(Shade.Types.vec4)) {
-        a = color.a();
+    if (c.type.equals(Shade.Types.vec4)) {
+        a = c.a();
     }
     var rgb = table.rgb.create(c.r(), c.g(), c.b());
     var hls = table.rgb.hls(rgb);
-    return table.hls.create(hls.h, flip(hls.l), hls.s).as_shade(c.a()); 
+    return table.hls.create(hls.h, flip(hls.l), hls.s).as_shade(a);
 });
 
 })();
