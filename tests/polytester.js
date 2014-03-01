@@ -303,7 +303,7 @@ function changeClassNum(){
 	
 f = function () {
     if (alive) {
-	window.requestAnimFrame(f, canvas);
+	window.requestAnimationFrame(f, canvas);
     }
     gl.display();
   };

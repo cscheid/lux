@@ -1,0 +1,21 @@
+<html>
+<head>
+<script src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.js"></script>
+<script>
+var d = {};
+(function () {
+    var l = Object.getOwnPropertyNames(window);
+    for (var i=0; i<l.length; ++i) d[l[i]] = true;
+    console.log("Before:", l.length, "globals");
+})();
+require(["../lux"], function(Lux) {
+    var l = Object.getOwnPropertyNames(window);
+    for (var i=0; i<l.length; ++i)
+        if (!d[l[i]])
+            console.log("polluted", l[i]);
+    console.log("After:", l.length, "globals");
+});
+</script>
+</head>
+<body></body>
+</html>

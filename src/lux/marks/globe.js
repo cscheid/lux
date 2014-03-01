@@ -140,7 +140,7 @@ Lux.Marks.globe = function(opts)
             result.latitude_center  = Math.max(Math.min(80, result.latitude_center), -80);
             result.update_model_matrix();
             if (inertia > 0.01)
-                window.requestAnimFrame(f, result.canvas);
+                window.requestAnimationFrame(f, result.canvas);
             inertia *= 0.95;
         };
         f();

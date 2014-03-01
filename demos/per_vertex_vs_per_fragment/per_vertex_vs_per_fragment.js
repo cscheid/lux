@@ -78,7 +78,7 @@ $().ready(function() {
     init_webgl();
     var start = new Date().getTime();
     var f = function () {
-        window.requestAnimFrame(f, canvas);
+        window.requestAnimationFrame(f, canvas);
         var elapsed = new Date().getTime() - start;
         current_rotation = (elapsed / 20) * (Math.PI / 180);
         display();

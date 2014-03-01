@@ -92,26 +92,26 @@ Lux.scene = function(opts)
 
         /*
          * scene.invalidate triggers a scene redraw using
-         * requestAnimFrame.  It takes two callbacks to be called respectively
+         * requestAnimationFrame.  It takes two callbacks to be called respectively
          * before the scene is drawn and after. 
          * 
          * The function allows many different callbacks to be
-         * invoked by a single requestAnimFrame handler. This guarantees that
+         * invoked by a single requestAnimationFrame handler. This guarantees that
          * every callback passed to scene.invalidate during the rendering
          * of a single frame will be called before the invocation of the next scene 
          * redraw.
          * 
-         * If every call to invalidate issues a new requestAnimFrame, the following situation might happen:
+         * If every call to invalidate issues a new requestAnimationFrame, the following situation might happen:
          * 
          * - during scene.render:
          * 
-         *    - object 1 calls scene.invalidate(f1, f2) (requestAnimFrame #1)
+         *    - object 1 calls scene.invalidate(f1, f2) (requestAnimationFrame #1)
          * 
-         *    - object 2 calls scene.invalidate(f3, f4) (requestAnimFrame #2)
+         *    - object 2 calls scene.invalidate(f3, f4) (requestAnimationFrame #2)
          * 
          *    - scene.render ends
          * 
-         * - requestAnimFrame #1 is triggered:
+         * - requestAnimationFrame #1 is triggered:
          * 
          *    - f1 is called
          * 
@@ -129,7 +129,7 @@ Lux.scene = function(opts)
             }
             if (!dirty) {
                 dirty = true;
-                window.requestAnimFrame(function() { return draw_it(); });
+                window.requestAnimationFrame(function() { return draw_it(); });
             }
             if (pre_display) {
                 pre_display_list.push(pre_display);

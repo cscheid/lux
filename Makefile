@@ -15,7 +15,9 @@ lux.js:								\
 	src/lux/_begin.js					\
 	src/lux/_globals.js					\
 	lib/_begin.js						\
+	lib/pre-underscore.js					\
 	lib/underscore-min.js					\
+	lib/post-underscore.js					\
 	lib/webgl-debug.js					\
 	lib/webgl-utils.js					\
 	lib/pre-tessellate.js					\
@@ -217,7 +219,8 @@ lux.js:								\
 	src/lux/scene/transform/geo/mercator_to_latlong.js	\
 	src/lux/scene/transform/geo/_end.js			\
 	src/lux/scene/transform/camera/_begin.js		\
-	src/lux/scene/transform/camera/perspective.js
+	src/lux/scene/transform/camera/perspective.js		\
+	src/lux/_end.js
 
 # If the chmods below don't make sense to you right now, wait until
 # you fix a bug on the compilation output instead of the source :)
