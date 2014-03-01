@@ -19,10 +19,8 @@ lux.js:								\
 	lib/webgl-debug.js					\
 	lib/webgl-utils.js					\
 	lib/pre-tessellate.js					\
-	lib/_tessellate.js					\
-	lib/post-tessellate-1.js				\
 	lib/tessellate.js					\
-	lib/post-tessellate-2.js				\
+	lib/post-tessellate.js					\
 	src/underscore_mixins.js				\
 	src/linalg/_begin.js					\
 	src/linalg/vec2.js					\
