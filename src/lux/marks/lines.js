@@ -11,6 +11,10 @@ Lux.Marks.lines = function(opts)
         (_.isUndefined(opts.x) || _.isUndefined(opts.y))) {
         throw new Error("either position or x and y are required fields");
     }
+    if (Lux.is_shade_expression(opts.color)) {
+        var ccolor = opts.color;
+        opts.color = function() { return ccolor; };
+    }
 
     var vertex_index        = Lux.attribute_buffer({
         vertex_array: _.range(opts.elements * 2), 
