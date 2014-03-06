@@ -17910,7 +17910,7 @@ Shade.Colors.Brewer.qualitative = function(opts) {
         return a[opts.domain[i]];
     }
     var range = _.map(a, function(unused, i) {
-        lst = lookup(i);
+        var lst = lookup(i);
         return Shade.vec(lst[0] / 255, lst[1]/255, lst[2]/255, opts.alpha);
     });
     return Shade.Scale.ordinal({range: range});
@@ -19898,6 +19898,10 @@ Lux.Marks.lines = function(opts)
     if (_.isUndefined(opts.position) && 
         (_.isUndefined(opts.x) || _.isUndefined(opts.y))) {
         throw new Error("either position or x and y are required fields");
+    }
+    if (Lux.is_shade_expression(opts.color)) {
+        var ccolor = opts.color;
+        opts.color = function() { return ccolor; };
     }
 
     var vertex_index        = Lux.attribute_buffer({
