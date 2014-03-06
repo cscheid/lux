@@ -79,7 +79,7 @@ Shade.Colors.Brewer.qualitative = function(opts) {
         return a[opts.domain[i]];
     }
     var range = _.map(a, function(unused, i) {
-        lst = lookup(i);
+        var lst = lookup(i);
         return Shade.vec(lst[0] / 255, lst[1]/255, lst[2]/255, opts.alpha);
     });
     return Shade.Scale.ordinal({range: range});
