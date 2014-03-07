@@ -11834,9 +11834,9 @@ Lux.UI.center_zoom_interactor = function(opts)
     var current_button = 0;
 
     function dblclick(event) {
-        internal_move(result.width/2-event.offsetX, event.offsetY-result.height/2);
+        internal_move(result.width/2-event.luxX, result.height/2-event.luxY);
         zoom.set(zoom.get() * 2);
-        internal_move(event.offsetX-result.width/2, result.height/2-event.offsetY);
+        internal_move(event.luxX-result.width/2, event.luxY-result.height/2);
         Lux.Scene.invalidate();
         opts.dblclick(event);
     }
@@ -11850,8 +11850,8 @@ Lux.UI.center_zoom_interactor = function(opts)
             current_button = event.buttons;
         }
 
-        prev_mouse_pos = [event.offsetX, event.offsetY];
-        down_mouse_pos = [event.offsetX, event.offsetY];
+        prev_mouse_pos = [event.luxX, event.luxY];
+        down_mouse_pos = [event.luxX, event.luxY];
         opts.mousedown(event);
     }
 
@@ -11873,10 +11873,9 @@ Lux.UI.center_zoom_interactor = function(opts)
     }).js_evaluate;
 
     var internal_move = function(dx, dy) {
+        debugger;
         var ctx = Lux._globals.ctx;
-        // FIXME This doesn't work with highDPS: true
-        var v = vec.make([2*dx/ctx.parameters.width.get(), 
-                          2*dy/ctx.parameters.height.get()]);
+        var v = vec.make([2*dx/result.width, 2*dy/result.height]);
         var negdelta = f(v);
         // we use a kahan compensated sum here:
         // http://en.wikipedia.org/wiki/Kahan_summation_algorithm
@@ -11889,27 +11888,28 @@ Lux.UI.center_zoom_interactor = function(opts)
 
     function mousemove(event) {
         if ((current_button & 1) && !event.shiftKey) {
-            internal_move(event.offsetX - prev_mouse_pos[0], 
-                        -(event.offsetY - prev_mouse_pos[1]));
+            internal_move(event.luxX - prev_mouse_pos[0], 
+                         (event.luxY - prev_mouse_pos[1]));
             Lux.Scene.invalidate();
         } else if ((current_button & 1) && event.shiftKey) {
-            internal_move(result.width/2-down_mouse_pos[0], down_mouse_pos[1]-result.height/2);
-            var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + (event.offsetY - prev_mouse_pos[1]) / 240));
+            internal_move(result.width/2-down_mouse_pos[0], result.height/2-down_mouse_pos[1]);
+            var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + (prev_mouse_pos[1] - event.luxY) / 240));
             zoom.set(new_value);
-            internal_move(down_mouse_pos[0]-result.width/2, result.height/2-down_mouse_pos[1]);
+            internal_move(down_mouse_pos[0]-result.width/2, down_mouse_pos[1]-result.height/2);
             Lux.Scene.invalidate();
         }
-        prev_mouse_pos = [ event.offsetX, event.offsetY ];
+        prev_mouse_pos = [ event.luxX, event.luxY ];
         opts.mousemove(event);
     }
 
     // FIXME mousewheel madness
     function mousewheel(event, delta, deltaX, deltaY) {
-        internal_move(result.width/2-event.offsetX, event.offsetY-result.height/2);
+        debugger;
+        internal_move(result.width/2-event.luxX, result.height/2-event.luxY);
 	var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + deltaY/10));
         // var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
         zoom.set(new_value);
-        internal_move(event.offsetX-result.width/2, result.height/2-event.offsetY);
+        internal_move(event.luxX-result.width/2, event.luxY-result.height/2);
         // opts.mousewheel(event);
         Lux.Scene.invalidate();
         return false;
