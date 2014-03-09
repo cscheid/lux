@@ -86,7 +86,6 @@ Lux.UI.center_zoom_interactor = function(opts)
     }).js_evaluate;
 
     var internal_move = function(dx, dy) {
-        debugger;
         var ctx = Lux._globals.ctx;
         var v = vec.make([2*dx/result.width, 2*dy/result.height]);
         var negdelta = f(v);
@@ -117,7 +116,6 @@ Lux.UI.center_zoom_interactor = function(opts)
 
     // FIXME mousewheel madness
     function mousewheel(event, delta, deltaX, deltaY) {
-        debugger;
         internal_move(result.width/2-event.luxX, result.height/2-event.luxY);
 	var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + deltaY/10));
         // var new_value = Math.max(opts.widest_zoom, zoom.get() * (1.0 + event.wheelDelta / 1200));
