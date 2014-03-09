@@ -11,13 +11,13 @@ $().ready(function () {
     interactor = Lux.UI.center_zoom_interactor({
         width: canvas.width,
         height: canvas.height,
-        zoom: 0.01,
         center: vec.make([100, -50]),
+        zoom: 0.01,
         widest_zoom: 1e-6
     });
 
     gl = Lux.init({
-        clearColor: [1,1,1,1], // 0,0,0,1],
+        clearColor: [1,1,1,1],
         interactor: interactor
     });
     function checkerboard_pattern(c1, c2) {
@@ -32,9 +32,8 @@ $().ready(function () {
     }
     Lux.Net.json("opensans.regular.json", function(font) {
         Lux.Scene.add(Lux.Text.outline({
-            string: "The quick brown fox jumps\nover the lazy dog.\nFive boxing wizards\njump quickly.",
+            string: "THE QUICK BROWN FOX\nJUMPS OVER THE LAZY DOG.\nfive boxing wizards\njump quickly.\n0123456789",
             font: font,
-            position: function(p) { return interactor.project(p); },
             color: function(p) { 
                 return checkerboard_pattern(Shade.color("red"), Shade.color("black"));
             }

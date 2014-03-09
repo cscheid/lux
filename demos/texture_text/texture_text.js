@@ -40,7 +40,6 @@ $().ready(function () {
             font: font,
             size: 0.1,
             compensate_blur: is_screen_right,
-            position: function(p) { return interactor.project(p); },
             color: function(p) { return is_screen_right.ifelse(Shade.color("teal"), Shade.color("#ff8080")); }
         }));
     });
