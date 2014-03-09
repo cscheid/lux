@@ -12,8 +12,8 @@ Shade.Camera.ortho = function(opts)
         top: 1,
         near: -1,
         far: 1,
-        center: Shade.vec(0,0),
-        zoom: Shade(1)
+        center: vec.make([0,0]),
+        zoom: 1
     });
 
     var viewport_ratio;
@@ -25,7 +25,7 @@ Shade.Camera.ortho = function(opts)
         if (_.isUndefined(ctx)) {
             throw new Error("aspect_ratio is only optional with an active Lux context");
         }
-        viewport_ratio = ctx.viewportWidth / ctx.viewportHeight;
+        viewport_ratio = ctx.parameters.width.div(ctx.parameters.height);
     };
 
     var left, right, bottom, top;
