@@ -10241,6 +10241,17 @@ Lux.init = function(opts)
 
     var devicePixelRatio = 1;
 
+    if (opts.fullSize) {
+        var width = window.innerWidth, height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        $(window).resize(function() {
+            var w = window.innerWidth, h = window.innerHeight;
+            gl.resize(w, h);
+            Lux.Scene.invalidate();
+        });
+    }
+
     if (opts.highDPS) {
         devicePixelRatio = window.devicePixelRatio || 1;
         canvas.style.width = canvas.width;
@@ -12360,8 +12371,8 @@ Shade.Camera.ortho = function(opts)
         top: 1,
         near: -1,
         far: 1,
-        center: Shade.vec(0,0),
-        zoom: Shade(1)
+        center: vec.make([0,0]),
+        zoom: 1
     });
 
     var viewport_ratio;
@@ -12373,7 +12384,7 @@ Shade.Camera.ortho = function(opts)
         if (_.isUndefined(ctx)) {
             throw new Error("aspect_ratio is only optional with an active Lux context");
         }
-        viewport_ratio = ctx.viewportWidth / ctx.viewportHeight;
+        viewport_ratio = ctx.parameters.width.div(ctx.parameters.height);
     };
 
     var left, right, bottom, top;
@@ -14487,6 +14498,20 @@ Shade.constant = function(v, type)
 Shade.as_int = function(v) { return Shade.make(v).as_int(); };
 Shade.as_bool = function(v) { return Shade.make(v).as_bool(); };
 Shade.as_float = function(v) { return Shade.make(v).as_float(); };
+/*
+ * Shade.Exp.append is a convenient way of chaining Shade.vec calls:
+ * 
+ * Shade.vec(Shade.vec(foo, bar), baz, bah) becomes
+ * Shade.vec(foo, bar).append(bar, baz) or
+ * Shade.vec(foo, bar).append(bar).append(baz), etc.
+ * 
+ * FIXME: should I just call this 'vec'?
+ */
+
+Shade.Exp.append = function()
+{
+    return Shade.vec.apply(this, [this].concat(_.toArray(arguments)));
+};
 
 // Shade.array denotes an array of Lux values of the same type:
 //    Shade.array([2, 3, 4, 5, 6]);

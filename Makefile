@@ -105,6 +105,7 @@ lux.js:								\
 	src/shade/value_exp.js					\
 	src/shade/swizzle.js					\
 	src/shade/constant.js					\
+	src/shade/append.js					\
 	src/shade/array.js					\
 	src/shade/struct.js					\
 	src/shade/set.js					\
