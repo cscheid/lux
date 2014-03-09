@@ -23116,10 +23116,10 @@ Lux.Scene.Transform.Geo.mercator_to_latlong =
                          Shade.Scale.Geo.latlong_to_mercator);
 })();
 Lux.Scene.Transform.Camera = {};
-Lux.Scene.Transform.Camera.perspective = function(opts)
+Lux.Scene.Transform.Camera.ortho = function(opts)
 {
     opts = _.clone(opts || {});
-    var camera = Shade.Camera.perspective(opts);
+    var camera = Shade.Camera.ortho(opts);
     opts.transform = function(appearance) {
         if (_.isUndefined(appearance.position))
             return appearance;
@@ -23131,6 +23131,31 @@ Lux.Scene.Transform.Camera.perspective = function(opts)
     scene.camera = camera;
     return scene;
 };
+// Code in this subdirectory depends on Promises/A+ javascript support.
+// By default, we assume it to be in the "Promise" global variable.
+// If your favorite Promises library uses a different entry point,
+// you can pass it to Lux.Promises.set_library
+
+(function() {
+
+var Promise = window.Promise;
+
+Lux.Promises = {};
+
+Lux.Promises.set_library = function(obj) {
+    Promise = obj;
+};
+Lux.Promises.texture = function(opts) {
+    opts = _.clone(opts);
+    return new Promise(function (resolve, reject) {
+        var texture;
+        opts.onload = function() {
+            resolve(texture);
+        };
+        texture = Lux.texture(opts);
+    });
+};
+})();
     if (typeof define === "function" && define.amd) {
         define(Lux);
     } else if (typeof module === "object" && module.exports) {

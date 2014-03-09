@@ -219,7 +219,10 @@ lux.js:								\
 	src/lux/scene/transform/geo/mercator_to_latlong.js	\
 	src/lux/scene/transform/geo/_end.js			\
 	src/lux/scene/transform/camera/_begin.js		\
-	src/lux/scene/transform/camera/perspective.js		\
+	src/lux/scene/transform/camera/ortho.js			\
+	src/lux/promises/_begin.js				\
+	src/lux/promises/texture.js				\
+	src/lux/promises/_end.js				\
 	src/lux/_end.js
 
 # If the chmods below don't make sense to you right now, wait until
