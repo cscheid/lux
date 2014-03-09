@@ -1,10 +1,8 @@
 $().ready(function() {
-    var canvas = document.getElementById("webgl");
-    var width = window.innerWidth, height = window.innerHeight;
-    canvas.width = width;
-    canvas.height = height;
-
-    var gl = Lux.init({ clearColor: [0,0,0,1] });
+    var gl = Lux.init({ 
+        clearColor: [0,0,0,1],
+        fullSize: true
+    });
     var angle = gl.parameters.now.mul(-80).radians();
     var sphere = Lux.Models.sphere(128, 128);
 
@@ -12,10 +10,8 @@ $().ready(function() {
     var eccentricity_libration = angle.cos().mul(0.05);
 
     var camera = Lux.Scene.Transform.Camera.ortho({
-        left:   -1.2, right: 1.2,
-        bottom: -1.2, top: 1.2,
         near: -10, far: 10,
-        zoom: Shade(1).add(eccentricity_libration)
+        zoom: Shade(0.8).add(eccentricity_libration)
     });
 
     Lux.Scene.add(camera);
@@ -29,12 +25,12 @@ $().ready(function() {
     var light_pos = Shade.rotation(angle, latitude_rot(Shade.vec(0,1,0)))(latitude_rot)(Shade.vec(2,0,15)).swizzle("xyz");
 
     var ambient_light = Shade.Light.ambient({
-        color: Shade.vec(Shade.vec(1,1,1).mul(0.659), 1)
+        color: Shade.vec(0.659, 0.659, 0.659, 1)
     });
 
     var diffuse_light = Shade.Light.diffuse({
-        color: Shade.vec(Shade.vec(1,1,1).mul(0.5), 1),
-        position: Shade.vec(light_pos, 1)
+        color: Shade.vec(0.5, 0.5, 0.5, 1),
+        position: light_pos.append(1)
     });
 
     var latitude_libration = angle.cos().neg().mul(Shade(6.69).radians());
@@ -66,7 +62,7 @@ $().ready(function() {
         var material = { 
             position: pos,
             normal: bumpnorm,
-            color: Shade.vec(Shade.texture2D(moon, uv).x().pow(0.7).mul(Shade.vec(1,1,1)),1)
+            color: Shade.texture2D(moon, uv).x().pow(0.7).mul(Shade.vec(1,1,1)).append(1)
         };
 
         camera.add(Lux.actor({ 
@@ -77,7 +73,7 @@ $().ready(function() {
                     surfnorm.normalize().dot(light_pos.normalize()).gt(0),
                     ambient_light(material)
                         .add(diffuse_light(material)),
-                    Shade.vec(ambient_light(material).swizzle("xyz").mul(Shade.vec(0.2,0.18,0.15)),1))
+                    ambient_light(material).swizzle("xyz").mul(Shade.vec(0.2,0.18,0.15)).append(1))
             }
         }));
 

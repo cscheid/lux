@@ -62,10 +62,7 @@ function init_gui()
             return;
         var w = window.innerWidth;
         var h = window.innerHeight;
-
-        gl.resize(w, h);
         rb.resize(w, h);
-        Lux.Scene.invalidate();
     });
     $("#greeting").click(function() {
         $("#greeting").fadeOut(500);
