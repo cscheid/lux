@@ -74,6 +74,17 @@ Lux.init = function(opts)
 
     var devicePixelRatio = 1;
 
+    if (opts.fullSize) {
+        var width = window.innerWidth, height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        $(window).resize(function() {
+            var w = window.innerWidth, h = window.innerHeight;
+            gl.resize(w, h);
+            Lux.Scene.invalidate();
+        });
+    }
+
     if (opts.highDPS) {
         devicePixelRatio = window.devicePixelRatio || 1;
         canvas.style.width = canvas.width;
