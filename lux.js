@@ -12766,9 +12766,10 @@ Shade.function = function(value)
     };
 
     result.evaluate = function() {
-        return function() {
-            return result.js_evaluate.apply(result, _.toArray(arguments));
-        };
+        return value; // function() {
+        //     return value.apply(result, arguments);
+        //     // return result.js_evaluate.apply(result, _.toArray(arguments));
+        // };
     };
 
     result.add = function(other) {
@@ -14637,6 +14638,10 @@ Shade.struct = function(obj)
             });
             return result;
         }),
+        has_field: function(field_name) {
+            var index = this.type.field_index[field_name];
+            return !_.isUndefined(index);
+        },
         field: function(field_name) {
             var index = this.type.field_index[field_name];
             if (_.isUndefined(index)) {
@@ -15126,8 +15131,8 @@ Shade.add = function() {
             return vt.plus(v1, v2);
         } else if (exp1.type.is_function()) {
             return function() {
-                return evaluator(Shade.add(v1.apply(this, arguments),
-                                           v2.apply(this, arguments)), cache);
+                var args = _.map(arguments, Shade.make);
+                return Shade.add(v1.apply(this, args), v2.apply(this, args));
             };
         } else if (exp1.type.is_struct()) {
             var s = {};
@@ -15253,8 +15258,8 @@ Shade.sub = function() {
             return vt.minus(v1, v2);
         } else if (exp1.type.is_function()) {
             return function() {
-                return evaluator(Shade.sub(v1.apply(this, arguments),
-                                           v2.apply(this, arguments)), cache);
+                var args = _.map(arguments, Shade.make);
+                return Shade.sub(v1.apply(this, args), v2.apply(this, args));
             };
         } else if (exp1.type.is_struct()) {
             var s = {};
@@ -15406,8 +15411,8 @@ Shade.div = function() {
             "function": { 
                 "function": function (x, y) {
                     return function() {
-                        return evaluator(Shade.div(x.apply(this, arguments),
-                                                   y.apply(this, arguments)), cache);
+                        var args = _.map(arguments, Shade.make);
+                        return Shade.div(x.apply(this, args), y.apply(this, args));
                     };
                 }
             }
@@ -15537,8 +15542,8 @@ Shade.mul = function() {
                     },
             "function": { "function": function(x, y) {
                 return function() {
-                    return evaluator(Shade.mul(x.apply(this, arguments),
-                                               y.apply(this, arguments)), cache);
+                    var args = _.map(arguments, Shade.make);
+                    return Shade.mul(x.apply(this, args), y.apply(this, args));
                 };
             }}
         };
@@ -19209,16 +19214,16 @@ Shade.Light.ambient = function(light_opts)
         color = light_opts.color;
     } else throw new Error("expected color of type vec3 or vec4, got " +
                            light_opts.color.type.repr() + " instead");
-    return function(material_opts) {
-        if (material_opts.color.type.equals(Shade.Types.vec4)) {
+    return Shade(function(material_opts) {
+        if (material_opts("color").type.equals(Shade.Types.vec4)) {
             return Shade.vec(
-                material_opts.color.swizzle("xyz").mul(color),
-                material_opts.color.swizzle("a")
+                material_opts("color").swizzle("xyz").mul(color),
+                material_opts("color").swizzle("a")
             );
         } else {
-            return material_opts.color.mul(color);
+            return material_opts("color").mul(color);
         }
-    };
+    });
 };
 Shade.Light.diffuse = function(light_opts)
 {
@@ -19234,32 +19239,37 @@ Shade.Light.diffuse = function(light_opts)
         light_diffuse = light_diffuse.swizzle("xyz");
     var light_pos = vec3(light_opts.position);
 
-    return function(material_opts) {
-        material_opts = _.defaults(material_opts || {}, {
-            two_sided: false
-        });
-        var vertex_pos = vec3(material_opts.position);
-        var material_color = material_opts.color;
+    return Shade(function(material_opts) {
+        var two_sided;
+        if (material_opts.has_field("two_sided")) {
+            two_sided = material_opts("two_sided");
+        } else {
+            two_sided = Shade(false);
+        }
+
+        var vertex_pos = vec3(material_opts("position"));
+        var material_color = material_opts("color");
+
         if (material_color.type.equals(Shade.Types.vec4))
             material_color = material_color.swizzle("xyz");
 
         var vertex_normal;
-        if (_.isUndefined(material_opts.normal)) {
-            vertex_normal = Shade.ThreeD.normal(vertex_pos);
+        if (material_opts.has_field("normal")) {
+            vertex_normal = vec3(material_opts("normal")).normalize();
         } else {
-            vertex_normal = vec3(material_opts.normal).normalize();
+            vertex_normal = Shade.ThreeD.normal(vertex_pos);
         }
 
         var L = light_pos.sub(vertex_pos).normalize();
-        var v = Shade.max(Shade.ifelse(material_opts.two_sided,
+        var v = Shade.max(Shade.ifelse(two_sided,
                                        L.dot(vertex_normal).abs(),
                                        L.dot(vertex_normal)), 0);
 
         var c = Shade.add(v.mul(light_diffuse).mul(material_color));
 
-        return material_opts.color.type.equals(Shade.Types.vec4) ?
-            Shade.vec(c, material_opts.color.a()) : c;
-    };
+        return material_opts("color").type.equals(Shade.Types.vec4) ?
+            Shade.vec(c, material_opts("color").a()) : c;
+    });
 };
 // functions to help with 3D rendering.
 Shade.ThreeD = {};

@@ -945,30 +945,30 @@ test("Lux.attribute_buffer", function() {
 
 test("Shade functions", function() {
     equals(Shade.add(function(a) { return a.div(2); },
-                     function(b) { return b.div(3); })(3), 2.5);
+                     function(b) { return b.div(3); })(3).evaluate(), 2.5);
     equals(JSON.stringify(
         Shade.add(function(a) { return {a: 1, b: a}; },
-                  function(b) { return {a: 2, b: b}; })(1)), 
+                  function(b) { return {a: 2, b: b}; })(1).evaluate()), 
            JSON.stringify({a: 3, b: 2}));
     equals(JSON.stringify(
         Shade(function(a) { return {a: 1, b: a}; })
-            .add(function(b) { return {a: 2, b: b}; })(1)), 
+            .add(function(b) { return {a: 2, b: b}; })(1).evaluate()), 
            JSON.stringify({a: 3, b: 2}));
 
     equals(Shade.sub(function(a) { return a.div(2); },
-                     function(b) { return b.div(3); })(3), 0.5);
+                     function(b) { return b.div(3); })(3).evaluate(), 0.5);
     equals(JSON.stringify(
         Shade.sub(function(a) { return {a: 1, b: a}; },
-                  function(b) { return {a: 2, b: b}; })(1)), 
+                  function(b) { return {a: 2, b: b}; })(1).evaluate()), 
            JSON.stringify({a: -1, b: 0}));
     equals(JSON.stringify(
         Shade(function(a) { return {a: 1, b: a}; })
-            .sub(function(b) { return {a: 2, b: b}; })(1)), 
+            .sub(function(b) { return {a: 2, b: b}; })(1).evaluate()), 
            JSON.stringify({a: -1, b: 0}));
 
     equals(Shade.mul(function(a) { return a.div(2); },
-                     function(b) { return b.div(3); })(3), 1.5);
+                     function(b) { return b.div(3); })(3).evaluate(), 1.5);
     equals(Shade.div(function(a) { return a.div(6); },
-                     function(b) { return b.div(3); })(3), 0.5);
+                     function(b) { return b.div(3); })(3).evaluate(), 0.5);
 
 });

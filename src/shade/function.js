@@ -57,9 +57,10 @@ Shade.function = function(value)
     };
 
     result.evaluate = function() {
-        return function() {
-            return result.js_evaluate.apply(result, _.toArray(arguments));
-        };
+        return value; // function() {
+        //     return value.apply(result, arguments);
+        //     // return result.js_evaluate.apply(result, _.toArray(arguments));
+        // };
     };
 
     result.add = function(other) {

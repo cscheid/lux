@@ -121,8 +121,8 @@ Shade.add = function() {
             return vt.plus(v1, v2);
         } else if (exp1.type.is_function()) {
             return function() {
-                return evaluator(Shade.add(v1.apply(this, arguments),
-                                           v2.apply(this, arguments)), cache);
+                var args = _.map(arguments, Shade.make);
+                return Shade.add(v1.apply(this, args), v2.apply(this, args));
             };
         } else if (exp1.type.is_struct()) {
             var s = {};
@@ -248,8 +248,8 @@ Shade.sub = function() {
             return vt.minus(v1, v2);
         } else if (exp1.type.is_function()) {
             return function() {
-                return evaluator(Shade.sub(v1.apply(this, arguments),
-                                           v2.apply(this, arguments)), cache);
+                var args = _.map(arguments, Shade.make);
+                return Shade.sub(v1.apply(this, args), v2.apply(this, args));
             };
         } else if (exp1.type.is_struct()) {
             var s = {};
@@ -401,8 +401,8 @@ Shade.div = function() {
             "function": { 
                 "function": function (x, y) {
                     return function() {
-                        return evaluator(Shade.div(x.apply(this, arguments),
-                                                   y.apply(this, arguments)), cache);
+                        var args = _.map(arguments, Shade.make);
+                        return Shade.div(x.apply(this, args), y.apply(this, args));
                     };
                 }
             }
@@ -532,8 +532,8 @@ Shade.mul = function() {
                     },
             "function": { "function": function(x, y) {
                 return function() {
-                    return evaluator(Shade.mul(x.apply(this, arguments),
-                                               y.apply(this, arguments)), cache);
+                    var args = _.map(arguments, Shade.make);
+                    return Shade.mul(x.apply(this, args), y.apply(this, args));
                 };
             }}
         };

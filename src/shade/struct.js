@@ -42,6 +42,10 @@ Shade.struct = function(obj)
             });
             return result;
         }),
+        has_field: function(field_name) {
+            var index = this.type.field_index[field_name];
+            return !_.isUndefined(index);
+        },
         field: function(field_name) {
             var index = this.type.field_index[field_name];
             if (_.isUndefined(index)) {
