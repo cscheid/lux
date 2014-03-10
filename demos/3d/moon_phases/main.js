@@ -54,7 +54,7 @@ $().ready(function() {
         var bumpnorm = Shade.ThreeD.bump({
             uv: uv,
             map: moon_bump,
-            scale: 0.01, // bump_scale_parameter.exp(),
+            scale: 0.01,
             position: pos.swizzle("xyz"),
             normal: surfnorm
         });
@@ -70,9 +70,8 @@ $().ready(function() {
             appearance: {
                 position: pos,
                 color: Shade.ifelse(
-                    surfnorm.normalize().dot(light_pos.normalize()).gt(0),
-                    ambient_light(material)
-                        .add(diffuse_light(material)),
+                    surfnorm.dot(light_pos).gt(0),
+                    Shade.add(ambient_light, diffuse_light)(material),
                     ambient_light(material).swizzle("xyz").mul(Shade.vec(0.2,0.18,0.15)).append(1))
             }
         }));
