@@ -69,7 +69,9 @@ Shade.add = function() {
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
             [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
             
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
+
+            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -117,14 +119,21 @@ Shade.add = function() {
             });
         if (vt) {
             return vt.plus(v1, v2);
-        } else {
-            if (!exp1.type.is_struct())
-                throw new Error("internal error, was expecting a struct here");
+        } else if (exp1.type.is_function()) {
+            return function() {
+                return evaluator(Shade.add(v1.apply(this, arguments),
+                                           v2.apply(this, arguments)), cache);
+            };
+        } else if (exp1.type.is_struct()) {
             var s = {};
             _.each(v1, function(v, k) {
-                s[k] = evaluator(Shade.add(exp1.field(k), exp2.field(k)));
+                s[k] = evaluator(Shade.add(exp1.field(k), exp2.field(k)), cache);
             });
             return s;
+        } else {
+            throw new Error("internal error, was not expecting types " +
+                            exp1.type.repr() + " and " +
+                            exp2.type.repr());
         }
     };
     function element_evaluator(exp, i) {
@@ -137,11 +146,16 @@ Shade.add = function() {
             else
                 throw new Error("i > 0 in pod element");
         }
-        if (e1.type.is_vec() || e1.type.is_mat())
+        if (t1.is_struct() || t2.is_struct())
+            throw new Error("can't take elements of structs");
+        if (t1.is_function() || t2.is_function())
+            throw new Error("can't take elements of functions");
+
+        if (t1.is_vec() || t1.is_mat())
             v1 = e1.element(i);
         else
             v1 = e1;
-        if (e2.type.is_vec() || e2.type.is_vec())
+        if (t2.is_vec() || t2.is_vec())
             v2 = e2.element(i);
         else
             v2 = e2;
@@ -184,7 +198,9 @@ Shade.sub = function() {
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
             [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
             
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
+
+            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -228,7 +244,24 @@ Shade.sub = function() {
             return vt.map(v2, function(x) {
                 return v1 - x;
             });
-        return vt.minus(v1, v2);
+        if (vt) {
+            return vt.minus(v1, v2);
+        } else if (exp1.type.is_function()) {
+            return function() {
+                return evaluator(Shade.sub(v1.apply(this, arguments),
+                                           v2.apply(this, arguments)), cache);
+            };
+        } else if (exp1.type.is_struct()) {
+            var s = {};
+            _.each(v1, function(v, k) {
+                s[k] = evaluator(Shade.sub(exp1.field(k), exp2.field(k)), cache);
+            });
+            return s;
+        } else {
+            throw new Error("internal error, was not expecting types " +
+                            exp1.type.repr() + " and " +
+                            exp2.type.repr());
+        }
     }
     function element_evaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
@@ -240,6 +273,11 @@ Shade.sub = function() {
             else
                 throw new Error("i > 0 in pod element");
         }
+        if (t1.is_struct() || t2.is_struct())
+            throw new Error("can't take elements of structs");
+        if (t1.is_function() || t2.is_function())
+            throw new Error("can't take elements of functions");
+
         if (e1.type.is_vec() || e1.type.is_mat())
             v1 = e1.element(i);
         else
@@ -291,7 +329,9 @@ Shade.div = function() {
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
             [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
 
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
+
+            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -316,10 +356,12 @@ Shade.div = function() {
         var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
         var k1 = t1.is_vec() ? "vector" :
                  t1.is_mat() ? "matrix" :
-                 t1.is_pod() ? "number" : "BAD";
+                 t1.is_pod() ? "number" : 
+                 t1.is_function() ? "function" : "BAD";
         var k2 = t2.is_vec() ? "vector" :
                  t2.is_mat() ? "matrix" :
-                 t2.is_pod() ? "number" : "BAD";
+                 t2.is_pod() ? "number" : 
+                 t2.is_function() ? "function" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { 
                                   if (exp1.type.equals(Shade.Types.int_t))
@@ -355,8 +397,18 @@ Shade.div = function() {
                       matrix: function (x, y) { 
                           throw new Error("internal error, can't evaluate matrix/matrix");
                       }
-                    }
+                    },
+            "function": { 
+                "function": function (x, y) {
+                    return function() {
+                        return evaluator(Shade.div(x.apply(this, arguments),
+                                                   y.apply(this, arguments)), cache);
+                    };
+                }
+            }
         };
+        if (k1 === "BAD" || k2 === "BAD")
+            console.log(t1.repr(), t2.repr());
         return dispatch[k1][k2](v1, v2);
     }
     function element_evaluator(exp, i) {
@@ -377,6 +429,8 @@ Shade.div = function() {
             v2 = e2.element(i);
         else
             v2 = e2;
+        if (t1.is_function() || t2.is_function())
+            throw new Error("can't take elements of functions");
         return operator(v1, v2, "/", div_type_resolver, evaluator, element_evaluator, "div");
     }
     var current_result = Shade.make(arguments[0]);
@@ -427,7 +481,8 @@ Shade.mul = function() {
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
             [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
             
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
+            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -452,10 +507,12 @@ Shade.mul = function() {
         var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
         var k1 = t1.is_vec() ? "vector" :
                  t1.is_mat() ? "matrix" :
-                 t1.is_pod() ? "number" : "BAD";
+                 t1.is_pod() ? "number" : 
+                 t1.is_function() ? "function" : "BAD";
         var k2 = t2.is_vec() ? "vector" :
                  t2.is_mat() ? "matrix" :
-                 t2.is_pod() ? "number" : "BAD";
+                 t2.is_pod() ? "number" : 
+                 t2.is_function() ? "function" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },
@@ -472,7 +529,13 @@ Shade.mul = function() {
             matrix: { number: function (x, y) { return mt.scaling(x, y); },
                       vector: function (x, y) { return mt.product_vec(x, y); },
                       matrix: function (x, y) { return mt.product(x, y); }
-                    }
+                    },
+            "function": { "function": function(x, y) {
+                return function() {
+                    return evaluator(Shade.mul(x.apply(this, arguments),
+                                               y.apply(this, arguments)), cache);
+                };
+            }}
         };
         return dispatch[k1][k2](v1, v2);
     }

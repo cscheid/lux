@@ -132,6 +132,9 @@ Shade.Exp = {
         if (this.type.is_struct()) {
             return this.field(arguments[0]);
         }
+        if (this.type.is_function()) {
+            return this.evaluate().apply(this, arguments);
+        }
         return this.mul.apply(this, arguments);
     },
 

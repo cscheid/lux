@@ -60,6 +60,9 @@ Shade.struct = function(obj)
         call_operator: function(v) {
             return this.field(v);
         },
+        element: function(i) {
+            throw new Error("element() not supported for structs");
+        },
         _json_helper: Shade.Debug._json_builder("struct", function(obj) {
             obj.fields = ks;
             return obj;

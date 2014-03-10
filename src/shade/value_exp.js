@@ -36,10 +36,6 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         else
             return this.glsl_name + "()";
     },
-    // For types which are not POD, element(i) returns a Shade expression
-    // whose value is equivalent to evaluating the i-th element of the
-    // expression itself. for example:
-    // Shade.add(vec1, vec2).element(0) -> Shade.add(vec1.element(0), vec2.element(0));
     element: function(i) {
         if (this.type.is_pod()) {
             if (i === 0)
@@ -105,8 +101,6 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                 }
             }
         }
-    }, call_operator: function(other) {
-        return this.mul(other);
     }
 });
 Shade._create_concrete_value_exp = Shade._create_concrete(Shade.ValueExp, ["parents", "type", "value"]);

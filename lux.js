@@ -9367,7 +9367,7 @@ Lux.type_of = function(value)
         }
     }
     return s;
-}
+};
 /*
  * Lux.attribute_buffer_view builds an attribute_buffer object from an
  * Lux.buffer object, instead of an array (or typed array). The main
@@ -12058,6 +12058,492 @@ Lux.Shade = Shade;
 (function() {
 
 Shade.debug = false;
+//////////////////////////////////////////////////////////////////////////////
+// roll-your-own prototypal inheritance
+
+Shade._create = (function() {
+    var guid = 0;
+    return function(base_type, new_obj)
+    {
+        // function F() {
+        //     for (var key in new_obj) {
+        //         this[key] = new_obj[key];
+        //     }
+        //     this.guid = "GUID_" + guid;
+
+        //     // this is where memoize_on_field stashes results. putting
+        //     // them all in a single member variable makes it easy to
+        //     // create a clean prototype
+        //     this._caches = {};
+
+        //     guid += 1;
+        // }
+        // F.prototype = base_type;
+        // return new F();
+
+        var result = function() {
+            return result.call_operator.apply(result, _.toArray(arguments));
+        };
+
+        for (var key in new_obj) {
+            result[key] = new_obj[key];
+        }
+        result.guid = guid;
+
+        // this is where memoize_on_field stashes results. putting
+        // them all in a single member variable makes it easy to
+        // create a clean prototype
+        result._caches = {};
+
+        guid += 1;
+        result.__proto__ = base_type;
+        return result;
+    };
+})();
+
+Shade._create_concrete = function(base, requirements)
+{
+    function create_it(new_obj) {
+        for (var i=0; i<requirements.length; ++i) {
+            var field = requirements[i];
+            if (!(field in new_obj)) {
+                throw new Error("new expression missing " + requirements[i]);
+            }
+            if (_.isUndefined(new_obj[field])) {
+                throw new Error("field '" + field + "' cannot be undefined");
+            }
+        }
+        return Shade._create(base, new_obj);
+    }
+    return create_it;
+};
+Shade.Types = {};
+// Shade.Types.type_of implements the following spec:
+// 
+// for all shade values s such that s.evaluate() equals v,
+// s.type.equals(Shade.Types.type_of(v))
+
+// In addition, if there is no s such that s.evaluate() equals v,
+// then Shade.Types.type_of returns other_t. That's a kludge,
+// but is convenient.
+Shade.Types.type_of = function(v)
+{
+    var t = typeof v;
+    if (t === "boolean") {
+        return Shade.Types.bool_t;
+    } else if (t === "number") {
+        return Shade.Types.float_t;
+    } else if (Lux.is_shade_expression(v)) {
+        return Shade.Types.shade_t;
+    } else if (t === "function") {
+        return Shade.Types.function_t;
+    } else if (_.isUndefined(v)) {
+        return Shade.Types.undefined_t;
+    } else if (!_.isUndefined(v.buffer) && v.buffer._type) {
+        return Shade.Types[v.buffer._type];
+    } else {
+        return Shade.Types.other_t;
+    }
+};
+// <rant> How I wish I had algebraic data types. </rant>
+Shade.Types.base_t = {
+    is_floating: function() { return false; },
+    is_integral: function() { return false; },
+    is_array: function()    { return false; },
+    // POD = plain old data (ints, bools, floats)
+    is_pod: function()      { return false; },
+    is_vec: function()      { return false; },
+    is_mat: function()      { return false; },
+    vec_dimension: function() { 
+        throw new Error("is_vec() === false, cannot call vec_dimension");
+    },
+    is_function: function() { return false; },
+    is_struct:   function() { return false; },
+    is_sampler:  function() { return false; },
+    equals: function(other) {
+        if (_.isUndefined(other))
+            throw new Error("type cannot be compared to undefined");
+        return this.repr() == other.repr();
+    },
+    swizzle: function(pattern) {
+        throw new Error("type '" + this.repr() + "' does not support swizzling");
+    },
+    element_type: function(i) {
+        throw new Error("invalid call: atomic expression");
+    },
+    declare: function(glsl_name) {
+        return this.repr() + " " + glsl_name;
+    }
+    // repr
+    // 
+    // for arrays:
+    //   array_base
+    //   array_size
+    // 
+    // for structs:
+    //   fields
+
+    // value_equals
+    //   value_equals is a function that takes two parameters as produced
+    //   by the constant_value() or evaluate() method of an object with
+    //   the given type, and tests their equality.
+};
+(function() {
+
+function is_valid_basic_type(repr) {
+    if (repr === 'float') return true;
+    if (repr === 'int') return true;
+    if (repr === 'bool') return true;
+    if (repr === 'void') return true;
+    if (repr === 'sampler2D') return true;
+    if (repr.substring(0, 3) === 'mat' &&
+        (Number(repr[3]) > 1 && 
+         Number(repr[3]) < 5)) return true;
+    if (repr.substring(0, 3) === 'vec' &&
+        (Number(repr[3]) > 1 && 
+         Number(repr[3]) < 5)) return true;
+    if (repr.substring(0, 4) === 'bvec' &&
+        (Number(repr[4]) > 1 && 
+         Number(repr[4]) < 5)) return true;
+    if (repr.substring(0, 4) === 'ivec' &&
+        (Number(repr[4]) > 1 && 
+         Number(repr[4]) < 5)) return true;
+    // if (repr === '__auto__') return true;
+    return false;
+}
+
+Shade.Types.basic = function(repr) {
+    if (!is_valid_basic_type(repr)) {
+        throw new Error("invalid basic type '" + repr + "'");
+    }
+    return Shade.Types[repr];
+};
+
+Shade.Types._create_basic = function(repr) { 
+    return Shade._create(Shade.Types.base_t, {
+        declare: function(glsl_name) { return repr + " " + glsl_name; },
+        repr: function() { return repr; },
+        swizzle: function(pattern) {
+            if (!this.is_vec()) {
+                throw new Error("swizzle requires a vec");
+            }
+            var base_repr = this.repr();
+            var base_size = Number(base_repr[base_repr.length-1]);
+
+            var valid_re, group_res;
+            switch (base_size) {
+            case 2:
+                valid_re = /[rgxyst]+/;
+                group_res = [ /[rg]/, /[xy]/, /[st]/ ];
+                break;
+            case 3:
+                valid_re = /[rgbxyzstp]+/;
+                group_res = [ /[rgb]/, /[xyz]/, /[stp]/ ];
+                break;
+            case 4:
+                valid_re = /[rgbaxyzwstpq]+/;
+                group_res = [ /[rgba]/, /[xyzw]/, /[stpq]/ ];
+                break;
+            default:
+                throw new Error("internal error on swizzle");
+            }
+            if (!pattern.match(valid_re)) {
+                throw new Error("invalid swizzle pattern '" + pattern + "'");
+            }
+            var count = 0;
+            for (var i=0; i<group_res.length; ++i) {
+                if (pattern.match(group_res[i])) count += 1;
+            }
+            if (count != 1) {
+                throw new Error("swizzle pattern '" + pattern + 
+                       "' belongs to more than one group");
+            }
+            if (pattern.length === 1) {
+                return this.array_base();
+            } else {
+                var type_str = base_repr.substring(0, base_repr.length-1) + pattern.length;
+                return Shade.Types[type_str];
+            }
+        },
+        is_pod: function() {
+            var repr = this.repr();
+            return ["float", "bool", "int"].indexOf(repr) !== -1;
+        },
+        is_vec: function() {
+            var repr = this.repr();
+            if (repr.substring(0, 3) === "vec")
+                return true;
+            if (repr.substring(0, 4) === "ivec")
+                return true;
+            if (repr.substring(0, 4) === "bvec")
+                return true;
+            return false;
+        },
+        is_mat: function() {
+            var repr = this.repr();
+            if (repr.substring(0, 3) === "mat")
+                return true;
+            return false;
+        },
+        vec_dimension: function() {
+            var repr = this.repr();
+            if (repr.substring(0, 3) === "vec")
+                return parseInt(repr[3], 10);
+            if (repr.substring(0, 4) === "ivec" ||
+                repr.substring(0, 4) === "bvec")
+                return parseInt(repr[4], 10);
+            if (this.repr() === 'float'
+                || this.repr() === 'int'
+                || this.repr() === 'bool')
+                // This is convenient: assuming vec_dimension() === 1 for POD 
+                // lets me pretend floats, ints and bools are vec1, ivec1 and bvec1.
+                // 
+                // However, this might have
+                // other bad consequences I have not thought of.
+                //
+                // For example, I cannot make float_t.is_vec() be true, because
+                // this would allow sizzling from a float, which GLSL disallows.
+                return 1;
+            if (!this.is_vec()) {
+                throw new Error("is_vec() === false, cannot call vec_dimension");
+            }
+            throw new Error("internal error");
+        },
+        is_array: function() {
+            var repr = this.repr();
+            if (repr.substring(0, 3) === "mat")
+                return true;
+            if (this.is_vec())
+                return true;
+            return false;
+        },
+        array_base: function() {
+            var repr = this.repr();
+            if (repr.substring(0, 3) === "mat")
+                return Shade.Types["vec" + repr[3]];
+            if (repr.substring(0, 3) === "vec")
+                return Shade.Types.float_t;
+            if (repr.substring(0, 4) === "bvec")
+                return Shade.Types.bool_t;
+            if (repr.substring(0, 4) === "ivec")
+                return Shade.Types.int_t;
+            if (repr === "float")
+                return Shade.Types.float_t;
+            throw new Error("datatype not array");
+        },
+        size_for_vec_constructor: function() {
+            var repr = this.repr();
+            if (this.is_array())
+                return this.array_size();
+            if (repr === 'float' ||
+                repr === 'bool' ||
+                repr === 'int')
+                return 1;
+            throw new Error("not usable inside vec constructor");
+        },
+        array_size: function() {
+            if (this.is_vec())
+                return this.vec_dimension();
+            var repr = this.repr();
+            if (repr.substring(0, 3) === "mat")  
+                return parseInt(repr[3], 10);
+            throw new Error("datatype not array");
+        },
+        is_floating: function() {
+            var repr = this.repr();
+            if (repr === "float")
+                return true;
+            if (repr.substring(0, 3) === "vec")
+                return true;
+            if (repr.substring(0, 3) === "mat")
+                return true;
+            return false;
+        },
+        is_integral: function() {
+            var repr = this.repr();
+            if (repr === "int")
+                return true;
+            if (repr.substring(0, 4) === "ivec")
+                return true;
+            return false;
+        },
+        is_sampler: function() {
+            var repr = this.repr();
+            if (repr === 'sampler2D')
+                return true;
+            return false;
+        },
+        element_type: function(i) {
+            if (this.is_pod()) {
+                if (i === 0)
+                    return this;
+                else
+                    throw new Error("invalid call: " + this.repr() + " is atomic");
+            } else if (this.is_vec()) {
+                var f = this.repr()[0];
+                var d = this.array_size();
+                if (i < 0 || i >= d) {
+                    throw new Error("invalid call: " + this.repr() + 
+                                    " has no element " + i);
+                }
+                if (f === 'v')
+                    return Shade.Types.float_t;
+                else if (f === 'b')
+                    return Shade.Types.bool_t;
+                else if (f === 'i')
+                    return Shade.Types.int_t;
+                else
+                    throw new Error("internal error");
+            } else
+                // FIXME implement this
+                throw new Error("unimplemented for mats");
+        },
+        value_equals: function(v1, v2) {
+            if (this.is_pod())
+                return v1 === v2;
+            if (this.is_vec())
+                return vec.equal(v1, v2);
+            if (this.is_mat())
+                return mat.equal(v1, v2);
+            throw new Error("bad type for equality comparison: " + this.repr());
+        }
+    });
+};
+
+})();
+Shade.Types.array = function(base_type, size) {
+    return Shade._create(Shade.Types.base_t, {
+        is_array: function() { return true; },
+        declare: function(glsl_name) {
+            return base_type.declare(glsl_name) + "[" + size + "]";
+        },
+        repr: function() {
+            return base_type.repr() + "[" + size + "]";
+        },
+        array_size: function() {
+            return size;
+        },
+        array_base: function() {
+            return base_type;
+        }
+    });
+};
+// function types are opaque objects. Not ideal, but about the
+// best we can do in javascript.
+Shade.Types.function_t = Shade._create(Shade.Types.base_t, {
+    repr: function() {
+        return "function";
+    },
+    is_function: function() {
+        return true;
+    }
+});
+(function() {
+
+    var simple_types = 
+        ["mat2", "mat3", "mat4",
+         "vec2", "vec3", "vec4",
+         "ivec2", "ivec3", "ivec4",
+         "bvec2", "bvec3", "bvec4"];
+
+    for (var i=0; i<simple_types.length; ++i) {
+        Shade.Types[simple_types[i]] = Shade.Types._create_basic(simple_types[i]);
+    }
+
+    Shade.Types.float_t   = Shade.Types._create_basic('float');
+    Shade.Types.bool_t    = Shade.Types._create_basic('bool');
+    Shade.Types.int_t     = Shade.Types._create_basic('int');
+
+    Shade.Types.sampler2D = Shade.Types._create_basic('sampler2D');
+    Shade.Types.void_t    = Shade.Types._create_basic('void');
+
+    // create aliases so that x === y.repr() implies Shade.Types[x] === y
+    Shade.Types["float"] = Shade.Types.float_t;
+    Shade.Types["bool"]  = Shade.Types.bool_t;
+    Shade.Types["int"]   = Shade.Types.int_t;
+    Shade.Types["void"]  = Shade.Types.void_t;
+
+    // represents other "non-constant" types. kludgy, but hey.
+    Shade.Types.undefined_t = Shade.Types._create_basic('<undefined>');
+    Shade.Types.shade_t     = Shade.Types._create_basic('<shade>');
+    Shade.Types.other_t     = Shade.Types._create_basic('<other>');
+})();
+(function () {
+
+var _structs = {};
+
+function _register_struct(type) {
+    var t = type._struct_key;
+    var v = _structs[t];
+    if (v !== undefined) {
+        throw new Error("type " + t + " already registered as " + v.internal_type_name);
+    }
+    _structs[t] = type;
+};
+
+var struct_key = function(obj) {
+    return _.map(obj, function(value, key) {
+        if (value.is_function()) {
+            throw new Error("function types not allowed inside struct");
+        }
+        if (value.is_sampler()) {
+            throw new Error("sampler types not allowed inside struct");
+        }
+        if (value.is_struct()) {
+            return "[" + key + ":" + value.internal_type_name + "]";
+        }
+        return "[" + key + ":" + value.repr() + "]";
+    }).sort().join("");
+};
+
+function field_indices(obj) {
+    var lst = _.map(obj, function(value, key) {
+        return [key, value.repr()];
+    });
+    return lst.sort(function(v1, v2) {
+        if (v1[0] < v2[0]) return -1;
+        if (v1[0] > v2[0]) return 1;
+        if (v1[1] < v2[1]) return -1;
+        if (v1[1] > v2[1]) return 1;
+        return 0;
+    });
+};
+
+Shade.Types.struct = function(fields) {
+    var key = struct_key(fields);
+    var t = _structs[key];
+    if (t) return t;
+    var field_index = {};
+    _.each(field_indices(fields), function(v, i) {
+        field_index[v[0]] = i;
+    });
+    var result = Shade._create(Shade.Types.struct_t, {
+        fields: fields,
+        field_index: field_index,
+        _struct_key: key
+    });
+    result.internal_type_name = 'type_' + result.guid;
+    _register_struct(result);
+
+    _.each(["zero", "infinity", "minus_infinity"], function(value) {
+        if (_.all(fields, function(v, k) { return !_.isUndefined(v[value]); })) {
+            var c = {};
+            _.each(fields, function(v, k) {
+                c[k] = v[value];
+            });
+            result[value] = Shade.struct(c);
+        }
+    });
+
+    return result;
+};
+
+Shade.Types.struct_t = Shade._create(Shade.Types.base_t, {
+    is_struct: function() { return true; },
+    repr: function() { return this.internal_type_name; }
+});
+
+})();
 /*
  * Shade.Debug contains code that helps with debugging Shade
    expressions, the Shade-to-GLSL compiler, etc.
@@ -12203,51 +12689,7 @@ Shade.make = function(value)
     } else if (t === 'array') {
         return Shade.seq(value);
     } else if (t === 'function') {
-        /* lifts the passed function to a "shade function".
-        
-         In other words, this creates a function that replaces every
-         passed parameter p by Shade.make(p) This way, we save a lot of
-         typing and errors. If a javascript function is expected to
-         take shade values and produce shade expressions as a result,
-         simply wrap that function around a call to Shade.make()
-
-         FIXME: Document js_evaluate appropriately. This is a cool feature!
-
-         */
-
-        var result = function() {
-            var wrapped_arguments = [];
-            for (var i=0; i<arguments.length; ++i) {
-                wrapped_arguments.push(Shade.make(arguments[i]));
-            }
-            return Shade.make(value.apply(this, wrapped_arguments));
-        };
-
-        var args_type_cache = {};
-        var create_parameterized_function = function(shade_function, types) {
-            var parameters = _.map(types, function(t) {
-                return Shade.parameter(t);
-            });
-            var expression = shade_function.apply(this, parameters);
-            return function() {
-                for (var i=0; i<arguments.length; ++i)
-                    parameters[i].set(arguments[i]);
-                return expression.evaluate();
-            };
-        };
-
-        result.js_evaluate = function() {
-            var args_types = [];
-            var args_type_string;
-            for (var i=0; i<arguments.length; ++i) {
-                args_types.push(Shade.Types.type_of(arguments[i]));
-            }
-            args_type_string = _.map(args_types, function(t) { return t.repr(); }).join(",");
-            if (_.isUndefined(args_type_cache[args_type_string]))
-                args_type_cache[args_type_string] = create_parameterized_function(result, args_types);
-            return args_type_cache[args_type_string].apply(result, arguments);
-        };
-        return result;
+        return Shade.function(value);
     }
     t = Shade.Types.type_of(value);
     if (t.is_vec() || t.is_mat()) {
@@ -12265,6 +12707,85 @@ Shade.make = function(value)
     return value;
 };
 
+Shade.function = function(value)
+{
+    /* lifts the passed function to a "shade function".
+     
+     In other words, this creates a function that replaces every
+     passed parameter p by Shade.make(p) This way, we save a lot of
+     typing and errors. If a javascript function is expected to
+     take shade values and produce shade expressions as a result,
+     simply wrap that function around a call to Shade.make()
+
+
+     Developer notes:
+
+     FIXME: Document js_evaluate appropriately. This is a cool feature!
+
+     This is not a part of the value_exp object hierarchy because GLSL
+     is not a functional language. These objects are allowed in
+     Javascript, but must always be applied to something before being
+     compiled.
+
+     there might be a clean way of making this belong in exp.js, etc.
+     but I don't see it yet.
+
+     */
+
+    var result = function() {
+        var wrapped_arguments = [];
+        for (var i=0; i<arguments.length; ++i) {
+            wrapped_arguments.push(Shade.make(arguments[i]));
+        }
+        return Shade.make(value.apply(this, wrapped_arguments));
+    };
+    result.type = Shade.Types.function_t;
+    var args_type_cache = {};
+    var create_parameterized_function = function(shade_function, types) {
+        var parameters = _.map(types, function(t) {
+            return Shade.parameter(t);
+        });
+        var expression = shade_function.apply(this, parameters);
+        return function() {
+            for (var i=0; i<arguments.length; ++i)
+                parameters[i].set(arguments[i]);
+            return expression.evaluate();
+        };
+    };
+
+    result.js_evaluate = function() {
+        var args_types = [];
+        var args_type_string;
+        for (var i=0; i<arguments.length; ++i) {
+            args_types.push(Shade.Types.type_of(arguments[i]));
+        }
+        args_type_string = _.map(args_types, function(t) { return t.repr(); }).join(",");
+        if (_.isUndefined(args_type_cache[args_type_string]))
+            args_type_cache[args_type_string] = create_parameterized_function(result, args_types);
+        return args_type_cache[args_type_string].apply(result, arguments);
+    };
+
+    result.evaluate = function() {
+        return function() {
+            return result.js_evaluate.apply(result, _.toArray(arguments));
+        };
+    };
+
+    result.add = function(other) {
+        return Shade.add(this, other);
+    };
+    result.sub = function(other) {
+        return Shade.sub(this, other);
+    };
+    result.mul = function(other) {
+        return Shade.mul(this, other);
+    };
+    result.div = function(other) {
+        return Shade.div(this, other);
+    };
+
+    return result;
+};
 
 // only memoizes on value of first argument, so will fail if function
 // takes more than one argument!!
@@ -12951,507 +13472,6 @@ Shade.unique_name = function() {
         return "_unique_name_" + counter;
     };
 }();
-//////////////////////////////////////////////////////////////////////////////
-// roll-your-own prototypal inheritance
-
-Shade._create = (function() {
-    var guid = 0;
-    return function(base_type, new_obj)
-    {
-        // function F() {
-        //     for (var key in new_obj) {
-        //         this[key] = new_obj[key];
-        //     }
-        //     this.guid = "GUID_" + guid;
-
-        //     // this is where memoize_on_field stashes results. putting
-        //     // them all in a single member variable makes it easy to
-        //     // create a clean prototype
-        //     this._caches = {};
-
-        //     guid += 1;
-        // }
-        // F.prototype = base_type;
-        // return new F();
-
-        var result = function() {
-            return result.call_operator.apply(result, _.toArray(arguments));
-        };
-
-        for (var key in new_obj) {
-            result[key] = new_obj[key];
-        }
-        result.guid = guid;
-
-        // this is where memoize_on_field stashes results. putting
-        // them all in a single member variable makes it easy to
-        // create a clean prototype
-        result._caches = {};
-
-        guid += 1;
-        result.__proto__ = base_type;
-        return result;
-    };
-})();
-
-Shade._create_concrete = function(base, requirements)
-{
-    function create_it(new_obj) {
-        for (var i=0; i<requirements.length; ++i) {
-            var field = requirements[i];
-            if (!(field in new_obj)) {
-                throw new Error("new expression missing " + requirements[i]);
-            }
-            if (_.isUndefined(new_obj[field])) {
-                throw new Error("field '" + field + "' cannot be undefined");
-            }
-        }
-        return Shade._create(base, new_obj);
-    }
-    return create_it;
-};
-Shade.Types = {};
-// Shade.Types.type_of implements the following spec:
-// 
-// for all shade values s such that s.evaluate() equals v,
-// s.type.equals(Shade.Types.type_of(v))
-
-// In addition, if there is no s such that s.evaluate() equals v,
-// then Shade.Types.type_of returns other_t. That's a kludge,
-// but is convenient.
-Shade.Types.type_of = function(v)
-{
-    var t = typeof v;
-    if (t === "boolean") {
-        return Shade.Types.bool_t;
-    } else if (t === "number") {
-        return Shade.Types.float_t;
-    } else if (Lux.is_shade_expression(v)) {
-        return Shade.Types.shade_t;
-    } else if (_.isUndefined(v)) {
-        return Shade.Types.undefined_t;
-    } else if (!_.isUndefined(v.buffer) && v.buffer._type) {
-        return Shade.Types[v.buffer._type];
-    } else {
-        return Shade.Types.other_t;
-    }
-};
-// <rant> How I wish I had algebraic data types. </rant>
-Shade.Types.base_t = {
-    is_floating: function() { return false; },
-    is_integral: function() { return false; },
-    is_array: function()    { return false; },
-    // POD = plain old data (ints, bools, floats)
-    is_pod: function()      { return false; },
-    is_vec: function()      { return false; },
-    is_mat: function()      { return false; },
-    vec_dimension: function() { 
-        throw new Error("is_vec() === false, cannot call vec_dimension");
-    },
-    is_function: function() { return false; },
-    is_struct:   function() { return false; },
-    is_sampler:  function() { return false; },
-    equals: function(other) {
-        if (_.isUndefined(other))
-            throw new Error("type cannot be compared to undefined");
-        return this.repr() == other.repr();
-    },
-    swizzle: function(pattern) {
-        throw new Error("type '" + this.repr() + "' does not support swizzling");
-    },
-    element_type: function(i) {
-        throw new Error("invalid call: atomic expression");
-    },
-    declare: function(glsl_name) {
-        return this.repr() + " " + glsl_name;
-    }
-    // repr
-    // 
-    // for arrays:
-    //   array_base
-    //   array_size
-    // 
-    // for function types:
-    //   function_return_type
-    //   function_parameter
-    //   function_parameter_count
-    // 
-    // for structs:
-    //   fields
-
-    // value_equals
-    //   value_equals is a function that takes two parameters as produced
-    //   by the constant_value() or evaluate() method of an object with
-    //   the given type, and tests their equality.
-};
-(function() {
-
-function is_valid_basic_type(repr) {
-    if (repr === 'float') return true;
-    if (repr === 'int') return true;
-    if (repr === 'bool') return true;
-    if (repr === 'void') return true;
-    if (repr === 'sampler2D') return true;
-    if (repr.substring(0, 3) === 'mat' &&
-        (Number(repr[3]) > 1 && 
-         Number(repr[3]) < 5)) return true;
-    if (repr.substring(0, 3) === 'vec' &&
-        (Number(repr[3]) > 1 && 
-         Number(repr[3]) < 5)) return true;
-    if (repr.substring(0, 4) === 'bvec' &&
-        (Number(repr[4]) > 1 && 
-         Number(repr[4]) < 5)) return true;
-    if (repr.substring(0, 4) === 'ivec' &&
-        (Number(repr[4]) > 1 && 
-         Number(repr[4]) < 5)) return true;
-    // if (repr === '__auto__') return true;
-    return false;
-}
-
-Shade.Types.basic = function(repr) {
-    if (!is_valid_basic_type(repr)) {
-        throw new Error("invalid basic type '" + repr + "'");
-    }
-    return Shade.Types[repr];
-};
-
-Shade.Types._create_basic = function(repr) { 
-    return Shade._create(Shade.Types.base_t, {
-        declare: function(glsl_name) { return repr + " " + glsl_name; },
-        repr: function() { return repr; },
-        swizzle: function(pattern) {
-            if (!this.is_vec()) {
-                throw new Error("swizzle requires a vec");
-            }
-            var base_repr = this.repr();
-            var base_size = Number(base_repr[base_repr.length-1]);
-
-            var valid_re, group_res;
-            switch (base_size) {
-            case 2:
-                valid_re = /[rgxyst]+/;
-                group_res = [ /[rg]/, /[xy]/, /[st]/ ];
-                break;
-            case 3:
-                valid_re = /[rgbxyzstp]+/;
-                group_res = [ /[rgb]/, /[xyz]/, /[stp]/ ];
-                break;
-            case 4:
-                valid_re = /[rgbaxyzwstpq]+/;
-                group_res = [ /[rgba]/, /[xyzw]/, /[stpq]/ ];
-                break;
-            default:
-                throw new Error("internal error on swizzle");
-            }
-            if (!pattern.match(valid_re)) {
-                throw new Error("invalid swizzle pattern '" + pattern + "'");
-            }
-            var count = 0;
-            for (var i=0; i<group_res.length; ++i) {
-                if (pattern.match(group_res[i])) count += 1;
-            }
-            if (count != 1) {
-                throw new Error("swizzle pattern '" + pattern + 
-                       "' belongs to more than one group");
-            }
-            if (pattern.length === 1) {
-                return this.array_base();
-            } else {
-                var type_str = base_repr.substring(0, base_repr.length-1) + pattern.length;
-                return Shade.Types[type_str];
-            }
-        },
-        is_pod: function() {
-            var repr = this.repr();
-            return ["float", "bool", "int"].indexOf(repr) !== -1;
-        },
-        is_vec: function() {
-            var repr = this.repr();
-            if (repr.substring(0, 3) === "vec")
-                return true;
-            if (repr.substring(0, 4) === "ivec")
-                return true;
-            if (repr.substring(0, 4) === "bvec")
-                return true;
-            return false;
-        },
-        is_mat: function() {
-            var repr = this.repr();
-            if (repr.substring(0, 3) === "mat")
-                return true;
-            return false;
-        },
-        vec_dimension: function() {
-            var repr = this.repr();
-            if (repr.substring(0, 3) === "vec")
-                return parseInt(repr[3], 10);
-            if (repr.substring(0, 4) === "ivec" ||
-                repr.substring(0, 4) === "bvec")
-                return parseInt(repr[4], 10);
-            if (this.repr() === 'float'
-                || this.repr() === 'int'
-                || this.repr() === 'bool')
-                // This is convenient: assuming vec_dimension() === 1 for POD 
-                // lets me pretend floats, ints and bools are vec1, ivec1 and bvec1.
-                // 
-                // However, this might have
-                // other bad consequences I have not thought of.
-                //
-                // For example, I cannot make float_t.is_vec() be true, because
-                // this would allow sizzling from a float, which GLSL disallows.
-                return 1;
-            if (!this.is_vec()) {
-                throw new Error("is_vec() === false, cannot call vec_dimension");
-            }
-            throw new Error("internal error");
-        },
-        is_array: function() {
-            var repr = this.repr();
-            if (repr.substring(0, 3) === "mat")
-                return true;
-            if (this.is_vec())
-                return true;
-            return false;
-        },
-        array_base: function() {
-            var repr = this.repr();
-            if (repr.substring(0, 3) === "mat")
-                return Shade.Types["vec" + repr[3]];
-            if (repr.substring(0, 3) === "vec")
-                return Shade.Types.float_t;
-            if (repr.substring(0, 4) === "bvec")
-                return Shade.Types.bool_t;
-            if (repr.substring(0, 4) === "ivec")
-                return Shade.Types.int_t;
-            if (repr === "float")
-                return Shade.Types.float_t;
-            throw new Error("datatype not array");
-        },
-        size_for_vec_constructor: function() {
-            var repr = this.repr();
-            if (this.is_array())
-                return this.array_size();
-            if (repr === 'float' ||
-                repr === 'bool' ||
-                repr === 'int')
-                return 1;
-            throw new Error("not usable inside vec constructor");
-        },
-        array_size: function() {
-            if (this.is_vec())
-                return this.vec_dimension();
-            var repr = this.repr();
-            if (repr.substring(0, 3) === "mat")  
-                return parseInt(repr[3], 10);
-            throw new Error("datatype not array");
-        },
-        is_floating: function() {
-            var repr = this.repr();
-            if (repr === "float")
-                return true;
-            if (repr.substring(0, 3) === "vec")
-                return true;
-            if (repr.substring(0, 3) === "mat")
-                return true;
-            return false;
-        },
-        is_integral: function() {
-            var repr = this.repr();
-            if (repr === "int")
-                return true;
-            if (repr.substring(0, 4) === "ivec")
-                return true;
-            return false;
-        },
-        is_sampler: function() {
-            var repr = this.repr();
-            if (repr === 'sampler2D')
-                return true;
-            return false;
-        },
-        element_type: function(i) {
-            if (this.is_pod()) {
-                if (i === 0)
-                    return this;
-                else
-                    throw new Error("invalid call: " + this.repr() + " is atomic");
-            } else if (this.is_vec()) {
-                var f = this.repr()[0];
-                var d = this.array_size();
-                if (i < 0 || i >= d) {
-                    throw new Error("invalid call: " + this.repr() + 
-                                    " has no element " + i);
-                }
-                if (f === 'v')
-                    return Shade.Types.float_t;
-                else if (f === 'b')
-                    return Shade.Types.bool_t;
-                else if (f === 'i')
-                    return Shade.Types.int_t;
-                else
-                    throw new Error("internal error");
-            } else
-                // FIXME implement this
-                throw new Error("unimplemented for mats");
-        },
-        value_equals: function(v1, v2) {
-            if (this.is_pod())
-                return v1 === v2;
-            if (this.is_vec())
-                return vec.equal(v1, v2);
-            if (this.is_mat())
-                return mat.equal(v1, v2);
-            throw new Error("bad type for equality comparison: " + this.repr());
-        }
-    });
-};
-
-})();
-Shade.Types.array = function(base_type, size) {
-    return Shade._create(Shade.Types.base_t, {
-        is_array: function() { return true; },
-        declare: function(glsl_name) {
-            return base_type.declare(glsl_name) + "[" + size + "]";
-        },
-        repr: function() {
-            return base_type.repr() + "[" + size + "]";
-        },
-        array_size: function() {
-            return size;
-        },
-        array_base: function() {
-            return base_type;
-        }
-    });
-};
-Shade.Types.function_t = function(return_type, param_types) {
-    return Shade._create(Shade.Types.base_t, {
-        repr: function() {
-            return "(" + return_type.repr() + ")("
-                + ", ".join(param_types.map(function (o) { 
-                    return o.repr(); 
-                }));
-        },
-        is_function: function() {
-            return true;
-        },
-        function_return_type: function() {
-            return return_type;
-        },
-        function_parameter: function(i) {
-            return param_types[i];
-        },
-        function_parameter_count: function() {
-            return param_types.length;
-        }
-    });
-};
-(function() {
-
-    var simple_types = 
-        ["mat2", "mat3", "mat4",
-         "vec2", "vec3", "vec4",
-         "ivec2", "ivec3", "ivec4",
-         "bvec2", "bvec3", "bvec4"];
-
-    for (var i=0; i<simple_types.length; ++i) {
-        Shade.Types[simple_types[i]] = Shade.Types._create_basic(simple_types[i]);
-    }
-
-    Shade.Types.float_t   = Shade.Types._create_basic('float');
-    Shade.Types.bool_t    = Shade.Types._create_basic('bool');
-    Shade.Types.int_t     = Shade.Types._create_basic('int');
-
-    Shade.Types.sampler2D = Shade.Types._create_basic('sampler2D');
-    Shade.Types.void_t    = Shade.Types._create_basic('void');
-
-    // create aliases so that x === y.repr() implies Shade.Types[x] === y
-    Shade.Types["float"] = Shade.Types.float_t;
-    Shade.Types["bool"]  = Shade.Types.bool_t;
-    Shade.Types["int"]   = Shade.Types.int_t;
-    Shade.Types["void"]  = Shade.Types.void_t;
-
-    // represents other "non-constant" types. kludgy, but hey.
-    Shade.Types.undefined_t = Shade.Types._create_basic('<undefined>');
-    Shade.Types.shade_t     = Shade.Types._create_basic('<shade>');
-    Shade.Types.other_t     = Shade.Types._create_basic('<other>');
-})();
-(function () {
-
-var _structs = {};
-
-function _register_struct(type) {
-    var t = type._struct_key;
-    var v = _structs[t];
-    if (v !== undefined) {
-        throw new Error("type " + t + " already registered as " + v.internal_type_name);
-    }
-    _structs[t] = type;
-};
-
-var struct_key = function(obj) {
-    return _.map(obj, function(value, key) {
-        if (value.is_function()) {
-            throw new Error("function types not allowed inside struct");
-        }
-        if (value.is_sampler()) {
-            throw new Error("sampler types not allowed inside struct");
-        }
-        if (value.is_struct()) {
-            return "[" + key + ":" + value.internal_type_name + "]";
-        }
-        return "[" + key + ":" + value.repr() + "]";
-    }).sort().join("");
-};
-
-function field_indices(obj) {
-    var lst = _.map(obj, function(value, key) {
-        return [key, value.repr()];
-    });
-    return lst.sort(function(v1, v2) {
-        if (v1[0] < v2[0]) return -1;
-        if (v1[0] > v2[0]) return 1;
-        if (v1[1] < v2[1]) return -1;
-        if (v1[1] > v2[1]) return 1;
-        return 0;
-    });
-};
-
-Shade.Types.struct = function(fields) {
-    var key = struct_key(fields);
-    var t = _structs[key];
-    if (t) return t;
-    var field_index = {};
-    _.each(field_indices(fields), function(v, i) {
-        field_index[v[0]] = i;
-    });
-    var result = Shade._create(Shade.Types.struct_t, {
-        fields: fields,
-        field_index: field_index,
-        _struct_key: key
-    });
-    result.internal_type_name = 'type_' + result.guid;
-    _register_struct(result);
-
-    _.each(["zero", "infinity", "minus_infinity"], function(value) {
-        if (_.all(fields, function(v, k) { return !_.isUndefined(v[value]); })) {
-            var c = {};
-            _.each(fields, function(v, k) {
-                c[k] = v[value];
-            });
-            result[value] = Shade.struct(c);
-        }
-    });
-
-    return result;
-};
-
-Shade.Types.struct_t = Shade._create(Shade.Types.base_t, {
-    is_struct: function() { return true; },
-    repr: function() { return this.internal_type_name; }
-});
-
-})();
 Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
@@ -13784,6 +13804,9 @@ Shade.Exp = {
     call_operator: function() {
         if (this.type.is_struct()) {
             return this.field(arguments[0]);
+        }
+        if (this.type.is_function()) {
+            return this.evaluate().apply(this, arguments);
         }
         return this.mul.apply(this, arguments);
     },
@@ -14253,10 +14276,6 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
         else
             return this.glsl_name + "()";
     },
-    // For types which are not POD, element(i) returns a Shade expression
-    // whose value is equivalent to evaluating the i-th element of the
-    // expression itself. for example:
-    // Shade.add(vec1, vec2).element(0) -> Shade.add(vec1.element(0), vec2.element(0));
     element: function(i) {
         if (this.type.is_pod()) {
             if (i === 0)
@@ -14322,8 +14341,6 @@ Shade.ValueExp = Shade._create(Shade.Exp, {
                 }
             }
         }
-    }, call_operator: function(other) {
-        return this.mul(other);
     }
 });
 Shade._create_concrete_value_exp = Shade._create_concrete(Shade.ValueExp, ["parents", "type", "value"]);
@@ -14637,6 +14654,9 @@ Shade.struct = function(obj)
         },
         call_operator: function(v) {
             return this.field(v);
+        },
+        element: function(i) {
+            throw new Error("element() not supported for structs");
         },
         _json_helper: Shade.Debug._json_builder("struct", function(obj) {
             obj.fields = ks;
@@ -15054,7 +15074,9 @@ Shade.add = function() {
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
             [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
             
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
+
+            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -15102,14 +15124,21 @@ Shade.add = function() {
             });
         if (vt) {
             return vt.plus(v1, v2);
-        } else {
-            if (!exp1.type.is_struct())
-                throw new Error("internal error, was expecting a struct here");
+        } else if (exp1.type.is_function()) {
+            return function() {
+                return evaluator(Shade.add(v1.apply(this, arguments),
+                                           v2.apply(this, arguments)), cache);
+            };
+        } else if (exp1.type.is_struct()) {
             var s = {};
             _.each(v1, function(v, k) {
-                s[k] = evaluator(Shade.add(exp1.field(k), exp2.field(k)));
+                s[k] = evaluator(Shade.add(exp1.field(k), exp2.field(k)), cache);
             });
             return s;
+        } else {
+            throw new Error("internal error, was not expecting types " +
+                            exp1.type.repr() + " and " +
+                            exp2.type.repr());
         }
     };
     function element_evaluator(exp, i) {
@@ -15122,11 +15151,16 @@ Shade.add = function() {
             else
                 throw new Error("i > 0 in pod element");
         }
-        if (e1.type.is_vec() || e1.type.is_mat())
+        if (t1.is_struct() || t2.is_struct())
+            throw new Error("can't take elements of structs");
+        if (t1.is_function() || t2.is_function())
+            throw new Error("can't take elements of functions");
+
+        if (t1.is_vec() || t1.is_mat())
             v1 = e1.element(i);
         else
             v1 = e1;
-        if (e2.type.is_vec() || e2.type.is_vec())
+        if (t2.is_vec() || t2.is_vec())
             v2 = e2.element(i);
         else
             v2 = e2;
@@ -15169,7 +15203,9 @@ Shade.sub = function() {
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
             [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
             
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
+
+            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -15213,7 +15249,24 @@ Shade.sub = function() {
             return vt.map(v2, function(x) {
                 return v1 - x;
             });
-        return vt.minus(v1, v2);
+        if (vt) {
+            return vt.minus(v1, v2);
+        } else if (exp1.type.is_function()) {
+            return function() {
+                return evaluator(Shade.sub(v1.apply(this, arguments),
+                                           v2.apply(this, arguments)), cache);
+            };
+        } else if (exp1.type.is_struct()) {
+            var s = {};
+            _.each(v1, function(v, k) {
+                s[k] = evaluator(Shade.sub(exp1.field(k), exp2.field(k)), cache);
+            });
+            return s;
+        } else {
+            throw new Error("internal error, was not expecting types " +
+                            exp1.type.repr() + " and " +
+                            exp2.type.repr());
+        }
     }
     function element_evaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
@@ -15225,6 +15278,11 @@ Shade.sub = function() {
             else
                 throw new Error("i > 0 in pod element");
         }
+        if (t1.is_struct() || t2.is_struct())
+            throw new Error("can't take elements of structs");
+        if (t1.is_function() || t2.is_function())
+            throw new Error("can't take elements of functions");
+
         if (e1.type.is_vec() || e1.type.is_mat())
             v1 = e1.element(i);
         else
@@ -15276,7 +15334,9 @@ Shade.div = function() {
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
             [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
 
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
+
+            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -15301,10 +15361,12 @@ Shade.div = function() {
         var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
         var k1 = t1.is_vec() ? "vector" :
                  t1.is_mat() ? "matrix" :
-                 t1.is_pod() ? "number" : "BAD";
+                 t1.is_pod() ? "number" : 
+                 t1.is_function() ? "function" : "BAD";
         var k2 = t2.is_vec() ? "vector" :
                  t2.is_mat() ? "matrix" :
-                 t2.is_pod() ? "number" : "BAD";
+                 t2.is_pod() ? "number" : 
+                 t2.is_function() ? "function" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { 
                                   if (exp1.type.equals(Shade.Types.int_t))
@@ -15340,8 +15402,18 @@ Shade.div = function() {
                       matrix: function (x, y) { 
                           throw new Error("internal error, can't evaluate matrix/matrix");
                       }
-                    }
+                    },
+            "function": { 
+                "function": function (x, y) {
+                    return function() {
+                        return evaluator(Shade.div(x.apply(this, arguments),
+                                                   y.apply(this, arguments)), cache);
+                    };
+                }
+            }
         };
+        if (k1 === "BAD" || k2 === "BAD")
+            console.log(t1.repr(), t2.repr());
         return dispatch[k1][k2](v1, v2);
     }
     function element_evaluator(exp, i) {
@@ -15362,6 +15434,8 @@ Shade.div = function() {
             v2 = e2.element(i);
         else
             v2 = e2;
+        if (t1.is_function() || t2.is_function())
+            throw new Error("can't take elements of functions");
         return operator(v1, v2, "/", div_type_resolver, evaluator, element_evaluator, "div");
     }
     var current_result = Shade.make(arguments[0]);
@@ -15412,7 +15486,8 @@ Shade.mul = function() {
             [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
             [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
             
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t]
+            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
+            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
         ];
         for (var i=0; i<type_list.length; ++i)
             if (t1.equals(type_list[i][0]) &&
@@ -15437,10 +15512,12 @@ Shade.mul = function() {
         var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
         var k1 = t1.is_vec() ? "vector" :
                  t1.is_mat() ? "matrix" :
-                 t1.is_pod() ? "number" : "BAD";
+                 t1.is_pod() ? "number" : 
+                 t1.is_function() ? "function" : "BAD";
         var k2 = t2.is_vec() ? "vector" :
                  t2.is_mat() ? "matrix" :
-                 t2.is_pod() ? "number" : "BAD";
+                 t2.is_pod() ? "number" : 
+                 t2.is_function() ? "function" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },
@@ -15457,7 +15534,13 @@ Shade.mul = function() {
             matrix: { number: function (x, y) { return mt.scaling(x, y); },
                       vector: function (x, y) { return mt.product_vec(x, y); },
                       matrix: function (x, y) { return mt.product(x, y); }
-                    }
+                    },
+            "function": { "function": function(x, y) {
+                return function() {
+                    return evaluator(Shade.mul(x.apply(this, arguments),
+                                               y.apply(this, arguments)), cache);
+                };
+            }}
         };
         return dispatch[k1][k2](v1, v2);
     }
@@ -23145,6 +23228,21 @@ Lux.Scene.Transform.Camera.ortho = function(opts)
 {
     opts = _.clone(opts || {});
     var camera = Shade.Camera.ortho(opts);
+    opts.transform = function(appearance) {
+        if (_.isUndefined(appearance.position))
+            return appearance;
+        appearance = _.clone(appearance);
+        appearance.position = camera(appearance.position);
+        return appearance;
+    };
+    var scene = Lux.scene(opts);
+    scene.camera = camera;
+    return scene;
+};
+Lux.Scene.Transform.Camera.perspective = function(opts)
+{
+    opts = _.clone(opts || {});
+    var camera = Shade.Camera.perspective(opts);
     opts.transform = function(appearance) {
         if (_.isUndefined(appearance.position))
             return appearance;

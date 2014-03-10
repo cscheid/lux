@@ -33,11 +33,6 @@ Shade.Types.base_t = {
     //   array_base
     //   array_size
     // 
-    // for function types:
-    //   function_return_type
-    //   function_parameter
-    //   function_parameter_count
-    // 
     // for structs:
     //   fields
 

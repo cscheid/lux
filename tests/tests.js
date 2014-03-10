@@ -250,6 +250,10 @@ test("Shade structs", function() {
                            bar: Shade(0)});
     var s4 = Shade.constant(s3.constant_value(), s3.type);
     equal(s3.type.repr(), s4.type.repr(), "constant_value() for structs keeps type information");
+
+    raises(function() { 
+        return Shade({a: 1, b: 2}).element(1); 
+    }, "element() not supported for structs");
 });
 
 test("Shade constant folding", function() {
@@ -937,4 +941,34 @@ test("Lux.attribute_buffer", function() {
     raises(function() {
         x.set_region(2, [1,2,3]);
     });
+});
+
+test("Shade functions", function() {
+    equals(Shade.add(function(a) { return a.div(2); },
+                     function(b) { return b.div(3); })(3), 2.5);
+    equals(JSON.stringify(
+        Shade.add(function(a) { return {a: 1, b: a}; },
+                  function(b) { return {a: 2, b: b}; })(1)), 
+           JSON.stringify({a: 3, b: 2}));
+    equals(JSON.stringify(
+        Shade(function(a) { return {a: 1, b: a}; })
+            .add(function(b) { return {a: 2, b: b}; })(1)), 
+           JSON.stringify({a: 3, b: 2}));
+
+    equals(Shade.sub(function(a) { return a.div(2); },
+                     function(b) { return b.div(3); })(3), 0.5);
+    equals(JSON.stringify(
+        Shade.sub(function(a) { return {a: 1, b: a}; },
+                  function(b) { return {a: 2, b: b}; })(1)), 
+           JSON.stringify({a: -1, b: 0}));
+    equals(JSON.stringify(
+        Shade(function(a) { return {a: 1, b: a}; })
+            .sub(function(b) { return {a: 2, b: b}; })(1)), 
+           JSON.stringify({a: -1, b: 0}));
+
+    equals(Shade.mul(function(a) { return a.div(2); },
+                     function(b) { return b.div(3); })(3), 1.5);
+    equals(Shade.div(function(a) { return a.div(6); },
+                     function(b) { return b.div(3); })(3), 0.5);
+
 });

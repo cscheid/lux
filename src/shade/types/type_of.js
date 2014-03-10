@@ -15,6 +15,8 @@ Shade.Types.type_of = function(v)
         return Shade.Types.float_t;
     } else if (Lux.is_shade_expression(v)) {
         return Shade.Types.shade_t;
+    } else if (t === "function") {
+        return Shade.Types.function_t;
     } else if (_.isUndefined(v)) {
         return Shade.Types.undefined_t;
     } else if (!_.isUndefined(v.buffer) && v.buffer._type) {

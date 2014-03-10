@@ -77,20 +77,6 @@ lux.js:								\
 	src/lux/ui/parameter_checkbox.js			\
 	src/lux/ui/center_zoom_interactor.js			\
 	src/shade/_begin.js					\
-	src/shade/debug/_begin.js				\
-	src/shade/debug/walk.js					\
-	src/shade/debug/from_json.js				\
-	src/shade/debug/_json_builder.js			\
-	src/shade/make.js					\
-	src/shade/memoize_on_field.js				\
-	src/shade/memoize_on_guid_dict.js			\
-	src/shade/unknown.js					\
-	src/shade/camera/_begin.js				\
-	src/shade/camera/perspective.js				\
-	src/shade/camera/ortho.js				\
-	src/shade/color.js					\
-	src/shade/looping.js					\
-	src/shade/unique_name.js				\
 	src/shade/create.js					\
 	src/shade/types/_begin.js				\
 	src/shade/types/type_of.js				\
@@ -100,6 +86,21 @@ lux.js:								\
 	src/shade/types/function_t.js				\
 	src/shade/types/simple_types.js				\
 	src/shade/types/struct_t.js				\
+	src/shade/debug/_begin.js				\
+	src/shade/debug/walk.js					\
+	src/shade/debug/from_json.js				\
+	src/shade/debug/_json_builder.js			\
+	src/shade/make.js					\
+	src/shade/function.js					\
+	src/shade/memoize_on_field.js				\
+	src/shade/memoize_on_guid_dict.js			\
+	src/shade/unknown.js					\
+	src/shade/camera/_begin.js				\
+	src/shade/camera/perspective.js				\
+	src/shade/camera/ortho.js				\
+	src/shade/color.js					\
+	src/shade/looping.js					\
+	src/shade/unique_name.js				\
 	src/shade/compilation_context.js			\
 	src/shade/exp.js					\
 	src/shade/value_exp.js					\
@@ -221,6 +222,7 @@ lux.js:								\
 	src/lux/scene/transform/geo/_end.js			\
 	src/lux/scene/transform/camera/_begin.js		\
 	src/lux/scene/transform/camera/ortho.js			\
+	src/lux/scene/transform/camera/perspective.js		\
 	src/lux/promises/_begin.js				\
 	src/lux/promises/texture.js				\
 	src/lux/promises/_end.js				\

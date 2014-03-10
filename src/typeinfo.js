@@ -48,4 +48,4 @@ Lux.type_of = function(value)
         }
     }
     return s;
-}
+};
