@@ -118,7 +118,7 @@ $().ready(function() {
     var start = new Date().getTime();
     var f = function () {
         if (alive) {
-            window.requestAnimFrame(f, canvas);
+            window.requestAnimationFrame(f, canvas);
         }
         gl.display();
     };

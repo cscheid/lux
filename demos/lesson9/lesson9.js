@@ -125,7 +125,7 @@ $().ready(function () {
     
     var f = function() {
         counter += 1;
-        window.requestAnimFrame(f, canvas);
+        window.requestAnimationFrame(f, canvas);
         var now = new Date().getTime();
         var elapsed = now - start;
         start = now;

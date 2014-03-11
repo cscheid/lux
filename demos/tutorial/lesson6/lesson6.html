@@ -3,10 +3,11 @@
   <link rel="stylesheet" href="/lux/demos/css/bootstrap.css"/>
   <link rel="stylesheet" href="/lux/demos/css/style.css"/>
   <link rel="stylesheet" href="/lux/demos/css/mchighlight-javascript.css"/>
-  <link type="text/css" href="/lux/lib/ui-lightness/jquery-ui-1.8.21.custom.css" rel="stylesheet" />
-  <script src="/lux/lib/jquery-1.6.2.min.js"></script>
+  <link type="text/css" href="/lux/lib/ui-lightness/jquery-ui-1.10.4.custom.css" rel="stylesheet" />
+  <script src="/lux/lib/jquery-2.1.0.min.js"></script>
+  <script src="/lux/lib/underscore-min.js"></script>
   <script src="/lux/lib/jquery.mousewheel.js"></script>
-  <script src="/lux/lib/jquery-ui-1.8.16.custom.min.js"></script>
+  <script src="/lux/lib/jquery-ui-1.10.4.custom.min.js"></script>
   <script src="/lux/lux.js"></script>
   <script src="/lux/demos/js/mclexer.js"></script>
   <script src="/lux/demos/js/mchighlight.js"></script>
@@ -127,11 +128,11 @@ Shade.Light.ambient = function(light_opts)
 <h2>Putting it all together</h2>
 
 <pre class="highlight">
-Lux.bake(model, {
-    position: camera(cube_model_mat)(model.vertex),
-    color: ambient_light(material_opts)
-        .add(diffuse_light(material_opts))
-})
+Lux.actor({model: model, 
+    appearance: {
+        position: camera(cube_model_mat)(model.vertex),
+        color: ambient_light(material_opts)
+            .add(diffuse_light(material_opts))}});
 </pre>
 
 <h2>Addendum: Slider interaction</h2>
@@ -141,8 +142,8 @@ Lux.bake(model, {
 <pre>
 &lt;!-- in your HTML; jquery UI is required (and included in the Lux distribution) --&gt;
 &lt;head&gt;
-  &lt;link type="text/css" href="/lib/ui-lightness/jquery-ui-1.8.21.custom.css" rel="stylesheet" /&gt;
-  &lt;script src="lib/jquery-ui-1.8.16.custom.min.js"&gt;&lt;/script&gt;
+  &lt;link type="text/css" href="/lib/ui-lightness/jquery-ui-1.10.4.custom.css" rel="stylesheet" /&gt;
+  &lt;script src="lib/jquery-ui-1.10.4.custom.min.js"&gt;&lt;/script&gt;
   &lt;style&gt;
   .ui-slider .ui-slider-handle { 
       /* ... */

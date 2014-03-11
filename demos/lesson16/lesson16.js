@@ -129,7 +129,7 @@ $().ready(function () {
 
     var start = new Date().getTime();
     var f = function() {
-        window.requestAnimFrame(f, canvas);
+        window.requestAnimationFrame(f, canvas);
         var elapsed = new Date().getTime() - start;
         angle = (elapsed / 20) * (Math.PI/180);
         gl.display();
