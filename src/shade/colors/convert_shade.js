@@ -399,7 +399,6 @@ table.lab.xyz = function(lab)
                                  Shade.mul(3 * Math.pow(6/29, 2),
                                            t.sub(4/29)));
     });
-    debugger;
     var lp = lab.l.add(16).div(116);
     var y = white_point.y.mul(finv(lp));
     var x = white_point.x.mul(finv(lp.add(lab.a.div(500))));

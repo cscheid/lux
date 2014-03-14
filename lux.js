@@ -10897,13 +10897,13 @@ Lux.texture = function(opts)
          * 
          *   * Load an image from a URL:
          * 
-         *     texture.load({
+         *     Lux.texture({
          *       src: "http://www.example.com/image.png"
          *     })
          * 
          *   * Invoke a callback when image is successfully loaded:
          * 
-         *     texture.load({
+         *     Lux.texture({
          *       src: "http://www.example.com/image.png",
          *       onload: function(image) { 
          *         alert("image has now loaded into texture!");
@@ -10917,7 +10917,7 @@ Lux.texture = function(opts)
          *        
          *   * Specify an offset:
          * 
-         *     texture.load({
+         *     Lux.texture({
          *       src: "http://www.example.com/image.png",
          *       x_offset: 64,
          *       y_offset: 32
@@ -10925,17 +10925,17 @@ Lux.texture = function(opts)
          * 
          *   * Load an image from an existing element in the DOM:
          * 
-         *     texture.load({
+         *     Lux.texture({
          *       img: document.getElementById("image-element")
          *     });
          *
-         *     texture.load({
+         *     Lux.texture({
          *       canvas: document.getElementById("canvas-element")
          *     });
          * 
-         *   * Load an image from a TypedArray buffer (currently only supports 8-bit RGBA or 32-bit float RGBA):
+         *   * Load a texture from a TypedArray buffer (currently only supports 8-bit RGBA or 32-bit float RGBA):
          * 
-         *     Lux.load({
+         *     Lux.texture({
          *       width: 128,
          *       height: 128,
          *       buffer: new Uint8Array(128 * 128 * 4)
@@ -18808,7 +18808,6 @@ table.lab.xyz = function(lab)
                                  Shade.mul(3 * Math.pow(6/29, 2),
                                            t.sub(4/29)));
     });
-    debugger;
     var lp = lab.l.add(16).div(116);
     var y = white_point.y.mul(finv(lp));
     var x = white_point.x.mul(finv(lp.add(lab.a.div(500))));
