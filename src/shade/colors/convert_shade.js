@@ -17,7 +17,7 @@ function compose(g, f)
 var _if = Shade.ifelse;
 
 var table = {};
-var colorspaces = ["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz"];
+var colorspaces = ["rgb", "srgb", "luv", "hcl", "hls", "hsv", "xyz", "lab"];
 _.each(colorspaces, function(space) {
     Shade.Colors[space] = function(v1, v2, v3, alpha) {
         if (_.isUndefined(alpha))
@@ -56,7 +56,6 @@ _.each(colorspaces, function(space) {
             as_shade: function(alpha) {
                 if (_.isUndefined(alpha))
                     alpha = Shade.make(1);
-                var result = this.rgb().vec;
                 return Shade.vec(this.rgb().vec, alpha);
             }
         };
@@ -70,6 +69,15 @@ _.each(colorspaces, function(space) {
     };
 });
 
+function xyz_to_l(xyz)
+{
+    var y;
+    y = xyz.y.div(white_point.y);
+    var l = _if(y.gt(0.008856), 
+                Shade.mul(116, Shade.pow(y, 1.0/3.0)).sub(16),
+                Shade.mul(903.3, y));
+}
+
 function xyz_to_uv(xyz)
 {
     var t, x, y;
@@ -79,6 +87,18 @@ function xyz_to_uv(xyz)
     return Shade.vec(x.mul(2).div(y.mul(6).sub(x).add(1.5)),
                      y.mul(4.5).div(y.mul(6).sub(x).add(1.5)));
 };
+
+function xyz_to_ab(xyz)
+{
+    var f = Shade(function (t) {
+        return t.gt(Math.pow(6/29, 3)).ifelse(
+            t.pow(1/3),
+            Shade.mul((1/3) * Math.pow(29/6, 2), t).add(4/29));
+    });
+    var a = f(xyz.x.div(white_point.x).sub(xyz.y.div(white_point.y)));
+    var b = f(xyz.y.div(white_point.y).sub(xyz.z.div(white_point.z)));
+    return Shade.vec(a, b);
+}
 
 // qtrans takes hue varying from 0 to 1!
 function qtrans(q1, q2, hue)
@@ -178,6 +198,7 @@ table.rgb.srgb = function(rgb)
 
 // table.rgb.luv = compose(table.xyz.luv, table.rgb.xyz);
 // table.rgb.hcl = compose(table.luv.hcl, table.rgb.luv);
+// table.rgb.lab = compose(table.xyz.lab, table.rgb.xyz);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.srgb.*
@@ -205,6 +226,7 @@ table.srgb.rgb = function(srgb)
 
 table.srgb.hls = compose(table.rgb.hls, table.srgb.rgb);
 table.srgb.hsv = compose(table.rgb.hsv, table.srgb.rgb);
+// table.srgb.lab = compose(table.rgb.lab, table.srgb.rgb);
 // table.srgb.luv = compose(table.rgb.luv, table.srgb.rgb);
 // table.srgb.hcl = compose(table.rgb.hcl, table.srgb.rgb);
 
@@ -213,17 +235,23 @@ table.srgb.hsv = compose(table.rgb.hsv, table.srgb.rgb);
 
 table.xyz.luv = function(xyz)
 {
-    var y;
     var t1 = xyz_to_uv(xyz);
-    y = xyz.y.div(white_point.y);
-    var l = _if(y.gt(0.008856), 
-                Shade.mul(116, Shade.pow(y, 1.0/3.0)).sub(16),
-                Shade.mul(903.3, y));
+    var l = xyz_to_l(xyz);
     return table.luv.create(Shade.vec(l, l.mul(t1.sub(white_point_uv)).mul(13)));
 };
 // now I can define these
 table.rgb.luv = compose(table.xyz.luv, table.rgb.xyz);
 table.srgb.luv = compose(table.rgb.luv, table.srgb.rgb);
+
+table.xyz.lab = function(xyz)
+{
+    var l = xyz_to_l(xyz);
+    var ab = xyz_to_ab(xyz);
+    return table.lab.create(Shade.vec(l, ab));
+};
+// now I can define these
+table.rgb.lab = compose(table.xyz.lab, table.rgb.xyz);
+table.srgb.lab = compose(table.rgb.lab, table.srgb.rgb);
 
 table.xyz.rgb = function(xyz)
 {
@@ -283,6 +311,7 @@ table.luv.rgb  = compose(table.xyz.rgb,  table.luv.xyz);
 table.luv.hls  = compose(table.rgb.hls,  table.luv.rgb);
 table.luv.hsv  = compose(table.rgb.hsv,  table.luv.rgb);
 table.luv.srgb = compose(table.rgb.srgb, table.luv.rgb);
+table.luv.lab  = compose(table.xyz.lab,  table.luv.xyz);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.hcl.*
@@ -298,6 +327,7 @@ table.hcl.srgb = compose(table.luv.srgb, table.hcl.luv);
 table.hcl.hsv  = compose(table.luv.hsv,  table.hcl.luv);
 table.hcl.hls  = compose(table.luv.hls,  table.hcl.luv);
 table.hcl.xyz  = compose(table.luv.xyz,  table.hcl.luv);
+table.hcl.lab  = compose(table.luv.lab,  table.hcl.luv);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.hls.*
@@ -321,6 +351,7 @@ table.hls.hsv  = compose(table.rgb.hsv,  table.hls.rgb);
 table.hls.xyz  = compose(table.rgb.xyz,  table.hls.rgb);
 table.hls.luv  = compose(table.rgb.luv,  table.hls.rgb);
 table.hls.hcl  = compose(table.rgb.hcl,  table.hls.rgb);
+table.hls.lab  = compose(table.rgb.lab,  table.hls.rgb);
 
 //////////////////////////////////////////////////////////////////////////////
 // table.hsv.*
@@ -350,12 +381,38 @@ table.hsv.hls  = compose(table.rgb.hls,  table.hsv.rgb);
 table.hsv.xyz  = compose(table.rgb.xyz,  table.hsv.rgb);
 table.hsv.luv  = compose(table.rgb.luv,  table.hsv.rgb);
 table.hsv.hcl  = compose(table.rgb.hcl,  table.hsv.rgb);
+table.hsv.lab  = compose(table.rgb.lab,  table.hsv.rgb);
 
 // currently we assume a D65 white point, but this could be configurable
 var white_point = table.xyz.create(95.047, 100.000, 108.883);
 var white_point_uv = xyz_to_uv(white_point);
 
 Shade.Colors.shadetable = table;
+
+////////////////////////////////////////////////////////////////////////////////
+// table.lab.*
+
+table.lab.xyz = function(lab)
+{
+    var finv = Shade(function(t) {
+        return t.gt(6/29).ifelse(t.pow(3),
+                                 Shade.mul(3 * Math.pow(6/29, 2),
+                                           t.sub(4/29)));
+    });
+    debugger;
+    var lp = lab.l.add(16).div(116);
+    var y = white_point.y.mul(finv(lp));
+    var x = white_point.x.mul(finv(lp.add(lab.a.div(500))));
+    var z = white_point.z.mul(finv(lp.sub(lab.b.div(200))));
+    return table.xyz.create(x,y,z);
+};
+table.lab.luv  = compose(table.xyz.luv,  table.lab.xyz);
+table.lab.rgb  = compose(table.xyz.rgb,  table.lab.xyz);
+table.lab.hcl  = compose(table.rgb.hcl,  table.lab.rgb);
+table.lab.srgb = compose(table.rgb.srgb, table.lab.rgb);
+table.lab.hls  = compose(table.rgb.hls,  table.lab.rgb);
+table.lab.hsv  = compose(table.rgb.hsv,  table.lab.rgb);
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Color utility functions
