@@ -11348,6 +11348,31 @@ Lux.DrawingMode.additive = {
         ctx.depthMask(false);
     }
 };
+Lux.DrawingMode.multiplicative = {
+    set_draw_caps: function()
+    {
+        var ctx = Lux._globals.ctx;
+        ctx.enable(ctx.BLEND);
+        ctx.blendFunc(ctx.DST_COLOR, ctx.ZERO);
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
+    },
+    set_pick_caps: function()
+    {
+        var ctx = Lux._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
+    },
+    set_unproject_caps: function()
+    {
+        var ctx = Lux._globals.ctx;
+        ctx.enable(ctx.DEPTH_TEST);
+        ctx.depthFunc(ctx.LESS);
+        ctx.depthMask(false);
+    }
+};
 // over is the standard porter-duff over operator
 
 // NB: since over is associative but not commutative, we need
@@ -20020,6 +20045,18 @@ Lux.Marks.aligned_rects = function(opts)
     var primitive_index = Shade.div(vertex_index, 6).floor();
     var vertex_in_primitive = Shade.mod(vertex_index, 6).floor();
 
+    // 0 -> 0
+    // 1 -> 2
+    // 2 -> 3
+    // 3 -> 0
+    // 4 -> 1
+    // 5 -> 2
+    // this tries to avoid the "index expression must be constant" nonsense.
+    var index_in_vertex_primitive = vertex_in_primitive.mod(3)
+        .add(vertex_in_primitive.lt(3).
+             and(vertex_in_primitive.ne(0)).
+             ifelse(1,0));
+
     // aif == apply_if_function
     var aif = function(f, params) {
         if (Lux.type_of(f) === 'function')
@@ -20041,8 +20078,6 @@ Lux.Marks.aligned_rects = function(opts)
     var upper_right = Shade.vec(right, top);
     var vertex_map  = Shade.array([lower_left, upper_right, upper_left,
                                    lower_left, lower_right, upper_right]);
-    var index_array = Shade.array([0, 2, 3, 0, 1, 2]);
-    var index_in_vertex_primitive = index_array.at(vertex_in_primitive);
 
     var model = Lux.model({
         type: "triangles",
