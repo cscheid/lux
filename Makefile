@@ -64,6 +64,7 @@ lux.js:								\
 	src/lux/net/_end.js					\
 	src/lux/drawing_mode/_begin.js				\
 	src/lux/drawing_mode/additive.js			\
+	src/lux/drawing_mode/multiplicative.js			\
 	src/lux/drawing_mode/over.js				\
 	src/lux/drawing_mode/standard.js			\
 	src/lux/drawing_mode/pass.js				\
