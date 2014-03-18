@@ -487,4 +487,14 @@ Shade.Colors.opponent = Shade(function(c, lightness_midpoint) {
     return table.hcl.create(hcl.h, hcl.c.neg(), lightness_bias.sub(hcl.l)).as_shade(a);
 });
 
+Shade.Colors.hue_opponent = Shade(function(c) {
+    var a;
+    if (c.type.equals(Shade.Types.vec4)) {
+        a = c.a();
+    }
+    var rgb = table.rgb.create(c.r(), c.g(), c.b());
+    var hcl = table.rgb.hcl(rgb);
+    return table.hcl.create(hcl.h, hcl.c.neg(), hcl.l).as_shade(a);
+});
+
 })();
