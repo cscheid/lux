@@ -76,6 +76,7 @@ function xyz_to_l(xyz)
     var l = _if(y.gt(0.008856), 
                 Shade.mul(116, Shade.pow(y, 1.0/3.0)).sub(16),
                 Shade.mul(903.3, y));
+    return l;
 }
 
 function xyz_to_uv(xyz)
@@ -471,6 +472,19 @@ Shade.Colors.invert = Shade(function(c) {
     var rgb = table.rgb.create(c.r(), c.g(), c.b());
     var hls = table.rgb.hls(rgb);
     return table.hls.create(hls.h, flip(hls.l), hls.s).as_shade(a);
+});
+
+Shade.Colors.opponent = Shade(function(c, lightness_midpoint) {
+    var a, lightness_bias;
+    if (_.isUndefined(lightness_midpoint))
+        lightness_midpoint = Shade(50);
+    lightness_bias = lightness_midpoint.mul(2);
+    if (c.type.equals(Shade.Types.vec4)) {
+        a = c.a();
+    }
+    var rgb = table.rgb.create(c.r(), c.g(), c.b());
+    var hcl = table.rgb.hcl(rgb);
+    return table.hcl.create(hcl.h, hcl.c.neg(), lightness_bias.sub(hcl.l)).as_shade(a);
 });
 
 })();
