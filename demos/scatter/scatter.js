@@ -29,7 +29,7 @@ $().ready(function() {
     Lux.UI.parameter_slider({
         element: "#pointsize",
         parameter: point_diameter,
-        min: 0, 
+        min: 0,
         max: 100
     });
     Lux.UI.parameter_slider({
