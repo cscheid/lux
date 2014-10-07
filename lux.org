@@ -1,7 +1,7 @@
 The Big List of Lux TODOs
 
 * TODO naming
-** clearColor on init and scene should become clear_color
+** camelCase in Javascript won :( Give up and fix Lux.
 ** get rid of gl_Position naming, and enforce position, etc.
 * TODO Reimplement set_region for the new attribute_buffer APIs
 * TODO bind() and attribute_buffer_view
