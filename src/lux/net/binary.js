@@ -29,7 +29,7 @@ Lux.Net.binary = function(url, handler)
     var xhr = new window.XMLHttpRequest();
     var ready = false;
     xhr.onreadystatechange = function() {
-        Lux.set_context(current_context);
+        Lux.setContext(current_context);
         if (xhr.readyState === 4 && xhr.status === 200
             && ready !== true) {
             if (xhr.responseType === "arraybuffer") {

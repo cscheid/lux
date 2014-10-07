@@ -113,10 +113,10 @@ Lux.init = function(opts)
             opts.interactor.resize && opts.interactor.resize(canvas.width, canvas.height);
             for (var key in opts.interactor.events) {
                 if (opts[key]) {
-                    opts[key] = (function(handler, interactor_handler) {
+                    opts[key] = (function(handler, interactorHandler) {
                         return function(event) {
                             var v = handler(event);
-                            return v && interactor_handler(event);
+                            return v && interactorHandler(event);
                         };
                     })(opts[key], opts.interactor.events[key]);
                 } else {
@@ -139,11 +139,11 @@ Lux.init = function(opts)
         //////////////////////////////////////////////////////////////////////
         // event handling
 
-        var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", 
+        var canvasEvents = ["mouseover", "mousemove", "mousedown", "mouseout", 
                              "mouseup", "dblclick"];
-        _.each(canvas_events, function(ename) {
+        _.each(canvasEvents, function(ename) {
             var listener = opts[ename];
-            function internal_listener(event) {
+            function internalListener(event) {
                 polyfillEvent(event, gl);
                 if (!Lux.Scene.on(ename, event, gl))
                     return false;
@@ -151,7 +151,7 @@ Lux.init = function(opts)
                     return listener(event);
                 return true;
             }
-            canvas.addEventListener(ename, Lux.on_context(gl, internal_listener), false);
+            canvas.addEventListener(ename, Lux.on_context(gl, internalListener), false);
         });
         
         if (!_.isUndefined(opts.mousewheel)) {
@@ -166,7 +166,7 @@ Lux.init = function(opts)
         var ext;
         var exts = gl.getSupportedExtensions();
 
-        function enable_if_existing(name) {
+        function enableIfExisting(name) {
             if (exts.indexOf(name) !== -1 &&
                 gl.getExtension(name) !== null) {
                 gl._luxGlobals.webglExtensions[name] = true;
@@ -180,7 +180,7 @@ Lux.init = function(opts)
                 throw new Error("insufficient GPU support");
             }
         });
-        _.each(["OES_texture_float_linear"], enable_if_existing);
+        _.each(["OES_texture_float_linear"], enableIfExisting);
         _.each(["WEBKIT_EXT_texture_filter_anisotropic",
                 "EXT_texture_filter_anisotropic"], 
                function(ext) {
@@ -205,7 +205,7 @@ Lux.init = function(opts)
 
     gl._luxGlobals.devicePixelRatio = devicePixelRatio;
 
-    Lux.set_context(gl);
+    Lux.setContext(gl);
 
     gl.resize = function(width, height) {
         this.parameters.width.set(width);

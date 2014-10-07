@@ -12,7 +12,7 @@ Lux.element_buffer = function(vertex_array)
     // These methods are only for internal use within Lux
 
     result.set = function(vertex_array) {
-        Lux.set_context(ctx);
+        Lux.setContext(ctx);
         var typedArray;
         var typed_array_ctor;
         var has_extension = ctx._luxGlobals.webglExtensions.OES_element_index_uint;

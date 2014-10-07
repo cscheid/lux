@@ -21,7 +21,7 @@ Lux.scene = function(opts)
     var pre_display_list = [];
     var post_display_list = [];
     function draw_it() {
-        Lux.set_context(ctx);
+        Lux.setContext(ctx);
         var pre = pre_display_list;
         pre_display_list = [];
         var post = post_display_list;

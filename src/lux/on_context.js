@@ -8,7 +8,7 @@
 Lux.on_context = function(the_ctx, f)
 {
     return function() {
-        Lux.set_context(the_ctx);
+        Lux.setContext(the_ctx);
         f.apply(this, arguments);
     };
 };

@@ -29,7 +29,7 @@ Lux.render_buffer = function(opts)
     var rttTexture = Lux.texture(opts);
 
     frame_buffer.init = function(width, height) {
-        Lux.set_context(ctx);
+        Lux.setContext(ctx);
         this.width  = opts.width;
         this.height = opts.height;
         ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);

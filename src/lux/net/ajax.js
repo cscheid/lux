@@ -28,7 +28,7 @@ Lux.Net.ajax = function(url, handler)
     var ready = false;
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200 && !ready) {
-            Lux.set_context(current_context);
+            Lux.setContext(current_context);
             handler(xhr.response, url);
             ready = true;
         }

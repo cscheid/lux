@@ -104,7 +104,7 @@ Lux.texture = function(opts)
             function image_handler(image) {
                 image = opts.transform_image(image);
                 var ctx = texture._ctx;
-                Lux.set_context(texture._ctx);
+                Lux.setContext(texture._ctx);
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
                 ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
                 if (_.isUndefined(that.width)) {
@@ -126,7 +126,7 @@ Lux.texture = function(opts)
             function buffer_handler()
             {
                 var ctx = texture._ctx;
-                Lux.set_context(texture._ctx);
+                Lux.setContext(texture._ctx);
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
                 if (_.isUndefined(opts.buffer)) {
                     if (x_offset !== 0 || y_offset !== 0) {
@@ -182,7 +182,7 @@ Lux.texture = function(opts)
             }
         };
         
-        Lux.set_context(ctx);
+        Lux.setContext(ctx);
         ctx.bindTexture(ctx.TEXTURE_2D, that);
         ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
         ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,

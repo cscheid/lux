@@ -96,17 +96,17 @@ Lux.attribute_buffer_view = function(opts)
         //////////////////////////////////////////////////////////////////////
         // These methods are only for internal use within Lux
         bind: function(attribute) {
-            Lux.set_context(ctx);
+            Lux.setContext(ctx);
             ctx.bindBuffer(ctx.ARRAY_BUFFER, this.buffer);
             ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, this.stride, this.offset);
         },
         draw: function(primitive) {
-            Lux.set_context(ctx);
+            Lux.setContext(ctx);
             ctx.drawArrays(primitive, 0, this.numItems);
         },
         bind_and_draw: function(attribute, primitive) {
-            // here we inline the calls to bind and draw to shave a redundant set_context.
-            Lux.set_context(ctx);
+            // here we inline the calls to bind and draw to shave a redundant setContext.
+            Lux.setContext(ctx);
             ctx.bindBuffer(ctx.ARRAY_BUFFER, this.buffer);
             ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, this.stride, this.offset);
             ctx.drawArrays(primitive, 0, this.numItems);
