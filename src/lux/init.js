@@ -1,6 +1,6 @@
 (function() {
 
-function initialize_context_globals(gl)
+function initializeContextGlobals(gl)
 {
     gl._luxGlobals = {};
 
@@ -9,7 +9,7 @@ function initialize_context_globals(gl)
     // pick: 1
     // these are indices into an array defined inside Lux.bake
     // For legibility, they should be strings, but for speed, they'll be integers.
-    gl._luxGlobals.batch_render_mode = 0;
+    gl._luxGlobals.batchRenderMode = 0;
 
     // epoch is the initial time being tracked by the context.
     gl._luxGlobals.epoch = new Date().getTime() / 1000;
@@ -20,7 +20,7 @@ function initialize_context_globals(gl)
     gl._luxGlobals.webgl_extensions = {};
 
     // from https://developer.mozilla.org/en-US/docs/JavaScript/Typed_arrays/DataView
-    gl._luxGlobals.little_endian = (function() {
+    gl._luxGlobals.littleEndian = (function() {
         var buffer = new ArrayBuffer(2);
         new DataView(buffer).setInt16(0, 256, true);
         return new Int16Array(buffer)[0] === 256;
@@ -29,7 +29,7 @@ function initialize_context_globals(gl)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-function polyfill_event(event, gl)
+function polyfillEvent(event, gl)
 {
     // polyfill event.offsetX and offsetY in Firefox,
     // according to http://bugs.jquery.com/ticket/8523
@@ -108,7 +108,7 @@ Lux.init = function(opts)
             gl = Lux.Lib.WebGLUtils.setupWebGL(canvas);
         if (!gl)
             throw new Error("failed context creation");
-        initialize_context_globals(gl);
+        initializeContextGlobals(gl);
         if ("interactor" in opts) {
             opts.interactor.resize && opts.interactor.resize(canvas.width, canvas.height);
             for (var key in opts.interactor.events) {
@@ -144,7 +144,7 @@ Lux.init = function(opts)
         _.each(canvas_events, function(ename) {
             var listener = opts[ename];
             function internal_listener(event) {
-                polyfill_event(event, gl);
+                polyfillEvent(event, gl);
                 if (!Lux.Scene.on(ename, event, gl))
                     return false;
                 if (listener)
@@ -156,7 +156,7 @@ Lux.init = function(opts)
         
         if (!_.isUndefined(opts.mousewheel)) {
             $(canvas).bind('mousewheel', function(event, delta, deltaX, deltaY) {
-                polyfill_event(event, gl);
+                polyfillEvent(event, gl);
                 return opts.mousewheel(event, delta, deltaX, deltaY);
             });
         };

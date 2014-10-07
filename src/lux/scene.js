@@ -226,7 +226,7 @@ Lux.default_scene = function(opts)
     // quite a bit. Since the picker infrastructure should be overhauled anyway,
     // we stick with this hack until we fix everything.
     function clear() {
-        switch (ctx._luxGlobals.batch_render_mode) {
+        switch (ctx._luxGlobals.batchRenderMode) {
         case 1:
         case 2:
             ctx.clearDepth(clearDepth);

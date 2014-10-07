@@ -36,8 +36,8 @@ Lux.Unprojector = {
         }
 
         callback = callback || ctx._luxGlobals.display_callback;
-        var old_scene_render_mode = ctx._luxGlobals.batch_render_mode;
-        ctx._luxGlobals.batch_render_mode = 2;
+        var old_scene_render_mode = ctx._luxGlobals.batchRenderMode;
+        ctx._luxGlobals.batchRenderMode = 2;
         rb.with_bound_buffer(function() {
             var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
             var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
@@ -53,7 +53,7 @@ Lux.Unprojector = {
                                old_clear_color[1],
                                old_clear_color[2],
                                old_clear_color[3]);
-                ctx._luxGlobals.batch_render_mode = old_scene_render_mode;
+                ctx._luxGlobals.batchRenderMode = old_scene_render_mode;
             }
         });
     },

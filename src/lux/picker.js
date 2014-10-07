@@ -15,12 +15,12 @@ Lux.Picker = {
         }
 
         callback = callback || function() { Lux._globals.ctx._luxGlobals.scene.draw(); };
-        var old_scene_render_mode = ctx._luxGlobals.batch_render_mode;
-        ctx._luxGlobals.batch_render_mode = 1;
+        var old_scene_render_mode = ctx._luxGlobals.batchRenderMode;
+        ctx._luxGlobals.batchRenderMode = 1;
         try {
             rb.with_bound_buffer(callback);
         } finally {
-            ctx._luxGlobals.batch_render_mode = old_scene_render_mode;
+            ctx._luxGlobals.batchRenderMode = old_scene_render_mode;
         }
     },
     pick: function(x, y) {
