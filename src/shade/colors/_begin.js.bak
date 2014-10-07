@@ -1,0 +1,5 @@
+////////////////////////////////////////////////////////////////////////////////
+// The colorspace conversion routines are based on
+// Ross Ihaka's colorspace library for R.
+
+Shade.Colors = {};

@@ -15,7 +15,7 @@ Lux.element_buffer = function(vertex_array)
         Lux.set_context(ctx);
         var typedArray;
         var typed_array_ctor;
-        var has_extension = ctx._luxGlobals.webglExtensions.OES_element_index_uint;
+        var has_extension = ctx._luxGlobals.webgl_extensions.OES_element_index_uint;
         if (has_extension)
             typed_array_ctor = Uint32Array;
         else

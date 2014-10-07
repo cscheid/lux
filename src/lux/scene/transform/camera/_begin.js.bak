@@ -1,0 +1,1 @@
+Lux.Scene.Transform.Camera = {};
