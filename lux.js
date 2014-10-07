@@ -1,8 +1,9 @@
 /*
  * Lux: An EDSL for WebGL graphics
- * By Carlos Scheidegger, cscheid@research.att.com
+ * By Carlos Scheidegger, cscheid@cs.arizona.edu
  * 
  * Copyright (c) 2011-2013 AT&T Intellectual Property
+ *               2014- Arizona Board of Regents
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9993,7 +9994,7 @@ Lux.bake = function(model, appearance, opts)
         model: model,
         batch_id: batch_id,
         draw: function() {
-            draw_it(which_opts[ctx._luxGlobals.batch_render_mode]);
+            draw_it(which_opts[ctx._luxGlobals.batchRenderMode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.
@@ -10167,7 +10168,7 @@ Lux.id_buffer = function(vertex_array)
 };
 (function() {
 
-function initialize_context_globals(gl)
+function initializeContextGlobals(gl)
 {
     gl._luxGlobals = {};
 
@@ -10176,7 +10177,7 @@ function initialize_context_globals(gl)
     // pick: 1
     // these are indices into an array defined inside Lux.bake
     // For legibility, they should be strings, but for speed, they'll be integers.
-    gl._luxGlobals.batch_render_mode = 0;
+    gl._luxGlobals.batchRenderMode = 0;
 
     // epoch is the initial time being tracked by the context.
     gl._luxGlobals.epoch = new Date().getTime() / 1000;
@@ -10187,7 +10188,7 @@ function initialize_context_globals(gl)
     gl._luxGlobals.webgl_extensions = {};
 
     // from https://developer.mozilla.org/en-US/docs/JavaScript/Typed_arrays/DataView
-    gl._luxGlobals.little_endian = (function() {
+    gl._luxGlobals.littleEndian = (function() {
         var buffer = new ArrayBuffer(2);
         new DataView(buffer).setInt16(0, 256, true);
         return new Int16Array(buffer)[0] === 256;
@@ -10196,7 +10197,7 @@ function initialize_context_globals(gl)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-function polyfill_event(event, gl)
+function polyfillEvent(event, gl)
 {
     // polyfill event.offsetX and offsetY in Firefox,
     // according to http://bugs.jquery.com/ticket/8523
@@ -10275,7 +10276,7 @@ Lux.init = function(opts)
             gl = Lux.Lib.WebGLUtils.setupWebGL(canvas);
         if (!gl)
             throw new Error("failed context creation");
-        initialize_context_globals(gl);
+        initializeContextGlobals(gl);
         if ("interactor" in opts) {
             opts.interactor.resize && opts.interactor.resize(canvas.width, canvas.height);
             for (var key in opts.interactor.events) {
@@ -10311,7 +10312,7 @@ Lux.init = function(opts)
         _.each(canvas_events, function(ename) {
             var listener = opts[ename];
             function internal_listener(event) {
-                polyfill_event(event, gl);
+                polyfillEvent(event, gl);
                 if (!Lux.Scene.on(ename, event, gl))
                     return false;
                 if (listener)
@@ -10323,7 +10324,7 @@ Lux.init = function(opts)
         
         if (!_.isUndefined(opts.mousewheel)) {
             $(canvas).bind('mousewheel', function(event, delta, deltaX, deltaY) {
-                polyfill_event(event, gl);
+                polyfillEvent(event, gl);
                 return opts.mousewheel(event, delta, deltaX, deltaY);
             });
         };
@@ -10617,12 +10618,12 @@ Lux.Picker = {
         }
 
         callback = callback || function() { Lux._globals.ctx._luxGlobals.scene.draw(); };
-        var old_scene_render_mode = ctx._luxGlobals.batch_render_mode;
-        ctx._luxGlobals.batch_render_mode = 1;
+        var old_scene_render_mode = ctx._luxGlobals.batchRenderMode;
+        ctx._luxGlobals.batchRenderMode = 1;
         try {
             rb.with_bound_buffer(callback);
         } finally {
-            ctx._luxGlobals.batch_render_mode = old_scene_render_mode;
+            ctx._luxGlobals.batchRenderMode = old_scene_render_mode;
         }
     },
     pick: function(x, y) {
@@ -11131,8 +11132,8 @@ Lux.Unprojector = {
         }
 
         callback = callback || ctx._luxGlobals.display_callback;
-        var old_scene_render_mode = ctx._luxGlobals.batch_render_mode;
-        ctx._luxGlobals.batch_render_mode = 2;
+        var old_scene_render_mode = ctx._luxGlobals.batchRenderMode;
+        ctx._luxGlobals.batchRenderMode = 2;
         rb.with_bound_buffer(function() {
             var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
             var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
@@ -11148,7 +11149,7 @@ Lux.Unprojector = {
                                old_clear_color[1],
                                old_clear_color[2],
                                old_clear_color[3]);
-                ctx._luxGlobals.batch_render_mode = old_scene_render_mode;
+                ctx._luxGlobals.batchRenderMode = old_scene_render_mode;
             }
         });
     },
@@ -19576,7 +19577,7 @@ Lux.Geometry.PLY.load = function(url, k) {
                 row_offset += property_size(prop);
             });
             var n_props = row_offsets.length;
-            var endian = Lux._globals.ctx._luxGlobals.little_endian;
+            var endian = Lux._globals.ctx._luxGlobals.littleEndian;
             for (var i=0; i<element_header.count; ++i) {
                 var row = _.map(lines[current_line].trim().split(' '), Number);
                 current_line++;
@@ -23200,7 +23201,7 @@ Lux.default_scene = function(opts)
     // quite a bit. Since the picker infrastructure should be overhauled anyway,
     // we stick with this hack until we fix everything.
     function clear() {
-        switch (ctx._luxGlobals.batch_render_mode) {
+        switch (ctx._luxGlobals.batchRenderMode) {
         case 1:
         case 2:
             ctx.clearDepth(clearDepth);
