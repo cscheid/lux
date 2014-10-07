@@ -9467,17 +9467,17 @@ Lux.attribute_buffer_view = function(opts)
         //////////////////////////////////////////////////////////////////////
         // These methods are only for internal use within Lux
         bind: function(attribute) {
-            Lux.set_context(ctx);
+            Lux.setContext(ctx);
             ctx.bindBuffer(ctx.ARRAY_BUFFER, this.buffer);
             ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, this.stride, this.offset);
         },
         draw: function(primitive) {
-            Lux.set_context(ctx);
+            Lux.setContext(ctx);
             ctx.drawArrays(primitive, 0, this.numItems);
         },
         bind_and_draw: function(attribute, primitive) {
-            // here we inline the calls to bind and draw to shave a redundant set_context.
-            Lux.set_context(ctx);
+            // here we inline the calls to bind and draw to shave a redundant setContext.
+            Lux.setContext(ctx);
             ctx.bindBuffer(ctx.ARRAY_BUFFER, this.buffer);
             ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, this.stride, this.offset);
             ctx.drawArrays(primitive, 0, this.numItems);
@@ -10087,7 +10087,7 @@ Lux.element_buffer = function(vertex_array)
     // These methods are only for internal use within Lux
 
     result.set = function(vertex_array) {
-        Lux.set_context(ctx);
+        Lux.setContext(ctx);
         var typedArray;
         var typed_array_ctor;
         var has_extension = ctx._luxGlobals.webglExtensions.OES_element_index_uint;
@@ -10281,10 +10281,10 @@ Lux.init = function(opts)
             opts.interactor.resize && opts.interactor.resize(canvas.width, canvas.height);
             for (var key in opts.interactor.events) {
                 if (opts[key]) {
-                    opts[key] = (function(handler, interactor_handler) {
+                    opts[key] = (function(handler, interactorHandler) {
                         return function(event) {
                             var v = handler(event);
-                            return v && interactor_handler(event);
+                            return v && interactorHandler(event);
                         };
                     })(opts[key], opts.interactor.events[key]);
                 } else {
@@ -10307,11 +10307,11 @@ Lux.init = function(opts)
         //////////////////////////////////////////////////////////////////////
         // event handling
 
-        var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", 
+        var canvasEvents = ["mouseover", "mousemove", "mousedown", "mouseout", 
                              "mouseup", "dblclick"];
-        _.each(canvas_events, function(ename) {
+        _.each(canvasEvents, function(ename) {
             var listener = opts[ename];
-            function internal_listener(event) {
+            function internalListener(event) {
                 polyfillEvent(event, gl);
                 if (!Lux.Scene.on(ename, event, gl))
                     return false;
@@ -10319,7 +10319,7 @@ Lux.init = function(opts)
                     return listener(event);
                 return true;
             }
-            canvas.addEventListener(ename, Lux.on_context(gl, internal_listener), false);
+            canvas.addEventListener(ename, Lux.on_context(gl, internalListener), false);
         });
         
         if (!_.isUndefined(opts.mousewheel)) {
@@ -10334,7 +10334,7 @@ Lux.init = function(opts)
         var ext;
         var exts = gl.getSupportedExtensions();
 
-        function enable_if_existing(name) {
+        function enableIfExisting(name) {
             if (exts.indexOf(name) !== -1 &&
                 gl.getExtension(name) !== null) {
                 gl._luxGlobals.webglExtensions[name] = true;
@@ -10348,7 +10348,7 @@ Lux.init = function(opts)
                 throw new Error("insufficient GPU support");
             }
         });
-        _.each(["OES_texture_float_linear"], enable_if_existing);
+        _.each(["OES_texture_float_linear"], enableIfExisting);
         _.each(["WEBKIT_EXT_texture_filter_anisotropic",
                 "EXT_texture_filter_anisotropic"], 
                function(ext) {
@@ -10373,7 +10373,7 @@ Lux.init = function(opts)
 
     gl._luxGlobals.devicePixelRatio = devicePixelRatio;
 
-    Lux.set_context(gl);
+    Lux.setContext(gl);
 
     gl.resize = function(width, height) {
         this.parameters.width.set(width);
@@ -10737,7 +10737,7 @@ Lux.render_buffer = function(opts)
     var rttTexture = Lux.texture(opts);
 
     frame_buffer.init = function(width, height) {
-        Lux.set_context(ctx);
+        Lux.setContext(ctx);
         this.width  = opts.width;
         this.height = opts.height;
         ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
@@ -10833,10 +10833,10 @@ Lux.render_buffer = function(opts)
 
     return frame_buffer;
 };
-Lux.set_context = function(the_ctx)
+Lux.setContext = function(the_ctx)
 {
     Lux._globals.ctx = the_ctx;
-    // Shade.set_context(the_ctx);
+    // Shade.setContext(the_ctx);
 };
 /*
  * Lux.on_context returns a wrapped callback that guarantees that the passed
@@ -10848,7 +10848,7 @@ Lux.set_context = function(the_ctx)
 Lux.on_context = function(the_ctx, f)
 {
     return function() {
-        Lux.set_context(the_ctx);
+        Lux.setContext(the_ctx);
         f.apply(this, arguments);
     };
 };
@@ -10958,7 +10958,7 @@ Lux.texture = function(opts)
             function image_handler(image) {
                 image = opts.transform_image(image);
                 var ctx = texture._ctx;
-                Lux.set_context(texture._ctx);
+                Lux.setContext(texture._ctx);
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
                 ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
                 if (_.isUndefined(that.width)) {
@@ -10980,7 +10980,7 @@ Lux.texture = function(opts)
             function buffer_handler()
             {
                 var ctx = texture._ctx;
-                Lux.set_context(texture._ctx);
+                Lux.setContext(texture._ctx);
                 ctx.bindTexture(ctx.TEXTURE_2D, texture);
                 if (_.isUndefined(opts.buffer)) {
                     if (x_offset !== 0 || y_offset !== 0) {
@@ -11036,7 +11036,7 @@ Lux.texture = function(opts)
             }
         };
         
-        Lux.set_context(ctx);
+        Lux.setContext(ctx);
         ctx.bindTexture(ctx.TEXTURE_2D, that);
         ctx.pixelStorei(ctx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
         ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
@@ -11219,7 +11219,7 @@ Lux.Net.ajax = function(url, handler)
     var ready = false;
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200 && !ready) {
-            Lux.set_context(current_context);
+            Lux.setContext(current_context);
             handler(xhr.response, url);
             ready = true;
         }
@@ -11292,7 +11292,7 @@ Lux.Net.binary = function(url, handler)
     var xhr = new window.XMLHttpRequest();
     var ready = false;
     xhr.onreadystatechange = function() {
-        Lux.set_context(current_context);
+        Lux.setContext(current_context);
         if (xhr.readyState === 4 && xhr.status === 200
             && ready !== true) {
             if (xhr.responseType === "arraybuffer") {
@@ -22996,7 +22996,7 @@ Lux.scene = function(opts)
     var pre_display_list = [];
     var post_display_list = [];
     function draw_it() {
-        Lux.set_context(ctx);
+        Lux.setContext(ctx);
         var pre = pre_display_list;
         pre_display_list = [];
         var post = post_display_list;
