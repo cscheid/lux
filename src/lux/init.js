@@ -2,25 +2,25 @@
 
 function initialize_context_globals(gl)
 {
-    gl._lux_globals = {};
+    gl._luxGlobals = {};
 
     // batches can currently be rendered in "draw" or "pick" mode.
     // draw: 0
     // pick: 1
     // these are indices into an array defined inside Lux.bake
     // For legibility, they should be strings, but for speed, they'll be integers.
-    gl._lux_globals.batch_render_mode = 0;
+    gl._luxGlobals.batch_render_mode = 0;
 
     // epoch is the initial time being tracked by the context.
-    gl._lux_globals.epoch = new Date().getTime() / 1000;
+    gl._luxGlobals.epoch = new Date().getTime() / 1000;
 
-    gl._lux_globals.devicePixelRatio = undefined;
+    gl._luxGlobals.devicePixelRatio = undefined;
 
     // Optional, enabled WebGL extensions go here.
-    gl._lux_globals.webgl_extensions = {};
+    gl._luxGlobals.webgl_extensions = {};
 
     // from https://developer.mozilla.org/en-US/docs/JavaScript/Typed_arrays/DataView
-    gl._lux_globals.little_endian = (function() {
+    gl._luxGlobals.little_endian = (function() {
         var buffer = new ArrayBuffer(2);
         new DataView(buffer).setInt16(0, 256, true);
         return new Int16Array(buffer)[0] === 256;
@@ -39,8 +39,8 @@ function polyfill_event(event, gl)
         event.offsetY = event.pageY - targetOffset.top;
     }
     
-    event.luxX = event.offsetX * gl._lux_globals.devicePixelRatio;
-    event.luxY = gl.viewportHeight - event.offsetY * gl._lux_globals.devicePixelRatio;
+    event.luxX = event.offsetX * gl._luxGlobals.devicePixelRatio;
+    event.luxY = gl.viewportHeight - event.offsetY * gl._luxGlobals.devicePixelRatio;
 }
 
 Lux.init = function(opts)
@@ -169,7 +169,7 @@ Lux.init = function(opts)
         function enable_if_existing(name) {
             if (exts.indexOf(name) !== -1 &&
                 gl.getExtension(name) !== null) {
-                gl._lux_globals.webgl_extensions[name] = true;
+                gl._luxGlobals.webgl_extensions[name] = true;
             }
         }
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
@@ -185,14 +185,14 @@ Lux.init = function(opts)
                 "EXT_texture_filter_anisotropic"], 
                function(ext) {
                    if (exts.indexOf(ext) !== -1 && (gl.getExtension(ext) !== null)) {
-                       gl._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic = true;
+                       gl._luxGlobals.webgl_extensions.EXT_texture_filter_anisotropic = true;
                        gl.TEXTURE_MAX_ANISOTROPY_EXT     = 0x84FE;
                        gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FF;
                    }
                });
         if (exts.indexOf("OES_element_index_uint") !== -1 &&
             gl.getExtension("OES_element_index_uint") !== null) {
-            gl._lux_globals.webgl_extensions.OES_element_index_uint = true;
+            gl._luxGlobals.webgl_extensions.OES_element_index_uint = true;
         }
     } catch(e) {
         alert(e);
@@ -203,7 +203,7 @@ Lux.init = function(opts)
         throw new Error("failed initalization");
     }
 
-    gl._lux_globals.devicePixelRatio = devicePixelRatio;
+    gl._luxGlobals.devicePixelRatio = devicePixelRatio;
 
     Lux.set_context(gl);
 
@@ -239,13 +239,13 @@ Lux.init = function(opts)
     gl.parameters.now = Shade.parameter("float", 0);
     gl.parameters.frame_duration = Shade.parameter("float", 0);
 
-    gl._lux_globals.scene = Lux.default_scene({
+    gl._luxGlobals.scene = Lux.default_scene({
         context: gl,
         clearColor: opts.clearColor,
         clearDepth: opts.clearDepth,
         pre_draw: function() {
             var raw_t = new Date().getTime() / 1000;
-            var new_t = raw_t - gl._lux_globals.epoch;
+            var new_t = raw_t - gl._luxGlobals.epoch;
             var old_t = gl.parameters.now.get();
             gl.parameters.frame_duration.set(new_t - old_t);
             gl.parameters.now.set(new_t);
@@ -254,8 +254,8 @@ Lux.init = function(opts)
     });
 
     if ("interactor" in opts) {
-        gl._lux_globals.scene.add(opts.interactor.scene);
-        gl._lux_globals.scene = opts.interactor.scene;
+        gl._luxGlobals.scene.add(opts.interactor.scene);
+        gl._luxGlobals.scene = opts.interactor.scene;
     }
 
     return gl;

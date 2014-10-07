@@ -20,7 +20,7 @@ Lux.Marks.dots = function(opts)
 
     var fill_color     = Shade(opts.fill_color);
     var stroke_color   = Shade(opts.stroke_color);
-    var point_diameter = Shade(opts.point_diameter).mul(ctx._lux_globals.devicePixelRatio);
+    var point_diameter = Shade(opts.point_diameter).mul(ctx._luxGlobals.devicePixelRatio);
     var stroke_width   = Shade(opts.stroke_width).add(1);
     var use_alpha      = Shade(opts.alpha);
     opts.plain = Shade(opts.plain);

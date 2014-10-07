@@ -7,5 +7,5 @@ Lux._globals = {
     ctx: undefined
 
     // In addition, Lux stores per-context globals inside the
-    // WebGL context variable itself, on the field _lux_globals.
+    // WebGL context variable itself, on the field _luxGlobals.
 };

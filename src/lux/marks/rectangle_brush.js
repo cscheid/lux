@@ -15,7 +15,7 @@ Lux.Marks.rectangle_brush = function(opts)
     var handlers = {
         mousedown: function(event) {
             if (opts.accept_event(event)) {
-                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                var xy_v = unproject(vec.make([event.luxX / gl._luxGlobals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
                 b1 = xy_v;
                 selection_pt1.set(xy_v);
                 brush_is_active = true;
@@ -28,7 +28,7 @@ Lux.Marks.rectangle_brush = function(opts)
             if (!brush_is_active)
                 return true;
             if (opts.accept_event(event)) {
-                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                var xy_v = unproject(vec.make([event.luxX / gl._luxGlobals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
                 selection_pt2.set(xy_v);
                 var b2 = xy_v;
                 opts.on.brush_changed && opts.on.brush_changed(b1, b2);
@@ -42,7 +42,7 @@ Lux.Marks.rectangle_brush = function(opts)
                 return true;
             brush_is_active = false;
             if (opts.accept_event(event)) {
-                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                var xy_v = unproject(vec.make([event.luxX / gl._luxGlobals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
                 selection_pt2.set(xy_v);
                 var b2 = xy_v;
                 if (opts.on.brush_changed) {

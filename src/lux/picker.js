@@ -14,13 +14,13 @@ Lux.Picker = {
             });
         }
 
-        callback = callback || function() { Lux._globals.ctx._lux_globals.scene.draw(); };
-        var old_scene_render_mode = ctx._lux_globals.batch_render_mode;
-        ctx._lux_globals.batch_render_mode = 1;
+        callback = callback || function() { Lux._globals.ctx._luxGlobals.scene.draw(); };
+        var old_scene_render_mode = ctx._luxGlobals.batch_render_mode;
+        ctx._luxGlobals.batch_render_mode = 1;
         try {
             rb.with_bound_buffer(callback);
         } finally {
-            ctx._lux_globals.batch_render_mode = old_scene_render_mode;
+            ctx._luxGlobals.batch_render_mode = old_scene_render_mode;
         }
     },
     pick: function(x, y) {

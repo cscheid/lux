@@ -142,7 +142,7 @@ Lux.Geometry.PLY.load = function(url, k) {
                 row_offset += property_size(prop);
             });
             var n_props = row_offsets.length;
-            var endian = Lux._globals.ctx._lux_globals.little_endian;
+            var endian = Lux._globals.ctx._luxGlobals.little_endian;
             for (var i=0; i<element_header.count; ++i) {
                 var row = _.map(lines[current_line].trim().split(' '), Number);
                 current_line++;
