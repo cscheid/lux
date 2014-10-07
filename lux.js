@@ -10090,7 +10090,7 @@ Lux.element_buffer = function(vertex_array)
         Lux.set_context(ctx);
         var typedArray;
         var typed_array_ctor;
-        var has_extension = ctx._luxGlobals.webgl_extensions.OES_element_index_uint;
+        var has_extension = ctx._luxGlobals.webglExtensions.OES_element_index_uint;
         if (has_extension)
             typed_array_ctor = Uint32Array;
         else
@@ -10185,7 +10185,7 @@ function initializeContextGlobals(gl)
     gl._luxGlobals.devicePixelRatio = undefined;
 
     // Optional, enabled WebGL extensions go here.
-    gl._luxGlobals.webgl_extensions = {};
+    gl._luxGlobals.webglExtensions = {};
 
     // from https://developer.mozilla.org/en-US/docs/JavaScript/Typed_arrays/DataView
     gl._luxGlobals.littleEndian = (function() {
@@ -10337,7 +10337,7 @@ Lux.init = function(opts)
         function enable_if_existing(name) {
             if (exts.indexOf(name) !== -1 &&
                 gl.getExtension(name) !== null) {
-                gl._luxGlobals.webgl_extensions[name] = true;
+                gl._luxGlobals.webglExtensions[name] = true;
             }
         }
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
@@ -10353,14 +10353,14 @@ Lux.init = function(opts)
                 "EXT_texture_filter_anisotropic"], 
                function(ext) {
                    if (exts.indexOf(ext) !== -1 && (gl.getExtension(ext) !== null)) {
-                       gl._luxGlobals.webgl_extensions.EXT_texture_filter_anisotropic = true;
+                       gl._luxGlobals.webglExtensions.EXT_texture_filter_anisotropic = true;
                        gl.TEXTURE_MAX_ANISOTROPY_EXT     = 0x84FE;
                        gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FF;
                    }
                });
         if (exts.indexOf("OES_element_index_uint") !== -1 &&
             gl.getExtension("OES_element_index_uint") !== null) {
-            gl._luxGlobals.webgl_extensions.OES_element_index_uint = true;
+            gl._luxGlobals.webglExtensions.OES_element_index_uint = true;
         }
     } catch(e) {
         alert(e);
@@ -11046,7 +11046,7 @@ Lux.texture = function(opts)
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
-        if (ctx._luxGlobals.webgl_extensions.EXT_texture_filter_anisotropic &&
+        if (ctx._luxGlobals.webglExtensions.EXT_texture_filter_anisotropic &&
             opts.max_anisotropy > 1 && opts.mipmaps) {
             ctx.texParameterf(ctx.TEXTURE_2D, ctx.TEXTURE_MAX_ANISOTROPY_EXT, opts.max_anisotropy);
         }
