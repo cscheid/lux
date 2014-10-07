@@ -123,7 +123,7 @@ Lux._globals = {
     ctx: undefined
 
     // In addition, Lux stores per-context globals inside the
-    // WebGL context variable itself, on the field _lux_globals.
+    // WebGL context variable itself, on the field _luxGlobals.
 };
 // stores references to external libraries to avoid namespace pollution
 
@@ -9993,7 +9993,7 @@ Lux.bake = function(model, appearance, opts)
         model: model,
         batch_id: batch_id,
         draw: function() {
-            draw_it(which_opts[ctx._lux_globals.batch_render_mode]);
+            draw_it(which_opts[ctx._luxGlobals.batch_render_mode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.
@@ -10089,7 +10089,7 @@ Lux.element_buffer = function(vertex_array)
         Lux.set_context(ctx);
         var typedArray;
         var typed_array_ctor;
-        var has_extension = ctx._lux_globals.webgl_extensions.OES_element_index_uint;
+        var has_extension = ctx._luxGlobals.webgl_extensions.OES_element_index_uint;
         if (has_extension)
             typed_array_ctor = Uint32Array;
         else
@@ -10169,25 +10169,25 @@ Lux.id_buffer = function(vertex_array)
 
 function initialize_context_globals(gl)
 {
-    gl._lux_globals = {};
+    gl._luxGlobals = {};
 
     // batches can currently be rendered in "draw" or "pick" mode.
     // draw: 0
     // pick: 1
     // these are indices into an array defined inside Lux.bake
     // For legibility, they should be strings, but for speed, they'll be integers.
-    gl._lux_globals.batch_render_mode = 0;
+    gl._luxGlobals.batch_render_mode = 0;
 
     // epoch is the initial time being tracked by the context.
-    gl._lux_globals.epoch = new Date().getTime() / 1000;
+    gl._luxGlobals.epoch = new Date().getTime() / 1000;
 
-    gl._lux_globals.devicePixelRatio = undefined;
+    gl._luxGlobals.devicePixelRatio = undefined;
 
     // Optional, enabled WebGL extensions go here.
-    gl._lux_globals.webgl_extensions = {};
+    gl._luxGlobals.webgl_extensions = {};
 
     // from https://developer.mozilla.org/en-US/docs/JavaScript/Typed_arrays/DataView
-    gl._lux_globals.little_endian = (function() {
+    gl._luxGlobals.little_endian = (function() {
         var buffer = new ArrayBuffer(2);
         new DataView(buffer).setInt16(0, 256, true);
         return new Int16Array(buffer)[0] === 256;
@@ -10206,8 +10206,8 @@ function polyfill_event(event, gl)
         event.offsetY = event.pageY - targetOffset.top;
     }
     
-    event.luxX = event.offsetX * gl._lux_globals.devicePixelRatio;
-    event.luxY = gl.viewportHeight - event.offsetY * gl._lux_globals.devicePixelRatio;
+    event.luxX = event.offsetX * gl._luxGlobals.devicePixelRatio;
+    event.luxY = gl.viewportHeight - event.offsetY * gl._luxGlobals.devicePixelRatio;
 }
 
 Lux.init = function(opts)
@@ -10336,7 +10336,7 @@ Lux.init = function(opts)
         function enable_if_existing(name) {
             if (exts.indexOf(name) !== -1 &&
                 gl.getExtension(name) !== null) {
-                gl._lux_globals.webgl_extensions[name] = true;
+                gl._luxGlobals.webgl_extensions[name] = true;
             }
         }
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
@@ -10352,14 +10352,14 @@ Lux.init = function(opts)
                 "EXT_texture_filter_anisotropic"], 
                function(ext) {
                    if (exts.indexOf(ext) !== -1 && (gl.getExtension(ext) !== null)) {
-                       gl._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic = true;
+                       gl._luxGlobals.webgl_extensions.EXT_texture_filter_anisotropic = true;
                        gl.TEXTURE_MAX_ANISOTROPY_EXT     = 0x84FE;
                        gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FF;
                    }
                });
         if (exts.indexOf("OES_element_index_uint") !== -1 &&
             gl.getExtension("OES_element_index_uint") !== null) {
-            gl._lux_globals.webgl_extensions.OES_element_index_uint = true;
+            gl._luxGlobals.webgl_extensions.OES_element_index_uint = true;
         }
     } catch(e) {
         alert(e);
@@ -10370,7 +10370,7 @@ Lux.init = function(opts)
         throw new Error("failed initalization");
     }
 
-    gl._lux_globals.devicePixelRatio = devicePixelRatio;
+    gl._luxGlobals.devicePixelRatio = devicePixelRatio;
 
     Lux.set_context(gl);
 
@@ -10406,13 +10406,13 @@ Lux.init = function(opts)
     gl.parameters.now = Shade.parameter("float", 0);
     gl.parameters.frame_duration = Shade.parameter("float", 0);
 
-    gl._lux_globals.scene = Lux.default_scene({
+    gl._luxGlobals.scene = Lux.default_scene({
         context: gl,
         clearColor: opts.clearColor,
         clearDepth: opts.clearDepth,
         pre_draw: function() {
             var raw_t = new Date().getTime() / 1000;
-            var new_t = raw_t - gl._lux_globals.epoch;
+            var new_t = raw_t - gl._luxGlobals.epoch;
             var old_t = gl.parameters.now.get();
             gl.parameters.frame_duration.set(new_t - old_t);
             gl.parameters.now.set(new_t);
@@ -10421,8 +10421,8 @@ Lux.init = function(opts)
     });
 
     if ("interactor" in opts) {
-        gl._lux_globals.scene.add(opts.interactor.scene);
-        gl._lux_globals.scene = opts.interactor.scene;
+        gl._luxGlobals.scene.add(opts.interactor.scene);
+        gl._luxGlobals.scene = opts.interactor.scene;
     }
 
     return gl;
@@ -10616,13 +10616,13 @@ Lux.Picker = {
             });
         }
 
-        callback = callback || function() { Lux._globals.ctx._lux_globals.scene.draw(); };
-        var old_scene_render_mode = ctx._lux_globals.batch_render_mode;
-        ctx._lux_globals.batch_render_mode = 1;
+        callback = callback || function() { Lux._globals.ctx._luxGlobals.scene.draw(); };
+        var old_scene_render_mode = ctx._luxGlobals.batch_render_mode;
+        ctx._luxGlobals.batch_render_mode = 1;
         try {
             rb.with_bound_buffer(callback);
         } finally {
-            ctx._lux_globals.batch_render_mode = old_scene_render_mode;
+            ctx._luxGlobals.batch_render_mode = old_scene_render_mode;
         }
     },
     pick: function(x, y) {
@@ -11045,7 +11045,7 @@ Lux.texture = function(opts)
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_MIN_FILTER, opts.min_filter);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, opts.wrap_s);
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, opts.wrap_t);
-        if (ctx._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic &&
+        if (ctx._luxGlobals.webgl_extensions.EXT_texture_filter_anisotropic &&
             opts.max_anisotropy > 1 && opts.mipmaps) {
             ctx.texParameterf(ctx.TEXTURE_2D, ctx.TEXTURE_MAX_ANISOTROPY_EXT, opts.max_anisotropy);
         }
@@ -11130,9 +11130,9 @@ Lux.Unprojector = {
             });
         }
 
-        callback = callback || ctx._lux_globals.display_callback;
-        var old_scene_render_mode = ctx._lux_globals.batch_render_mode;
-        ctx._lux_globals.batch_render_mode = 2;
+        callback = callback || ctx._luxGlobals.display_callback;
+        var old_scene_render_mode = ctx._luxGlobals.batch_render_mode;
+        ctx._luxGlobals.batch_render_mode = 2;
         rb.with_bound_buffer(function() {
             var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
             var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
@@ -11148,7 +11148,7 @@ Lux.Unprojector = {
                                old_clear_color[1],
                                old_clear_color[2],
                                old_clear_color[3]);
-                ctx._lux_globals.batch_render_mode = old_scene_render_mode;
+                ctx._luxGlobals.batch_render_mode = old_scene_render_mode;
             }
         });
     },
@@ -19576,7 +19576,7 @@ Lux.Geometry.PLY.load = function(url, k) {
                 row_offset += property_size(prop);
             });
             var n_props = row_offsets.length;
-            var endian = Lux._globals.ctx._lux_globals.little_endian;
+            var endian = Lux._globals.ctx._luxGlobals.little_endian;
             for (var i=0; i<element_header.count; ++i) {
                 var row = _.map(lines[current_line].trim().split(' '), Number);
                 current_line++;
@@ -20184,7 +20184,7 @@ Lux.Marks.dots = function(opts)
 
     var fill_color     = Shade(opts.fill_color);
     var stroke_color   = Shade(opts.stroke_color);
-    var point_diameter = Shade(opts.point_diameter).mul(ctx._lux_globals.devicePixelRatio);
+    var point_diameter = Shade(opts.point_diameter).mul(ctx._luxGlobals.devicePixelRatio);
     var stroke_width   = Shade(opts.stroke_width).add(1);
     var use_alpha      = Shade(opts.alpha);
     opts.plain = Shade(opts.plain);
@@ -20288,7 +20288,7 @@ Lux.Marks.rectangle_brush = function(opts)
     var handlers = {
         mousedown: function(event) {
             if (opts.accept_event(event)) {
-                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                var xy_v = unproject(vec.make([event.luxX / gl._luxGlobals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
                 b1 = xy_v;
                 selection_pt1.set(xy_v);
                 brush_is_active = true;
@@ -20301,7 +20301,7 @@ Lux.Marks.rectangle_brush = function(opts)
             if (!brush_is_active)
                 return true;
             if (opts.accept_event(event)) {
-                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                var xy_v = unproject(vec.make([event.luxX / gl._luxGlobals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
                 selection_pt2.set(xy_v);
                 var b2 = xy_v;
                 opts.on.brush_changed && opts.on.brush_changed(b1, b2);
@@ -20315,7 +20315,7 @@ Lux.Marks.rectangle_brush = function(opts)
                 return true;
             brush_is_active = false;
             if (opts.accept_event(event)) {
-                var xy_v = unproject(vec.make([event.luxX / gl._lux_globals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
+                var xy_v = unproject(vec.make([event.luxX / gl._luxGlobals.devicePixelRatio, event.luxY / gl._lux_globals.devicePixelRatio]));
                 selection_pt2.set(xy_v);
                 var b2 = xy_v;
                 if (opts.on.brush_changed) {
@@ -23200,7 +23200,7 @@ Lux.default_scene = function(opts)
     // quite a bit. Since the picker infrastructure should be overhauled anyway,
     // we stick with this hack until we fix everything.
     function clear() {
-        switch (ctx._lux_globals.batch_render_mode) {
+        switch (ctx._luxGlobals.batch_render_mode) {
         case 1:
         case 2:
             ctx.clearDepth(clearDepth);
@@ -23227,7 +23227,7 @@ Lux.Scene.add = function(obj, ctx)
     if (_.isUndefined(ctx)) {
         ctx = Lux._globals.ctx;
     }
-    var scene = ctx._lux_globals.scene;
+    var scene = ctx._luxGlobals.scene;
 
     return scene.add(obj);
 };
@@ -23236,12 +23236,12 @@ Lux.Scene.remove = function(obj, ctx)
     if (_.isUndefined(ctx)) {
         ctx = Lux._globals.ctx;
     }
-    var scene = ctx._lux_globals.scene;
+    var scene = ctx._luxGlobals.scene;
     scene.remove(obj);
 };
 Lux.Scene.render = function()
 {
-    var scene = Lux._globals.ctx._lux_globals.scene;
+    var scene = Lux._globals.ctx._luxGlobals.scene;
     for (var i=0; i<scene.length; ++i) {
         scene[i].draw();
     }
@@ -23251,7 +23251,7 @@ Lux.Scene.animate = function(tick_function, ctx)
     if (_.isUndefined(ctx)) {
         ctx = Lux._globals.ctx;
     }
-    var scene = ctx._lux_globals.scene;
+    var scene = ctx._luxGlobals.scene;
 
     return scene.animate(tick_function);
 };
@@ -23260,7 +23260,7 @@ Lux.Scene.on = function(ename, event, ctx)
     if (_.isUndefined(ctx)) {
         ctx = Lux._globals.ctx;
     }
-    var scene = ctx._lux_globals.scene;
+    var scene = ctx._luxGlobals.scene;
 
     return scene.on(ename, event);
 };
@@ -23269,7 +23269,7 @@ Lux.Scene.invalidate = function(pre_display, post_display, ctx)
     if (_.isUndefined(ctx)) {
         ctx = Lux._globals.ctx;
     }
-    var scene = ctx._lux_globals.scene;
+    var scene = ctx._luxGlobals.scene;
 
     return scene.invalidate(pre_display, post_display);
 };
