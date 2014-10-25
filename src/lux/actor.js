@@ -28,12 +28,12 @@ Lux.actor = function(opts)
     var batch;
     return {
         dress: function(scene) {
-            var xform = scene.get_transform();
-            var this_appearance = xform(appearance);
-            return bake(model, this_appearance);
+            var xform = scene.getTransform();
+            var thisAppearance = xform(appearance);
+            return bake(model, thisAppearance);
         },
-        on: function(event_name, event) {
-            return opts.on(event_name, event);
+        on: function(eventName, event) {
+            return opts.on(eventName, event);
         }
     };
 };
@@ -53,9 +53,9 @@ Lux.actor_list = function(actors_list)
                 }
             };
         },
-        on: function(event_name, event) {
+        on: function(eventName, event) {
             for (var i=0; i<actors_list.length; ++i) {
-                if (!actors_list[i].on(event_name, event))
+                if (!actors_list[i].on(eventName, event))
                     return false;
             }
             return true;
@@ -106,8 +106,8 @@ Lux.actor_many = function(opts)
                 }
             };
         },
-        on: function(event_name, event) {
-            return opts.on(event_name, event);
+        on: function(eventName, event) {
+            return opts.on(eventName, event);
         }
     };
 };

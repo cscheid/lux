@@ -266,7 +266,7 @@ Lux.Marks.globe_2d = function(opts)
         },
         dress: function(scene) {
             var tile_batch = tile_actor.dress(scene);
-            var xf = scene.get_transform().inverse;
+            var xf = scene.getTransform().inverse;
             if (!has_interactor) {
                 get_center_zoom = function() {
                     var p1 = unproject(vec.make([0, 0]));

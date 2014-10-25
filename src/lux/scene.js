@@ -39,7 +39,7 @@ Lux.scene = function(opts)
     var parent_scene = undefined;
     var scene = {
         context: ctx,
-        get_transform: function() { return transform; },
+        getTransform: function() { return transform; },
 
         add: function(actor) {
             actor_list.push(actor);
@@ -157,11 +157,11 @@ Lux.scene = function(opts)
             // reset transform, then re-add things to batch list.
             transform = function(appearance) {
                 appearance = opts.transform(appearance);
-                appearance = parent_scene.get_transform()(appearance);
+                appearance = parent_scene.getTransform()(appearance);
                 return appearance;
             };
             transform.inverse = function(appearance) {
-                appearance = parent_scene.get_transform().inverse(appearance);
+                appearance = parent_scene.getTransform().inverse(appearance);
                 appearance = opts.transform.inverse(appearance);
                 return appearance;
             };

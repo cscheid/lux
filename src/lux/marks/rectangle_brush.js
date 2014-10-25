@@ -70,7 +70,7 @@ Lux.Marks.rectangle_brush = function(opts)
     return {
         dress: function(scene) {
             var ctx = Lux._globals.ctx;
-            var xform = scene.get_transform();
+            var xform = scene.getTransform();
             var half_screen_size = Shade.vec(ctx.parameters.width, ctx.parameters.height).div(2);
             unproject = Shade(function(p) {
                 return xform.inverse({position: p.div(half_screen_size).sub(Shade.vec(1,1))}).position;
