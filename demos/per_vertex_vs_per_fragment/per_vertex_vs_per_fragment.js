@@ -1,15 +1,15 @@
 var S = Shade;
 var gl;
-var sphere, sphere_prog, sphere_drawable;
-var current_mode;
-var current_rotation = 0;
+var sphere, sphereProg, sphereDrawable;
+var currentMode;
+var currentRotation = 0;
 var mvp;
 var Models = Lux.Models;
 
 //////////////////////////////////////////////////////////////////////////////
 
 // from colorbrewer2.org
-var brewer_colormap = S.Utils.lerp([
+var brewerColormap = S.Utils.lerp([
     S.vec(140/255, 81/255, 10/255),
     S.vec(191/255, 129/255, 45/255),
     S.vec(223/255, 194/255, 125/255),
@@ -33,53 +33,53 @@ function display()
     // ortho(-5, 5, -5, 5, -5, 5);
     var pMatrix = Lux.perspective(45, 720/480, 1.0, 100.0);
     var mvMatrix = mat4.product(Lux.translation(0, 0, -5),
-                                Lux.rotation(current_rotation, [0,1,0]));
+                                Lux.rotation(currentRotation, [0,1,0]));
     mvp.set(mat4.product(pMatrix, mvMatrix));
-    sphere_drawable[current_mode].draw();
+    sphereDrawable[currentMode].draw();
 }
 
-function init_webgl()
+function initWebgl()
 {
     mvp = S.parameter("mat4");
 
     sphere = Models.sphere(10, 10);
 
-    var sphere_model_vertex = sphere.vertex;
-    var position = mvp.mul(sphere_model_vertex);
-    var vVal = S.per_vertex(sphere_model_vertex.swizzle("x").add(1).mul(0.5));
+    var sphereModelVertex = sphere.vertex;
+    var position = mvp.mul(sphereModelVertex);
+    var vVal = S.perVertex(sphereModelVertex.swizzle("x").add(1).mul(0.5));
 
     var p1 = Lux.bake(sphere, { 
         position: position,
-        color: S.vec(S.per_vertex(brewer_colormap(vVal)), 1)
+        color: S.vec(S.perVertex(brewerColormap(vVal)), 1)
     });
 
     var p2 = Lux.bake(sphere, {
         position: position,
-        color: S.vec(brewer_colormap(S.per_vertex(vVal)), 1)
+        color: S.vec(brewerColormap(S.perVertex(vVal)), 1)
     });
 
-    sphere_drawable = {
-        per_vertex: p1,
-        per_fragment: p2
+    sphereDrawable = {
+        perVertex: p1,
+        perFragment: p2
     };
 }
 
 $().ready(function() {
     var canvas = document.getElementById("foo");
-    current_mode = "per_vertex";
+    currentMode = "per_vertex";
     $("#vp_button").click(function() {
-        current_mode = "per_vertex";
+        currentMode = "per_vertex";
     });
     $("#fp_button").click(function() {
-        current_mode = "per_fragment";
+        currentMode = "per_fragment";
     });
     gl = Lux.init();
-    init_webgl();
+    initWebgl();
     var start = new Date().getTime();
     var f = function () {
         window.requestAnimationFrame(f, canvas);
         var elapsed = new Date().getTime() - start;
-        current_rotation = (elapsed / 20) * (Math.PI / 180);
+        currentRotation = (elapsed / 20) * (Math.PI / 180);
         display();
     };
     f();

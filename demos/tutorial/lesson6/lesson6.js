@@ -2,42 +2,42 @@ function actors(texture)
 {
     var gl = Lux._globals.ctx;
     var angle = gl.parameters.now.mul(50).radians();
-    var model = Lux.Models.flat_cube();
-    var material_color = Shade.texture2D(texture, model.tex_coord);
-    var light_model_mat = Shade.rotation(angle, Shade.vec(1, 1, 1));
-    var cube_model_mat = Shade.rotation(angle.div(-5), Shade.vec(1, 1, 0));
+    var model = Lux.Models.flatCube();
+    var materialColor = Shade.texture2D(texture, model.texCoord);
+    var lightModelMat = Shade.rotation(angle, Shade.vec(1, 1, 1));
+    var cubeModelMat = Shade.rotation(angle.div(-5), Shade.vec(1, 1, 0));
 
-    var light_position = light_model_mat(Shade.vec(0, 0, 2));
+    var lightPosition = lightModelMat(Shade.vec(0, 0, 2));
 
-    var ambient_parameter = Shade.parameter("float", 0.3);
-    var ambient_light = Shade.Light.ambient({ 
-        color: Shade.vec(1,1,1).mul(ambient_parameter)
+    var ambientParameter = Shade.parameter("float", 0.3);
+    var ambientLight = Shade.Light.ambient({ 
+        color: Shade.vec(1,1,1).mul(ambientParameter)
     });
 
-    var diffuse_parameter = Shade.parameter("float", 1);
-    var diffuse_light_color = Shade.vec(1,1,1).mul(diffuse_parameter);
-    var diffuse_light = Shade.Light.diffuse({
-        position: light_position,
-        color: diffuse_light_color
+    var diffuseParameter = Shade.parameter("float", 1);
+    var diffuseLightColor = Shade.vec(1,1,1).mul(diffuseParameter);
+    var diffuseLight = Shade.Light.diffuse({
+        position: lightPosition,
+        color: diffuseLightColor
     });
 
-    Lux.UI.parameter_slider({
-        parameter: ambient_parameter,
+    Lux.UI.parameterSlider({
+        parameter: ambientParameter,
         element: "#ambient",
         min: 0,
         max: 1
     });
-    Lux.UI.parameter_slider({
-        parameter: diffuse_parameter,
+    Lux.UI.parameterSlider({
+        parameter: diffuseParameter,
         element: "#diffuse",
         min: 0,
         max: 1
     });
 
-    var material_opts = {
-        color: material_color,
-        position: cube_model_mat(model.vertex),
-        normal: cube_model_mat(model.normal)
+    var materialOpts = {
+        color: materialColor,
+        position: cubeModelMat(model.vertex),
+        normal: cubeModelMat(model.normal)
     };
 
     var sphere = Lux.Models.sphere();
@@ -46,18 +46,18 @@ function actors(texture)
         Lux.actor({
             model: model, 
             appearance: {
-                position: cube_model_mat(model.vertex),
-                color: ambient_light(material_opts)
-                    .add(diffuse_light(material_opts))
+                position: cubeModelMat(model.vertex),
+                color: ambientLight(materialOpts)
+                    .add(diffuseLight(materialOpts))
             }}),
         // draw a little flying lamp to make it somewhat more obvious where the light is coming from
         Lux.actor({
             model: sphere, 
             appearance: {
-                position: Shade.translation(light_position.swizzle("xyz"))
+                position: Shade.translation(lightPosition.swizzle("xyz"))
                 (Shade.scaling(0.05))
                 (sphere.vertex),
-                color: Shade.vec(diffuse_light_color, 1)
+                color: Shade.vec(diffuseLightColor, 1)
             }})];
 }
 
@@ -66,13 +66,13 @@ $().ready(function () {
         clearColor: [0,0,0,0.2]
     });
 
-    var cube_model = Lux.Models.flat_cube();
+    var cubeModel = Lux.Models.flatCube();
 
     Lux.texture({ 
         src: "../../img/crate.jpg",
         onload: function() {
             var camera = Lux.Scene.Transform.Camera.perspective({
-                look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
+                lookAt: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
             });
             Lux.Scene.add(camera);
             _.each(actors(this), function(actor) { camera.add(actor); });

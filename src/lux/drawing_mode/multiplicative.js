@@ -1,5 +1,5 @@
 Lux.DrawingMode.multiplicative = {
-    set_draw_caps: function()
+    setDrawCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.enable(ctx.BLEND);
@@ -8,14 +8,14 @@ Lux.DrawingMode.multiplicative = {
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
     },
-    set_pick_caps: function()
+    setPickCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
     },
-    set_unproject_caps: function()
+    setUnprojectCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);

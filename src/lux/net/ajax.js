@@ -16,10 +16,10 @@
 
 Lux.Net.ajax = function(url, handler)
 {
-    var current_context = Lux._globals.ctx;
+    var currentContext = Lux._globals.ctx;
 
-    if (Lux.type_of(url) === "array")
-        return handle_many(url, handler, Lux.Net.ajax);
+    if (Lux.typeOf(url) === "array")
+        return handleMany(url, handler, Lux.Net.ajax);
 
     var xhr = new XMLHttpRequest;
 
@@ -28,7 +28,7 @@ Lux.Net.ajax = function(url, handler)
     var ready = false;
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200 && !ready) {
-            Lux.setContext(current_context);
+            Lux.setContext(currentContext);
             handler(xhr.response, url);
             ready = true;
         }

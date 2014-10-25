@@ -1,6 +1,6 @@
 (function() {
 
-function is_valid_basic_type(repr) {
+function isValidBasicType(repr) {
     if (repr === 'float') return true;
     if (repr === 'int') return true;
     if (repr === 'bool') return true;
@@ -23,63 +23,63 @@ function is_valid_basic_type(repr) {
 }
 
 Shade.Types.basic = function(repr) {
-    if (!is_valid_basic_type(repr)) {
+    if (!isValidBasicType(repr)) {
         throw new Error("invalid basic type '" + repr + "'");
     }
     return Shade.Types[repr];
 };
 
-Shade.Types._create_basic = function(repr) { 
-    return Shade._create(Shade.Types.base_t, {
-        declare: function(glsl_name) { return repr + " " + glsl_name; },
+Shade.Types._createBasic = function(repr) { 
+    return Shade._create(Shade.Types.baseT, {
+        declare: function(glslName) { return repr + " " + glslName; },
         repr: function() { return repr; },
         swizzle: function(pattern) {
-            if (!this.is_vec()) {
+            if (!this.isVec()) {
                 throw new Error("swizzle requires a vec");
             }
-            var base_repr = this.repr();
-            var base_size = Number(base_repr[base_repr.length-1]);
+            var baseRepr = this.repr();
+            var baseSize = Number(baseRepr[baseRepr.length-1]);
 
-            var valid_re, group_res;
-            switch (base_size) {
+            var validRe, groupRes;
+            switch (baseSize) {
             case 2:
-                valid_re = /[rgxyst]+/;
-                group_res = [ /[rg]/, /[xy]/, /[st]/ ];
+                validRe = /[rgxyst]+/;
+                groupRes = [ /[rg]/, /[xy]/, /[st]/ ];
                 break;
             case 3:
-                valid_re = /[rgbxyzstp]+/;
-                group_res = [ /[rgb]/, /[xyz]/, /[stp]/ ];
+                validRe = /[rgbxyzstp]+/;
+                groupRes = [ /[rgb]/, /[xyz]/, /[stp]/ ];
                 break;
             case 4:
-                valid_re = /[rgbaxyzwstpq]+/;
-                group_res = [ /[rgba]/, /[xyzw]/, /[stpq]/ ];
+                validRe = /[rgbaxyzwstpq]+/;
+                groupRes = [ /[rgba]/, /[xyzw]/, /[stpq]/ ];
                 break;
             default:
                 throw new Error("internal error on swizzle");
             }
-            if (!pattern.match(valid_re)) {
+            if (!pattern.match(validRe)) {
                 throw new Error("invalid swizzle pattern '" + pattern + "'");
             }
             var count = 0;
-            for (var i=0; i<group_res.length; ++i) {
-                if (pattern.match(group_res[i])) count += 1;
+            for (var i=0; i<groupRes.length; ++i) {
+                if (pattern.match(groupRes[i])) count += 1;
             }
             if (count != 1) {
                 throw new Error("swizzle pattern '" + pattern + 
                        "' belongs to more than one group");
             }
             if (pattern.length === 1) {
-                return this.array_base();
+                return this.arrayBase();
             } else {
-                var type_str = base_repr.substring(0, base_repr.length-1) + pattern.length;
-                return Shade.Types[type_str];
+                var typeStr = baseRepr.substring(0, baseRepr.length-1) + pattern.length;
+                return Shade.Types[typeStr];
             }
         },
-        is_pod: function() {
+        isPod: function() {
             var repr = this.repr();
             return ["float", "bool", "int"].indexOf(repr) !== -1;
         },
-        is_vec: function() {
+        isVec: function() {
             var repr = this.repr();
             if (repr.substring(0, 3) === "vec")
                 return true;
@@ -89,13 +89,13 @@ Shade.Types._create_basic = function(repr) {
                 return true;
             return false;
         },
-        is_mat: function() {
+        isMat: function() {
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")
                 return true;
             return false;
         },
-        vec_dimension: function() {
+        vecDimension: function() {
             var repr = this.repr();
             if (repr.substring(0, 3) === "vec")
                 return parseInt(repr[3], 10);
@@ -105,61 +105,61 @@ Shade.Types._create_basic = function(repr) {
             if (this.repr() === 'float'
                 || this.repr() === 'int'
                 || this.repr() === 'bool')
-                // This is convenient: assuming vec_dimension() === 1 for POD 
+                // This is convenient: assuming vecDimension() === 1 for POD 
                 // lets me pretend floats, ints and bools are vec1, ivec1 and bvec1.
                 // 
                 // However, this might have
                 // other bad consequences I have not thought of.
                 //
-                // For example, I cannot make float_t.is_vec() be true, because
+                // For example, I cannot make floatT.isVec() be true, because
                 // this would allow sizzling from a float, which GLSL disallows.
                 return 1;
-            if (!this.is_vec()) {
-                throw new Error("is_vec() === false, cannot call vec_dimension");
+            if (!this.isVec()) {
+                throw new Error("isVec() === false, cannot call vecDimension");
             }
             throw new Error("internal error");
         },
-        is_array: function() {
+        isArray: function() {
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")
                 return true;
-            if (this.is_vec())
+            if (this.isVec())
                 return true;
             return false;
         },
-        array_base: function() {
+        arrayBase: function() {
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")
                 return Shade.Types["vec" + repr[3]];
             if (repr.substring(0, 3) === "vec")
-                return Shade.Types.float_t;
+                return Shade.Types.floatT;
             if (repr.substring(0, 4) === "bvec")
-                return Shade.Types.bool_t;
+                return Shade.Types.boolT;
             if (repr.substring(0, 4) === "ivec")
-                return Shade.Types.int_t;
+                return Shade.Types.intT;
             if (repr === "float")
-                return Shade.Types.float_t;
+                return Shade.Types.floatT;
             throw new Error("datatype not array");
         },
-        size_for_vec_constructor: function() {
+        sizeForVecConstructor: function() {
             var repr = this.repr();
-            if (this.is_array())
-                return this.array_size();
+            if (this.isArray())
+                return this.arraySize();
             if (repr === 'float' ||
                 repr === 'bool' ||
                 repr === 'int')
                 return 1;
             throw new Error("not usable inside vec constructor");
         },
-        array_size: function() {
-            if (this.is_vec())
-                return this.vec_dimension();
+        arraySize: function() {
+            if (this.isVec())
+                return this.vecDimension();
             var repr = this.repr();
             if (repr.substring(0, 3) === "mat")  
                 return parseInt(repr[3], 10);
             throw new Error("datatype not array");
         },
-        is_floating: function() {
+        isFloating: function() {
             var repr = this.repr();
             if (repr === "float")
                 return true;
@@ -169,7 +169,7 @@ Shade.Types._create_basic = function(repr) {
                 return true;
             return false;
         },
-        is_integral: function() {
+        isIntegral: function() {
             var repr = this.repr();
             if (repr === "int")
                 return true;
@@ -177,43 +177,43 @@ Shade.Types._create_basic = function(repr) {
                 return true;
             return false;
         },
-        is_sampler: function() {
+        isSampler: function() {
             var repr = this.repr();
             if (repr === 'sampler2D')
                 return true;
             return false;
         },
-        element_type: function(i) {
-            if (this.is_pod()) {
+        elementType: function(i) {
+            if (this.isPod()) {
                 if (i === 0)
                     return this;
                 else
                     throw new Error("invalid call: " + this.repr() + " is atomic");
-            } else if (this.is_vec()) {
+            } else if (this.isVec()) {
                 var f = this.repr()[0];
-                var d = this.array_size();
+                var d = this.arraySize();
                 if (i < 0 || i >= d) {
                     throw new Error("invalid call: " + this.repr() + 
                                     " has no element " + i);
                 }
                 if (f === 'v')
-                    return Shade.Types.float_t;
+                    return Shade.Types.floatT;
                 else if (f === 'b')
-                    return Shade.Types.bool_t;
+                    return Shade.Types.boolT;
                 else if (f === 'i')
-                    return Shade.Types.int_t;
+                    return Shade.Types.intT;
                 else
                     throw new Error("internal error");
             } else
                 // FIXME implement this
                 throw new Error("unimplemented for mats");
         },
-        value_equals: function(v1, v2) {
-            if (this.is_pod())
+        valueEquals: function(v1, v2) {
+            if (this.isPod())
                 return v1 === v2;
-            if (this.is_vec())
+            if (this.isVec())
                 return vec.equal(v1, v2);
-            if (this.is_mat())
+            if (this.isMat())
                 return mat.equal(v1, v2);
             throw new Error("bad type for equality comparison: " + this.repr());
         }

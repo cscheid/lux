@@ -1,24 +1,24 @@
 /*
- * Lux.attribute_buffer_view builds an attribute_buffer object from an
+ * Lux.attributeBufferView builds an attributeBuffer object from an
  * Lux.buffer object, instead of an array (or typed array). The main
- * use case for attribute_buffer_view is to allow one to build
- * several attribute_buffer_views over the same Lux.buffer, for efficient
+ * use case for attributeBufferView is to allow one to build
+ * several attributeBufferViews over the same Lux.buffer, for efficient
  * strided attribute buffers (which share the same buffer)
  * 
- * The main difference between calling Lux.attribute_buffer_view and
- * Lux.attribute_buffer is that attribute_buffer_view takes a "buffer"
+ * The main difference between calling Lux.attributeBufferView and
+ * Lux.attributeBuffer is that attributeBufferView takes a "buffer"
  * parameter instead of an "array" parameter.
  * 
  */
 
-Lux.attribute_buffer_view = function(opts)
+Lux.attributeBufferView = function(opts)
 {
     var ctx = Lux._globals.ctx;
     opts = _.defaults(opts, {
-        item_size: 3,
-        item_type: 'float',
+        itemSize: 3,
+        itemType: 'float',
         normalized: false,
-        keep_array: false,
+        keepArray: false,
         stride: 0,
         offset: 0
     });
@@ -27,44 +27,44 @@ Lux.attribute_buffer_view = function(opts)
         throw new Error("opts.buffer must be defined");
     }
 
-    var itemSize = opts.item_size;
+    var itemSize = opts.itemSize;
     if ([1,2,3,4].indexOf(itemSize) === -1) {
-        throw new Error("opts.item_size must be one of 1, 2, 3, or 4");
+        throw new Error("opts.itemSize must be one of 1, 2, 3, or 4");
     }
 
     var normalized = opts.normalized;
-    if (Lux.type_of(normalized) !== "boolean") {
+    if (Lux.typeOf(normalized) !== "boolean") {
         throw new Error("opts.normalized must be boolean");
     }
 
-    var gl_enum_typed_array_map = {
-        'float': { webgl_enum: ctx.FLOAT, typed_array_ctor: Float32Array, size: 4 },
-        'short': { webgl_enum: ctx.SHORT, typed_array_ctor: Int16Array, size: 2 },
-        'ushort': { webgl_enum: ctx.UNSIGNED_SHORT, typed_array_ctor: Uint16Array, size: 2 },
-        'byte': { webgl_enum: ctx.BYTE, typed_array_ctor: Int8Array, size: 1 },
-        'ubyte': { webgl_enum: ctx.UNSIGNED_BYTE, typed_array_ctor: Uint8Array, size: 1 }
+    var glEnumTypedArrayMap = {
+        'float': { webglEnum: ctx.FLOAT, typedArrayCtor: Float32Array, size: 4 },
+        'short': { webglEnum: ctx.SHORT, typedArrayCtor: Int16Array, size: 2 },
+        'ushort': { webglEnum: ctx.UNSIGNED_SHORT, typedArrayCtor: Uint16Array, size: 2 },
+        'byte': { webglEnum: ctx.BYTE, typedArrayCtor: Int8Array, size: 1 },
+        'ubyte': { webglEnum: ctx.UNSIGNED_BYTE, typedArrayCtor: Uint8Array, size: 1 }
     };
 
-    var itemType = gl_enum_typed_array_map[opts.item_type];
+    var itemType = glEnumTypedArrayMap[opts.itemType];
     if (_.isUndefined(itemType)) {
-        throw new Error("opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'");
+        throw new Error("opts.itemType must be 'float', 'short', 'ushort', 'byte' or 'ubyte'");
     }
 
-    function convert_array(array) {
+    function convertArray(array) {
         var numItems;
         if (array.constructor === Array) {
             if (array.length % itemSize) {
-                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                throw new Error("set: attributeBuffer expected length to be a multiple of " + 
                     itemSize + ", got " + array.length + " instead.");
             }
-            array = new itemType.typed_array_ctor(array);
-        } else if (array.constructor === itemType._typed_array_ctor) {
+            array = new itemType.typedArrayCtor(array);
+        } else if (array.constructor === itemType._typedArrayCtor) {
             if (array.length % itemSize) {
-                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                throw new Error("set: attributeBuffer expected length to be a multiple of " + 
                     itemSize + ", got " + array.length + " instead.");
             }
-        } else if (opts.vertex_array.constructor === ArrayBuffer) {
-            array = opts.vertex_array;
+        } else if (opts.vertexArray.constructor === ArrayBuffer) {
+            array = opts.vertexArray;
         }
         return array;
     }
@@ -77,20 +77,20 @@ Lux.attribute_buffer_view = function(opts)
         stride: opts.stride,
         offset: opts.offset,
         _ctx: ctx,
-        _shade_type: 'attribute_buffer',
-        _webgl_type: itemType.webgl_enum,
-        _typed_array_ctor: itemType.typed_array_ctor,
-        _word_length: itemType.size,
-        _item_byte_length: opts.stride || itemType.size * itemSize,
-        set: function(vertex_array) {
-            vertex_array = convert_array(vertex_array);
-            this.buffer.set(vertex_array);
-            this.numItems = this.buffer.byteLength / (this.stride || this.itemSize * this._word_length);
-            if (opts.keep_array) {
+        _shadeType: 'attributeBuffer',
+        _webglType: itemType.webglEnum,
+        _typedArrayCtor: itemType.typedArrayCtor,
+        _wordLength: itemType.size,
+        _itemByteLength: opts.stride || itemType.size * itemSize,
+        set: function(vertexArray) {
+            vertexArray = convertArray(vertexArray);
+            this.buffer.set(vertexArray);
+            this.numItems = this.buffer.byteLength / (this.stride || this.itemSize * this._wordLength);
+            if (opts.keepArray) {
                 this.array = this.buffer.array;
             }
         },
-        set_region: function() {
+        setRegion: function() {
             throw new Error("currently unimplemented");
         },
         //////////////////////////////////////////////////////////////////////
@@ -98,21 +98,21 @@ Lux.attribute_buffer_view = function(opts)
         bind: function(attribute) {
             Lux.setContext(ctx);
             ctx.bindBuffer(ctx.ARRAY_BUFFER, this.buffer);
-            ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, this.stride, this.offset);
+            ctx.vertexAttribPointer(attribute, this.itemSize, this._webglType, normalized, this.stride, this.offset);
         },
         draw: function(primitive) {
             Lux.setContext(ctx);
             ctx.drawArrays(primitive, 0, this.numItems);
         },
-        bind_and_draw: function(attribute, primitive) {
+        bindAndDraw: function(attribute, primitive) {
             // here we inline the calls to bind and draw to shave a redundant setContext.
             Lux.setContext(ctx);
             ctx.bindBuffer(ctx.ARRAY_BUFFER, this.buffer);
-            ctx.vertexAttribPointer(attribute, this.itemSize, this._webgl_type, normalized, this.stride, this.offset);
+            ctx.vertexAttribPointer(attribute, this.itemSize, this._webglType, normalized, this.stride, this.offset);
             ctx.drawArrays(primitive, 0, this.numItems);
         }
     };
-    if (opts.keep_array)
+    if (opts.keepArray)
         result.array = result.buffer.array;
     return result;
 };

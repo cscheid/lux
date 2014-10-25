@@ -1,42 +1,42 @@
-Lux.Models.mesh = function(u_secs, v_secs) {
+Lux.Models.mesh = function(uSectors, vSectors) {
     var verts = [];
     var elements = [];
-    if (_.isUndefined(v_secs)) v_secs = u_secs;
-    if (v_secs <= 0) throw new Error("v_secs must be positive");
-    if (u_secs <= 0) throw new Error("u_secs must be positive");
-    v_secs = Math.floor(v_secs);
-    u_secs = Math.floor(u_secs);
+    if (_.isUndefined(vSectors)) vSectors = uSectors;
+    if (vSectors <= 0) throw new Error("vSectors must be positive");
+    if (uSectors <= 0) throw new Error("uSectors must be positive");
+    vSectors = Math.floor(vSectors);
+    uSectors = Math.floor(uSectors);
     var i, j;    
-    for (i=0; i<=v_secs; ++i) {
-        var v = (i / v_secs);
-        for (j=0; j<=u_secs; ++j) {
-            var u = (j / u_secs);
+    for (i=0; i<=vSectors; ++i) {
+        var v = (i / vSectors);
+        for (j=0; j<=uSectors; ++j) {
+            var u = (j / uSectors);
             verts.push(u, v);
         }
     }
-    for (i=0; i<v_secs; ++i) {
-        for (j=0; j<=u_secs; ++j) {
-            elements.push(i * (u_secs + 1) + j,
-                          (i + 1) * (u_secs + 1) + j);
+    for (i=0; i<vSectors; ++i) {
+        for (j=0; j<=uSectors; ++j) {
+            elements.push(i * (uSectors + 1) + j,
+                          (i + 1) * (uSectors + 1) + j);
         }
         // set up a non-rasterizing triangle in the middle of the strip
         // to transition between strips.
-        if (i < v_secs-1) {
-            elements.push((i + 1) * (u_secs + 1) + u_secs,
-                          (i + 2) * (u_secs + 1),
-                          (i + 2) * (u_secs + 1)
+        if (i < vSectors-1) {
+            elements.push((i + 1) * (uSectors + 1) + uSectors,
+                          (i + 2) * (uSectors + 1),
+                          (i + 2) * (uSectors + 1)
                          );
         }
     }
 
-    var uv_attr = Shade(Lux.attribute_buffer({
-        vertex_array: verts, 
-        item_size: 2
+    var uvAttr = Shade(Lux.attributeBuffer({
+        vertexArray: verts, 
+        itemSize: 2
     }));
     return Lux.model({
-        type: "triangle_strip",
-        tex_coord: uv_attr,
-        vertex: uv_attr.mul(2).sub(1),
-        elements: Lux.element_buffer(elements)
+        type: "triangleStrip",
+        texCoord: uvAttr,
+        vertex: uvAttr.mul(2).sub(1),
+        elements: Lux.elementBuffer(elements)
     });
 };

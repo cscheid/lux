@@ -11,7 +11,7 @@ Lux.Mesh.indexed = function(vertices, elements)
 
     var normals;
 
-    function create_normals() {
+    function createNormals() {
         var normal = new Float32Array(vertices.length);
         var areas = new Float32Array(vertices.length / 3);
 
@@ -47,9 +47,9 @@ Lux.Mesh.indexed = function(vertices, elements)
 
     return {
         model: model,
-        make_normals: function() {
+        makeNormals: function() {
             if (!normals) {
-                normals = create_normals();
+                normals = createNormals();
                 this.model.add("normal", [normals, 3]);
             }
             return normals;

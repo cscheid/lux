@@ -16,8 +16,8 @@
 
 Lux.Net.json = function(url, handler)
 {
-    if (Lux.type_of(url) === "array")
-        return handle_many(url, handler, Lux.Net.json);
+    if (Lux.typeOf(url) === "array")
+        return handleMany(url, handler, Lux.Net.json);
 
     var xhr = new XMLHttpRequest;
 

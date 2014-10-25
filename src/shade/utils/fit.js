@@ -5,12 +5,12 @@ Shade.Utils.fit = function(data) {
     // this makes float attribute buffers work, but it might be confusing to the
     // user that there exist values v for which Shade.Utils.fit(v) works,
     // but Shade.Utils.fit(Shade.make(v)) does not
-    var t = data._shade_type;
-    if (t === 'attribute_buffer') {
+    var t = data._shadeType;
+    if (t === 'attributeBuffer') {
         if (data.itemSize !== 1)
             throw new Error("only dimension-1 attribute buffers are supported");
         if (_.isUndefined(data.array))
-            throw new Error("Shade.Utils.fit on attribute buffers requires keep_array:true in options");
+            throw new Error("Shade.Utils.fit on attribute buffers requires keepArray:true in options");
         data = data.array;
     }
 

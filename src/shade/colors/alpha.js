@@ -2,7 +2,7 @@ Shade.Colors.alpha = function(color, alpha)
 {
     color = Shade.make(color);
     alpha = Shade.make(alpha);
-    if (!alpha.type.equals(Shade.Types.float_t))
+    if (!alpha.type.equals(Shade.Types.floatT))
         throw new Error("alpha parameter must be float");
     if (color.type.equals(Shade.Types.vec4)) {
         return Shade.vec(color.swizzle("rgb"), alpha);

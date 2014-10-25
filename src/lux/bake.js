@@ -1,28 +1,28 @@
 (function() {
 
-var previous_batch_opts = {};
-Lux.get_current_batch_opts = function()
+var previousBatchOpts = {};
+Lux.getCurrentBatchOpts = function()
 {
-    return previous_batch_opts;
+    return previousBatchOpts;
 };
 
-Lux.unload_batch = function()
+Lux.unloadBatch = function()
 {
-    if (!previous_batch_opts._ctx)
+    if (!previousBatchOpts._ctx)
         return;
-    var ctx = previous_batch_opts._ctx;
-    if (previous_batch_opts.attributes) {
-        for (var key in previous_batch_opts.attributes) {
-            ctx.disableVertexAttribArray(previous_batch_opts.program[key]);
+    var ctx = previousBatchOpts._ctx;
+    if (previousBatchOpts.attributes) {
+        for (var key in previousBatchOpts.attributes) {
+            ctx.disableVertexAttribArray(previousBatchOpts.program[key]);
         }
-        _.each(previous_batch_opts.program.uniforms, function (uniform) {
-            delete uniform._lux_active_uniform;
+        _.each(previousBatchOpts.program.uniforms, function (uniform) {
+            delete uniform._luxActiveUniform;
         });
     }
 
-    if (previous_batch_opts.line_width)
+    if (previousBatchOpts.lineWidth)
         ctx.lineWidth(1.0);
-    if (previous_batch_opts.polygon_offset) {
+    if (previousBatchOpts.polygonOffset) {
         ctx.disable(ctx.POLYGON_OFFSET_FILL);
     }
 
@@ -32,27 +32,27 @@ Lux.unload_batch = function()
     ctx.disable(ctx.BLEND);
     ctx.depthMask(true);
 
-    previous_batch_opts = {};
+    previousBatchOpts = {};
 };
 
-function draw_it(batch_opts)
+function drawIt(batchOpts)
 {
-    if (_.isUndefined(batch_opts))
+    if (_.isUndefined(batchOpts))
         throw new Error("drawing mode undefined");
 
-    // When the batch_options object is different from the one previously drawn,
+    // When the batchOptions object is different from the one previously drawn,
     // we must set up the appropriate state for drawing.
-    if (batch_opts.batch_id !== previous_batch_opts.batch_id) {
-        var attributes = batch_opts.attributes || {};
-        var uniforms = batch_opts.uniforms || {};
-        var program = batch_opts.program;
+    if (batchOpts.batchId !== previousBatchOpts.batchId) {
+        var attributes = batchOpts.attributes || {};
+        var uniforms = batchOpts.uniforms || {};
+        var program = batchOpts.program;
         var key;
 
-        Lux.unload_batch();
-        previous_batch_opts = batch_opts;
-        batch_opts.set_caps();
+        Lux.unloadBatch();
+        previousBatchOpts = batchOpts;
+        batchOpts.setCaps();
 
-        var ctx = batch_opts._ctx;
+        var ctx = batchOpts._ctx;
         ctx.useProgram(program);
 
         for (key in attributes) {
@@ -61,7 +61,7 @@ function draw_it(batch_opts)
                 ctx.enableVertexAttribArray(attr);
                 var buffer = attributes[key].get();
                 if (!buffer) {
-                    throw new Error("Unset Shade.attribute " + attributes[key]._attribute_name);
+                    throw new Error("Unset Shade.attribute " + attributes[key]._attributeName);
                 }
                 buffer.bind(attr);
             }
@@ -69,15 +69,15 @@ function draw_it(batch_opts)
         
         var currentActiveTexture = 0;
         _.each(program.uniforms, function(uniform) {
-            var key = uniform.uniform_name;
-            var call = uniform.uniform_call,
+            var key = uniform.uniformName;
+            var call = uniform.uniformCall,
                 value = uniform.get();
             if (_.isUndefined(value)) {
                 throw new Error("parameter " + key + " has not been set.");
             }
-            var t = Shade.Types.type_of(value);
-            if (t.equals(Shade.Types.other_t)) {
-                uniform._lux_active_uniform = (function(uid, cat) {
+            var t = Shade.Types.typeOf(value);
+            if (t.equals(Shade.Types.otherT)) {
+                uniform._luxActiveUniform = (function(uid, cat) {
                     return function(v) {
                         ctx.activeTexture(ctx.TEXTURE0 + cat);
                         ctx.bindTexture(ctx.TEXTURE_2D, v);
@@ -85,16 +85,16 @@ function draw_it(batch_opts)
                     };
                 })(program[key], currentActiveTexture);
                 currentActiveTexture++;
-            } else if (t.equals(Shade.Types.float_t) || 
-                       t.equals(Shade.Types.bool_t) ||
+            } else if (t.equals(Shade.Types.floatT) || 
+                       t.equals(Shade.Types.boolT) ||
                        t.repr().substr(0,3) === "vec") {
-                uniform._lux_active_uniform = (function(call, uid) {
+                uniform._luxActiveUniform = (function(call, uid) {
                     return function(v) {
                         call.call(ctx, uid, v);
                     };
                 })(ctx[call], program[key]);
             } else if (t.repr().substr(0,3) === "mat") {
-                uniform._lux_active_uniform = (function(call, uid) {
+                uniform._luxActiveUniform = (function(call, uid) {
                     return function(v) {
                         ctx[call](uid, false, v);
                     };
@@ -102,22 +102,22 @@ function draw_it(batch_opts)
             } else {
                 throw new Error("could not figure out parameter type! " + t);
             }
-            uniform._lux_active_uniform(value);
+            uniform._luxActiveUniform(value);
         });
     }
 
-    batch_opts.draw_chunk();
+    batchOpts.drawChunk();
 }
 
-var largest_batch_id = 1;
+var largestBatchId = 1;
 
 Lux.bake = function(model, appearance, opts)
 {
-    appearance = Shade.canonicalize_program_object(appearance);
+    appearance = Shade.canonicalizeProgramObject(appearance);
     opts = _.defaults(opts || {}, {
-        force_no_draw: false,
-        force_no_pick: false,
-        force_no_unproject: false
+        forceNoDraw: false,
+        forceNoPick: false,
+        forceNoUnproject: false
     });
     var ctx = model._ctx || Lux._globals.ctx;
 
@@ -126,7 +126,7 @@ Lux.bake = function(model, appearance, opts)
     }
 
     // these are necessary outputs which must be compiled by Shade.program
-    function is_program_output(key)
+    function isProgramOutput(key)
     {
         return ["color", "position", "point_size",
                 "gl_FragColor", "gl_Position", "gl_PointSize"].indexOf(key) != -1;
@@ -140,42 +140,42 @@ Lux.bake = function(model, appearance, opts)
         throw new Error("position appearance attribute must be vec2, vec3 or vec4");
     }
 
-    var batch_id = Lux.fresh_pick_id();
+    var batchId = Lux.freshPickId();
 
-    function build_attribute_arrays_obj(prog) {
+    function buildAttributeArraysObj(prog) {
         return _.build(_.map(
-            prog.attribute_buffers, function(v) { return [v._attribute_name, v]; }
+            prog.attributeBuffers, function(v) { return [v._attributeName, v]; }
         ));
     }
 
-    function process_appearance(val_key_function) {
+    function processAppearance(valKeyFunction) {
         var result = {};
         _.each(appearance, function(value, key) {
-            if (is_program_output(key)) {
-                result[key] = val_key_function(value, key);
+            if (isProgramOutput(key)) {
+                result[key] = valKeyFunction(value, key);
             }
         });
         return Shade.program(result);
     }
 
-    function create_draw_program() {
-        return process_appearance(function(value, key) {
+    function createDrawProgram() {
+        return processAppearance(function(value, key) {
             return value;
         });
     }
 
-    function create_pick_program() {
-        var pick_id;
-        if (appearance.pick_id)
-            pick_id = Shade(appearance.pick_id);
+    function createPickProgram() {
+        var pickId;
+        if (appearance.pickId)
+            pickId = Shade(appearance.pickId);
         else {
-            pick_id = Shade(Shade.id(batch_id));
+            pickId = Shade(Shade.id(batchId));
         }
-        return process_appearance(function(value, key) {
+        return processAppearance(function(value, key) {
             if (key === 'gl_FragColor') {
-                var pick_if = (appearance.pick_if || 
-                               Shade(value).swizzle("a").gt(0));
-                return pick_id.discard_if(Shade.not(pick_if));
+                var pickIf = (appearance.pickIf || 
+                              Shade(value).swizzle("a").gt(0));
+                return pickId.discardIf(Shade.not(pickIf));
             } else
                 return value;
         });
@@ -198,14 +198,14 @@ Lux.bake = function(model, appearance, opts)
 
      */
     
-    function create_unproject_program() {
-        return process_appearance(function(value, key) {
+    function createUnprojectProgram() {
+        return processAppearance(function(value, key) {
             if (key === 'gl_FragColor') {
-                var position_z = appearance.gl_Position.swizzle('z'),
-                    position_w = appearance.gl_Position.swizzle('w');
-                var normalized_z = position_z.div(position_w).add(1).div(2);
+                var positionZ = appearance.gl_Position.swizzle('z'),
+                    positionW = appearance.gl_Position.swizzle('w');
+                var normalizedZ = positionZ.div(positionW).add(1).div(2);
 
-                // normalized_z ranges from 0 to 1.
+                // normalizedZ ranges from 0 to 1.
 
                 // an opengl z-buffer actually stores information as
                 // 1/z, so that more precision is spent on the close part
@@ -218,58 +218,58 @@ Lux.bake = function(model, appearance, opts)
 
                 // http://tulrich.com/geekstuff/log_depth_buffer.txt
 
-                // This mapping, incidentally, is more directly interpretable as
+                // That mapping, incidentally, is more directly interpretable as
                 // linear interpolation in log space.
 
-                var result_rgba = Shade.vec(
-                    normalized_z,
-                    normalized_z.mul(1 << 8),
-                    normalized_z.mul(1 << 16),
-                    normalized_z.mul(1 << 24)
+                var resultRgba = Shade.vec(
+                    normalizedZ,
+                    normalizedZ.mul(1 << 8),
+                    normalizedZ.mul(1 << 16),
+                    normalizedZ.mul(1 << 24)
                 );
-                return result_rgba;
+                return resultRgba;
             } else
                 return value;
         });
     }
 
-    var primitive_types = {
+    var primitiveTypes = {
         points: ctx.POINTS,
-        line_strip: ctx.LINE_STRIP,
-        line_loop: ctx.LINE_LOOP,
+        lineStrip: ctx.LINE_STRIP,
+        lineLoop: ctx.LINE_LOOP,
         lines: ctx.LINES,
-        triangle_strip: ctx.TRIANGLE_STRIP,
-        triangle_fan: ctx.TRIANGLE_FAN,
+        triangleStrip: ctx.TRIANGLE_STRIP,
+        triangleFan: ctx.TRIANGLE_FAN,
         triangles: ctx.TRIANGLES
     };
 
-    var primitive_type = primitive_types[model.type];
+    var primitiveType = primitiveTypes[model.type];
     var elements = model.elements;
-    var draw_chunk;
-    if (Lux.type_of(elements) === 'number') {
-        draw_chunk = function() {
+    var drawChunk;
+    if (Lux.typeOf(elements) === 'number') {
+        drawChunk = function() {
             // it's important to use "model.elements" here instead of "elements" because
             // the indirection captures the fact that the model might have been updated with
             // a different number of elements, by changing the attribute buffers.
             // 
             // FIXME This is a phenomentally bad way to go about this problem, but let's go with it for now.
-            ctx.drawArrays(primitive_type, 0, model.elements);
+            ctx.drawArrays(primitiveType, 0, model.elements);
         };
     } else {
-        if (elements._shade_type === 'attribute_buffer') {
-            draw_chunk = function() {
-                model.elements.draw(primitive_type);
+        if (elements._shadeType === 'attributeBuffer') {
+            drawChunk = function() {
+                model.elements.draw(primitiveType);
             };
-        } else if (elements._shade_type === 'element_buffer') {
-            draw_chunk = function() {
-                model.elements.bind_and_draw(primitive_type);
+        } else if (elements._shadeType === 'elementBuffer') {
+            drawChunk = function() {
+                model.elements.bindAndDraw(primitiveType);
             };
         } else
             throw new Error("model.elements must be a number, an element buffer or an attribute buffer");
     }
 
-    // FIXME the batch_id field in the batch_opts objects is not
-    // the same as the batch_id in the batch itself. 
+    // FIXME the batchId field in the batchOpts objects is not
+    // the same as the batchId in the batch itself. 
     // 
     // The former is used to avoid state switching, while the latter is
     // a generic automatic id which might be used for picking, for
@@ -278,74 +278,74 @@ Lux.bake = function(model, appearance, opts)
     // This should not lead to any problems right now but might be confusing to
     // readers.
 
-    function create_batch_opts(program, caps_name) {
-        function ensure_parameter(v) {
-            if (Lux.type_of(v) === 'number')
+    function createBatchOpts(program, capsName) {
+        function ensureParameter(v) {
+            if (Lux.typeOf(v) === 'number')
                 return Shade.parameter("float", v);
-            else if (Lux.is_shade_expression(v) === 'parameter')
+            else if (Lux.isShadeExpression(v) === 'parameter')
                 return v;
             else throw new Error("expected float or parameter, got " + v + " instead.");
         }
         var result = {
             _ctx: ctx,
             program: program,
-            attributes: build_attribute_arrays_obj(program),
-            set_caps: function() {
+            attributes: buildAttributeArraysObj(program),
+            setCaps: function() {
                 var ctx = Lux._globals.ctx;
-                var mode_caps = ((appearance.mode && appearance.mode[caps_name]) ||
-                       Lux.DrawingMode.standard[caps_name]);
-                mode_caps();
-                if (this.line_width) {
-                    ctx.lineWidth(this.line_width.get());
+                var modeCaps = ((appearance.mode && appearance.mode[capsName]) ||
+                       Lux.DrawingMode.standard[capsName]);
+                modeCaps();
+                if (this.lineWidth) {
+                    ctx.lineWidth(this.lineWidth.get());
                 }
-                if (this.polygon_offset) {
+                if (this.polygonOffset) {
                     ctx.enable(ctx.POLYGON_OFFSET_FILL);
-                    ctx.polygonOffset(this.polygon_offset.factor.get(), 
-                                      this.polygon_offset.units.get());
+                    ctx.polygonOffset(this.polygonOffset.factor.get(), 
+                                      this.polygonOffset.units.get());
                 }
             },
-            draw_chunk: draw_chunk,
-            batch_id: largest_batch_id++
+            drawChunk: drawChunk,
+            batchId: largestBatchId++
         };
-        if (!_.isUndefined(appearance.line_width))
-            result.line_width = ensure_parameter(appearance.line_width);
-        if (!_.isUndefined(appearance.polygon_offset))
-            result.polygon_offset = {
-                factor: ensure_parameter(appearance.polygon_offset.factor),
-                units: ensure_parameter(appearance.polygon_offset.units)
+        if (!_.isUndefined(appearance.lineWidth))
+            result.lineWidth = ensureParameter(appearance.lineWidth);
+        if (!_.isUndefined(appearance.polygonOffset))
+            result.polygonOffset = {
+                factor: ensureParameter(appearance.polygonOffset.factor),
+                units: ensureParameter(appearance.polygonOffset.units)
             };
         return result;
     }
 
-    var draw_opts, pick_opts, unproject_opts;
+    var drawOpts, pickOpts, unprojectOpts;
 
-    if (!opts.force_no_draw)
-        draw_opts = create_batch_opts(create_draw_program(), "set_draw_caps");
+    if (!opts.forceNoDraw)
+        drawOpts = createBatchOpts(createDrawProgram(), "setDrawCaps");
 
-    if (!opts.force_no_pick)
-        pick_opts = create_batch_opts(create_pick_program(), "set_pick_caps");
+    if (!opts.forceNoPick)
+        pickOpts = createBatchOpts(createPickProgram(), "setPickCaps");
 
-    if (!opts.force_no_unproject)
-        unproject_opts = create_batch_opts(create_unproject_program(), "set_unproject_caps");
+    if (!opts.forceNoUnproject)
+        unprojectOpts = createBatchOpts(createUnprojectProgram(), "setUnprojectCaps");
 
-    var which_opts = [ draw_opts, pick_opts, unproject_opts ];
+    var whichOpts = [ drawOpts, pickOpts, unprojectOpts ];
 
     var result = {
         model: model,
-        batch_id: batch_id,
+        batchId: batchId,
         draw: function() {
-            draw_it(which_opts[ctx._luxGlobals.batchRenderMode]);
+            drawIt(whichOpts[ctx._luxGlobals.batchRenderMode]);
         },
         // in case you want to force the behavior, or that
         // single array lookup is too slow for you.
         _draw: function() {
-            draw_it(draw_opts);
+            drawIt(drawOpts);
         },
         _pick: function() {
-            draw_it(pick_opts);
+            drawIt(pickOpts);
         },
         // for debugging purposes
-        _batch_opts: function() { return which_opts; }
+        _batchOpts: function() { return whichOpts; }
     };
     return result;
 };

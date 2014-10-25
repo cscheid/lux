@@ -38,24 +38,24 @@ Lux.actor = function(opts)
     };
 };
 
-Lux.actor_list = function(actors_list)
+Lux.actorList = function(actorsList)
 {
     return {
         dress: function(scene) {
-            var batch_list = _.map(actors_list, function(actor) {
+            var batchList = _.map(actorsList, function(actor) {
                 return actor.dress(scene);
             });
             return {
                 draw: function() {
-                    _.each(batch_list, function(batch) {
+                    _.each(batchList, function(batch) {
                         return batch.draw();
                     });
                 }
             };
         },
         on: function(eventName, event) {
-            for (var i=0; i<actors_list.length; ++i) {
-                if (!actors_list[i].on(eventName, event))
+            for (var i=0; i<actorsList.length; ++i) {
+                if (!actorsList[i].on(eventName, event))
                     return false;
             }
             return true;
@@ -63,44 +63,44 @@ Lux.actor_list = function(actors_list)
     };
 };
 
-Lux.actor_many = function(opts)
+Lux.actorMany = function(opts)
 {
     opts = _.defaults(opts, {
         on: function() { return true; }
     });
-    var appearance_function = opts.appearance_function;
-    var model_list = opts.model_list;
+    var appearanceFunction = opts.appearanceFunction;
+    var modelList = opts.modelList;
     var on = opts.on;
-    var model_callback = opts.model_callback;
-    var scratch_model = _.clone(model_list[0]);
-    var scratch_actor = Lux.actor({
-        model: scratch_model,
-        appearance: appearance_function(scratch_model)
+    var modelCallback = opts.modelCallback;
+    var scratchModel = _.clone(modelList[0]);
+    var scratchActor = Lux.actor({
+        model: scratchModel,
+        appearance: appearanceFunction(scratchModel)
     });
     var batch;
 
     return {
         dress: function(scene) {
-            batch = scratch_actor.dress(scene);
-            return model_callback ? {
+            batch = scratchActor.dress(scene);
+            return modelCallback ? {
                 draw: function() {
-                    _.each(model_list, function(model, i) {
-                        _.each(scratch_model.attributes, function(v, k) {
+                    _.each(modelList, function(model, i) {
+                        _.each(scratchModel.attributes, function(v, k) {
                             v.set(model[k].get());
                         });
-                        scratch_model.elements.set(model.elements.array);
-                        model_callback(model, i);
+                        scratchModel.elements.set(model.elements.array);
+                        modelCallback(model, i);
                         batch.draw();
                     });
                 }
             } : {
                 draw: function() {
-                    _.each(model_list, function(model, i) {
-                        _.each(scratch_model.attributes, function(v, k) {
+                    _.each(modelList, function(model, i) {
+                        _.each(scratchModel.attributes, function(v, k) {
                             v.set(model[k].get());
                         });
-                        scratch_model.elements.set(model.elements.array);
-                        // model_callback(model, i); -- only difference to above
+                        scratchModel.elements.set(model.elements.array);
+                        // modelCallback(model, i); -- only difference to above
                         batch.draw();
                     });
                 }

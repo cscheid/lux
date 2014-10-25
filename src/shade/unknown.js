@@ -5,8 +5,8 @@
 
 (function() {
     var obj = { _caches: {} };
-    obj.fun = Shade.memoize_on_field("_cache", function(type) {
-        return Shade._create_concrete_value_exp({
+    obj.fun = Shade.memoizeOnField("_cache", function(type) {
+        return Shade._createConcreteValueExp({
             parents: [],
             type: type,
             evaluate: function() { throw new Error("<unknown> does not support evaluation"); },

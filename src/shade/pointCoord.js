@@ -1,9 +1,9 @@
 Shade.pointCoord = function() {
-    return Shade._create_concrete_exp({
-        expression_type: "builtin_input{gl_PointCoord}",
+    return Shade._createConcreteExp({
+        expressionType: "builtinInput{gl_PointCoord}",
         parents: [],
         type: Shade.Types.vec2,
-        glsl_expression: function() { return "gl_PointCoord"; },
+        glslExpression: function() { return "gl_PointCoord"; },
         compile: function(ctx) {
         },
         evaluate: function() {
@@ -12,6 +12,6 @@ Shade.pointCoord = function() {
         element: function(i) {
             return this.at(i);
         },
-        _json_key: function() { return 'pointCoord'; }
+        _jsonKey: function() { return 'pointCoord'; }
     });
 };

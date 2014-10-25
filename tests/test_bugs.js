@@ -7,19 +7,19 @@ function aug_17_2013()
                     {"type":"div","guid":91,"parents":[
                         {"type":"swizzle{xy}","guid":90,"parents":[
                             {"type":"fragCoord","guid":89,"parents":[]}]},
-                        {"type":"parameter","guid":79,"parents":[],"parameter_type":"vec2"}]},
+                        {"type":"parameter","guid":79,"parents":[],"parameterType":"vec2"}]},
                     {"type":"constant","guid":92,"parents":[],"values":[2]}]},
                 {"type":"constant","guid":94,"parents":[],"values":[1]}]}]},
         {"type":"swizzle{x}","guid":97,"parents":[{"type":"reference","guid":79}]}]};
-    exp = Shade.Debug.from_json(exp);
-    console.log(exp.debug_print());
+    exp = Shade.Debug.fromJson(exp);
+    console.log(exp.debugPrint());
 
-    exp.is_constant();
+    exp.isConstant();
 }
 
 test("Tests from previous Lux bugs", function() {
     var exp = {"type": "vec", guid: 227, "parents": [
-        {"type": "parameter", "parameter_type": "float", "guid":9999, "parents": []},
+        {"type": "parameter", "parameterType": "float", "guid":9999, "parents": []},
         {"type": "constant", "guid":9998, "parents": [], "values": [0]},
         {"type": "constant", "guid":9997, "parents": [], "values": [0]},
         {"type": "constant", "guid":9996, "parents": [], "values": [1]}]};
@@ -32,9 +32,9 @@ test("Tests from previous Lux bugs", function() {
                     {"type":"swizzle{w}","guid":233,"parents":[{"type":"reference","guid":227}]}]}]}]},
         {"type":"constant","guid":244,"parents":[],"values":[0]}]};
 
-    var node = {"type":"discard_if","guid":246,"parents":[exp,condition]};
-    var node_exp = Shade.Debug.from_json(node);
-    var prog = { position: node_exp,
+    var node = {"type":"discardIf","guid":246,"parents":[exp,condition]};
+    var nodeExp = Shade.Debug.fromJson(node);
+    var prog = { position: nodeExp,
                  color: Shade.vec(0,0,0,1) };
 
     ok(Shade.program(prog), "discard expressions should be hoisted to fragment program");
@@ -55,10 +55,10 @@ test("Tests from previous Lux bugs", function() {
                     {"type":"constant","guid":241,"parents":[],"values":[1]}]}]}]},
         {"type":"constant","guid":244,"parents":[],"values":[0]}]};
 
-    var cond_exp = Shade.Debug.from_json(condition2);
+    var condExp = Shade.Debug.fromJson(condition2);
 
     var prog2 = { position: Shade.vec(0,0,0,0),
-                  color: cond_exp.ifelse(Shade.vec(1,0,0,0),
+                  color: condExp.ifelse(Shade.vec(1,0,0,0),
                                          Shade.vec(0,1,0,0)) };
 
     ok(Shade.program(prog2), "backface culling should not crash optimizer");

@@ -1,46 +1,46 @@
-Shade.Light.diffuse = function(light_opts)
+Shade.Light.diffuse = function(lightOpts)
 {
-    light_opts = _.defaults(light_opts || {}, {
+    lightOpts = _.defaults(lightOpts || {}, {
         color: Shade.vec(1,1,1,1)
     });
 
     function vec3(v) {
         return v.type.equals(Shade.Types.vec4) ? v.swizzle("xyz").div(v.at(3)) : v;
     }
-    var light_diffuse = light_opts.color;
-    if (light_diffuse.type.equals(Shade.Types.vec4))
-        light_diffuse = light_diffuse.swizzle("xyz");
-    var light_pos = vec3(light_opts.position);
+    var lightDiffuse = lightOpts.color;
+    if (lightDiffuse.type.equals(Shade.Types.vec4))
+        lightDiffuse = lightDiffuse.swizzle("xyz");
+    var lightPos = vec3(lightOpts.position);
 
-    return Shade(function(material_opts) {
-        var two_sided;
-        if (material_opts.has_field("two_sided")) {
-            two_sided = material_opts("two_sided");
+    return Shade(function(materialOpts) {
+        var twoSided;
+        if (materialOpts.hasField("twoSided")) {
+            twoSided = materialOpts("twoSided");
         } else {
-            two_sided = Shade(false);
+            twoSided = Shade(false);
         }
 
-        var vertex_pos = vec3(material_opts("position"));
-        var material_color = material_opts("color");
+        var vertexPos = vec3(materialOpts("position"));
+        var materialColor = materialOpts("color");
 
-        if (material_color.type.equals(Shade.Types.vec4))
-            material_color = material_color.swizzle("xyz");
+        if (materialColor.type.equals(Shade.Types.vec4))
+            materialColor = materialColor.swizzle("xyz");
 
-        var vertex_normal;
-        if (material_opts.has_field("normal")) {
-            vertex_normal = vec3(material_opts("normal")).normalize();
+        var vertexNormal;
+        if (materialOpts.hasField("normal")) {
+            vertexNormal = vec3(materialOpts("normal")).normalize();
         } else {
-            vertex_normal = Shade.ThreeD.normal(vertex_pos);
+            vertexNormal = Shade.ThreeD.normal(vertexPos);
         }
 
-        var L = light_pos.sub(vertex_pos).normalize();
-        var v = Shade.max(Shade.ifelse(two_sided,
-                                       L.dot(vertex_normal).abs(),
-                                       L.dot(vertex_normal)), 0);
+        var L = lightPos.sub(vertexPos).normalize();
+        var v = Shade.max(Shade.ifelse(twoSided,
+                                       L.dot(vertexNormal).abs(),
+                                       L.dot(vertexNormal)), 0);
 
-        var c = Shade.add(v.mul(light_diffuse).mul(material_color));
+        var c = Shade.add(v.mul(lightDiffuse).mul(materialColor));
 
-        return material_opts("color").type.equals(Shade.Types.vec4) ?
-            Shade.vec(c, material_opts("color").a()) : c;
+        return materialOpts("color").type.equals(Shade.Types.vec4) ?
+            Shade.vec(c, materialOpts("color").a()) : c;
     });
 };

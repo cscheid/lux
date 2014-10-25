@@ -6,12 +6,12 @@ Shade.set = function(exp, name)
 {
     exp = Shade(exp);
     var type = exp.type;
-    return Shade._create_concrete_exp({
-        expression_type: "set",
+    return Shade._createConcreteExp({
+        expressionType: "set",
         compile: function(ctx) {
             if ((name === "gl_FragColor" ||
                  (name.substring(0, 11) === "gl_FragData")) &&
-                ctx.compile_type !== Shade.FRAGMENT_PROGRAM_COMPILE) {
+                ctx.compileType !== Shade.FRAGMENT_PROGRAM_COMPILE) {
                 throw new Error("gl_FragColor and gl_FragData assignment"
                        + " only allowed on fragment shaders");
             }
@@ -21,7 +21,7 @@ Shade.set = function(exp, name)
                 throw new Error("gl_Position and gl_PointSize assignment "
                        + "only allowed on vertex shaders");
             }
-            if ((ctx.compile_type !== Shade.VERTEX_PROGRAM_COMPILE) &&
+            if ((ctx.compileType !== Shade.VERTEX_PROGRAM_COMPILE) &&
                 (name !== "gl_FragColor") &&
                 (name.substring(0, 11) !== "gl_FragData")) {
                 throw new Error("the only allowed output variables on a fragment"
@@ -31,13 +31,13 @@ Shade.set = function(exp, name)
                 name !== "gl_Position" &&
                 name !== "gl_PointSize" &&
                 name.substring(0, 11) !== "gl_FragData") {
-                ctx.declare_varying(name, type);
+                ctx.declareVarying(name, type);
             }
-            ctx.void_function(this, "(", name, "=", this.parents[0].glsl_expression(), ")");
+            ctx.voidFunction(this, "(", name, "=", this.parents[0].glslExpression(), ")");
         },
-        type: Shade.Types.void_t,
+        type: Shade.Types.voidT,
         parents: [exp],
-        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+        evaluate: Shade.memoizeOnGuidDict(function(cache) {
             return this.parents[0].evaluate(cache);
         })
     });

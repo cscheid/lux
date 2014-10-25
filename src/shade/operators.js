@@ -1,41 +1,41 @@
 (function() {
 
 var operator = function(exp1, exp2, 
-                        operator_name, type_resolver,
+                        operatorName, typeResolver,
                         evaluator,
-                        element_evaluator,
-                        shade_name)
+                        elementEvaluator,
+                        shadeName)
 {
-    var resulting_type = type_resolver(exp1.type, exp2.type);
-    return Shade._create_concrete_value_exp( {
+    var resultingType = typeResolver(exp1.type, exp2.type);
+    return Shade._createConcreteValueExp( {
         parents: [exp1, exp2],
-        type: resulting_type,
-        expression_type: "operator" + operator_name,
-        _json_key: function() { return shade_name; },
+        type: resultingType,
+        expressionType: "operator" + operatorName,
+        _jsonKey: function() { return shadeName; },
         value: function () {
             var p1 = this.parents[0], p2 = this.parents[1];
-            if (this.type.is_struct()) {
+            if (this.type.isStruct()) {
                 return "(" + this.type.repr() + "(" +
                     _.map(this.type.fields, function (v,k) {
-                        return p1.field(k).glsl_expression() + " " + operator_name + " " +
-                            p2.field(k).glsl_expression();
+                        return p1.field(k).glslExpression() + " " + operatorName + " " +
+                            p2.field(k).glslExpression();
                     }).join(", ") + "))";
             } else {
-                return "(" + this.parents[0].glsl_expression() + " " + operator_name + " " +
-                    this.parents[1].glsl_expression() + ")";
+                return "(" + this.parents[0].glslExpression() + " " + operatorName + " " +
+                    this.parents[1].glslExpression() + ")";
             }
         },
-        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+        evaluate: Shade.memoizeOnGuidDict(function(cache) {
             return evaluator(this, cache);
         }),
-        element: Shade.memoize_on_field("_element", function(i) {
-            return element_evaluator(this, i);
+        element: Shade.memoizeOnField("_element", function(i) {
+            return elementEvaluator(this, i);
         }),
-        element_constant_value: Shade.memoize_on_field("_element_constant_value", function(i) {
-            return this.element(i).constant_value();
+        elementConstantValue: Shade.memoizeOnField("_elementConstantValue", function(i) {
+            return this.element(i).constantValue();
         }),
-        element_is_constant: Shade.memoize_on_field("_element_is_constant", function(i) {
-            return this.element(i).is_constant();
+        elementIsConstant: Shade.memoizeOnField("_elementIsConstant", function(i) {
+            return this.element(i).isConstant();
         })
     });
 };
@@ -43,47 +43,47 @@ var operator = function(exp1, exp2,
 Shade.add = function() {
     if (arguments.length === 0) throw new Error("add needs at least one argument");
     if (arguments.length === 1) return arguments[0];
-    function add_type_resolver(t1, t2) {
-        var type_list = [
+    function addTypeResolver(t1, t2) {
+        var typeList = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec4, Shade.Types.float_t, Shade.Types.vec4],
-            [Shade.Types.float_t, Shade.Types.vec4, Shade.Types.vec4],
-            [Shade.Types.mat4, Shade.Types.float_t, Shade.Types.mat4],
-            [Shade.Types.float_t, Shade.Types.mat4, Shade.Types.mat4],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec4, Shade.Types.floatT, Shade.Types.vec4],
+            [Shade.Types.floatT, Shade.Types.vec4, Shade.Types.vec4],
+            [Shade.Types.mat4, Shade.Types.floatT, Shade.Types.mat4],
+            [Shade.Types.floatT, Shade.Types.mat4, Shade.Types.mat4],
 
             [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.mat3, Shade.Types.mat3, Shade.Types.mat3],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec3, Shade.Types.float_t, Shade.Types.vec3],
-            [Shade.Types.float_t, Shade.Types.vec3, Shade.Types.vec3],
-            [Shade.Types.mat3, Shade.Types.float_t, Shade.Types.mat3],
-            [Shade.Types.float_t, Shade.Types.mat3, Shade.Types.mat3],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec3, Shade.Types.floatT, Shade.Types.vec3],
+            [Shade.Types.floatT, Shade.Types.vec3, Shade.Types.vec3],
+            [Shade.Types.mat3, Shade.Types.floatT, Shade.Types.mat3],
+            [Shade.Types.floatT, Shade.Types.mat3, Shade.Types.mat3],
 
             [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.mat2, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
-            [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
-            [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec2, Shade.Types.floatT, Shade.Types.vec2],
+            [Shade.Types.floatT, Shade.Types.vec2, Shade.Types.vec2],
+            [Shade.Types.mat2, Shade.Types.floatT, Shade.Types.mat2],
+            [Shade.Types.floatT, Shade.Types.mat2, Shade.Types.mat2],
             
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
+            [Shade.Types.intT, Shade.Types.intT, Shade.Types.intT],
 
-            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
+            [Shade.Types.functionT, Shade.Types.functionT, Shade.Types.functionT]
         ];
-        for (var i=0; i<type_list.length; ++i)
-            if (t1.equals(type_list[i][0]) &&
-                t2.equals(type_list[i][1]))
-                return type_list[i][2];
+        for (var i=0; i<typeList.length; ++i)
+            if (t1.equals(typeList[i][0]) &&
+                t2.equals(typeList[i][1]))
+                return typeList[i][2];
 
         // if t1 and t2 are the same struct and all fields admit
         // addition, then a+b is field-wise a+b
-        if (t1.is_struct() && t2.is_struct() && t1.equals(t2) &&
+        if (t1.isStruct() && t2.isStruct() && t1.equals(t2) &&
             _.all(t1.fields, function(v, k) {
                 try {
-                    add_type_resolver(v, v);
+                    addTypeResolver(v, v);
                     return true;
                 } catch (e) {
                     return false;
@@ -94,37 +94,37 @@ Shade.add = function() {
         throw new Error("type mismatch on add: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
-    var current_result = Shade.make(arguments[0]);
+    var currentResult = Shade.make(arguments[0]);
     function evaluator(exp, cache) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
         var vt;
-        if (exp1.type.is_vec())
-            vt = vec[exp1.type.vec_dimension()];
-        else if (exp2.type.is_vec())
-            vt = vec[exp2.type.vec_dimension()];
+        if (exp1.type.isVec())
+            vt = vec[exp1.type.vecDimension()];
+        else if (exp2.type.isVec())
+            vt = vec[exp2.type.vecDimension()];
         var v1 = exp1.evaluate(cache), v2 = exp2.evaluate(cache);
-        if (exp1.type.equals(Shade.Types.int_t) && 
-            exp2.type.equals(Shade.Types.int_t))
+        if (exp1.type.equals(Shade.Types.intT) && 
+            exp2.type.equals(Shade.Types.intT))
             return v1 + v2;
-        if (exp1.type.equals(Shade.Types.float_t) &&
-            exp2.type.equals(Shade.Types.float_t))
+        if (exp1.type.equals(Shade.Types.floatT) &&
+            exp2.type.equals(Shade.Types.floatT))
             return v1 + v2;
-        if (exp2.type.equals(Shade.Types.float_t))
+        if (exp2.type.equals(Shade.Types.floatT))
             return vt.map(v1, function(x) { 
                 return x + v2;
             });
-        if (exp1.type.equals(Shade.Types.float_t))
+        if (exp1.type.equals(Shade.Types.floatT))
             return vt.map(v2, function(x) {
                 return v1 + x;
             });
         if (vt) {
             return vt.plus(v1, v2);
-        } else if (exp1.type.is_function()) {
+        } else if (exp1.type.isFunction()) {
             return function() {
                 var args = _.map(arguments, Shade.make);
                 return Shade.add(v1.apply(this, args), v2.apply(this, args));
             };
-        } else if (exp1.type.is_struct()) {
+        } else if (exp1.type.isStruct()) {
             var s = {};
             _.each(v1, function(v, k) {
                 s[k] = evaluator(Shade.add(exp1.field(k), exp2.field(k)), cache);
@@ -136,82 +136,82 @@ Shade.add = function() {
                             exp2.type.repr());
         }
     };
-    function element_evaluator(exp, i) {
+    function elementEvaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
         var v1, v2;
         var t1 = e1.type, t2 = e2.type;
-        if (t1.is_pod() && t2.is_pod()) {
+        if (t1.isPod() && t2.isPod()) {
             if (i === 0)
                 return exp;
             else
                 throw new Error("i > 0 in pod element");
         }
-        if (t1.is_struct() || t2.is_struct())
+        if (t1.isStruct() || t2.isStruct())
             throw new Error("can't take elements of structs");
-        if (t1.is_function() || t2.is_function())
+        if (t1.isFunction() || t2.isFunction())
             throw new Error("can't take elements of functions");
 
-        if (t1.is_vec() || t1.is_mat())
+        if (t1.isVec() || t1.isMat())
             v1 = e1.element(i);
         else
             v1 = e1;
-        if (t2.is_vec() || t2.is_vec())
+        if (t2.isVec() || t2.isVec())
             v2 = e2.element(i);
         else
             v2 = e2;
-        return operator(v1, v2, "+", add_type_resolver, evaluator, element_evaluator, "add");
+        return operator(v1, v2, "+", addTypeResolver, evaluator, elementEvaluator, "add");
     }
     for (var i=1; i<arguments.length; ++i) {
-        current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "+", add_type_resolver, evaluator,
-                                  element_evaluator, "add");
+        currentResult = operator(currentResult, Shade.make(arguments[i]),
+                                  "+", addTypeResolver, evaluator,
+                                  elementEvaluator, "add");
     }
-    return current_result;
+    return currentResult;
 };
 
 Shade.sub = function() {
     if (arguments.length === 0) throw new Error("sub needs at least two arguments");
     if (arguments.length === 1) throw new Error("unary minus unimplemented");
-    function sub_type_resolver(t1, t2) {
-        var type_list = [
+    function subTypeResolver(t1, t2) {
+        var typeList = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec4, Shade.Types.float_t, Shade.Types.vec4],
-            [Shade.Types.float_t, Shade.Types.vec4, Shade.Types.vec4],
-            [Shade.Types.mat4, Shade.Types.float_t, Shade.Types.mat4],
-            [Shade.Types.float_t, Shade.Types.mat4, Shade.Types.mat4],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec4, Shade.Types.floatT, Shade.Types.vec4],
+            [Shade.Types.floatT, Shade.Types.vec4, Shade.Types.vec4],
+            [Shade.Types.mat4, Shade.Types.floatT, Shade.Types.mat4],
+            [Shade.Types.floatT, Shade.Types.mat4, Shade.Types.mat4],
 
             [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.mat3, Shade.Types.mat3, Shade.Types.mat3],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec3, Shade.Types.float_t, Shade.Types.vec3],
-            [Shade.Types.float_t, Shade.Types.vec3, Shade.Types.vec3],
-            [Shade.Types.mat3, Shade.Types.float_t, Shade.Types.mat3],
-            [Shade.Types.float_t, Shade.Types.mat3, Shade.Types.mat3],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec3, Shade.Types.floatT, Shade.Types.vec3],
+            [Shade.Types.floatT, Shade.Types.vec3, Shade.Types.vec3],
+            [Shade.Types.mat3, Shade.Types.floatT, Shade.Types.mat3],
+            [Shade.Types.floatT, Shade.Types.mat3, Shade.Types.mat3],
 
             [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.mat2, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
-            [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
-            [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec2, Shade.Types.floatT, Shade.Types.vec2],
+            [Shade.Types.floatT, Shade.Types.vec2, Shade.Types.vec2],
+            [Shade.Types.mat2, Shade.Types.floatT, Shade.Types.mat2],
+            [Shade.Types.floatT, Shade.Types.mat2, Shade.Types.mat2],
             
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
+            [Shade.Types.intT, Shade.Types.intT, Shade.Types.intT],
 
-            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
+            [Shade.Types.functionT, Shade.Types.functionT, Shade.Types.functionT]
         ];
-        for (var i=0; i<type_list.length; ++i)
-            if (t1.equals(type_list[i][0]) &&
-                t2.equals(type_list[i][1]))
-                return type_list[i][2];
+        for (var i=0; i<typeList.length; ++i)
+            if (t1.equals(typeList[i][0]) &&
+                t2.equals(typeList[i][1]))
+                return typeList[i][2];
         // if t1 and t2 are the same struct and all fields admit
         // subtraction, then a-b is field-wise a-b
-        if (t1.is_struct() && t2.is_struct() && t1.equals(t2) &&
+        if (t1.isStruct() && t2.isStruct() && t1.equals(t2) &&
             _.all(t1.fields, function(v, k) {
                 try {
-                    sub_type_resolver(v, v);
+                    subTypeResolver(v, v);
                     return true;
                 } catch (e) {
                     return false;
@@ -225,33 +225,33 @@ Shade.sub = function() {
     function evaluator(exp, cache) {
         var exp1 = exp.parents[0], exp2 = exp.parents[1];
         var vt;
-        if (exp1.type.is_vec())
-            vt = vec[exp1.type.vec_dimension()];
-        else if (exp2.type.is_vec())
-            vt = vec[exp2.type.vec_dimension()];
+        if (exp1.type.isVec())
+            vt = vec[exp1.type.vecDimension()];
+        else if (exp2.type.isVec())
+            vt = vec[exp2.type.vecDimension()];
         var v1 = exp1.evaluate(cache), v2 = exp2.evaluate(cache);
-        if (exp1.type.equals(Shade.Types.int_t) && 
-            exp2.type.equals(Shade.Types.int_t))
+        if (exp1.type.equals(Shade.Types.intT) && 
+            exp2.type.equals(Shade.Types.intT))
             return v1 - v2;
-        if (exp1.type.equals(Shade.Types.float_t) &&
-            exp2.type.equals(Shade.Types.float_t))
+        if (exp1.type.equals(Shade.Types.floatT) &&
+            exp2.type.equals(Shade.Types.floatT))
             return v1 - v2;
-        if (exp2.type.equals(Shade.Types.float_t))
+        if (exp2.type.equals(Shade.Types.floatT))
             return vt.map(v1, function(x) { 
                 return x - v2; 
             });
-        if (exp1.type.equals(Shade.Types.float_t))
+        if (exp1.type.equals(Shade.Types.floatT))
             return vt.map(v2, function(x) {
                 return v1 - x;
             });
         if (vt) {
             return vt.minus(v1, v2);
-        } else if (exp1.type.is_function()) {
+        } else if (exp1.type.isFunction()) {
             return function() {
                 var args = _.map(arguments, Shade.make);
                 return Shade.sub(v1.apply(this, args), v2.apply(this, args));
             };
-        } else if (exp1.type.is_struct()) {
+        } else if (exp1.type.isStruct()) {
             var s = {};
             _.each(v1, function(v, k) {
                 s[k] = evaluator(Shade.sub(exp1.field(k), exp2.field(k)), cache);
@@ -263,80 +263,80 @@ Shade.sub = function() {
                             exp2.type.repr());
         }
     }
-    function element_evaluator(exp, i) {
+    function elementEvaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
         var v1, v2;
         var t1 = e1.type, t2 = e2.type;
-        if (t1.is_pod() && t2.is_pod()) {
+        if (t1.isPod() && t2.isPod()) {
             if (i === 0)
                 return exp;
             else
                 throw new Error("i > 0 in pod element");
         }
-        if (t1.is_struct() || t2.is_struct())
+        if (t1.isStruct() || t2.isStruct())
             throw new Error("can't take elements of structs");
-        if (t1.is_function() || t2.is_function())
+        if (t1.isFunction() || t2.isFunction())
             throw new Error("can't take elements of functions");
 
-        if (e1.type.is_vec() || e1.type.is_mat())
+        if (e1.type.isVec() || e1.type.isMat())
             v1 = e1.element(i);
         else
             v1 = e1;
-        if (e2.type.is_vec() || e2.type.is_vec())
+        if (e2.type.isVec() || e2.type.isVec())
             v2 = e2.element(i);
         else
             v2 = e2;
-        return operator(v1, v2, "-", sub_type_resolver, evaluator, element_evaluator, "sub");
+        return operator(v1, v2, "-", subTypeResolver, evaluator, elementEvaluator, "sub");
     }
-    var current_result = Shade.make(arguments[0]);
+    var currentResult = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
-        current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "-", sub_type_resolver, evaluator,
-                                  element_evaluator, "sub");
+        currentResult = operator(currentResult, Shade.make(arguments[i]),
+                                  "-", subTypeResolver, evaluator,
+                                  elementEvaluator, "sub");
     }
-    return current_result;
+    return currentResult;
 };
 
 Shade.div = function() {
     if (arguments.length === 0) throw new Error("div needs at least two arguments");
-    function div_type_resolver(t1, t2) {
+    function divTypeResolver(t1, t2) {
         if (_.isUndefined(t1))
             throw new Error("internal error: t1 multiplication with undefined type");
         if (_.isUndefined(t2))
             throw new Error("internal error: t2 multiplication with undefined type");
-        var type_list = [
+        var typeList = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec4, Shade.Types.float_t, Shade.Types.vec4],
-            [Shade.Types.float_t, Shade.Types.vec4, Shade.Types.vec4],
-            [Shade.Types.mat4, Shade.Types.float_t, Shade.Types.mat4],
-            [Shade.Types.float_t, Shade.Types.mat4, Shade.Types.mat4],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec4, Shade.Types.floatT, Shade.Types.vec4],
+            [Shade.Types.floatT, Shade.Types.vec4, Shade.Types.vec4],
+            [Shade.Types.mat4, Shade.Types.floatT, Shade.Types.mat4],
+            [Shade.Types.floatT, Shade.Types.mat4, Shade.Types.mat4],
 
             [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.mat3, Shade.Types.mat3, Shade.Types.mat3],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec3, Shade.Types.float_t, Shade.Types.vec3],
-            [Shade.Types.float_t, Shade.Types.vec3, Shade.Types.vec3],
-            [Shade.Types.mat3, Shade.Types.float_t, Shade.Types.mat3],
-            [Shade.Types.float_t, Shade.Types.mat3, Shade.Types.mat3],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec3, Shade.Types.floatT, Shade.Types.vec3],
+            [Shade.Types.floatT, Shade.Types.vec3, Shade.Types.vec3],
+            [Shade.Types.mat3, Shade.Types.floatT, Shade.Types.mat3],
+            [Shade.Types.floatT, Shade.Types.mat3, Shade.Types.mat3],
 
             [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.mat2, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
-            [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
-            [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec2, Shade.Types.floatT, Shade.Types.vec2],
+            [Shade.Types.floatT, Shade.Types.vec2, Shade.Types.vec2],
+            [Shade.Types.mat2, Shade.Types.floatT, Shade.Types.mat2],
+            [Shade.Types.floatT, Shade.Types.mat2, Shade.Types.mat2],
 
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
+            [Shade.Types.intT, Shade.Types.intT, Shade.Types.intT],
 
-            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
+            [Shade.Types.functionT, Shade.Types.functionT, Shade.Types.functionT]
         ];
-        for (var i=0; i<type_list.length; ++i)
-            if (t1.equals(type_list[i][0]) &&
-                t2.equals(type_list[i][1]))
-                return type_list[i][2];
+        for (var i=0; i<typeList.length; ++i)
+            if (t1.equals(typeList[i][0]) &&
+                t2.equals(typeList[i][1]))
+                return typeList[i][2];
         throw new Error("type mismatch on div: unexpected types '"
                    + t1.repr() + "' and '" + t2.repr() + "'");
     }
@@ -346,25 +346,25 @@ Shade.div = function() {
         var v1 = exp1.evaluate(cache);
         var v2 = exp2.evaluate(cache);
         var vt, mt;
-        if (exp1.type.is_array()) {
-            vt = vec[exp1.type.array_size()];
-            mt = mat[exp1.type.array_size()];
-        } else if (exp2.type.is_array()) {
-            vt = vec[exp2.type.array_size()];
-            mt = mat[exp2.type.array_size()];
+        if (exp1.type.isArray()) {
+            vt = vec[exp1.type.arraySize()];
+            mt = mat[exp1.type.arraySize()];
+        } else if (exp2.type.isArray()) {
+            vt = vec[exp2.type.arraySize()];
+            mt = mat[exp2.type.arraySize()];
         }
-        var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
-        var k1 = t1.is_vec() ? "vector" :
-                 t1.is_mat() ? "matrix" :
-                 t1.is_pod() ? "number" : 
-                 t1.is_function() ? "function" : "BAD";
-        var k2 = t2.is_vec() ? "vector" :
-                 t2.is_mat() ? "matrix" :
-                 t2.is_pod() ? "number" : 
-                 t2.is_function() ? "function" : "BAD";
+        var t1 = Shade.Types.typeOf(v1), t2 = Shade.Types.typeOf(v2);
+        var k1 = t1.isVec() ? "vector" :
+                 t1.isMat() ? "matrix" :
+                 t1.isPod() ? "number" : 
+                 t1.isFunction() ? "function" : "BAD";
+        var k2 = t2.isVec() ? "vector" :
+                 t2.isMat() ? "matrix" :
+                 t2.isPod() ? "number" : 
+                 t2.isFunction() ? "function" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { 
-                                  if (exp1.type.equals(Shade.Types.int_t))
+                                  if (exp1.type.equals(Shade.Types.intT))
                                       return ~~(x / y);
                                   else
                                       return x / y;
@@ -411,83 +411,83 @@ Shade.div = function() {
             console.log(t1.repr(), t2.repr());
         return dispatch[k1][k2](v1, v2);
     }
-    function element_evaluator(exp, i) {
+    function elementEvaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
         var v1, v2;
         var t1 = e1.type, t2 = e2.type;
-        if (t1.is_pod() && t2.is_pod()) {
+        if (t1.isPod() && t2.isPod()) {
             if (i === 0)
                 return exp;
             else
                 throw new Error("i > 0 in pod element");
         }
-        if (e1.type.is_vec() || e1.type.is_mat())
+        if (e1.type.isVec() || e1.type.isMat())
             v1 = e1.element(i);
         else
             v1 = e1;
-        if (e2.type.is_vec() || e2.type.is_vec())
+        if (e2.type.isVec() || e2.type.isVec())
             v2 = e2.element(i);
         else
             v2 = e2;
-        if (t1.is_function() || t2.is_function())
+        if (t1.isFunction() || t2.isFunction())
             throw new Error("can't take elements of functions");
-        return operator(v1, v2, "/", div_type_resolver, evaluator, element_evaluator, "div");
+        return operator(v1, v2, "/", divTypeResolver, evaluator, elementEvaluator, "div");
     }
-    var current_result = Shade.make(arguments[0]);
+    var currentResult = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
-        current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "/", div_type_resolver, evaluator, element_evaluator,
+        currentResult = operator(currentResult, Shade.make(arguments[i]),
+                                  "/", divTypeResolver, evaluator, elementEvaluator,
                                   "div");
     }
-    return current_result;
+    return currentResult;
 };
 
 Shade.mul = function() {
     if (arguments.length === 0) throw new Error("mul needs at least one argument");
     if (arguments.length === 1) return arguments[0];
-    function mul_type_resolver(t1, t2) {
+    function mulTypeResolver(t1, t2) {
         if (_.isUndefined(t1))
             throw new Error("t1 multiplication with undefined type?");
         if (_.isUndefined(t2))
             throw new Error("t2 multiplication with undefined type?");
-        var type_list = [
+        var typeList = [
             [Shade.Types.vec4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.mat4, Shade.Types.mat4, Shade.Types.mat4],
             [Shade.Types.mat4, Shade.Types.vec4, Shade.Types.vec4],
             [Shade.Types.vec4, Shade.Types.mat4, Shade.Types.vec4],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec4, Shade.Types.float_t, Shade.Types.vec4],
-            [Shade.Types.float_t, Shade.Types.vec4, Shade.Types.vec4],
-            [Shade.Types.mat4, Shade.Types.float_t, Shade.Types.mat4],
-            [Shade.Types.float_t, Shade.Types.mat4, Shade.Types.mat4],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec4, Shade.Types.floatT, Shade.Types.vec4],
+            [Shade.Types.floatT, Shade.Types.vec4, Shade.Types.vec4],
+            [Shade.Types.mat4, Shade.Types.floatT, Shade.Types.mat4],
+            [Shade.Types.floatT, Shade.Types.mat4, Shade.Types.mat4],
 
             [Shade.Types.vec3, Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.mat3, Shade.Types.mat3, Shade.Types.mat3],
             [Shade.Types.mat3, Shade.Types.vec3, Shade.Types.vec3],
             [Shade.Types.vec3, Shade.Types.mat3, Shade.Types.vec3],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec3, Shade.Types.float_t, Shade.Types.vec3],
-            [Shade.Types.float_t, Shade.Types.vec3, Shade.Types.vec3],
-            [Shade.Types.mat3, Shade.Types.float_t, Shade.Types.mat3],
-            [Shade.Types.float_t, Shade.Types.mat3, Shade.Types.mat3],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec3, Shade.Types.floatT, Shade.Types.vec3],
+            [Shade.Types.floatT, Shade.Types.vec3, Shade.Types.vec3],
+            [Shade.Types.mat3, Shade.Types.floatT, Shade.Types.mat3],
+            [Shade.Types.floatT, Shade.Types.mat3, Shade.Types.mat3],
 
             [Shade.Types.vec2, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.mat2, Shade.Types.mat2, Shade.Types.mat2],
             [Shade.Types.mat2, Shade.Types.vec2, Shade.Types.vec2],
             [Shade.Types.vec2, Shade.Types.mat2, Shade.Types.vec2],
-            [Shade.Types.float_t, Shade.Types.float_t, Shade.Types.float_t],
-            [Shade.Types.vec2, Shade.Types.float_t, Shade.Types.vec2],
-            [Shade.Types.float_t, Shade.Types.vec2, Shade.Types.vec2],
-            [Shade.Types.mat2, Shade.Types.float_t, Shade.Types.mat2],
-            [Shade.Types.float_t, Shade.Types.mat2, Shade.Types.mat2],
+            [Shade.Types.floatT, Shade.Types.floatT, Shade.Types.floatT],
+            [Shade.Types.vec2, Shade.Types.floatT, Shade.Types.vec2],
+            [Shade.Types.floatT, Shade.Types.vec2, Shade.Types.vec2],
+            [Shade.Types.mat2, Shade.Types.floatT, Shade.Types.mat2],
+            [Shade.Types.floatT, Shade.Types.mat2, Shade.Types.mat2],
             
-            [Shade.Types.int_t, Shade.Types.int_t, Shade.Types.int_t],
-            [Shade.Types.function_t, Shade.Types.function_t, Shade.Types.function_t]
+            [Shade.Types.intT, Shade.Types.intT, Shade.Types.intT],
+            [Shade.Types.functionT, Shade.Types.functionT, Shade.Types.functionT]
         ];
-        for (var i=0; i<type_list.length; ++i)
-            if (t1.equals(type_list[i][0]) &&
-                t2.equals(type_list[i][1]))
-                return type_list[i][2];
+        for (var i=0; i<typeList.length; ++i)
+            if (t1.equals(typeList[i][0]) &&
+                t2.equals(typeList[i][1]))
+                return typeList[i][2];
         throw new Error("type mismatch on mul: unexpected types  '"
                    + t1.repr() + "' and '" + t2.repr() + "'.");
     }
@@ -497,22 +497,22 @@ Shade.mul = function() {
         var v1 = exp1.evaluate(cache);
         var v2 = exp2.evaluate(cache);
         var vt, mt;
-        if (exp1.type.is_array()) {
-            vt = vec[exp1.type.array_size()];
-            mt = mat[exp1.type.array_size()];
-        } else if (exp2.type.is_array()) {
-            vt = vec[exp2.type.array_size()];
-            mt = mat[exp2.type.array_size()];
+        if (exp1.type.isArray()) {
+            vt = vec[exp1.type.arraySize()];
+            mt = mat[exp1.type.arraySize()];
+        } else if (exp2.type.isArray()) {
+            vt = vec[exp2.type.arraySize()];
+            mt = mat[exp2.type.arraySize()];
         }
-        var t1 = Shade.Types.type_of(v1), t2 = Shade.Types.type_of(v2);
-        var k1 = t1.is_vec() ? "vector" :
-                 t1.is_mat() ? "matrix" :
-                 t1.is_pod() ? "number" : 
-                 t1.is_function() ? "function" : "BAD";
-        var k2 = t2.is_vec() ? "vector" :
-                 t2.is_mat() ? "matrix" :
-                 t2.is_pod() ? "number" : 
-                 t2.is_function() ? "function" : "BAD";
+        var t1 = Shade.Types.typeOf(v1), t2 = Shade.Types.typeOf(v2);
+        var k1 = t1.isVec() ? "vector" :
+                 t1.isMat() ? "matrix" :
+                 t1.isPod() ? "number" : 
+                 t1.isFunction() ? "function" : "BAD";
+        var k2 = t2.isVec() ? "vector" :
+                 t2.isMat() ? "matrix" :
+                 t2.isPod() ? "number" : 
+                 t2.isFunction() ? "function" : "BAD";
         var dispatch = {
             number: { number: function (x, y) { return x * y; },
                       vector: function (x, y) { return vt.scaling(y, x); },
@@ -520,14 +520,14 @@ Shade.mul = function() {
                     },
             vector: { number: function (x, y) { return vt.scaling(x, y); },
                       vector: function (x, y) {
-                          return vt.schur_product(x, y);
+                          return vt.schurProduct(x, y);
                       },
                       matrix: function (x, y) {
-                          return mt.product_vec(mt.transpose(y), x);
+                          return mt.productVec(mt.transpose(y), x);
                       }
                     },
             matrix: { number: function (x, y) { return mt.scaling(x, y); },
-                      vector: function (x, y) { return mt.product_vec(x, y); },
+                      vector: function (x, y) { return mt.productVec(x, y); },
                       matrix: function (x, y) { return mt.product(x, y); }
                     },
             "function": { "function": function(x, y) {
@@ -539,26 +539,26 @@ Shade.mul = function() {
         };
         return dispatch[k1][k2](v1, v2);
     }
-    function element_evaluator(exp, i) {
+    function elementEvaluator(exp, i) {
         var e1 = exp.parents[0], e2 = exp.parents[1];
         var v1, v2;
         var t1 = e1.type, t2 = e2.type;
-        if (t1.is_pod() && t2.is_pod()) {
+        if (t1.isPod() && t2.isPod()) {
             if (i === 0)
                 return exp;
             else
                 throw new Error("i > 0 in pod element");
         }
-        function value_kind(t) {
-            if (t.is_pod())
+        function valueKind(t) {
+            if (t.isPod())
                 return "pod";
-            if (t.is_vec())
+            if (t.isVec())
                 return "vec";
-            if (t.is_mat())
+            if (t.isMat())
                 return "mat";
             throw new Error("internal error: not pod, vec or mat");
         }
-        var k1 = value_kind(t1), k2 = value_kind(t2);
+        var k1 = valueKind(t1), k2 = valueKind(t2);
         var dispatch = {
             "pod": { 
                 "pod": function() { 
@@ -566,35 +566,35 @@ Shade.mul = function() {
                 },
                 "vec": function() { 
                     v1 = e1; v2 = e2.element(i); 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
+                    return operator(v1, v2, "*", mulTypeResolver, evaluator, elementEvaluator, "mul");
                 },
                 "mat": function() { 
                     v1 = e1; v2 = e2.element(i); 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
+                    return operator(v1, v2, "*", mulTypeResolver, evaluator, elementEvaluator, "mul");
                 }
             },
             "vec": { 
                 "pod": function() { 
                     v1 = e1.element(i); v2 = e2; 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
+                    return operator(v1, v2, "*", mulTypeResolver, evaluator, elementEvaluator, "mul");
                 },
                 "vec": function() { 
                     v1 = e1.element(i); v2 = e2.element(i); 
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
+                    return operator(v1, v2, "*", mulTypeResolver, evaluator, elementEvaluator, "mul");
                 },
                 "mat": function() {
-                    // FIXME should we have a mat_dimension?
+                    // FIXME should we have a matDimension?
                     return Shade.dot(e1, e2.element(i));
                 }
             },
             "mat": { 
                 "pod": function() { 
                     v1 = e1.element(i); v2 = e2;
-                    return operator(v1, v2, "*", mul_type_resolver, evaluator, element_evaluator, "mul");
+                    return operator(v1, v2, "*", mulTypeResolver, evaluator, elementEvaluator, "mul");
                 },
                 "vec": function() {
-                    // FIXME should we have a mat_dimension?
-                    var d = t1.array_size();
+                    // FIXME should we have a matDimension?
+                    var d = t1.arraySize();
                     var row;
                     if (d === 2) {
                         row = Shade.vec(e1.element(0).element(i),
@@ -616,25 +616,25 @@ Shade.mul = function() {
                 },
                 "mat": function() {
                     var col = e2.element(i);
-                    return operator(e1, col, "*", mul_type_resolver, evaluator, element_evaluator,
+                    return operator(e1, col, "*", mulTypeResolver, evaluator, elementEvaluator,
                                     "mul");
                 }
             }
         };
         return dispatch[k1][k2]();
     };
-    var current_result = Shade.make(arguments[0]);
+    var currentResult = Shade.make(arguments[0]);
     for (var i=1; i<arguments.length; ++i) {
-        if (current_result.type.equals(Shade.Types.mat4)) {
+        if (currentResult.type.equals(Shade.Types.mat4)) {
             if (arguments[i].type.equals(Shade.Types.vec2)) {
                 arguments[i] = Shade.vec(arguments[i], 0, 1);
             } else if (arguments[i].type.equals(Shade.Types.vec3)) {
                 arguments[i] = Shade.vec(arguments[i], 1);
             }
         }
-        current_result = operator(current_result, Shade.make(arguments[i]),
-                                  "*", mul_type_resolver, evaluator, element_evaluator, "mul");
+        currentResult = operator(currentResult, Shade.make(arguments[i]),
+                                  "*", mulTypeResolver, evaluator, elementEvaluator, "mul");
     }
-    return current_result;
+    return currentResult;
 };
 })();

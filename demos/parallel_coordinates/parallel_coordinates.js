@@ -1,19 +1,19 @@
 var gl;
-var pc_batch;
+var pcBatch;
 
 //////////////////////////////////////////////////////////////////////////////
 
-function parallel_coords()
+function parallelCoords()
 {
-    var raw_table = Data.cars();
-    var table = Lux.Data.texture_table(raw_table);
+    var rawTable = Data.cars();
+    var table = Lux.Data.textureTable(rawTable);
     var elements = [];
 
-    function column_f(f) {
+    function columnF(f) {
         var lst = [];
-        for (var i=0; i<raw_table.number_columns.length; ++i) {
-            var col = raw_table.columns[raw_table.number_columns[i]];
-            lst.push(f(_.map(raw_table.data, function(row) {
+        for (var i=0; i<rawTable.numberColumns.length; ++i) {
+            var col = rawTable.columns[rawTable.numberColumns[i]];
+            lst.push(f(_.map(rawTable.data, function(row) {
                 return row[col];
             }).filter(function(v) {
                 return typeof v === "number";
@@ -23,41 +23,41 @@ function parallel_coords()
             return Shade.array(lst).at(x);
         };
     }
-    var column_min = column_f(function(col) { return _.min(col); });
-    var column_max = column_f(function(col) { return _.max(col); });
+    var columnMin = columnF(function(col) { return _.min(col); });
+    var columnMax = columnF(function(col) { return _.max(col); });
 
     var position = function(primitive, vertex) {
-        var col = primitive.div(table.n_rows).floor().add(vertex),
-            row = primitive.mod(table.n_rows).floor();
+        var col = primitive.div(table.nRows).floor().add(vertex),
+            row = primitive.mod(table.nRows).floor();
         
-        var y = Shade.Scale.linear({domain: [column_min(col), column_max(col)],
+        var y = Shade.Scale.linear({domain: [columnMin(col), columnMax(col)],
                                     range: [-0.95, 0.95]})(table.at(row, col));
-        var x = Shade.Scale.linear({domain: [0, Shade.sub(table.n_cols, 1)],
+        var x = Shade.Scale.linear({domain: [0, Shade.sub(table.nCols, 1)],
                                     range: [-0.95, 0.95]})(col);
         return Shade.vec(x, y);
     };
     
-    var color_from_index = function(primitive_index, vertex_in_primitive) {
-        var which_column = primitive_index.div(table.n_rows).floor(),
-            which_row    = primitive_index.mod(table.n_rows).floor();
+    var colorFromIndex = function(primitiveIndex, vertexInPrimitive) {
+        var whichColumn = primitiveIndex.div(table.nRows).floor(),
+            whichRow    = primitiveIndex.mod(table.nRows).floor();
         return Shade.Colors.Brewer.sequential({
             name: "Reds",
             min: 0,
-            max: table.n_rows
-        })(which_row);
+            max: table.nRows
+        })(whichRow);
     };
 
     return Lux.Marks.lines({
         position: position,
-        elements: table.n_rows * (table.n_cols - 1),
-        color: color_from_index,
-        line_width: 2
+        elements: table.nRows * (table.nCols - 1),
+        color: colorFromIndex,
+        lineWidth: 2
     });
 }
 
-function draw_it()
+function drawIt()
 {
-    pc_batch.draw();
+    pcBatch.draw();
 }
 
 $().ready(function () {
@@ -65,5 +65,5 @@ $().ready(function () {
     gl = Lux.init({
         clearColor: [0, 0, 0, 0.2]
     });
-    Lux.Scene.add(parallel_coords());
+    Lux.Scene.add(parallelCoords());
 });

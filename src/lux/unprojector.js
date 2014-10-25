@@ -1,59 +1,59 @@
 (function() {
 
 var rb;
-var depth_value;
-var clear_batch;
+var depthValue;
+var clearBatch;
     
 Lux.Unprojector = {
-    draw_unproject_scene: function(callback) {
+    drawUnprojectScene: function(callback) {
         var ctx = Lux._globals.ctx;
         if (!rb) {
-            rb = Lux.render_buffer({
+            rb = Lux.renderBuffer({
                 width: ctx.viewportWidth,
                 height: ctx.viewportHeight,
-                TEXTURE_MAG_FILTER: ctx.NEAREST,
-                TEXTURE_MIN_FILTER: ctx.NEAREST
+                textureMagFilter: ctx.NEAREST,
+                textureMinFilter: ctx.NEAREST
             });
         }
         // In addition to clearing the depth buffer, we need to fill
         // the color buffer with
         // the right depth value. We do it via the batch below.
 
-        if (!clear_batch) {
-            var xy = Shade(Lux.attribute_buffer({
-                vertex_array: [-1, -1,   1, -1,   -1,  1,   1,  1], 
-                item_size: 2}));
+        if (!clearBatch) {
+            var xy = Shade(Lux.attributeBuffer({
+                vertexArray: [-1, -1,   1, -1,   -1,  1,   1,  1], 
+                itemSize: 2}));
             var model = Lux.model({
-                type: "triangle_strip",
+                type: "triangleStrip",
                 elements: 4,
                 vertex: xy
             });
-            depth_value = Shade.parameter("float");
-            clear_batch = Lux.bake(model, {
-                position: Shade.vec(xy, depth_value),
+            depthValue = Shade.parameter("float");
+            clearBatch = Lux.bake(model, {
+                position: Shade.vec(xy, depthValue),
                 color: Shade.vec(1,1,1,1)
             });
         }
 
-        callback = callback || ctx._luxGlobals.display_callback;
-        var old_scene_render_mode = ctx._luxGlobals.batchRenderMode;
+        callback = callback || ctx._luxGlobals.displayCallback;
+        var oldSceneRenderMode = ctx._luxGlobals.batchRenderMode;
         ctx._luxGlobals.batchRenderMode = 2;
-        rb.with_bound_buffer(function() {
-            var old_clear_color = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
-            var old_clear_depth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
-            ctx.clearColor(old_clear_depth,
-                           old_clear_depth / (1 << 8),
-                           old_clear_depth / (1 << 16),
-                           old_clear_depth / (1 << 24));
+        rb.withBoundBuffer(function() {
+            var oldClearColor = ctx.getParameter(ctx.COLOR_CLEAR_VALUE);
+            var oldClearDepth = ctx.getParameter(ctx.DEPTH_CLEAR_VALUE);
+            ctx.clearColor(oldClearDepth,
+                           oldClearDepth / (1 << 8),
+                           oldClearDepth / (1 << 16),
+                           oldClearDepth / (1 << 24));
             ctx.clear(ctx.DEPTH_BUFFER_BIT | ctx.COLOR_BUFFER_BIT);
             try {
                 callback();
             } finally {
-                ctx.clearColor(old_clear_color[0],
-                               old_clear_color[1],
-                               old_clear_color[2],
-                               old_clear_color[3]);
-                ctx._luxGlobals.batchRenderMode = old_scene_render_mode;
+                ctx.clearColor(oldClearColor[0],
+                               oldClearColor[1],
+                               oldClearColor[2],
+                               oldClearColor[3]);
+                ctx._luxGlobals.batchRenderMode = oldSceneRenderMode;
             }
         });
     },
@@ -61,17 +61,17 @@ Lux.Unprojector = {
     unproject: function(x, y) {
         var ctx = Lux._globals.ctx;
         var buf = new ArrayBuffer(4);
-        var result_bytes = new Uint8Array(4);
+        var resultBytes = new Uint8Array(4);
         ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
-                       result_bytes);
-        rb.with_bound_buffer(function() {
+                       resultBytes);
+        rb.withBoundBuffer(function() {
             ctx.readPixels(x, y, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, 
-                           result_bytes);
+                           resultBytes);
         });
-        return result_bytes[0] / 256 + 
-            result_bytes[1] / (1 << 16) + 
-            result_bytes[2] / (1 << 24);
-        // +  result_bytes[3] / (1 << 32);
+        return resultBytes[0] / 256 + 
+            resultBytes[1] / (1 << 16) + 
+            resultBytes[2] / (1 << 24);
+        // +  resultBytes[3] / (1 << 32);
     }
 };
 

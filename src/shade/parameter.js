@@ -1,9 +1,9 @@
 Shade.parameter = function(type, v)
 {
-    var call_lookup = [
-        [Shade.Types.float_t, "uniform1f"],
-        [Shade.Types.int_t, "uniform1i"],
-        [Shade.Types.bool_t, "uniform1i"],
+    var callLookup = [
+        [Shade.Types.floatT, "uniform1f"],
+        [Shade.Types.intT, "uniform1i"],
+        [Shade.Types.boolT, "uniform1i"],
         [Shade.Types.sampler2D, "uniform1i"],
         [Shade.Types.vec2, "uniform2fv"],
         [Shade.Types.vec3, "uniform3fv"],
@@ -13,7 +13,7 @@ Shade.parameter = function(type, v)
         [Shade.Types.mat4, "uniformMatrix4fv"]
     ];
 
-    var uniform_name = Shade.unique_name();
+    var uniformName = Shade.uniqueName();
     if (_.isUndefined(type)) throw new Error("parameter requires type");
     if (typeof type === 'string') type = Shade.Types[type];
     if (_.isUndefined(type)) throw new Error("parameter requires valid type");
@@ -22,28 +22,28 @@ Shade.parameter = function(type, v)
     // parameter to be used by the GLSL uniform when it is set.
     var value;
 
-    var call = _.detect(call_lookup, function(p) { return type.equals(p[0]); });
+    var call = _.detect(callLookup, function(p) { return type.equals(p[0]); });
     if (!_.isUndefined(call)) {
         call = call[1];
     } else {
         throw new Error("Unsupported type " + type.repr() + " for parameter.");
     }
-    var result = Shade._create_concrete_exp({
+    var result = Shade._createConcreteExp({
         parents: [],
         watchers: [],
         type: type,
-        expression_type: 'parameter',
-        glsl_expression: function() {
-            if (this._must_be_function_call) {
-                return this.glsl_name + "()";
+        expressionType: 'parameter',
+        glslExpression: function() {
+            if (this._mustBeFunctionCall) {
+                return this.glslName + "()";
             } else
-                return uniform_name; 
+                return uniformName; 
         },
         evaluate: function() {
             return value;
         },
-        element: Shade.memoize_on_field("_element", function(i) {
-            if (this.type.is_pod()) {
+        element: Shade.memoizeOnField("_element", function(i) {
+            if (this.type.isPod()) {
                 if (i === 0)
                     return this;
                 else
@@ -52,25 +52,25 @@ Shade.parameter = function(type, v)
                 return this.at(i);
         }),
         compile: function(ctx) {
-            ctx.declare_uniform(uniform_name, this.type);
-            if (this._must_be_function_call) {
-                this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
-                ctx.add_initialization(this.precomputed_value_glsl_name + " = " + uniform_name);
-                ctx.value_function(this, this.precomputed_value_glsl_name);
+            ctx.declareUniform(uniformName, this.type);
+            if (this._mustBeFunctionCall) {
+                this.precomputedValueGlslName = ctx.requestFreshGlslName();
+                ctx.strings.push(this.type.declare(this.precomputedValueGlslName), ";\n");
+                ctx.addInitialization(this.precomputedValueGlslName + " = " + uniformName);
+                ctx.valueFunction(this, this.precomputedValueGlslName);
             }
         },
         set: function(v) {
             // Ideally, we'd like to do type checking here, but I'm concerned about
             // performance implications. setting a uniform might be a hot path
-            // then again, Shade.Types.type_of is unlikely to be particularly fast.
+            // then again, Shade.Types.typeOf is unlikely to be particularly fast.
             // FIXME check performance
-            var t = Shade.Types.type_of(v);
-            if (t === "shade_expression")
+            var t = Shade.Types.typeOf(v);
+            if (t === "shadeExpression")
                 v = v.evaluate();
             value = v;
-            if (this._lux_active_uniform) {
-                this._lux_active_uniform(v);
+            if (this._luxActiveUniform) {
+                this._luxActiveUniform(v);
             }
             _.each(this.watchers, function(f) { f(v); });
         },
@@ -83,14 +83,14 @@ Shade.parameter = function(type, v)
         unwatch: function(callback) {
             this.watchers.splice(this.watchers.indexOf(callback), 1);
         },
-        uniform_call: call,
-        uniform_name: uniform_name,
+        uniformCall: call,
+        uniformName: uniformName,
 
         //////////////////////////////////////////////////////////////////////
         // debugging
 
-        _json_helper: Shade.Debug._json_builder("parameter", function(obj) {
-            obj.parameter_type = type.repr();
+        _jsonHelper: Shade.Debug._jsonBuilder("parameter", function(obj) {
+            obj.parameterType = type.repr();
             return obj;
         })
     });

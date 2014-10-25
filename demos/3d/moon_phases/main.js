@@ -7,53 +7,53 @@ $().ready(function() {
     var sphere = Lux.Models.sphere(128, 128);
 
     // this is not entirely accurate, but it's probably close enough.
-    var eccentricity_libration = angle.cos().mul(0.05);
+    var eccentricityLibration = angle.cos().mul(0.05);
 
     var camera = Lux.Scene.Transform.Camera.ortho({
         near: -10, far: 10,
-        zoom: Shade(0.8).add(eccentricity_libration)
+        zoom: Shade(0.8).add(eccentricityLibration)
     });
 
     Lux.Scene.add(camera);
 
-    var user_latitude = Shade.parameter("float", 85);
+    var userLatitude = Shade.parameter("float", 85);
     if (navigator.geolocation)
         navigator.geolocation.getCurrentPosition(function(position) {
-            user_latitude.set(position.coords.latitude);
+            userLatitude.set(position.coords.latitude);
         });
-    var latitude_rot = Shade.rotation(Shade(270).add(user_latitude).radians(), Shade.vec(0,0,1));
-    var light_pos = Shade.rotation(angle, latitude_rot(Shade.vec(0,1,0)))(latitude_rot)(Shade.vec(2,0,15)).swizzle("xyz");
+    var latitudeRot = Shade.rotation(Shade(270).add(userLatitude).radians(), Shade.vec(0,0,1));
+    var lightPos = Shade.rotation(angle, latitudeRot(Shade.vec(0,1,0)))(latitudeRot)(Shade.vec(2,0,15)).swizzle("xyz");
 
-    var ambient_light = Shade.Light.ambient({
+    var ambientLight = Shade.Light.ambient({
         color: Shade.vec(0.659, 0.659, 0.659, 1)
     });
 
-    var diffuse_light = Shade.Light.diffuse({
+    var diffuseLight = Shade.Light.diffuse({
         color: Shade.vec(0.5, 0.5, 0.5, 1),
-        position: light_pos.append(1)
+        position: lightPos.append(1)
     });
 
-    var latitude_libration = angle.cos().neg().mul(Shade(6.69).radians());
-    var longitude_libration = angle.sin().mul(Shade(8.16).radians());
-    var model_mat = 
-        (Shade.rotation(longitude_libration, Shade.vec(0,1,0)))
-        (Shade.rotation(Shade(6.1575).add(latitude_libration), Shade.vec(1,0,0)))
-        (latitude_rot);
+    var latitudeLibration = angle.cos().neg().mul(Shade(6.69).radians());
+    var longitudeLibration = angle.sin().mul(Shade(8.16).radians());
+    var modelMat = 
+        (Shade.rotation(longitudeLibration, Shade.vec(0,1,0)))
+        (Shade.rotation(Shade(6.1575).add(latitudeLibration), Shade.vec(1,0,0)))
+        (latitudeRot);
 
-    var uv       = sphere.tex_coord.swizzle("yx");
-    var pos      = model_mat(sphere.vertex);
-    var surfnorm = model_mat(sphere.normal).swizzle("xyz");
+    var uv       = sphere.texCoord.swizzle("yx");
+    var pos      = modelMat(sphere.vertex);
+    var surfnorm = modelMat(sphere.normal).swizzle("xyz");
 
     Promise.all([Lux.Promises.texture({
         src: "/lux/demos/img/moon_2048.jpg",
-        max_anisotropy: 16
+        maxAnisotropy: 16
     }), Lux.Promises.texture({
         src: "/lux/demos/img/moon_bump_2048.jpg",
-        max_anisotropy: 16
-    })]).spread(function(moon, moon_bump) {
+        maxAnisotropy: 16
+    })]).spread(function(moon, moonBump) {
         var bumpnorm = Shade.ThreeD.bump({
             uv: uv,
-            map: moon_bump,
+            map: moonBump,
             scale: 0.01,
             position: pos.swizzle("xyz"),
             normal: surfnorm
@@ -70,9 +70,9 @@ $().ready(function() {
             appearance: {
                 position: pos,
                 color: Shade.ifelse(
-                    surfnorm.dot(light_pos).gt(0),
-                    Shade.add(ambient_light, diffuse_light)(material),
-                    ambient_light(material).swizzle("xyz").mul(Shade.vec(0.2,0.18,0.15)).append(1))
+                    surfnorm.dot(lightPos).gt(0),
+                    Shade.add(ambientLight, diffuseLight)(material),
+                    ambientLight(material).swizzle("xyz").mul(Shade.vec(0.2,0.18,0.15)).append(1))
             }
         }));
 

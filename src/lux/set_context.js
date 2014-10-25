@@ -1,5 +1,5 @@
-Lux.setContext = function(the_ctx)
+Lux.setContext = function(theCtx)
 {
-    Lux._globals.ctx = the_ctx;
+    Lux._globals.ctx = theCtx;
     // Shade.setContext(the_ctx);
 };

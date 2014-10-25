@@ -1,42 +1,42 @@
 var angle;
 
-function create_cube_batch(opts)
+function createCubeBatch(opts)
 {
     var ready = false;
-    var model = Lux.Models.flat_cube();
+    var model = Lux.Models.flatCube();
     var texture = Lux.texture({ 
         src: "../img/glass.jpg",
         onload: function() { 
             ready = true;
         }
     });
-    var material_color = Shade.texture2D(texture, model.tex_coord);
-    var final_color;
-    var model_mat = Shade.rotation(angle, Shade.vec(1,1,1));
+    var materialColor = Shade.texture2D(texture, model.texCoord);
+    var finalColor;
+    var modelMat = Shade.rotation(angle, Shade.vec(1,1,1));
 
     if (opts.lighting) {
-        final_color = Shade.gl_light({
-            light_position: Shade.vec(0, 0, 2),
-            material_color: material_color,
-            light_ambient: Shade.vec(0.3, 0.3, 0.3, 1),
-            light_diffuse: Shade.color('white'),
-            per_vertex: opts.per_vertex,
-            vertex: model_mat(model.vertex),
-            normal: model_mat(model.normal)
+        finalColor = Shade.glLight({
+            lightPosition: Shade.vec(0, 0, 2),
+            materialColor: materialColor,
+            lightAmbient: Shade.vec(0.3, 0.3, 0.3, 1),
+            lightDiffuse: Shade.color('white'),
+            perVertex: opts.perVertex,
+            vertex: modelMat(model.vertex),
+            normal: modelMat(model.normal)
         });
     } else {
-        final_color = material_color;
+        finalColor = materialColor;
     }
-    final_color = Shade.vec(final_color.swizzle("rgb"), 0.5);
+    finalColor = Shade.vec(finalColor.swizzle("rgb"), 0.5);
 
     var camera = Shade.Camera.perspective({
-        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
+        lookAt: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)]
     });
     
-    return Lux.conditional_batch(
+    return Lux.conditionalBatch(
         Lux.bake(model, {
-            position: camera(model_mat(model.vertex)),
-            color: final_color,
+            position: camera(modelMat(model.vertex)),
+            color: finalColor,
             mode: Lux.DrawingMode.additive
         }), 
         function() { return texture.ready; });
@@ -49,6 +49,6 @@ $().ready(function () {
 
     angle = gl.parameters.now.mul(50).radians();
 
-    Lux.Scene.add(create_cube_batch({ lighting: true, per_vertex: true }));
+    Lux.Scene.add(createCubeBatch({ lighting: true, perVertex: true }));
     Lux.Scene.animate();
 });

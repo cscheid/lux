@@ -1,6 +1,6 @@
 $().ready(function () {
-    function create_scene(canvas_id) {
-        var canvas = document.getElementById(canvas_id);
+    function createScene(canvasId) {
+        var canvas = document.getElementById(canvasId);
         var ctx = Lux.init({
             canvas: canvas,
             clearColor: [0,0,0,0.1],
@@ -18,23 +18,23 @@ $().ready(function () {
             }
         });
         
-        var globe_zoom = Shade.parameter("float", 3.0);
-        var view_proj = Shade.Camera.perspective({
-            look_at: [Shade.vec(0, 0,  6),
+        var globeZoom = Shade.parameter("float", 3.0);
+        var viewProj = Shade.Camera.perspective({
+            lookAt: [Shade.vec(0, 0,  6),
                       Shade.vec(0, 0, -1),
                       Shade.vec(0, 1,  0)],
-            field_of_view_y: Shade.div(20, globe_zoom)
+            fieldOfViewY: Shade.div(20, globeZoom)
         });
         
         var globe = Lux.Marks.globe({ 
-            view_proj: view_proj,
-            zoom: globe_zoom
+            viewProj: viewProj,
+            zoom: globeZoom
         });
         
         Lux.Scene.add(globe);
         return ctx;
     }
 
-    create_scene("webgl1");
-    create_scene("webgl2");
+    createScene("webgl1");
+    createScene("webgl2");
 });

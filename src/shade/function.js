@@ -11,9 +11,9 @@ Shade.function = function(value)
 
      Developer notes:
 
-     FIXME: Document js_evaluate appropriately. This is a cool feature!
+     FIXME: Document jsEvaluate appropriately. This is a cool feature!
 
-     This is not a part of the value_exp object hierarchy because GLSL
+     This is not a part of the valueExp object hierarchy because GLSL
      is not a functional language. These objects are allowed in
      Javascript, but must always be applied to something before being
      compiled.
@@ -24,19 +24,19 @@ Shade.function = function(value)
      */
 
     var result = function() {
-        var wrapped_arguments = [];
+        var wrappedArguments = [];
         for (var i=0; i<arguments.length; ++i) {
-            wrapped_arguments.push(Shade.make(arguments[i]));
+            wrappedArguments.push(Shade.make(arguments[i]));
         }
-        return Shade.make(value.apply(this, wrapped_arguments));
+        return Shade.make(value.apply(this, wrappedArguments));
     };
-    result.type = Shade.Types.function_t;
-    var args_type_cache = {};
-    var create_parameterized_function = function(shade_function, types) {
+    result.type = Shade.Types.functionT;
+    var argsTypeCache = {};
+    var createParameterizedFunction = function(shadeFunction, types) {
         var parameters = _.map(types, function(t) {
             return Shade.parameter(t);
         });
-        var expression = shade_function.apply(this, parameters);
+        var expression = shadeFunction.apply(this, parameters);
         return function() {
             for (var i=0; i<arguments.length; ++i)
                 parameters[i].set(arguments[i]);
@@ -44,22 +44,22 @@ Shade.function = function(value)
         };
     };
 
-    result.js_evaluate = function() {
-        var args_types = [];
-        var args_type_string;
+    result.jsEvaluate = function() {
+        var argsTypes = [];
+        var argsTypeString;
         for (var i=0; i<arguments.length; ++i) {
-            args_types.push(Shade.Types.type_of(arguments[i]));
+            argsTypes.push(Shade.Types.typeOf(arguments[i]));
         }
-        args_type_string = _.map(args_types, function(t) { return t.repr(); }).join(",");
-        if (_.isUndefined(args_type_cache[args_type_string]))
-            args_type_cache[args_type_string] = create_parameterized_function(result, args_types);
-        return args_type_cache[args_type_string].apply(result, arguments);
+        argsTypeString = _.map(argsTypes, function(t) { return t.repr(); }).join(",");
+        if (_.isUndefined(argsTypeCache[argsTypeString]))
+            argsTypeCache[argsTypeString] = createParameterizedFunction(result, argsTypes);
+        return argsTypeCache[argsTypeString].apply(result, arguments);
     };
 
     result.evaluate = function() {
         return value; // function() {
         //     return value.apply(result, arguments);
-        //     // return result.js_evaluate.apply(result, _.toArray(arguments));
+        //     // return result.jsEvaluate.apply(result, _.toArray(arguments));
         // };
     };
 

@@ -1,10 +1,10 @@
 Shade.varying = function(name, type)
 {
     if (_.isUndefined(type)) throw new Error("varying requires type");
-    if (Lux.type_of(type) === 'string') type = Shade.Types[type];
+    if (Lux.typeOf(type) === 'string') type = Shade.Types[type];
     if (_.isUndefined(type)) throw new Error("varying requires valid type");
-    var allowed_types = [
-        Shade.Types.float_t,
+    var allowedTypes = [
+        Shade.Types.floatT,
         Shade.Types.vec2,
         Shade.Types.vec3,
         Shade.Types.vec4,
@@ -12,16 +12,16 @@ Shade.varying = function(name, type)
         Shade.Types.mat3,
         Shade.Types.mat4
     ];
-    if (!_.any(allowed_types, function(t) { return t.equals(type); })) {
+    if (!_.any(allowedTypes, function(t) { return t.equals(type); })) {
         throw new Error("varying does not support type '" + type.repr() + "'");
     }
-    return Shade._create_concrete_exp( {
+    return Shade._createConcreteExp( {
         parents: [],
         type: type,
-        expression_type: 'varying',
-        _varying_name: name,
-        element: Shade.memoize_on_field("_element", function(i) {
-            if (this.type.is_pod()) {
+        expressionType: 'varying',
+        _varyingName: name,
+        element: Shade.memoizeOnField("_element", function(i) {
+            if (this.type.isPod()) {
                 if (i === 0)
                     return this;
                 else
@@ -29,9 +29,9 @@ Shade.varying = function(name, type)
             } else
                 return this.at(i);
         }),
-        glsl_expression: function() { 
-            if (this._must_be_function_call) {
-                return this.glsl_name + "()";
+        glslExpression: function() { 
+            if (this._mustBeFunctionCall) {
+                return this.glslName + "()";
             } else
                 return name; 
         },
@@ -39,21 +39,21 @@ Shade.varying = function(name, type)
             throw new Error("evaluate unsupported for varying expressions");
         },
         compile: function(ctx) {
-            ctx.declare_varying(name, this.type);
-            if (this._must_be_function_call) {
-                this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
-                ctx.add_initialization(this.precomputed_value_glsl_name + " = " + name);
-                ctx.value_function(this, this.precomputed_value_glsl_name);
+            ctx.declareVarying(name, this.type);
+            if (this._mustBeFunctionCall) {
+                this.precomputedValueGlslName = ctx.requestFreshGlslName();
+                ctx.strings.push(this.type.declare(this.precomputedValueGlslName), ";\n");
+                ctx.addInitialization(this.precomputedValueGlslName + " = " + name);
+                ctx.valueFunction(this, this.precomputedValueGlslName);
             }
         },
 
         //////////////////////////////////////////////////////////////////////
         // debugging
 
-        _json_helper: Shade.Debug._json_builder("varying", function(obj) {
-            obj.varying_type = type.repr();
-            obj.varying_name = name;
+        _jsonHelper: Shade.Debug._jsonBuilder("varying", function(obj) {
+            obj.varyingType = type.repr();
+            obj.varyingName = name;
             return obj;
         })
     });

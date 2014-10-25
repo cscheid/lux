@@ -1,5 +1,5 @@
 /*
- * Lux.attribute_buffer creates the structures necessary for Lux to handle 
+ * Lux.attributeBuffer creates the structures necessary for Lux to handle 
  * per-vertex data.
  * 
  * Typically these will be vertex positions, normals, texture coordinates, 
@@ -7,7 +7,7 @@
  * 
  * options: 
  * 
- *   vertex_array is the data array to be used. It must be one of the following 
+ *   vertexArray is the data array to be used. It must be one of the following 
  *     datatypes:
  * 
  *     - a javascript array of values, (which will be converted to a typed array
@@ -17,9 +17,9 @@
  * 
  *     - an ArrayBuffer of the appropriate size
  * 
- *   item_size is the number of elements to be associated with each vertex
+ *   itemSize is the number of elements to be associated with each vertex
  * 
- *   item_type is the data type of each element. Default is 'float', for
+ *   itemType is the data type of each element. Default is 'float', for
  *     IEEE 754 32-bit floating point numbers.
  * 
  *   usage follows the WebGL bufferData call. From the man page for bufferData:
@@ -27,7 +27,7 @@
  *     Specifies the expected usage pattern of the data store. The symbolic 
  *     constant must be STREAM_DRAW, STATIC_DRAW, or DYNAMIC_DRAW.
  * 
- *   keep_array tells Lux.attribute_buffer to keep a copy of the buffer in 
+ *   keepArray tells Lux.attributeBuffer to keep a copy of the buffer in 
  *   Javascript. This will be stored in the returned object, in the "array" 
  *   property. It is useful for javascript-side inspection, or as a convenient
  *   place to keep the array stashed in case you need it.
@@ -46,92 +46,92 @@
  * Example usage:
  * 
  *   // associate three 32-bit floating-point values with each vertex
- *   var position_attribute = Lux.attribute_buffer({
- *       vertex_array: [1,0,0, 0,1,0, 1,0,0],
- *       // item_size: 3 is the default
- *       // item_type: 'float' is the default
+ *   var positionAttribute = Lux.attributeBuffer({
+ *       vertexArray: [1,0,0, 0,1,0, 1,0,0],
+ *       // itemSize: 3 is the default
+ *       // itemType: 'float' is the default
  *   })
  * 
  *   // associate four 8-bit unsigned bytes with each vertex
- *   var color_attribute = Lux.attribute_buffer({
- *       vertex_array: [1,0,0,1, 1,1,0,1, 1,1,1,1],
- *       item_size: 4,
- *       item_type: 'ubyte', // the default item_type is 'float'
+ *   var colorAttribute = Lux.attributeBuffer({
+ *       vertexArray: [1,0,0,1, 1,1,0,1, 1,1,1,1],
+ *       itemSize: 4,
+ *       itemType: 'ubyte', // the default itemType is 'float'
  *       normalized: true // when 
  *   });
  *   ...
  * 
  *   var triangle = Lux.model({
  *       type: 'triangles',
- *       position: position_attribute,
- *       color: color_attribute
+ *       position: positionAttribute,
+ *       color: colorAttribute
  *   })
  */
 
-Lux.attribute_buffer = function(opts)
+Lux.attributeBuffer = function(opts)
 {
     var ctx = Lux._globals.ctx;
     opts = _.defaults(opts, {
-        item_size: 3,
-        item_type: 'float',
+        itemSize: 3,
+        itemType: 'float',
         usage: ctx.STATIC_DRAW,
         normalized: false,
-        keep_array: false,
+        keepArray: false,
         stride: 0,
         offset: 0
     });
 
-    var itemSize = opts.item_size;
+    var itemSize = opts.itemSize;
     if ([1,2,3,4].indexOf(itemSize) === -1) {
-        throw new Error("opts.item_size must be one of 1, 2, 3, or 4");
+        throw new Error("opts.itemSize must be one of 1, 2, 3, or 4");
     }
 
-    var gl_enum_typed_array_map = {
-        'float': { webgl_enum: ctx.FLOAT, typed_array_ctor: Float32Array, size: 4 },
-        'short': { webgl_enum: ctx.SHORT, typed_array_ctor: Int16Array, size: 2 },
-        'ushort': { webgl_enum: ctx.UNSIGNED_SHORT, typed_array_ctor: Uint16Array, size: 2 },
-        'byte': { webgl_enum: ctx.BYTE, typed_array_ctor: Int8Array, size: 1 },
-        'ubyte': { webgl_enum: ctx.UNSIGNED_BYTE, typed_array_ctor: Uint8Array, size: 1 }
+    var glEnumTypedArrayMap = {
+        'float': { webglEnum: ctx.FLOAT, typedArrayCtor: Float32Array, size: 4 },
+        'short': { webglEnum: ctx.SHORT, typedArrayCtor: Int16Array, size: 2 },
+        'ushort': { webglEnum: ctx.UNSIGNED_SHORT, typedArrayCtor: Uint16Array, size: 2 },
+        'byte': { webglEnum: ctx.BYTE, typedArrayCtor: Int8Array, size: 1 },
+        'ubyte': { webglEnum: ctx.UNSIGNED_BYTE, typedArrayCtor: Uint8Array, size: 1 }
     };
 
-    var itemType = gl_enum_typed_array_map[opts.item_type];
+    var itemType = glEnumTypedArrayMap[opts.itemType];
     if (_.isUndefined(itemType)) {
-        throw new Error("opts.item_type must be 'float', 'short', 'ushort', 'byte' or 'ubyte'");
+        throw new Error("opts.itemType must be 'float', 'short', 'ushort', 'byte' or 'ubyte'");
     }
 
-    if (_.isUndefined(opts.vertex_array)) {
-        throw new Error("opts.vertex_array must be defined");
+    if (_.isUndefined(opts.vertexArray)) {
+        throw new Error("opts.vertexArray must be defined");
     }
 
-    function convert_array(array) {
+    function convertArray(array) {
         var numItems;
         if (array.constructor === Array) {
             if (array.length % itemSize) {
-                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                throw new Error("set: attributeBuffer expected length to be a multiple of " + 
                     itemSize + ", got " + array.length + " instead.");
             }
-            array = new itemType.typed_array_ctor(array);
-        } else if (array.constructor === itemType.typed_array_ctor) {
+            array = new itemType.typedArrayCtor(array);
+        } else if (array.constructor === itemType.typedArrayCtor) {
             if (array.length % itemSize) {
-                throw new Error("set: attribute_buffer expected length to be a multiple of " + 
+                throw new Error("set: attributeBuffer expected length to be a multiple of " + 
                     itemSize + ", got " + array.length + " instead.");
             }
-        } else if (opts.vertex_array.constructor === ArrayBuffer) {
-            array = opts.vertex_array;
+        } else if (opts.vertexArray.constructor === ArrayBuffer) {
+            array = opts.vertexArray;
         } else {
-            throw new Error("Unrecognized array type for attribute_buffer");
+            throw new Error("Unrecognized array type for attributeBuffer");
         }
         return array;
     }
 
-    var array = convert_array(opts.vertex_array);
+    var array = convertArray(opts.vertexArray);
     var buffer = Lux.buffer({
         usage: opts.usage,
         array: array,
-        keep_array: opts.keep_array
+        keepArray: opts.keepArray
     });
 
-    return Lux.attribute_buffer_view(_.defaults(opts, {
+    return Lux.attributeBufferView(_.defaults(opts, {
         buffer: buffer
     }));
 };

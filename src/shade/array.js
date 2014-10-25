@@ -4,61 +4,61 @@
 
 Shade.array = function(v)
 {
-    var t = Lux.type_of(v);
+    var t = Lux.typeOf(v);
     if (t !== 'array')
         throw new Error("type error: need array");
 
-    var new_v = v.map(Shade.make);
-    var array_size = new_v.length;
-    if (array_size === 0) {
+    var newV = v.map(Shade.make);
+    var arraySize = newV.length;
+    if (arraySize === 0) {
         throw new Error("array constant must be non-empty");
     }
 
-    var new_types = new_v.map(function(t) { return t.type; });
-    var array_type = Shade.Types.array(new_types[0], array_size);
-    if (_.any(new_types, function(t) { return !t.equals(new_types[0]); })) {
+    var newTypes = newV.map(function(t) { return t.type; });
+    var arrayType = Shade.Types.array(newTypes[0], arraySize);
+    if (_.any(newTypes, function(t) { return !t.equals(newTypes[0]); })) {
         throw new Error("array elements must have identical types");
     }
-    return Shade._create_concrete_exp( {
-        parents: new_v,
-        type: array_type,
-        array_element_type: new_types[0],
-        expression_type: "constant", // FIXME: is there a reason this is not "array"?
+    return Shade._createConcreteExp( {
+        parents: newV,
+        type: arrayType,
+        arrayElementType: newTypes[0],
+        expressionType: "constant", // FIXME: is there a reason this is not "array"?
 
-        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+        evaluate: Shade.memoizeOnGuidDict(function(cache) {
             return _.map(this.parents, function(e) {
                 return e.evaluate(cache);
             });
         }),
         
-        glsl_expression: function() { return this.glsl_name; },
+        glslExpression: function() { return this.glslName; },
         compile: function (ctx) {
-            this.array_initializer_glsl_name = ctx.request_fresh_glsl_name();
-            ctx.strings.push(this.type.declare(this.glsl_name), ";\n");
-            ctx.strings.push("void", this.array_initializer_glsl_name, "(void) {\n");
+            this.arrayInitializerGlslName = ctx.requestFreshGlslName();
+            ctx.strings.push(this.type.declare(this.glslName), ";\n");
+            ctx.strings.push("void", this.arrayInitializerGlslName, "(void) {\n");
             for (var i=0; i<this.parents.length; ++i) {
-                ctx.strings.push("    ", this.glsl_name, "[", i, "] =",
-                                 this.parents[i].glsl_expression(), ";\n");
+                ctx.strings.push("    ", this.glslName, "[", i, "] =",
+                                 this.parents[i].glslExpression(), ";\n");
             }
             ctx.strings.push("}\n");
-            ctx.add_initialization(this.array_initializer_glsl_name + "()");
+            ctx.addInitialization(this.arrayInitializerGlslName + "()");
         },
-        is_constant: function() { return false; }, 
+        isConstant: function() { return false; }, 
         element: function(i) {
             return this.parents[i];
         },
-        element_is_constant: function(i) {
-            return this.parents[i].is_constant();
+        elementIsConstant: function(i) {
+            return this.parents[i].isConstant();
         },
-        element_constant_value: function(i) {
-            return this.parents[i].constant_value();
+        elementConstantValue: function(i) {
+            return this.parents[i].constantValue();
         },
         locate: function(target, xform) {
             var that = this;
             xform = xform || function(x) { return x; };
-            return Shade.locate(function(i) { return xform(that.at(i.as_int())); }, target, 0, array_size-1);
+            return Shade.locate(function(i) { return xform(that.at(i.asInt())); }, target, 0, arraySize-1);
         },
 
-        _json_key: function() { return "array"; }
+        _jsonKey: function() { return "array"; }
     });
 };

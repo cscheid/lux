@@ -1,20 +1,20 @@
 Lux.Data.table = function(obj) {
     obj = _.defaults(obj || {}, {
-        number_columns: []
+        numberColumns: []
     });
     if (_.isUndefined(obj.data)) throw new Error("data is a required field");
     if (_.isUndefined(obj.data)) throw new Error("columns is a required field");
     function table() {
     };
     table.prototype = {
-        is_numeric_row_complete: function(row) {
-            for (var i=0; i<this.number_columns.length; ++i) {
+        isNumericRowComplete: function(row) {
+            for (var i=0; i<this.numberColumns.length; ++i) {
                 var col = this.columns[i];
                 var val = row[col];
                 if (typeof val !== "number")
                     return false;
             }
-            return this.number_columns.length > 0;
+            return this.numberColumns.length > 0;
         }
     };
     var result = new table();

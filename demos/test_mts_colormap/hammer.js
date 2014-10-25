@@ -1,11 +1,11 @@
-function sphere_model(tess)
+function sphereModel(tess)
 {
-    var tex_coord = [];
+    var texCoord = [];
     var elements = [];
 
     for (var i=0; i<=tess; ++i)
         for (var j=0; j<=tess; ++j)
-            tex_coord.push(i/tess, j/tess);
+            texCoord.push(i/tess, j/tess);
 
     for (i=0; i<tess; ++i)
         for (var j=0; j<tess; ++j) {
@@ -15,7 +15,7 @@ function sphere_model(tess)
 
     return Lux.model({
         type: "triangles",
-        tex_coord: [tex_coord, 2],
+        texCoord: [texCoord, 2],
         elements: elements
     });
 }
@@ -29,7 +29,7 @@ $().ready(function () {
 
     var canvas = document.getElementById("webgl");
     var width = canvas.width, height = canvas.height;
-    var interactor = Lux.UI.center_zoom_interactor({
+    var interactor = Lux.UI.centerZoomInteractor({
         width: width, height: height, zoom: 2/3
     });
 
@@ -39,13 +39,13 @@ $().ready(function () {
         interactor: interactor
     });
 
-    var mercator_to_latlon = Lux.Scene.Transform.Geo.mercator_to_latlong();
-    var latlon_to_worldspace = Lux.Scene.Transform.Geo.latlong_to_hammer({ B: B });
+    var mercatorToLatlon = Lux.Scene.Transform.Geo.mercatorToLatlong();
+    var latlonToWorldspace = Lux.Scene.Transform.Geo.latlongToHammer({ B: B });
 
-    Lux.Scene.add(latlon_to_worldspace);
-    latlon_to_worldspace.add(mercator_to_latlon);
+    Lux.Scene.add(latlonToWorldspace);
+    latlonToWorldspace.add(mercatorToLatlon);
 
-    var sphere = sphere_model(200);
+    var sphere = sphereModel(200);
     var texture = Lux.texture({ width: 2048, height: 2048 });
 
     for (var i=0; i<8; ++i)
@@ -53,16 +53,16 @@ $().ready(function () {
         texture.load({
             src: "http://tile.openstreetmap.org/3/" + i + "/" + j + ".png",
             crossOrigin: "anonymous",
-            x_offset: i * 256,
-            y_offset: 2048 - (j+1) * 256,
+            xOffset: i * 256,
+            yOffset: 2048 - (j+1) * 256,
             onload: function() { Lux.Scene.invalidate(); }
         });
 
-    var sphere_actor = Lux.actor({ 
+    var sphereActor = Lux.actor({ 
         model: sphere, 
         appearance: {
-            position: sphere.tex_coord.swizzle("xy").mul(2*Math.PI).sub(Math.PI),
-            color: Shade.texture2D(texture, sphere.tex_coord)}});
+            position: sphere.texCoord.swizzle("xy").mul(2*Math.PI).sub(Math.PI),
+            color: Shade.texture2D(texture, sphere.texCoord)}});
 
-    mercator_to_latlon.add(sphere_actor);
+    mercatorToLatlon.add(sphereActor);
 });

@@ -1,13 +1,13 @@
-Lux.id_buffer = function(vertex_array)
+Lux.idBuffer = function(vertexArray)
 {
-    if (Lux.type_of(vertex_array) !== 'array')
-        throw new Error("id_buffer expects array of integers");
-    var typedArray = new Int32Array(vertex_array);
+    if (Lux.typeOf(vertexArray) !== 'array')
+        throw new Error("idBuffer expects array of integers");
+    var typedArray = new Int32Array(vertexArray);
     var byteArray = new Uint8Array(typedArray.buffer);
-    return Lux.attribute_buffer({
-        vertex_array: byteArray, 
-        item_size: 4, 
-        item_type: 'ubyte', 
+    return Lux.attributeBuffer({
+        vertexArray: byteArray, 
+        itemSize: 4, 
+        itemType: 'ubyte', 
         normalized: true
     });
 };

@@ -1,7 +1,7 @@
 Lux.Models.teapot = function()
 {
     // Teapot data from Daniel Wagner (daniel@ims.tuwien.ac.at), via freeglut
-    var teapot_coords = [
+    var teapotCoords = [
         2.1, 3.6, 0.0, 
         2.071, 3.711, 0.0, 
         2.105, 3.748, 0.0, 
@@ -534,7 +534,7 @@ Lux.Models.teapot = function()
         1.799, 3.6, -0.7654
     ];
 
-    var teapot_elements = [
+    var teapotElements = [
         0, 5, 6, 
         6, 1, 0,
         1, 6, 7,
@@ -1561,10 +1561,10 @@ Lux.Models.teapot = function()
         469, 529, 528
     ];
     
-    var elements = teapot_elements;
-    var coords = teapot_coords;
+    var elements = teapotElements;
+    var coords = teapotCoords;
 
     var mesh = Lux.Mesh.indexed(coords, elements);
-    mesh.make_normals();
+    mesh.makeNormals();
     return mesh.model;
 };

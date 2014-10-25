@@ -1,3 +1,3 @@
-Lux.Scene.Transform.Geo.mercator_to_latlong = 
-    two_d_position_xform(Shade.Scale.Geo.mercator_to_latlong,
-                         Shade.Scale.Geo.latlong_to_mercator);
+Lux.Scene.Transform.Geo.mercatorToLatlong = 
+    twoDPositionXform(Shade.Scale.Geo.mercatorToLatlong,
+                      Shade.Scale.Geo.latlongToMercator);

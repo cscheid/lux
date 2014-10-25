@@ -1,4 +1,4 @@
-Shade.Bits.shift_right = Shade.make(function(v, amt) {
+Shade.Bits.shiftRight = Shade.make(function(v, amt) {
     // NB: this is *not* equivalent to any sequence of operations
     // involving round()
 

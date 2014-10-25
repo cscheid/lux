@@ -4,13 +4,13 @@
 
 (function() {
 
-var latest_pick_id = 1;
+var latestPickId = 1;
 
-Lux.fresh_pick_id = function(quantity)
+Lux.freshPickId = function(quantity)
 {
     quantity = quantity || 1;
-    var result = latest_pick_id;
-    latest_pick_id += quantity;
+    var result = latestPickId;
+    latestPickId += quantity;
     return result;
 };
 

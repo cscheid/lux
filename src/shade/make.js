@@ -8,7 +8,7 @@ Shade.make = function(value)
     if (_.isUndefined(value)) {
         return undefined;
     }
-    var t = Lux.type_of(value);
+    var t = Lux.typeOf(value);
     if (t === 'string') {
         // Did you accidentally say exp1 + exp2 when you meant
         // exp1.add(exp2)?
@@ -25,16 +25,16 @@ Shade.make = function(value)
     } else if (t === 'function') {
         return Shade.function(value);
     }
-    t = Shade.Types.type_of(value);
-    if (t.is_vec() || t.is_mat()) {
+    t = Shade.Types.typeOf(value);
+    if (t.isVec() || t.isMat()) {
         return Shade.constant(value);
-    } else if (value._shade_type === 'attribute_buffer') {
-        return Shade.attribute_from_buffer(value);
-    } else if (value._shade_type === 'render_buffer') {
-        return Shade.sampler2D_from_texture(value.texture);
-    } else if (value._shade_type === 'texture') {
-        return Shade.sampler2D_from_texture(value);
-    } else if (t.equals(Shade.Types.other_t)) { // FIXME struct types 
+    } else if (value._shadeType === 'attributeBuffer') {
+        return Shade.attributeFromBuffer(value);
+    } else if (value._shadeType === 'renderBuffer') {
+        return Shade.sampler2dFromTexture(value.texture);
+    } else if (value._shadeType === 'texture') {
+        return Shade.sampler2dFromTexture(value);
+    } else if (t.equals(Shade.Types.otherT)) { // FIXME struct types 
         return Shade.struct(value);
     }
 

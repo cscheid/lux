@@ -151,7 +151,7 @@ Lux.init = function(opts)
                     return listener(event);
                 return true;
             }
-            canvas.addEventListener(ename, Lux.on_context(gl, internalListener), false);
+            canvas.addEventListener(ename, Lux.onContext(gl, internalListener), false);
         });
         
         if (!_.isUndefined(opts.mousewheel)) {
@@ -237,18 +237,18 @@ Lux.init = function(opts)
         gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
     }
     gl.parameters.now = Shade.parameter("float", 0);
-    gl.parameters.frame_duration = Shade.parameter("float", 0);
+    gl.parameters.frameDuration = Shade.parameter("float", 0);
 
-    gl._luxGlobals.scene = Lux.default_scene({
+    gl._luxGlobals.scene = Lux.defaultScene({
         context: gl,
         clearColor: opts.clearColor,
         clearDepth: opts.clearDepth,
-        pre_draw: function() {
-            var raw_t = new Date().getTime() / 1000;
-            var new_t = raw_t - gl._luxGlobals.epoch;
-            var old_t = gl.parameters.now.get();
-            gl.parameters.frame_duration.set(new_t - old_t);
-            gl.parameters.now.set(new_t);
+        preDraw: function() {
+            var rawT = new Date().getTime() / 1000;
+            var newT = rawT - gl._luxGlobals.epoch;
+            var oldT = gl.parameters.now.get();
+            gl.parameters.frameDuration.set(newT - oldT);
+            gl.parameters.now.set(newT);
             gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         }
     });

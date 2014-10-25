@@ -7,22 +7,22 @@ var alive = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-function init_webgl()
+function initWebgl()
 {
     var tex = Lux.texture({ 
         src: "image.png",
         onload: function() { Lux.Scene.invalidate(); }
     });
 
-    var square_model = Models.square();
+    var squareModel = Models.square();
     Lux.Scene.add(Lux.actor({
-        model: square_model, 
+        model: squareModel, 
         appearance: {
-            position: square_model.vertex,
-            color: S.texture2D(tex, square_model.tex_coord)}}));
+            position: squareModel.vertex,
+            color: S.texture2D(tex, squareModel.texCoord)}}));
 }
 
 $().ready(function() {
     gl = Lux.init();
-    init_webgl();
+    initWebgl();
 });
