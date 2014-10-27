@@ -17,7 +17,7 @@ Shade.set = function(exp, name)
             }
             if ((name === "gl_Position" ||
                  name === "gl_PointSize") &&
-                ctx.compile_type !== Shade.VERTEX_PROGRAM_COMPILE) {
+                ctx.compileType !== Shade.VERTEX_PROGRAM_COMPILE) {
                 throw new Error("gl_Position and gl_PointSize assignment "
                        + "only allowed on vertex shaders");
             }
