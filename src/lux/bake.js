@@ -128,7 +128,7 @@ Lux.bake = function(model, appearance, opts)
     // these are necessary outputs which must be compiled by Shade.program
     function isProgramOutput(key)
     {
-        return ["color", "position", "point_size",
+        return ["color", "position", "pointSize",
                 "gl_FragColor", "gl_Position", "gl_PointSize"].indexOf(key) != -1;
     };
 

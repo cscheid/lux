@@ -79,7 +79,7 @@ mat3.identity = function()
     return result;
 };
 
-mat3.set_identity = function(mat)
+mat3.setIdentity = function(mat)
 {
     mat3.set(mat, _identity);
     return mat;
@@ -102,7 +102,7 @@ mat3.transpose = function(mat)
     return result;
 };
 
-mat3.set_transpose = function(dest, mat)
+mat3.setTranspose = function(dest, mat)
 {
     if (mat == dest) {
         var a01 = mat[1], a02 = mat[2];
@@ -194,7 +194,7 @@ mat3.invert = function(mat)
     return mat;
 };
 
-mat3.as_mat4 = function(mat)
+mat3.asMat4 = function(mat)
 {
     var result = new Float32Array(9);
     result.buffer._type = 'mat4';
@@ -210,7 +210,7 @@ mat3.as_mat4 = function(mat)
     return result;
 };
 
-mat3.as_mat2 = function(mat)
+mat3.asMat2 = function(mat)
 {
     var result = new Float32Array(4);
     result.buffer._type = 'mat2';
@@ -274,7 +274,7 @@ mat3.multiply = function(dest, other)
     return dest;
 };
 
-mat3.product_vec = function(mat, vec)
+mat3.productVec = function(mat, vec)
 {
     var result = new Float32Array(3);
     result.buffer._type = 'vec3';
@@ -285,7 +285,7 @@ mat3.product_vec = function(mat, vec)
     return result;
 };
 
-mat3.multiply_vec = function(mat, vec)
+mat3.multiplyVec = function(mat, vec)
 {
     var x = vec[0], y = vec[1], z = vec[2];
     vec[0] = mat[0]*x + mat[3]*y + mat[6]*z;
@@ -294,7 +294,7 @@ mat3.multiply_vec = function(mat, vec)
     return vec;
 };
 
-mat3.frobenius_norm = function(mat)
+mat3.frobeniusNorm = function(mat)
 {
     return Math.sqrt(mat[0] * mat[0] +
                      mat[1] * mat[1] +

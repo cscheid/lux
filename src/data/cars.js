@@ -1,7 +1,7 @@
 Data.cars = function() {
     return Lux.Data.table({
         columns: ["mpg", "cyl", "dsp", "hp", "lbs", "acc", "year", "origin", "name"],
-        number_columns: [0, 1, 2, 3, 4, 5, 6, 7],
+        numberColumns: [0, 1, 2, 3, 4, 5, 6, 7],
         data: [
             {name:"chevrolet chevelle malibu", mpg:18, cyl:8, dsp:307, hp:130, lbs:3504, acc:12, year:70, origin:1},
             {name:"buick skylark 320", mpg:15, cyl:8, dsp:350, hp:165, lbs:3693, acc:11.5, year:70, origin:1},

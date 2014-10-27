@@ -44,7 +44,7 @@ like so:
 {
   gl_Position: foo
   gl_FragColor: bar
-  discard_if: baz
+  discardIf: baz
 }
 
 The main disadvantage here is that one application of discard is to

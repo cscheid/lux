@@ -1,10 +1,10 @@
 Data.flowers = function() {
     return Lux.Data.table({
-        species_names: ["setosa", "versicolor", "virginica"],
+        speciesNames: ["setosa", "versicolor", "virginica"],
         traits: ["sepalLength", "sepalWidth", "petalLength", "petalWidth"],
 
         columns: ["sepalLength", "sepalWidth", "petalLength", "petalWidth", "species"],
-        number_columns: [0, 1, 2, 3, 4],
+        numberColumns: [0, 1, 2, 3, 4],
         data: [
             {sepalLength: 5.1, sepalWidth: 3.5, petalLength: 1.4, petalWidth: 0.2, species: 0},
             {sepalLength: 7.0, sepalWidth: 3.2, petalLength: 4.7, petalWidth: 1.4, species: 1},

@@ -7190,7 +7190,7 @@ vec2.copy = function(vec)
 
 vec2.make = vec2.copy;
 
-vec2.equal_eps = function(v1, v2)
+vec2.equalEps = function(v1, v2)
 {
     return Math.abs(v1[0] - v2[0]) < vec.eps &&
         Math.abs(v1[1] - v2[1]) < vec.eps;
@@ -7278,7 +7278,7 @@ vec2.scale = function(dest, val)
     return dest;
 };
 
-vec2.schur_product = function(v1, v2)
+vec2.schurProduct = function(v1, v2)
 {
     var result = new Float32Array(2);
     result.buffer._type = 'vec2';
@@ -7287,7 +7287,7 @@ vec2.schur_product = function(v1, v2)
     return result;
 };
 
-vec2.schur_multiply = function(dest, other)
+vec2.schurMultiply = function(dest, other)
 {
     dest[0] *= other[0];
     dest[1] *= other[1];
@@ -7371,7 +7371,7 @@ vec3.copy = function(vec)
 
 vec3.make = vec3.copy;
 
-vec3.equal_eps = function(v1, v2)
+vec3.equalEps = function(v1, v2)
 {
     return Math.abs(v1[0] - v2[0]) < vec.eps &&
            Math.abs(v1[1] - v2[1]) < vec.eps &&
@@ -7469,7 +7469,7 @@ vec3.scale = function(dest, val)
     return dest;
 };
 
-vec3.schur_product = function(v1, v2)
+vec3.schurProduct = function(v1, v2)
 {
     var result = new Float32Array(3);
     result.buffer._type = 'vec3';
@@ -7479,7 +7479,7 @@ vec3.schur_product = function(v1, v2)
     return result;
 };
 
-vec3.schur_multiply = function(dest, other)
+vec3.schurMultiply = function(dest, other)
 {
     dest[0] *= other[0];
     dest[1] *= other[1];
@@ -7585,7 +7585,7 @@ vec4.random = function() {
     return vec4.make(lst);
 };
 
-vec4.equal_eps = function(v1, v2)
+vec4.equalEps = function(v1, v2)
 {
     return Math.abs(v1[0] - v2[0]) < vec.eps &&
         Math.abs(v1[1] - v2[1]) < vec.eps &&
@@ -7687,7 +7687,7 @@ vec4.scale = function(dest, val)
     return dest;
 };
 
-vec4.schur_product = function(v1, v2)
+vec4.schurProduct = function(v1, v2)
 {
     var result = new Float32Array(4);
     result.buffer._type = 'vec4';
@@ -7698,7 +7698,7 @@ vec4.schur_product = function(v1, v2)
     return result;
 };
 
-vec4.schur_multiply = function(dest, other)
+vec4.schurMultiply = function(dest, other)
 {
     dest[0] *= other[0];
     dest[1] *= other[1];
@@ -7826,7 +7826,7 @@ mat2.identity = function()
     return result;
 };
 
-mat2.set_identity = function(mat)
+mat2.setIdentity = function(mat)
 {
     mat2.set(mat, _identity);
     return mat;
@@ -7844,7 +7844,7 @@ mat2.transpose = function(mat)
     return result;
 };
 
-mat2.set_transpose = function(dest, mat)
+mat2.setTranspose = function(dest, mat)
 {
     if (mat == dest) {
         var a01 = mat[1];
@@ -7905,7 +7905,7 @@ mat2.invert = function(mat)
     return mat;
 };
 
-mat2.as_mat4 = function(mat)
+mat2.asMat4 = function(mat)
 {
     var result = new Float32Array(16);
     result.buffer._type = 'mat4';
@@ -7916,7 +7916,7 @@ mat2.as_mat4 = function(mat)
     return result;
 };
 
-mat2.as_mat3 = function(mat)
+mat2.asMat3 = function(mat)
 {
     var result = new Float32Array(9);
     result.buffer._type = 'mat3';
@@ -7966,7 +7966,7 @@ mat2.multiply = function(dest, other)
     return dest;
 };
 
-mat2.product_vec = function(mat, vec)
+mat2.productVec = function(mat, vec)
 {
     var result = new Float32Array(2);
     result.buffer._type = 'vec2';
@@ -7977,7 +7977,7 @@ mat2.product_vec = function(mat, vec)
 };
 
 
-mat2.multiply_vec = function(mat, vec)
+mat2.multiplyVec = function(mat, vec)
 {
     var x = vec[0], y = vec[1];
     vec[0] = mat[0]*x + mat[2]*y;
@@ -7985,7 +7985,7 @@ mat2.multiply_vec = function(mat, vec)
     return vec;
 };
 
-mat2.frobenius_norm = function(mat)
+mat2.frobeniusNorm = function(mat)
 {
     return Math.sqrt(mat[0] * mat[0] +
                      mat[1] * mat[1] +
@@ -8085,7 +8085,7 @@ mat3.identity = function()
     return result;
 };
 
-mat3.set_identity = function(mat)
+mat3.setIdentity = function(mat)
 {
     mat3.set(mat, _identity);
     return mat;
@@ -8108,7 +8108,7 @@ mat3.transpose = function(mat)
     return result;
 };
 
-mat3.set_transpose = function(dest, mat)
+mat3.setTranspose = function(dest, mat)
 {
     if (mat == dest) {
         var a01 = mat[1], a02 = mat[2];
@@ -8200,7 +8200,7 @@ mat3.invert = function(mat)
     return mat;
 };
 
-mat3.as_mat4 = function(mat)
+mat3.asMat4 = function(mat)
 {
     var result = new Float32Array(9);
     result.buffer._type = 'mat4';
@@ -8216,7 +8216,7 @@ mat3.as_mat4 = function(mat)
     return result;
 };
 
-mat3.as_mat2 = function(mat)
+mat3.asMat2 = function(mat)
 {
     var result = new Float32Array(4);
     result.buffer._type = 'mat2';
@@ -8280,7 +8280,7 @@ mat3.multiply = function(dest, other)
     return dest;
 };
 
-mat3.product_vec = function(mat, vec)
+mat3.productVec = function(mat, vec)
 {
     var result = new Float32Array(3);
     result.buffer._type = 'vec3';
@@ -8291,7 +8291,7 @@ mat3.product_vec = function(mat, vec)
     return result;
 };
 
-mat3.multiply_vec = function(mat, vec)
+mat3.multiplyVec = function(mat, vec)
 {
     var x = vec[0], y = vec[1], z = vec[2];
     vec[0] = mat[0]*x + mat[3]*y + mat[6]*z;
@@ -8300,7 +8300,7 @@ mat3.multiply_vec = function(mat, vec)
     return vec;
 };
 
-mat3.frobenius_norm = function(mat)
+mat3.frobeniusNorm = function(mat)
 {
     return Math.sqrt(mat[0] * mat[0] +
                      mat[1] * mat[1] +
@@ -8422,7 +8422,7 @@ mat4.identity = function()
     return result;
 };
 
-mat4.set_identity = function(mat)
+mat4.setIdentity = function(mat)
 {
     mat4.set(mat, _identity);
     return mat;
@@ -8452,7 +8452,7 @@ mat4.transpose = function(mat)
     return result;
 };
 
-mat4.set_transpose = function(dest, mat)
+mat4.setTranspose = function(dest, mat)
 {
     if (mat == dest) {
         var a01 = mat[1], a02 = mat[2], a03 = mat[3];
@@ -8599,7 +8599,7 @@ mat4.invert = function(mat)
     return mat;
 };
 
-mat4.as_mat3 = function(mat)
+mat4.asMat3 = function(mat)
 {
     var result = new Float32Array(9);
     result.buffer._type = 'mat3';
@@ -8615,7 +8615,7 @@ mat4.as_mat3 = function(mat)
     return result;
 };
 
-mat4.as_mat2 = function(mat)
+mat4.asMat2 = function(mat)
 {
     var result = new Float32Array(4);
     result.buffer._type = 'mat2';
@@ -8628,7 +8628,7 @@ mat4.as_mat2 = function(mat)
 
 
 // from glMatrix
-mat4.as_inverse_transpose_mat3 = function(mat)
+mat4.asInverseTransposeMat3 = function(mat)
 {
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = mat[0], a01 = mat[4], a02 = mat[8];
@@ -8729,7 +8729,7 @@ mat4.multiply = function(dest, other)
     return dest;
 };
 
-mat4.product_vec = function(mat, vec)
+mat4.productVec = function(mat, vec)
 {
     var result = new Float32Array(4);
     result.buffer._type = 'vec4';
@@ -8741,7 +8741,7 @@ mat4.product_vec = function(mat, vec)
     return result;
 };
 
-mat4.multiply_vec = function(mat, vec)
+mat4.multiplyVec = function(mat, vec)
 {
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     vec[0] = mat[0]*x + mat[4]*y + mat[8]*z  + mat[12]*w;
@@ -8751,7 +8751,7 @@ mat4.multiply_vec = function(mat, vec)
     return vec;
 };
 
-mat4.multiply_vec3 = function(mat, vec)
+mat4.multiplyVec3 = function(mat, vec)
 {
     var x = vec[0], y = vec[1], z = vec[2];
     vec[0] = mat[0]*x + mat[4]*y + mat[8]*z;
@@ -8761,7 +8761,7 @@ mat4.multiply_vec3 = function(mat, vec)
 };
 
 // from glMatrix
-mat4.translation_of = function(mat, vec)
+mat4.translationOf = function(mat, vec)
 {
     var result = new Float32Array(16);
     result.buffer._type = 'mat4';
@@ -8809,7 +8809,7 @@ mat4.translate = function(mat, vec)
     return mat;
 };
 
-mat4.scaling_of = function(mat, vec)
+mat4.scalingOf = function(mat, vec)
 {
     var result = new Float32Array(16);
     result.buffer._type = 'mat4';
@@ -8864,7 +8864,7 @@ mat4.scale = function(mat, vec)
 };
 
 // from glMatrix
-mat4.rotation_of = function(mat, angle, axis)
+mat4.rotationOf = function(mat, angle, axis)
 {
     var x = axis[0], y = axis[1], z = axis[2];
     var len = Math.sqrt(x*x + y*y + z*z);
@@ -9117,7 +9117,7 @@ mat4.lookAt = function(eye, center, up)
     return result;
 };
 
-mat4.frobenius_norm = function(mat)
+mat4.frobeniusNorm = function(mat)
 {
     return Math.sqrt(mat[0] * mat[0] +
                      mat[1] * mat[1] +
@@ -9166,12 +9166,12 @@ vec.make = function(v)
     return vec[v.length].make(v);
 };
 
-vec.equal_eps = function(v1, v2)
+vec.equalEps = function(v1, v2)
 {
     if (v1.length != v2.length) {
         throw new Error("mismatched lengths");
     }
-    return vec[v1.length].equal_eps(v1, v2);
+    return vec[v1.length].equalEps(v1, v2);
 };
 
 vec.equal = function(v1, v2)
@@ -9208,12 +9208,12 @@ vec.scaling = function(v, val)
     return vec[v.length].scaling(v, val);
 };
 
-vec.schur_product = function(v1, v2)
+vec.schurProduct = function(v1, v2)
 {
     if (v1.length != v2.length) {
         throw new Error("mismatched lengths");
     }
-    return vec[v1.length].schur_product(v1, v2);
+    return vec[v1.length].schurProduct(v1, v2);
 };
 
 vec.normalized = function(v)
@@ -9278,7 +9278,7 @@ mat3.vec = vec3;
 mat4.vec = vec4;
 mat.eps = 1e-6;
 
-function to_dim(l)
+function toDim(l)
 {
     switch (l) {
     case 4: return 2;
@@ -9290,12 +9290,12 @@ function to_dim(l)
 
 mat.make = function(v)
 {
-    return mat[to_dim(v.length)].make(v);
+    return mat[toDim(v.length)].make(v);
 };
 
 mat.map = function(c, f)
 {
-    return mat[to_dim(c.length)].map(c, f);
+    return mat[toDim(c.length)].map(c, f);
 };
 
 mat.equal = function(m1, m2)
@@ -9303,12 +9303,12 @@ mat.equal = function(m1, m2)
     if (m1.length != m2.length) {
         throw new Error("mismatched lengths: " + m1.length + ", " + m2.length);
     }
-    return mat[to_dim(m1.length)].equal(m1, m2);
+    return mat[toDim(m1.length)].equal(m1, m2);
 };
 
 mat.str = function(m1)
 {
-    return mat[to_dim(m1.length)].str(m1);
+    return mat[toDim(m1.length)].str(m1);
 };
 
 })();
@@ -9788,7 +9788,7 @@ Lux.bake = function(model, appearance, opts)
     // these are necessary outputs which must be compiled by Shade.program
     function isProgramOutput(key)
     {
-        return ["color", "position", "point_size",
+        return ["color", "position", "pointSize",
                 "gl_FragColor", "gl_Position", "gl_PointSize"].indexOf(key) != -1;
     };
 
@@ -11550,6 +11550,7 @@ Lux.Data.table = function(obj) {
 };
 Lux.Data.textureTable = function(table)
 {
+    debugger;
     var elements = [];
     for (var rowIx = 0; rowIx < table.data.length; ++rowIx) {
         var row = table.data[rowIx];
@@ -17839,7 +17840,7 @@ like so:
 {
   gl_Position: foo
   gl_FragColor: bar
-  discard_if: baz
+  discardIf: baz
 }
 
 The main disadvantage here is that one application of discard is to

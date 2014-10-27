@@ -1,5 +1,6 @@
 Lux.Data.textureTable = function(table)
 {
+    debugger;
     var elements = [];
     for (var rowIx = 0; rowIx < table.data.length; ++rowIx) {
         var row = table.data[rowIx];

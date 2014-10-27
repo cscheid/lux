@@ -3,7 +3,7 @@ var luminanceParameter, showOutOfGamut;
 //////////////////////////////////////////////////////////////////////////////
 
 $().ready(function () {
-    init_ui();
+    initUi();
 
     showOutOfGamut = Shade.parameter("bool", true);
     var gl = Lux.init();
