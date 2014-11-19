@@ -1,7 +1,6 @@
 The Big List of Lux TODOs
 
 * TODO naming
-** camelCase in Javascript won :( Give up and fix Lux.
 ** get rid of gl_Position naming, and enforce position, etc.
 * TODO Reimplement set_region for the new attribute_buffer APIs
 * TODO bind() and attribute_buffer_view
@@ -31,6 +30,7 @@ with the memoization infrastructure unless I am careful.
 * BUGS
 ** Documentation fixes
 ** FIXME inconsistency translation lux shade
+** FIXME call operator doesn't do normalization
 * Optimizer
 ** TODO ternary op performance fixes.
 Right now the algorithm in place is correct, but conservative. Ideally,
