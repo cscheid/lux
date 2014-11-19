@@ -35,7 +35,7 @@ Lux.Unprojector = {
             });
         }
 
-        callback = callback || ctx._luxGlobals.displayCallback;
+        callback = callback || function() { Lux._globals.ctx._luxGlobals.scene.draw(); };
         var oldSceneRenderMode = ctx._luxGlobals.batchRenderMode;
         ctx._luxGlobals.batchRenderMode = 2;
         rb.withBoundBuffer(function() {
