@@ -95,24 +95,43 @@ $().ready(function () {
         .mul(Shade.rotation(angle, Shade.vec(0,1,0)))
         .mul(pyramidModel.vertex);
 
-    cube = Lux.bake(cubeModel, {
-        position: camera(cubeXformedVertex),
-        color: cubeModel.color,
-        pickId: ids
-    });
+    Lux.Scene.add(Lux.actor({
+        appearance: {
+            position: camera(cubeXformedVertex),
+            color: cubeModel.color,
+            pickId: ids
+        }, model: cubeModel
+    }));
 
-    pyramid = Lux.bake(pyramidModel, {
-        position: camera(pyramidXformedVertex),
-        color: pyramidModel.color,
-        pickId: Shade.id(7)
-    });
+    Lux.Scene.add(Lux.actor({
+        appearance: {
+            position: camera(pyramidXformedVertex),
+            color: pyramidModel.color,
+            pickId: Shade.id(7)
+        }, model: pyramidModel
+    }));
 
     var start = new Date().getTime();
-    var f = function() {
-        window.requestAnimationFrame(f, canvas);
+    Lux.Scene.animate(function() {
         var elapsed = new Date().getTime() - start;
         angle.set((elapsed / 20) * (Math.PI / 180));
-        gl.display();
-    };
-    f();
+    });
+    
+    // cube = Lux.bake(cubeModel, {
+    // });
+
+    // pyramid = Lux.bake(pyramidModel, {
+    //     position: camera(pyramidXformedVertex),
+    //     color: pyramidModel.color,
+    //     pickId: Shade.id(7)
+    // });
+
+    // var start = new Date().getTime();
+    // var f = function() {
+    //     window.requestAnimationFrame(f, canvas);
+    //     var elapsed = new Date().getTime() - start;
+    //     angle.set((elapsed / 20) * (Math.PI / 180));
+    //     gl.display();
+    // };
+    // f();
 });
