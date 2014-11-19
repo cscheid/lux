@@ -2,8 +2,10 @@
 
 function internalActor(opts) {
     var texture = opts.font.texture;
-    var textureWidth = opts.font.textureWidth;
-    var textureHeight = opts.font.textureHeight;
+
+    // opts.font fields are not camelCase since they come from the JSON data
+    var textureWidth = opts.font.texture_width; 
+    var textureHeight = opts.font.texture_height;
     
     var positionFunction = opts.position;
     var colorFunction = opts.color;
