@@ -93,7 +93,7 @@ vec.map = function(c, f)
 };
 
 /*
-// strictly speaking, this is unnecessary, since only vec3.cross exists.
+// strictly speaking, this is unnecessary, since only vec2.cross and vec3.cross exist.
 // However, to force vec3.* to be written alongside vec.* would mean that
 // some code would be written
 // x = vec.normalized(foo);
