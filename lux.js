@@ -21221,7 +21221,7 @@ Lux.Models.sphere = function(latSecs, longSecs) {
     var i, j, phi, theta;
     for (i=0; i<=latSecs; ++i) {
         phi = (i / latSecs);
-        for (j=0; j<longSecs; ++j) {
+        for (j=0; j<=longSecs; ++j) {
             theta = (j / longSecs);
             verts.push(theta, phi);
         }
@@ -21229,15 +21229,15 @@ Lux.Models.sphere = function(latSecs, longSecs) {
     for (i=0; i<latSecs; ++i) {
         for (j=0; j<longSecs; ++j) {
             var thisX = j;
-            var nextX = (j+1) % longSecs;
+            var nextX = j+1;
             var thisY = i;
             var nextY = i+1;
-            elements.push(thisY * longSecs + thisX,
-                          thisY * longSecs + nextX,
-                          nextY * longSecs + thisX,
-                          thisY * longSecs + nextX,
-                          nextY * longSecs + nextX,
-                          nextY * longSecs + thisX);
+            elements.push(thisY * (longSecs + 1) + thisX,
+                          thisY * (longSecs + 1) + nextX,
+                          nextY * (longSecs + 1) + thisX,
+                          thisY * (longSecs + 1) + nextX,
+                          nextY * (longSecs + 1) + nextX,
+                          nextY * (longSecs + 1) + thisX);
         }
     }
 
