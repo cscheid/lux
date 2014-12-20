@@ -9245,7 +9245,7 @@ vec.map = function(c, f)
 };
 
 /*
-// strictly speaking, this is unnecessary, since only vec3.cross exists.
+// strictly speaking, this is unnecessary, since only vec2.cross and vec3.cross exist.
 // However, to force vec3.* to be written alongside vec.* would mean that
 // some code would be written
 // x = vec.normalized(foo);
@@ -10955,6 +10955,33 @@ Lux.texture = function(opts)
             var xOffset = opts.xOffset;
             var yOffset = opts.yOffset;
 
+            function videoHandler(video) {
+                var ctx = texture._ctx;
+                Lux.setContext(texture._ctx);
+                ctx.bindTexture(ctx.TEXTURE_2D, texture);
+                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+                if (_.isUndefined(that.width)) {
+                    that.width = video.videoWidth;
+                    that.height = video.videoHeight;
+                    ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
+                                   that.width, that.height,
+                                   0, opts.format, opts.type, null);
+                }
+                ctx.texSubImage2D(ctx.TEXTURE_2D, 0, xOffset, yOffset,
+                                  ctx.RGBA, ctx.UNSIGNED_BYTE, video);
+                if (opts.mipmaps)
+                    ctx.generateMipmap(ctx.TEXTURE_2D);
+                texture.update = function() {
+                    Lux.setContext(ctx);
+                    ctx.bindTexture(ctx.TEXTURE_2D, texture);
+                    ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format, opts.format,
+                                   ctx.UNSIGNED_BYTE, video);  
+                };
+                Lux.unloadBatch();
+                that.ready = true;
+                onload.call(texture, video);
+            }
+
             function imageHandler(image) {
                 image = opts.transformImage(image);
                 var ctx = texture._ctx;
@@ -11019,10 +11046,14 @@ Lux.texture = function(opts)
                 if (opts.crossOrigin)
                     image.crossOrigin = opts.crossOrigin;
                 image.src = opts.src;
+            } else if (opts.video) {
+                videoHandler(opts.video);
             } else if (opts.canvas) {
                 imageHandler(opts.canvas);
             } else if (opts.img) {
-                if (opts.img.isComplete) {
+                // FIXME apparently this has been called .complete all along?!
+                // how would I even this in a test suite?
+                if (opts.img.isComplete) { 
                     imageHandler(opts.img);
                 } else {
                     var oldOnload = texture.image.onload || function() {};
@@ -21187,7 +21218,8 @@ Lux.Models.sphere = function(latSecs, longSecs) {
     if (longSecs <= 0) throw new Error("longSecs must be positive");
     latSecs = Math.floor(latSecs);
     longSecs = Math.floor(longSecs);
-    var i, j, phi, theta;    
+    var i, j, phi, theta;
+    debugger;
     for (i=0; i<=latSecs; ++i) {
         phi = (i / latSecs);
         for (j=0; j<longSecs; ++j) {
@@ -21197,19 +21229,23 @@ Lux.Models.sphere = function(latSecs, longSecs) {
     }
     for (i=0; i<latSecs; ++i) {
         for (j=0; j<longSecs; ++j) {
-            elements.push(i * longSecs + j,
-                          i * longSecs + ((j + 1) % longSecs),
-                          (i + 1) * longSecs + j,
-                          i * longSecs + ((j + 1) % longSecs),
-                          (i + 1) * longSecs + ((j + 1) % longSecs),
-                          (i + 1) * longSecs + j);
+            var thisX = j;
+            var nextX = (j+1) % longSecs;
+            var thisY = i;
+            var nextY = i+1;
+            elements.push(thisY * longSecs + thisX,
+                          thisY * longSecs + nextX,
+                          nextY * longSecs + thisX,
+                          thisY * longSecs + nextX,
+                          nextY * longSecs + nextX,
+                          nextY * longSecs + thisX);
         }
     }
 
     var S = Shade;
     var uvAttr = Lux.attributeBuffer({ vertexArray: verts, itemSize: 2});
-    phi = S.sub(S.mul(Math.PI, S.swizzle(uvAttr, "r")), Math.PI/2);
-    theta = S.mul(2 * Math.PI, S.swizzle(uvAttr, "g"));
+    phi = S.sub(S.mul(Math.PI, S.swizzle(uvAttr, "g")), Math.PI/2);
+    theta = S.mul(2 * Math.PI, S.swizzle(uvAttr, "r"));
     var cosphi = S.cos(phi);
     var position = S.vec(S.sin(theta).mul(cosphi),
                          S.sin(phi),
