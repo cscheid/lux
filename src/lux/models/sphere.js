@@ -10,7 +10,7 @@ Lux.Models.sphere = function(latSecs, longSecs) {
     if (longSecs <= 0) throw new Error("longSecs must be positive");
     latSecs = Math.floor(latSecs);
     longSecs = Math.floor(longSecs);
-    var i, j, phi, theta;    
+    var i, j, phi, theta;
     for (i=0; i<=latSecs; ++i) {
         phi = (i / latSecs);
         for (j=0; j<longSecs; ++j) {
@@ -20,19 +20,23 @@ Lux.Models.sphere = function(latSecs, longSecs) {
     }
     for (i=0; i<latSecs; ++i) {
         for (j=0; j<longSecs; ++j) {
-            elements.push(i * longSecs + j,
-                          i * longSecs + ((j + 1) % longSecs),
-                          (i + 1) * longSecs + j,
-                          i * longSecs + ((j + 1) % longSecs),
-                          (i + 1) * longSecs + ((j + 1) % longSecs),
-                          (i + 1) * longSecs + j);
+            var thisX = j;
+            var nextX = (j+1) % longSecs;
+            var thisY = i;
+            var nextY = i+1;
+            elements.push(thisY * longSecs + thisX,
+                          thisY * longSecs + nextX,
+                          nextY * longSecs + thisX,
+                          thisY * longSecs + nextX,
+                          nextY * longSecs + nextX,
+                          nextY * longSecs + thisX);
         }
     }
 
     var S = Shade;
     var uvAttr = Lux.attributeBuffer({ vertexArray: verts, itemSize: 2});
-    phi = S.sub(S.mul(Math.PI, S.swizzle(uvAttr, "r")), Math.PI/2);
-    theta = S.mul(2 * Math.PI, S.swizzle(uvAttr, "g"));
+    theta = S.mul(2 * Math.PI, S.swizzle(uvAttr, "r"));
+    phi = S.sub(S.mul(Math.PI, S.swizzle(uvAttr, "g")), Math.PI/2);
     var cosphi = S.cos(phi);
     var position = S.vec(S.sin(theta).mul(cosphi),
                          S.sin(phi),
