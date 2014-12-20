@@ -101,6 +101,33 @@ Lux.texture = function(opts)
             var xOffset = opts.xOffset;
             var yOffset = opts.yOffset;
 
+            function videoHandler(video) {
+                var ctx = texture._ctx;
+                Lux.setContext(texture._ctx);
+                ctx.bindTexture(ctx.TEXTURE_2D, texture);
+                ctx.pixelStorei(ctx.UNPACK_FLIP_Y_WEBGL, true);
+                if (_.isUndefined(that.width)) {
+                    that.width = video.videoWidth;
+                    that.height = video.videoHeight;
+                    ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format,
+                                   that.width, that.height,
+                                   0, opts.format, opts.type, null);
+                }
+                ctx.texSubImage2D(ctx.TEXTURE_2D, 0, xOffset, yOffset,
+                                  ctx.RGBA, ctx.UNSIGNED_BYTE, video);
+                if (opts.mipmaps)
+                    ctx.generateMipmap(ctx.TEXTURE_2D);
+                texture.update = function() {
+                    Lux.setContext(ctx);
+                    ctx.bindTexture(ctx.TEXTURE_2D, texture);
+                    ctx.texImage2D(ctx.TEXTURE_2D, 0, opts.format, opts.format,
+                                   ctx.UNSIGNED_BYTE, video);  
+                };
+                Lux.unloadBatch();
+                that.ready = true;
+                onload.call(texture, video);
+            }
+
             function imageHandler(image) {
                 image = opts.transformImage(image);
                 var ctx = texture._ctx;
@@ -165,10 +192,14 @@ Lux.texture = function(opts)
                 if (opts.crossOrigin)
                     image.crossOrigin = opts.crossOrigin;
                 image.src = opts.src;
+            } else if (opts.video) {
+                videoHandler(opts.video);
             } else if (opts.canvas) {
                 imageHandler(opts.canvas);
             } else if (opts.img) {
-                if (opts.img.isComplete) {
+                // FIXME apparently this has been called .complete all along?!
+                // how would I even this in a test suite?
+                if (opts.img.isComplete) { 
                     imageHandler(opts.img);
                 } else {
                     var oldOnload = texture.image.onload || function() {};
