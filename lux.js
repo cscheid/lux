@@ -21219,7 +21219,6 @@ Lux.Models.sphere = function(latSecs, longSecs) {
     latSecs = Math.floor(latSecs);
     longSecs = Math.floor(longSecs);
     var i, j, phi, theta;
-    debugger;
     for (i=0; i<=latSecs; ++i) {
         phi = (i / latSecs);
         for (j=0; j<longSecs; ++j) {
@@ -21244,8 +21243,8 @@ Lux.Models.sphere = function(latSecs, longSecs) {
 
     var S = Shade;
     var uvAttr = Lux.attributeBuffer({ vertexArray: verts, itemSize: 2});
-    phi = S.sub(S.mul(Math.PI, S.swizzle(uvAttr, "g")), Math.PI/2);
     theta = S.mul(2 * Math.PI, S.swizzle(uvAttr, "r"));
+    phi = S.sub(S.mul(Math.PI, S.swizzle(uvAttr, "g")), Math.PI/2);
     var cosphi = S.cos(phi);
     var position = S.vec(S.sin(theta).mul(cosphi),
                          S.sin(phi),
