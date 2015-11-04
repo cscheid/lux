@@ -33,7 +33,7 @@ $().ready(function () {
     var hclMesh = Lux.Models.mesh(1, 1);
     var color = Shade.Colors.hcl(
         hclMesh.texCoord.r().mul(Math.PI*2),
-        hclMesh.texCoord.g().mul(100),
+        hclMesh.texCoord.g().mul(200),
         luminanceParameter);
     Lux.Scene.add(Lux.actor({
         model: hclMesh,
