@@ -8,7 +8,7 @@
    not support reading off floating-point values of an FBO bound to a
    floating-point texture (!):
 
-   https://www.khronos.org/webgl/public-mailing-list/archives/1108/threads.html#00020
+   https://www.khronos.org/webgl/public-mailing-list/archives/1108/msg00016.php
 
    WebGL does not support bitwise operators. As a result, much of what
    is happening here is less efficient than it should be, and incurs
