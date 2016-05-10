@@ -937,6 +937,9 @@ test("Lux.attributeBuffer", function() {
     raises(function() {
         Lux.attributeBuffer({ vertexArray: [1,2,3,4,5], itemSize: 2});
     });
+});
+
+skip("Lux.attributeBuffer with setRegion", function() {
     var x = Lux.attributeBuffer({ vertexArray: [1,2,3,4], itemSize: 1});
     ok((function() {
         x.setRegion(1, [1]);
