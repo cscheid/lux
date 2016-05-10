@@ -133,8 +133,16 @@ test("Shade expressions", function() {
 test("Shade compilation", function() {
     ok(Shade.constant(vec.make([1,2,3,4])).glslExpression());
 
-    // this is a little finicky because the unique names might get
-    // incremented, but I don't know any easy way around it.
+    function escapeRegExp(s){
+      return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function findAllMatches(regex, s) {
+      var matches = [];
+      while(match = regex.exec(s))
+        matches.push(match[1]);
+      return matches;
+    }
 
     (function () {
         var u = Shade.parameter("vec4");
@@ -145,34 +153,37 @@ test("Shade compilation", function() {
         var root = Shade.ifelse(cond, c, s);
         var cc = Shade.CompilationContext(Shade.vertexProgramCompile);
         cc.compile(root);
-        // This optimization was making the GLSL compiler too slow, so I removed it.
-        // equal(cc.source(), "#extension GL_OES_standard_derivatives : enable\nprecision highp float;\n" +
-        //       " uniform float _uniqueName2;\n" + 
-        //       " uniform vec4 _uniqueName1;\n" + 
-        //       " vec4 glslName8 ;\n" + 
-        //       " bool glslName9 ;\n" + 
-        //       " vec4 glslName4 (void) {\n" + 
-        //       "     return  (glslName9?glslName8: ((glslName9=true),(glslName8=exp ( _uniqueName1 )))) ;\n" + 
-        //       "}\n" + 
-        //       " vec4 glslName7 (void) {\n" + 
-        //       "     return  ((_uniqueName2 > float(0.0))?cos ( glslName4() ):sin ( glslName4() )) ;\n" + 
-        //       "}\n" + 
-        //       " void main() {\n" + 
-        //       "      glslName9 = false ;\n" + 
-        //       "      glslName7() ;\n" + 
-        //       " }\n");
 
-        equal(cc.source(), "#extension GL_OES_standard_derivatives : enable\n precision highp float;\n" + 
-              " vec4 glslName8 ;\n" +
-              " uniform vec4 _uniqueName5;\n" +
-              " uniform float _uniqueName6;\n" +
-              " vec4 glslName7 ( ) {\n" +
-              "     return  ((_uniqueName6 > float(0.0))?cos ( glslName8 ):sin ( glslName8 )) ;\n" +
+
+        var raw_text =
+              "#extension GL_OES_standard_derivatives : enable\n" +
+              " precision highp float;\n" +
+              " vec4 <2> ;\n" +
+              " uniform vec4 <0>;\n" +
+              " uniform float <1>;\n" +
+              " vec4 <3> ( ) {\n" +
+              "     return  ((<1> > float(0.0))?cos ( <2> ):sin ( <2> )) ;\n" +
               "}\n" +
               " void main() {\n" +
-              "      glslName8 = exp ( _uniqueName5 ) ;\n" +
-              "      glslName7() ;\n" +
-              " }\n");
+              "      <2> = exp ( <0> ) ;\n" +
+              "      <3>() ;\n" +
+              " }\n";
+
+        var pattern = escapeRegExp(raw_text).replace(/<\d>/g, '(\\w+)');
+        var regex = new RegExp(pattern);
+
+        ok(regex.test(cc.source()));
+
+        var expected_uids = findAllMatches(/<(\d)>/g, raw_text);
+        var expected_groups = _.groupBy(_.range(expected_uids.length),
+                                        function(i) { return expected_uids[i]; });
+
+        var actual_uids = cc.source().match(regex).slice(1);
+        var actual_groups = _.groupBy(_.range(actual_uids.length),
+                                      function(i) { return actual_uids[i]; });
+
+        deepEqual(_.values(actual_groups).sort(), _.values(expected_groups).sort());
+
     })();
 
     raises(function () {
