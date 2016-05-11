@@ -1,43 +1,43 @@
 $().ready(function () {
     Lux.init({ clearColor: [0, 0, 0, 0.2] });
 
-    var n_points = 64;
-    var x_array = new Float32Array(n_points);
-    var y_array_1 = new Float32Array(n_points);
-    var y_array_2 = new Float32Array(n_points);
-    for (var i=0; i<n_points; ++i) {
-        x_array[i] = i;
-        y_array_1[i] = Math.random();
-        y_array_2[i] = Math.random();
+    var nPoints = 64;
+    var xArray = new Float32Array(nPoints);
+    var yArray1 = new Float32Array(nPoints);
+    var yArray2 = new Float32Array(nPoints);
+    for (var i=0; i<nPoints; ++i) {
+        xArray[i] = i;
+        yArray1[i] = Math.random();
+        yArray2[i] = Math.random();
     }
 
-    var x_buffer = Lux.attribute_buffer({
-        item_size: 1,
-        vertex_array: x_array
+    var xBuffer = Lux.attributeBuffer({
+        itemSize: 1,
+        vertexArray: xArray
     });
-    var y_buffer_1 = Lux.attribute_buffer({
-        item_size: 1,
-        vertex_array: y_array_1
+    var yBuffer1 = Lux.attributeBuffer({
+        itemSize: 1,
+        vertexArray: yArray1
     });
-    var y_buffer_2 = Lux.attribute_buffer({
-        item_size: 1,
-        vertex_array: y_array_2
+    var yBuffer2 = Lux.attributeBuffer({
+        itemSize: 1,
+        vertexArray: yArray2
     });
     
     var scale = Shade.Scale.linear({
-        domain: [Shade.vec(0, 0), Shade.vec(n_points, 1)],
+        domain: [Shade.vec(0, 0), Shade.vec(nPoints, 1)],
         range: [Shade.vec(-0.95, -0.95), Shade.vec(0.95, 0.95)]
     });
 
-    var y_t = Shade.Scale.linear({
+    var yT = Shade.Scale.linear({
         domain: [0, 1],
-        range: [Shade(y_buffer_1), Shade(y_buffer_2)]
+        range: [Shade(yBuffer1), Shade(yBuffer2)]
     });
 
-    var transition_t = Shade.parameter("float", 0);
+    var transitionT = Shade.parameter("float", 0);
     var dots = Lux.Marks.dots({
-        position: scale(Shade.vec(x_buffer, y_t(transition_t))),
-        elements: n_points
+        position: scale(Shade.vec(xBuffer, yT(transitionT))),
+        elements: nPoints
     });
 
     Lux.Scene.add(dots);
@@ -46,15 +46,15 @@ $().ready(function () {
     Lux.Scene.animate(function() {
         var t2 = Lux.now().get();
         if ((t2 - t) < 1) {
-            transition_t.set(t2-t);
+            transitionT.set(t2-t);
             return;
         }
         t = t2;
-        transition_t.set(0);
-        y_buffer_1.set(y_array_2);
-        for (var i=0; i<n_points; ++i) {
-            y_array_2[i] = Math.random();
+        transitionT.set(0);
+        yBuffer1.set(yArray2);
+        for (var i=0; i<nPoints; ++i) {
+            yArray2[i] = Math.random();
         }
-        y_buffer_2.set(y_array_2);
+        yBuffer2.set(yArray2);
     });
 });

@@ -7,7 +7,7 @@ Shade.scaling = Shade(function() {
     }
     if (arguments.length === 1) {
         var t = arguments[0];
-        if (t.type.equals(Shade.Types.float_t))
+        if (t.type.equals(Shade.Types.floatT))
             return build(t, t, t);
         if (t.type.equals(Shade.Types.vec3))
             return build(t.x(), t.y(), t.z());

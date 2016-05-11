@@ -1,26 +1,26 @@
 (function() {
 
-function initialize_context_globals(gl)
+function initializeContextGlobals(gl)
 {
-    gl._lux_globals = {};
+    gl._luxGlobals = {};
 
     // batches can currently be rendered in "draw" or "pick" mode.
     // draw: 0
     // pick: 1
     // these are indices into an array defined inside Lux.bake
     // For legibility, they should be strings, but for speed, they'll be integers.
-    gl._lux_globals.batch_render_mode = 0;
+    gl._luxGlobals.batchRenderMode = 0;
 
     // epoch is the initial time being tracked by the context.
-    gl._lux_globals.epoch = new Date().getTime() / 1000;
+    gl._luxGlobals.epoch = new Date().getTime() / 1000;
 
-    gl._lux_globals.devicePixelRatio = undefined;
+    gl._luxGlobals.devicePixelRatio = undefined;
 
     // Optional, enabled WebGL extensions go here.
-    gl._lux_globals.webgl_extensions = {};
+    gl._luxGlobals.webglExtensions = {};
 
     // from https://developer.mozilla.org/en-US/docs/JavaScript/Typed_arrays/DataView
-    gl._lux_globals.little_endian = (function() {
+    gl._luxGlobals.littleEndian = (function() {
         var buffer = new ArrayBuffer(2);
         new DataView(buffer).setInt16(0, 256, true);
         return new Int16Array(buffer)[0] === 256;
@@ -29,7 +29,7 @@ function initialize_context_globals(gl)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-function polyfill_event(event, gl)
+function polyfillEvent(event, gl)
 {
     // polyfill event.offsetX and offsetY in Firefox,
     // according to http://bugs.jquery.com/ticket/8523
@@ -39,8 +39,8 @@ function polyfill_event(event, gl)
         event.offsetY = event.pageY - targetOffset.top;
     }
     
-    event.luxX = event.offsetX * gl._lux_globals.devicePixelRatio;
-    event.luxY = gl.viewportHeight - event.offsetY * gl._lux_globals.devicePixelRatio;
+    event.luxX = event.offsetX * gl._luxGlobals.devicePixelRatio;
+    event.luxY = gl.viewportHeight - event.offsetY * gl._luxGlobals.devicePixelRatio;
 }
 
 Lux.init = function(opts)
@@ -74,6 +74,17 @@ Lux.init = function(opts)
 
     var devicePixelRatio = 1;
 
+    if (opts.fullSize) {
+        var width = window.innerWidth, height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        $(window).resize(function() {
+            var w = window.innerWidth, h = window.innerHeight;
+            gl.resize(w, h);
+            Lux.Scene.invalidate();
+        });
+    }
+
     if (opts.highDPS) {
         devicePixelRatio = window.devicePixelRatio || 1;
         canvas.style.width = canvas.width;
@@ -84,7 +95,7 @@ Lux.init = function(opts)
 
     try {
         if ("attributes" in opts) {
-            gl = WebGLUtils.setupWebGL(canvas, opts.attributes);
+            gl = Lux.Lib.WebGLUtils.setupWebGL(canvas, opts.attributes);
             var x = gl.getContextAttributes();
             for (var key in opts.attributes) {
                 if (opts.attributes[key] !== x[key]) {
@@ -94,18 +105,18 @@ Lux.init = function(opts)
                 }
             }
         } else
-            gl = WebGLUtils.setupWebGL(canvas);
+            gl = Lux.Lib.WebGLUtils.setupWebGL(canvas);
         if (!gl)
             throw new Error("failed context creation");
-        initialize_context_globals(gl);
+        initializeContextGlobals(gl);
         if ("interactor" in opts) {
             opts.interactor.resize && opts.interactor.resize(canvas.width, canvas.height);
             for (var key in opts.interactor.events) {
                 if (opts[key]) {
-                    opts[key] = (function(handler, interactor_handler) {
+                    opts[key] = (function(handler, interactorHandler) {
                         return function(event) {
                             var v = handler(event);
-                            return v && interactor_handler(event);
+                            return v && interactorHandler(event);
                         };
                     })(opts[key], opts.interactor.events[key]);
                 } else {
@@ -116,10 +127,10 @@ Lux.init = function(opts)
         
         if (opts.debugging) {
             var throwOnGLError = function(err, funcName, args) {
-                throw new Error(WebGLDebugUtils.glEnumToString(err) + 
+                throw new Error(Lux.Lib.WebGLDebugUtils.glEnumToString(err) + 
                     " was caused by call to " + funcName);
             };
-            gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
+            gl = Lux.Lib.WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, opts.tracing);
         }
 
         gl.viewportWidth = canvas.width;
@@ -128,24 +139,24 @@ Lux.init = function(opts)
         //////////////////////////////////////////////////////////////////////
         // event handling
 
-        var canvas_events = ["mouseover", "mousemove", "mousedown", "mouseout", 
+        var canvasEvents = ["mouseover", "mousemove", "mousedown", "mouseout", 
                              "mouseup", "dblclick"];
-        _.each(canvas_events, function(ename) {
+        _.each(canvasEvents, function(ename) {
             var listener = opts[ename];
-            function internal_listener(event) {
-                polyfill_event(event, gl);
+            function internalListener(event) {
+                polyfillEvent(event, gl);
                 if (!Lux.Scene.on(ename, event, gl))
                     return false;
                 if (listener)
                     return listener(event);
                 return true;
             }
-            canvas.addEventListener(ename, Lux.on_context(gl, internal_listener), false);
+            canvas.addEventListener(ename, Lux.onContext(gl, internalListener), false);
         });
         
         if (!_.isUndefined(opts.mousewheel)) {
             $(canvas).bind('mousewheel', function(event, delta, deltaX, deltaY) {
-                polyfill_event(event, gl);
+                polyfillEvent(event, gl);
                 return opts.mousewheel(event, delta, deltaX, deltaY);
             });
         };
@@ -155,10 +166,10 @@ Lux.init = function(opts)
         var ext;
         var exts = gl.getSupportedExtensions();
 
-        function enable_if_existing(name) {
+        function enableIfExisting(name) {
             if (exts.indexOf(name) !== -1 &&
                 gl.getExtension(name) !== null) {
-                gl._lux_globals.webgl_extensions[name] = true;
+                gl._luxGlobals.webglExtensions[name] = true;
             }
         }
         _.each(["OES_texture_float", "OES_standard_derivatives"], function(ext) {
@@ -169,19 +180,19 @@ Lux.init = function(opts)
                 throw new Error("insufficient GPU support");
             }
         });
-        _.each(["OES_texture_float_linear"], enable_if_existing);
+        _.each(["OES_texture_float_linear"], enableIfExisting);
         _.each(["WEBKIT_EXT_texture_filter_anisotropic",
                 "EXT_texture_filter_anisotropic"], 
                function(ext) {
                    if (exts.indexOf(ext) !== -1 && (gl.getExtension(ext) !== null)) {
-                       gl._lux_globals.webgl_extensions.EXT_texture_filter_anisotropic = true;
+                       gl._luxGlobals.webglExtensions.EXT_texture_filter_anisotropic = true;
                        gl.TEXTURE_MAX_ANISOTROPY_EXT     = 0x84FE;
                        gl.MAX_TEXTURE_MAX_ANISOTROPY_EXT = 0x84FF;
                    }
                });
         if (exts.indexOf("OES_element_index_uint") !== -1 &&
             gl.getExtension("OES_element_index_uint") !== null) {
-            gl._lux_globals.webgl_extensions.OES_element_index_uint = true;
+            gl._luxGlobals.webglExtensions.OES_element_index_uint = true;
         }
     } catch(e) {
         alert(e);
@@ -192,9 +203,9 @@ Lux.init = function(opts)
         throw new Error("failed initalization");
     }
 
-    gl._lux_globals.devicePixelRatio = devicePixelRatio;
+    gl._luxGlobals.devicePixelRatio = devicePixelRatio;
 
-    Lux.set_context(gl);
+    Lux.setContext(gl);
 
     gl.resize = function(width, height) {
         this.parameters.width.set(width);
@@ -226,25 +237,25 @@ Lux.init = function(opts)
         gl.parameters.height = Shade.parameter("float", gl.viewportHeight);
     }
     gl.parameters.now = Shade.parameter("float", 0);
-    gl.parameters.frame_duration = Shade.parameter("float", 0);
+    gl.parameters.frameDuration = Shade.parameter("float", 0);
 
-    gl._lux_globals.scene = Lux.default_scene({
+    gl._luxGlobals.scene = Lux.defaultScene({
         context: gl,
         clearColor: opts.clearColor,
         clearDepth: opts.clearDepth,
-        pre_draw: function() {
-            var raw_t = new Date().getTime() / 1000;
-            var new_t = raw_t - gl._lux_globals.epoch;
-            var old_t = gl.parameters.now.get();
-            gl.parameters.frame_duration.set(new_t - old_t);
-            gl.parameters.now.set(new_t);
+        preDraw: function() {
+            var rawT = new Date().getTime() / 1000;
+            var newT = rawT - gl._luxGlobals.epoch;
+            var oldT = gl.parameters.now.get();
+            gl.parameters.frameDuration.set(newT - oldT);
+            gl.parameters.now.set(newT);
             gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         }
     });
 
     if ("interactor" in opts) {
-        gl._lux_globals.scene.add(opts.interactor.scene);
-        gl._lux_globals.scene = opts.interactor.scene;
+        gl._luxGlobals.scene.add(opts.interactor.scene);
+        gl._luxGlobals.scene = opts.interactor.scene;
     }
 
     return gl;

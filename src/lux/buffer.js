@@ -3,7 +3,7 @@ Lux.buffer = function(opts)
     var ctx = Lux._globals.ctx;
     opts = _.defaults(opts, {
         usage: ctx.STATIC_DRAW,
-        keep_array: false
+        keepArray: false
     });
 
     if (_.isUndefined(opts.array)) {
@@ -20,13 +20,13 @@ Lux.buffer = function(opts)
     result.set = function(array) {
         ctx.bindBuffer(ctx.ARRAY_BUFFER, this);
         ctx.bufferData(ctx.ARRAY_BUFFER, array, this.usage);
-        if (opts.keep_array) {
+        if (opts.keepArray) {
             this.array = array;
         }
         this.byteLength = array.byteLength;
     };
     result.set(opts.array);
-    result.set_region = function() {
+    result.setRegion = function() {
         throw new Error("currently unimplemented");
     };
 

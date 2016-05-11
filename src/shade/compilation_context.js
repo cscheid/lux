@@ -2,20 +2,20 @@ Shade.VERTEX_PROGRAM_COMPILE = 1;
 Shade.FRAGMENT_PROGRAM_COMPILE = 2;
 Shade.UNSET_PROGRAM_COMPILE = 3;
 
-function new_scope()
+function newScope()
 {
     return {
         declarations: [],
         initializations: [],
-        enclosing_scope: undefined,
+        enclosingScope: undefined,
         
         // make all declarations 
         // global since names are unique anyway
-        add_declaration: function(exp) {
+        addDeclaration: function(exp) {
             // this.declarations.push(exp);
-            this.enclosing_scope.add_declaration(exp);
+            this.enclosingScope.addDeclaration(exp);
         },
-        add_initialization: function(exp) {
+        addInitialization: function(exp) {
             this.initializations.push(exp);
         },
         show: function() {
@@ -24,90 +24,90 @@ function new_scope()
                 + " inits "
                 + String(this.initializations)
                 + " enclosing "
-                + this.enclosing_scope.show()
+                + this.enclosingScope.show()
                 + " )";
         }
     };
 };
 
-Shade.CompilationContext = function(compile_type)
+Shade.CompilationContext = function(compileType)
 {
     return {
-        freshest_glsl_name: 0,
-        compile_type: compile_type || Shade.UNSET_PROGRAM_COMPILE,
-        float_precision: "highp",
+        freshestGlslName: 0,
+        compileType: compileType || Shade.UNSET_PROGRAM_COMPILE,
+        floatPrecision: "highp",
         strings: [],
-        global_decls: [],
+        globalDecls: [],
         declarations: { uniform: {},
                         attribute: {},
                         varying: {}
                       },
-        declared_struct_types: {},
-        // min_version: -1,
+        declaredStructTypes: {},
+        // minVersion: -1,
         source: function() {
             return this.strings.join(" ");
         },
-        request_fresh_glsl_name: function() {
-            var int_name = this.freshest_glsl_name++;
-            return "glsl_name_" + int_name;
+        requestFreshGlslName: function() {
+            var intName = this.freshestGlslName++;
+            return "glslName" + intName;
         },
-        declare: function(decltype, glsl_name, type, declmap) {
+        declare: function(decltype, glslName, type, declmap) {
             if (_.isUndefined(type)) {
                 throw new Error("must define type");
             }
-            if (!(glsl_name in declmap)) {
-                declmap[glsl_name] = type;
-                this.strings.push(decltype + " " + type.declare(glsl_name) + ";\n");
+            if (!(glslName in declmap)) {
+                declmap[glslName] = type;
+                this.strings.push(decltype + " " + type.declare(glslName) + ";\n");
             } else {
-                var existing_type = declmap[glsl_name];
-                if (!existing_type.equals(type)) {
+                var existingType = declmap[glslName];
+                if (!existingType.equals(type)) {
                     throw new Error("compile error: different expressions use "
-                           + "conflicting types for '" + decltype + " " + glsl_name
-                           + "': '" + existing_type.repr() + "', '"
+                           + "conflicting types for '" + decltype + " " + glslName
+                           + "': '" + existingType.repr() + "', '"
                            + type.repr() + "'");
                 }
             }
         },
-        declare_uniform: function(glsl_name, type) {
-            this.declare("uniform", glsl_name, type, this.declarations.uniform);
+        declareUniform: function(glslName, type) {
+            this.declare("uniform", glslName, type, this.declarations.uniform);
         },
-        declare_varying: function(glsl_name, type) {
-            this.declare("varying", glsl_name, type, this.declarations.varying);
+        declareVarying: function(glslName, type) {
+            this.declare("varying", glslName, type, this.declarations.varying);
         },
-        declare_attribute: function(glsl_name, type) {
-            this.declare("attribute", glsl_name, type, this.declarations.attribute);
+        declareAttribute: function(glslName, type) {
+            this.declare("attribute", glslName, type, this.declarations.attribute);
         },
-        declare_struct: function(type) {
+        declareStruct: function(type) {
             var that = this;
-            if (!_.isUndefined(this.declared_struct_types[type.internal_type_name]))
+            if (!_.isUndefined(this.declaredStructTypes[type.internalTypeName]))
                 return;
             _.each(type.fields, function(v) {
-                if (v.is_struct() && 
-                    _.isUndefined(this.declared_struct_types[type.internal_type_name])) {
-                    throw new Error("internal error; declare_struct found undeclared internal struct");
+                if (v.isStruct() && 
+                    _.isUndefined(this.declaredStructTypes[type.internalTypeName])) {
+                    throw new Error("internal error; declareStruct found undeclared internal struct");
                 }
             });
-            this.global_decls.push("struct", type.internal_type_name, "{\n");
-            var internal_decls = [];
-            _.each(type.field_index, function(i, k) {
-                internal_decls[i] = type.fields[k].declare(k);
+            this.globalDecls.push("struct", type.internalTypeName, "{\n");
+            var internalDecls = [];
+            _.each(type.fieldIndex, function(i, k) {
+                internalDecls[i] = type.fields[k].declare(k);
             });
-            _.each(internal_decls, function(v) {
-                that.global_decls.push("    ",v, ";\n");
+            _.each(internalDecls, function(v) {
+                that.globalDecls.push("    ",v, ";\n");
             });
-            this.global_decls.push("};\n");
-            this.declared_struct_types[type.internal_type_name] = true;
+            this.globalDecls.push("};\n");
+            this.declaredStructTypes[type.internalTypeName] = true;
         },
         compile: function(fun) {
             var that = this;
-            this.global_decls = [];
+            this.globalDecls = [];
 
-            this.global_scope = {
+            this.globalScope = {
                 initializations: [],
-                add_declaration: function(exp) {
-                    that.global_decls.push(exp, ";\n");
+                addDeclaration: function(exp) {
+                    that.globalDecls.push(exp, ";\n");
                 },
-                add_initialization: function(exp) {
+                addInitialization: function(exp) {
                     this.initializations.push(exp);
                 },
                 show: function() {
@@ -115,68 +115,68 @@ Shade.CompilationContext = function(compile_type)
                 }
             };
 
-            var topo_sort = fun.sorted_sub_expressions();
+            var topoSort = fun.sortedSubExpressions();
             var i;
             var p = this.strings.push;
-            _.each(topo_sort, function(n) {
-                n.children_count = 0;
-                n.is_unconditional = false;
-                n.glsl_name = that.request_fresh_glsl_name();
-                n.set_requirements(this);
-                if (n.type.is_struct()) {
-                    that.declare_struct(n.type);
+            _.each(topoSort, function(n) {
+                n.childrenCount = 0;
+                n.isUnconditional = false;
+                n.glslName = that.requestFreshGlslName();
+                n.setRequirements(this);
+                if (n.type.isStruct()) {
+                    that.declareStruct(n.type);
                 }
                 for (var j=0; j<n.parents.length; ++j) {
-                    n.parents[j].children_count++;
+                    n.parents[j].childrenCount++;
                     // adds base scope to objects which have them.
                     // FIXME currently all scope objects point directly to global scope
-                    n.scope = n.has_scope ? new_scope() : that.global_scope;
+                    n.scope = n.hasScope ? newScope() : that.globalScope;
                 }
             });
             // top-level node is always unconditional.
-            topo_sort[topo_sort.length-1].is_unconditional = true;
+            topoSort[topoSort.length-1].isUnconditional = true;
             // top-level node has global scope.
-            topo_sort[topo_sort.length-1].scope = this.global_scope;
-            i = topo_sort.length;
+            topoSort[topoSort.length-1].scope = this.globalScope;
+            i = topoSort.length;
             while (i--) {
-                var n = topo_sort[i];
-                n.propagate_conditions();
+                var n = topoSort[i];
+                n.propagateConditions();
                 for (var j=0; j<n.parents.length; ++j) {
-                    if (n.parents[j].has_scope)
-                        n.parents[j].scope.enclosing_scope = n.scope;
+                    if (n.parents[j].hasScope)
+                        n.parents[j].scope.enclosingScope = n.scope;
                 }
-                n.patch_scope();
+                n.patchScope();
             }
-            for (i=0; i<topo_sort.length; ++i) {
-                topo_sort[i].compile(this);
+            for (i=0; i<topoSort.length; ++i) {
+                topoSort[i].compile(this);
             }
 
             var args = [0, 0];
-            args.push.apply(args, this.global_decls);
+            args.push.apply(args, this.globalDecls);
             this.strings.splice.apply(this.strings, args);
-            this.strings.splice(0, 0, "precision",this.float_precision,"float;\n");
+            this.strings.splice(0, 0, "precision",this.floatPrecision,"float;\n");
             this.strings.splice(0, 0, "#extension GL_OES_standard_derivatives : enable\n");
             this.strings.push("void main() {\n");
-            _.each(this.global_scope.initializations, function(exp) {
+            _.each(this.globalScope.initializations, function(exp) {
                 that.strings.push("    ", exp, ";\n");
             });
-            this.strings.push("    ", fun.glsl_expression(), ";\n", "}\n");
-            // for (i=0; i<this.initialization_exprs.length; ++i)
-            //     this.strings.push("    ", this.initialization_exprs[i], ";\n");
-            // this.strings.push("    ", fun.glsl_expression(), ";\n", "}\n");
+            this.strings.push("    ", fun.glslExpression(), ";\n", "}\n");
+            // for (i=0; i<this.initializationExprs.length; ++i)
+            //     this.strings.push("    ", this.initializationExprs[i], ";\n");
+            // this.strings.push("    ", fun.glslExpression(), ";\n", "}\n");
         },
-        add_initialization: function(expr) {
-            this.global_scope.initializations.push(expr);
+        addInitialization: function(expr) {
+            this.globalScope.initializations.push(expr);
         },
-        value_function: function() {
+        valueFunction: function() {
             var that = this;
             this.strings.push(arguments[0].type.repr(),
-                              arguments[0].glsl_name,
+                              arguments[0].glslName,
                               "(");
-            _.each(arguments[0].loop_variable_dependencies(), function(exp, i) {
+            _.each(arguments[0].loopVariableDependencies(), function(exp, i) {
                 if (i > 0)
                     that.strings.push(',');
-                that.strings.push('int', exp.glsl_name);
+                that.strings.push('int', exp.glslName);
             });
             this.strings.push(") {\n",
                               "    return ");
@@ -185,9 +185,9 @@ Shade.CompilationContext = function(compile_type)
             }
             this.strings.push(";\n}\n");
         },
-        void_function: function() {
+        voidFunction: function() {
             this.strings.push("void",
-                              arguments[0].glsl_name,
+                              arguments[0].glslName,
                               "() {\n",
                               "    ");
             for (var i=1; i<arguments.length; ++i) {

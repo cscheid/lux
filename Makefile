@@ -15,14 +15,14 @@ lux.js:								\
 	src/lux/_begin.js					\
 	src/lux/_globals.js					\
 	lib/_begin.js						\
+	lib/pre-underscore.js					\
 	lib/underscore-min.js					\
+	lib/post-underscore.js					\
 	lib/webgl-debug.js					\
 	lib/webgl-utils.js					\
 	lib/pre-tessellate.js					\
-	lib/_tessellate.js					\
-	lib/post-tessellate-1.js				\
 	lib/tessellate.js					\
-	lib/post-tessellate-2.js				\
+	lib/post-tessellate.js					\
 	src/underscore_mixins.js				\
 	src/linalg/_begin.js					\
 	src/linalg/vec2.js					\
@@ -64,6 +64,7 @@ lux.js:								\
 	src/lux/net/_end.js					\
 	src/lux/drawing_mode/_begin.js				\
 	src/lux/drawing_mode/additive.js			\
+	src/lux/drawing_mode/multiplicative.js			\
 	src/lux/drawing_mode/over.js				\
 	src/lux/drawing_mode/standard.js			\
 	src/lux/drawing_mode/pass.js				\
@@ -77,20 +78,6 @@ lux.js:								\
 	src/lux/ui/parameter_checkbox.js			\
 	src/lux/ui/center_zoom_interactor.js			\
 	src/shade/_begin.js					\
-	src/shade/debug/_begin.js				\
-	src/shade/debug/walk.js					\
-	src/shade/debug/from_json.js				\
-	src/shade/debug/_json_builder.js			\
-	src/shade/make.js					\
-	src/shade/memoize_on_field.js				\
-	src/shade/memoize_on_guid_dict.js			\
-	src/shade/unknown.js					\
-	src/shade/camera/_begin.js				\
-	src/shade/camera/perspective.js				\
-	src/shade/camera/ortho.js				\
-	src/shade/color.js					\
-	src/shade/looping.js					\
-	src/shade/unique_name.js				\
 	src/shade/create.js					\
 	src/shade/types/_begin.js				\
 	src/shade/types/type_of.js				\
@@ -100,11 +87,27 @@ lux.js:								\
 	src/shade/types/function_t.js				\
 	src/shade/types/simple_types.js				\
 	src/shade/types/struct_t.js				\
+	src/shade/debug/_begin.js				\
+	src/shade/debug/walk.js					\
+	src/shade/debug/from_json.js				\
+	src/shade/debug/_json_builder.js			\
+	src/shade/make.js					\
+	src/shade/function.js					\
+	src/shade/memoize_on_field.js				\
+	src/shade/memoize_on_guid_dict.js			\
+	src/shade/unknown.js					\
+	src/shade/camera/_begin.js				\
+	src/shade/camera/perspective.js				\
+	src/shade/camera/ortho.js				\
+	src/shade/color.js					\
+	src/shade/looping.js					\
+	src/shade/unique_name.js				\
 	src/shade/compilation_context.js			\
 	src/shade/exp.js					\
 	src/shade/value_exp.js					\
 	src/shade/swizzle.js					\
 	src/shade/constant.js					\
+	src/shade/append.js					\
 	src/shade/array.js					\
 	src/shade/struct.js					\
 	src/shade/set.js					\
@@ -219,7 +222,12 @@ lux.js:								\
 	src/lux/scene/transform/geo/mercator_to_latlong.js	\
 	src/lux/scene/transform/geo/_end.js			\
 	src/lux/scene/transform/camera/_begin.js		\
-	src/lux/scene/transform/camera/perspective.js
+	src/lux/scene/transform/camera/ortho.js			\
+	src/lux/scene/transform/camera/perspective.js		\
+	src/lux/promises/_begin.js				\
+	src/lux/promises/texture.js				\
+	src/lux/promises/_end.js				\
+	src/lux/_end.js
 
 # If the chmods below don't make sense to you right now, wait until
 # you fix a bug on the compilation output instead of the source :)

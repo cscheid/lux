@@ -1,20 +1,20 @@
-Lux.render_buffer = function(opts)
+Lux.renderBuffer = function(opts)
 {
     opts = _.defaults(opts || {}, {
         context: Lux._globals.ctx,
         width: 512,
         height: 512,
-        mag_filter: Lux.texture.linear,
-        min_filter: Lux.texture.linear,
+        magFilter: Lux.texture.linear,
+        minFilter: Lux.texture.linear,
         mipmaps: false,
-        max_anisotropy: 1,
-        wrap_s: Lux.texture.clamp_to_edge,
-        wrap_t: Lux.texture.clamp_to_edge,
+        maxAnisotropy: 1,
+        wrapS: Lux.texture.clampToEdge,
+        wrapT: Lux.texture.clampToEdge,
         clearColor: [0,0,0,1],
         clearDepth: 1.0
     });
     var ctx = opts.context;
-    var frame_buffer = ctx.createFramebuffer();
+    var frameBuffer = ctx.createFramebuffer();
 
     // Weird:
     // http://www.khronos.org/registry/gles/specs/2.0/es_full_spec_2.0.25.pdf
@@ -28,8 +28,8 @@ Lux.render_buffer = function(opts)
 
     var rttTexture = Lux.texture(opts);
 
-    frame_buffer.init = function(width, height) {
-        Lux.set_context(ctx);
+    frameBuffer.init = function(width, height) {
+        Lux.setContext(ctx);
         this.width  = opts.width;
         this.height = opts.height;
         ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
@@ -62,16 +62,16 @@ Lux.render_buffer = function(opts)
         }
     };
 
-    frame_buffer.init(opts.width, opts.height);
-    frame_buffer._shade_type = 'render_buffer';
-    frame_buffer.texture = rttTexture;
-    frame_buffer.resize = function(width, height) {
+    frameBuffer.init(opts.width, opts.height);
+    frameBuffer._shadeType = 'renderBuffer';
+    frameBuffer.texture = rttTexture;
+    frameBuffer.resize = function(width, height) {
         opts.width = width;
         opts.height = height;
         this.texture.init(opts);
         this.init(width, height);
     };
-    frame_buffer.with_bound_buffer = function(what) {
+    frameBuffer.withBoundBuffer = function(what) {
         var v = ctx.getParameter(ctx.VIEWPORT);
         try {
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, this);
@@ -82,11 +82,11 @@ Lux.render_buffer = function(opts)
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     };
-    frame_buffer.screen_actor = function(opts) {
+    frameBuffer.screenActor = function(opts) {
         opts = _.defaults(opts, {
             mode: Lux.DrawingMode.standard
         });
-        var with_texel_at_uv = opts.texel_function;
+        var withTexelAtUv = opts.texelFunction;
         var mode = opts.mode;
         var that = this;
         var sq = Lux.Models.square();
@@ -94,9 +94,9 @@ Lux.render_buffer = function(opts)
         return Lux.actor({
             model: sq,
             appearance: {
-                screen_position: sq.vertex.mul(2).sub(1),
-                color: with_texel_at_uv(function(offset) {
-                    var texcoord = sq.tex_coord;
+                screenPosition: sq.vertex.mul(2).sub(1),
+                color: withTexelAtUv(function(offset) {
+                    var texcoord = sq.texCoord;
                     if (arguments.length > 0)
                         texcoord = texcoord.add(offset);
                     return Shade.texture2D(that.texture, texcoord);
@@ -107,21 +107,21 @@ Lux.render_buffer = function(opts)
         });
     };
     
-    var old_v;
-    frame_buffer.scene = Lux.default_scene({
+    var oldV;
+    frameBuffer.scene = Lux.defaultScene({
         clearColor: opts.clearColor,
         clearDepth: opts.clearDepth,
         context: ctx,
-        pre_draw: function() {
-            old_v = ctx.getParameter(ctx.VIEWPORT);
-            ctx.bindFramebuffer(ctx.FRAMEBUFFER, frame_buffer);
-            ctx.viewport(0, 0, frame_buffer.width, frame_buffer.height);
+        preDraw: function() {
+            oldV = ctx.getParameter(ctx.VIEWPORT);
+            ctx.bindFramebuffer(ctx.FRAMEBUFFER, frameBuffer);
+            ctx.viewport(0, 0, frameBuffer.width, frameBuffer.height);
         },
-        post_draw: function() {
-            ctx.viewport(old_v[0], old_v[1], old_v[2], old_v[3]);
+        postDraw: function() {
+            ctx.viewport(oldV[0], oldV[1], oldV[2], oldV[3]);
             ctx.bindFramebuffer(ctx.FRAMEBUFFER, null);
         }
     });
 
-    return frame_buffer;
+    return frameBuffer;
 };

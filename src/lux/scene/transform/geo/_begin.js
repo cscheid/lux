@@ -2,8 +2,8 @@ Lux.Scene.Transform.Geo = {};
 
 (function() {
 
-var two_d_position_xform = function(xform, inverse_xform) {
-    function make_it(xf) {
+var twoDPositionXform = function(xform, inverseXform) {
+    function makeIt(xf) {
         return function(appearance) {
             if (_.isUndefined(appearance.position))
                 return appearance;
@@ -21,9 +21,9 @@ var two_d_position_xform = function(xform, inverse_xform) {
     };
     return function(opts) {
         opts = _.clone(opts || {});
-        opts.transform = make_it(xform);
-        if (!_.isUndefined(inverse_xform)) {
-            opts.transform.inverse = make_it(inverse_xform);
+        opts.transform = makeIt(xform);
+        if (!_.isUndefined(inverseXform)) {
+            opts.transform.inverse = makeIt(inverseXform);
             opts.transform.inverse.inverse = opts.transform;
         }
         return Lux.scene(opts);

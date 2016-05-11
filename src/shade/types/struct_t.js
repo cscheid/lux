@@ -2,31 +2,31 @@
 
 var _structs = {};
 
-function _register_struct(type) {
-    var t = type._struct_key;
+function _registerStruct(type) {
+    var t = type._structKey;
     var v = _structs[t];
     if (v !== undefined) {
-        throw new Error("type " + t + " already registered as " + v.internal_type_name);
+        throw new Error("type " + t + " already registered as " + v.internalTypeName);
     }
     _structs[t] = type;
 };
 
-var struct_key = function(obj) {
+var structKey = function(obj) {
     return _.map(obj, function(value, key) {
-        if (value.is_function()) {
+        if (value.isFunction()) {
             throw new Error("function types not allowed inside struct");
         }
-        if (value.is_sampler()) {
+        if (value.isSampler()) {
             throw new Error("sampler types not allowed inside struct");
         }
-        if (value.is_struct()) {
-            return "[" + key + ":" + value.internal_type_name + "]";
+        if (value.isStruct()) {
+            return "[" + key + ":" + value.internalTypeName + "]";
         }
         return "[" + key + ":" + value.repr() + "]";
     }).sort().join("");
 };
 
-function field_indices(obj) {
+function fieldIndices(obj) {
     var lst = _.map(obj, function(value, key) {
         return [key, value.repr()];
     });
@@ -40,22 +40,22 @@ function field_indices(obj) {
 };
 
 Shade.Types.struct = function(fields) {
-    var key = struct_key(fields);
+    var key = structKey(fields);
     var t = _structs[key];
     if (t) return t;
-    var field_index = {};
-    _.each(field_indices(fields), function(v, i) {
-        field_index[v[0]] = i;
+    var fieldIndex = {};
+    _.each(fieldIndices(fields), function(v, i) {
+        fieldIndex[v[0]] = i;
     });
-    var result = Shade._create(Shade.Types.struct_t, {
+    var result = Shade._create(Shade.Types.structT, {
         fields: fields,
-        field_index: field_index,
-        _struct_key: key
+        fieldIndex: fieldIndex,
+        _structKey: key
     });
-    result.internal_type_name = 'type_' + result.guid;
-    _register_struct(result);
+    result.internalTypeName = 'type' + result.guid;
+    _registerStruct(result);
 
-    _.each(["zero", "infinity", "minus_infinity"], function(value) {
+    _.each(["zero", "infinity", "minusInfinity"], function(value) {
         if (_.all(fields, function(v, k) { return !_.isUndefined(v[value]); })) {
             var c = {};
             _.each(fields, function(v, k) {
@@ -68,9 +68,9 @@ Shade.Types.struct = function(fields) {
     return result;
 };
 
-Shade.Types.struct_t = Shade._create(Shade.Types.base_t, {
-    is_struct: function() { return true; },
-    repr: function() { return this.internal_type_name; }
+Shade.Types.structT = Shade._create(Shade.Types.baseT, {
+    isStruct: function() { return true; },
+    repr: function() { return this.internalTypeName; }
 });
 
 })();

@@ -9,7 +9,12 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
+Lux.LinAlg = {};
+
 var vec = {};
 var mat = {};
 vec.eps = 1e-6;
 mat.eps = 1e-6;
+
+Lux.LinAlg.vec = vec;
+Lux.LinAlg.mat = mat;

@@ -2,7 +2,7 @@
 // This is like a poor man's instancing/geometry shader. I need a
 // general API for it.
 
-Lux.Marks.aligned_rects = function(opts)
+Lux.Marks.alignedRects = function(opts)
 {
     opts = _.defaults(opts || {}, {
         mode: Lux.DrawingMode.standard,
@@ -16,36 +16,46 @@ Lux.Marks.aligned_rects = function(opts)
     if (!opts.color)    throw new Error("color is a required field");
 
     var index = _.range(opts.elements * 6);
-    var vertex_index = Lux.attribute_buffer({ 
-        vertex_array: index, 
-        item_size: 1
+    var vertexIndex = Lux.attributeBuffer({ 
+        vertexArray: index, 
+        itemSize: 1
     });
-    var primitive_index = Shade.div(vertex_index, 6).floor();
-    var vertex_in_primitive = Shade.mod(vertex_index, 6).floor();
+    var primitiveIndex = Shade.div(vertexIndex, 6).floor();
+    var vertexInPrimitive = Shade.mod(vertexIndex, 6).floor();
 
-    // aif == apply_if_function
+    // 0 -> 0
+    // 1 -> 2
+    // 2 -> 3
+    // 3 -> 0
+    // 4 -> 1
+    // 5 -> 2
+    // this tries to avoid the "index expression must be constant" nonsense.
+    var indexInVertexPrimitive = vertexInPrimitive.mod(3)
+        .add(vertexInPrimitive.lt(3).
+             and(vertexInPrimitive.ne(0)).
+             ifelse(1,0));
+
+    // aif == applyIfFunction
     var aif = function(f, params) {
-        if (lux_typeOf(f) === 'function')
+        if (Lux.typeOf(f) === 'function')
             return f.apply(this, params);
         else
             return f;
     };
 
-    var left   = aif(opts.left,   [primitive_index]),
-        right  = aif(opts.right,  [primitive_index]),
-        bottom = aif(opts.bottom, [primitive_index]),
-        top    = aif(opts.top,    [primitive_index]),
-        color  = aif(opts.color,  [primitive_index, index_in_vertex_primitive]),
-        z      = aif(opts.z,      [primitive_index]);
+    var left   = aif(opts.left,   [primitiveIndex]),
+        right  = aif(opts.right,  [primitiveIndex]),
+        bottom = aif(opts.bottom, [primitiveIndex]),
+        top    = aif(opts.top,    [primitiveIndex]),
+        color  = aif(opts.color,  [primitiveIndex, indexInVertexPrimitive]),
+        z      = aif(opts.z,      [primitiveIndex]);
 
-    var lower_left  = Shade.vec(left,  bottom);
-    var lower_right = Shade.vec(right, bottom);
-    var upper_left  = Shade.vec(left,  top);
-    var upper_right = Shade.vec(right, top);
-    var vertex_map  = Shade.array([lower_left, upper_right, upper_left,
-                                   lower_left, lower_right, upper_right]);
-    var index_array = Shade.array([0, 2, 3, 0, 1, 2]);
-    var index_in_vertex_primitive = index_array.at(vertex_in_primitive);
+    var lowerLeft  = Shade.vec(left,  bottom);
+    var lowerRight = Shade.vec(right, bottom);
+    var upperLeft  = Shade.vec(left,  top);
+    var upperRight = Shade.vec(right, top);
+    var vertexMap  = Shade.array([lowerLeft, upperRight, upperLeft,
+                                  lowerLeft, lowerRight, upperRight]);
 
     var model = Lux.model({
         type: "triangles",
@@ -53,9 +63,9 @@ Lux.Marks.aligned_rects = function(opts)
     });
 
     var appearance = {
-        position: Shade.vec(vertex_map.at(vertex_in_primitive), z),
+        position: Shade.vec(vertexMap.at(vertexInPrimitive), z),
         color: color,
-        pick_id: opts.pick_id,
+        pickId: opts.pickId,
         mode: opts.mode
     };
 

@@ -94,7 +94,7 @@ mat4.identity = function()
     return result;
 };
 
-mat4.set_identity = function(mat)
+mat4.setIdentity = function(mat)
 {
     mat4.set(mat, _identity);
     return mat;
@@ -124,7 +124,7 @@ mat4.transpose = function(mat)
     return result;
 };
 
-mat4.set_transpose = function(dest, mat)
+mat4.setTranspose = function(dest, mat)
 {
     if (mat == dest) {
         var a01 = mat[1], a02 = mat[2], a03 = mat[3];
@@ -271,7 +271,7 @@ mat4.invert = function(mat)
     return mat;
 };
 
-mat4.as_mat3 = function(mat)
+mat4.asMat3 = function(mat)
 {
     var result = new Float32Array(9);
     result.buffer._type = 'mat3';
@@ -287,7 +287,7 @@ mat4.as_mat3 = function(mat)
     return result;
 };
 
-mat4.as_mat2 = function(mat)
+mat4.asMat2 = function(mat)
 {
     var result = new Float32Array(4);
     result.buffer._type = 'mat2';
@@ -300,7 +300,7 @@ mat4.as_mat2 = function(mat)
 
 
 // from glMatrix
-mat4.as_inverse_transpose_mat3 = function(mat)
+mat4.asInverseTransposeMat3 = function(mat)
 {
     // Cache the matrix values (makes for huge speed increases!)
     var a00 = mat[0], a01 = mat[4], a02 = mat[8];
@@ -401,7 +401,7 @@ mat4.multiply = function(dest, other)
     return dest;
 };
 
-mat4.product_vec = function(mat, vec)
+mat4.productVec = function(mat, vec)
 {
     var result = new Float32Array(4);
     result.buffer._type = 'vec4';
@@ -413,7 +413,7 @@ mat4.product_vec = function(mat, vec)
     return result;
 };
 
-mat4.multiply_vec = function(mat, vec)
+mat4.multiplyVec = function(mat, vec)
 {
     var x = vec[0], y = vec[1], z = vec[2], w = vec[3];
     vec[0] = mat[0]*x + mat[4]*y + mat[8]*z  + mat[12]*w;
@@ -423,7 +423,7 @@ mat4.multiply_vec = function(mat, vec)
     return vec;
 };
 
-mat4.multiply_vec3 = function(mat, vec)
+mat4.multiplyVec3 = function(mat, vec)
 {
     var x = vec[0], y = vec[1], z = vec[2];
     vec[0] = mat[0]*x + mat[4]*y + mat[8]*z;
@@ -433,7 +433,7 @@ mat4.multiply_vec3 = function(mat, vec)
 };
 
 // from glMatrix
-mat4.translation_of = function(mat, vec)
+mat4.translationOf = function(mat, vec)
 {
     var result = new Float32Array(16);
     result.buffer._type = 'mat4';
@@ -481,7 +481,7 @@ mat4.translate = function(mat, vec)
     return mat;
 };
 
-mat4.scaling_of = function(mat, vec)
+mat4.scalingOf = function(mat, vec)
 {
     var result = new Float32Array(16);
     result.buffer._type = 'mat4';
@@ -536,7 +536,7 @@ mat4.scale = function(mat, vec)
 };
 
 // from glMatrix
-mat4.rotation_of = function(mat, angle, axis)
+mat4.rotationOf = function(mat, angle, axis)
 {
     var x = axis[0], y = axis[1], z = axis[2];
     var len = Math.sqrt(x*x + y*y + z*z);
@@ -789,7 +789,7 @@ mat4.lookAt = function(eye, center, up)
     return result;
 };
 
-mat4.frobenius_norm = function(mat)
+mat4.frobeniusNorm = function(mat)
 {
     return Math.sqrt(mat[0] * mat[0] +
                      mat[1] * mat[1] +

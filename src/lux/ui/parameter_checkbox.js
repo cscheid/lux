@@ -1,4 +1,4 @@
-Lux.UI.parameter_checkbox = function(opts)
+Lux.UI.parameterCheckbox = function(opts)
 {
     opts = _.defaults(opts, {
         toggle: function() {}
@@ -6,12 +6,12 @@ Lux.UI.parameter_checkbox = function(opts)
     var element = opts.element;
     var parameter = opts.parameter;
 
-    function on_click(event) {
+    function onClick(event) {
         parameter.set(~~event.target.checked);
         console.log(parameter.get());
         opts.toggle(event);
         Lux.Scene.invalidate();
     }
 
-    $(element).button().click(on_click);
+    $(element).button().click(onClick);
 };

@@ -1,13 +1,13 @@
 <html>
 <head><title>Lux tutorial, lesson 3: Parameters, Lux expressions, basic animations</title>
-  <link rel="stylesheet" href="/lux/demos/css/bootstrap.css"/>
-  <link rel="stylesheet" href="/lux/demos/css/style.css"/>
-  <link rel="stylesheet" href="/lux/demos/css/mchighlight-javascript.css"/>
-  <script src="/lux/lib/jquery-1.6.2.min.js"></script>
-  <script src="/lux/lux.js"></script>
-  <script src="/lux/demos/js/mclexer.js"></script>
-  <script src="/lux/demos/js/mchighlight.js"></script>
-  <script src="/lux/demos/js/mchighlight-javascript.js"></script>
+  <link rel="stylesheet" href="../../css/bootstrap.css"/>
+  <link rel="stylesheet" href="../../css/style.css"/>
+  <link rel="stylesheet" href="../../css/mchighlight-javascript.css"/>
+  <script src="../../../lib/jquery-2.1.0.min.js"></script>
+  <script src="../../../lux.js"></script>
+  <script src="../../js/mclexer.js"></script>
+  <script src="../../js/mchighlight.js"></script>
+  <script src="../../js/mchighlight-javascript.js"></script>
   <script src="lesson3.js"></script>
 </head>
 <body>
@@ -18,111 +18,113 @@
 <div style="text-align: right">View the <a href="lesson3.js">full source</a>.</div>
 
 <p>Most of the time we want our graphical elements to be dynamic in
-some way. For example, they might be animated in time, or with respect
-to user input, or something similar. One of the simplest ways to do
-this in Lux is to making the vertex positions in a batch depend on the
-time since the page loaded. The most straightforward way to do this
-would be to simply create a new model and batch at every clock
-tick. This is a bad idea in general: creating new batches involves a
-great number of WebGL calls that are slow. A better idea is to, in
-essence, tell Lux that the vertex position in your batch should
-be <em>a function</em> of some small number of parameters, which are
-created ahead of time and changed as necessary to reflect the changing
-state of the world. </p>
+some way. For example, they might be animated in time, or responding
+to user input. So far, all examples we have seen have static data. In
+this lesson, you will create a simple dynamic actor.</p>
 
-<p>Tnis notion of parameters is explicitly present in Lux. New
-parameters can be created and set as needed, but for this example, we
+<p>The simplest way to create actors that change with time is to make
+the vertex positions in an actor depend on the time since the page
+loaded. Naively, we might think of creating a new actor with new model
+positions at every clock tick, since that is what we have seen until
+now. This is a bad idea in general: creating new actors involves a
+number of WebGL calls that are slow. </p>
+
+<p>A better idea is to tell Lux that the vertex position in your actor should
+depend on some small number of <em>parameters</em>, which are
+created ahead of time and changed as necessary to reflect the changing
+state of the world. As these parameters change, so does the actor's
+  appearance. Importantly, changing a parameter is fast.</p>
+
+<p>Lux parameters can be created, but for this example, we
 will use a parameter predefined by Lux, namely
-the <span class="inline-highlight">now</span> parameter. It is stored
-in the variable returned
-by <span class="inline-highlight">Lux.init</span>, which we will store
-in <span class="inline-highlight">ctx</span>:</p>
+<tt>now</tt>:</p>
 
 <pre class="highlight">
-var now = ctx.parameters.now;
-var angle = now.mul(50).radians();
+var angle = Lux.now().mul(50).radians();
 </pre>
 
 <p>The notation used above to express the value stored
-in <span class="inline-highlight">angle</span> is a little different
-than you might have expected, but there's a very good reason for
-it. To explain it, we need to get into a little more detail about
-Lux.</p>
+in <tt>angle</tt> is a little different
+than you might have expected. To explain it, we need to get into a
+little more detail about Lux.</p>
 
 <h3>Lux expressions are GPU computations are Javascript values</h3>
 
-<p>One of the fundamental notions in Lux is the ability to manipulate
+<p>One of the fundamental features in Lux is the ability to manipulate
 expressions which represent <strong>computations to be performed on
 the GPU</strong>. When you program in WebGL directly, these
 computations are specified by vertex and fragment shaders. These are
 written in a separate programming language, compiled and called mostly
-as a black box, as far as javascript is concerned. This separation of
-two worlds makes writing software that uses shaders very awkward. In
+as a black box, as far as Javascript is concerned. This separation of
+two worlds makes writing software that uses shaders awkward. In
 Lux, on the other hand, we insist that every GPU computation be
-expressed as a Javascript value. It is <em>not</em> that Lux is
+expressed as a Javascript value. Notice that Lux is not
 precomputing values for the GPU ahead of time; rather, Lux lets you
-build expressions which it can later interpret and turn into GPU
+build expressions which it can later compile into GPU
 computations. Let's now look at how to build these types of
 expressions.</p>
 
-<p>The variable <span class="inline-highlight">now</span> contains a
+<p>The variable <tt>now</tt> contains a
 value that represents the number of seconds elapsed since the context
-was created. This value could be used directly as the color of a
-vertex, like in this hypothetical example, where the red component of
-the square's color would be computed as the sine of the number of
-elapsed seconds:</p>
+was created. This value can be used to specify the color of a
+vertex, where the red component of
+the square's color would be alternating between zero and one depending
+  on the amount of elapsed time:</p>
 
 <pre class="highlight">
-Facet.bake(square_model, {
-    position: square_model.vertex,
-    color: Shade.vec(now.sin(), 0, 0, 1)
-});
+Lux.actor({
+    model: square_model, 
+    appearance: { 
+        position: square_model.vertex,
+        color: Shade.vec(now.sin().add(1).div(2), 0.5, 0.5, 1)}});
 </pre>
 
-<p>Notice that the variable <span class="inline-highlight">now</span>
+<p>Notice that the variable <tt>now</tt>
 does not store a number, but rather an object from which you can build
-new objects. It is easy to see that the resulting expression denotes
-the sine of the parameter, but it is important to notice
-that <span class="inline-highlight">Math.sin(now)</span>
+new objects. You can see that the resulting expression denotes
+one half plus half the sine of the parameter, but it is important to notice
+that <tt>(Math.sin(now)+1)/2</tt>
 would <em>not</em> work! The moral of the story is that these
 expressions can be combined to build more complicated expressions
 which denote interesting computations. This is what's happening in the
 assignment
-to <span class="inline-highlight">angle</span>. If <em>s</em> is the
+to <tt>angle</tt> as well. If <em>s</em> is the
 number of elapsed seconds,
-then <span class="inline-highlight">now</span> represents the
-value <em>s</em>, <span class="inline-highlight">now.mul(50)</span>
+then <tt>now</tt> represents the
+value <em>s</em>, <tt>now.mul(50)</tt>
 represents the value <em>50*s</em>,
-and <span class="inline-highlight">now.mul(50).radians()</span>, in
+and <tt>now.mul(50).radians()</tt>, in
 turn, represents the value <em>50*s*(pi/180)</em>.</p>
 
-<p>We will use <span class="inline-highlight">angle</span> to rotate
+<p>We will use <tt>angle</tt> to rotate
 the vertex positions before translating them. Notice
-that <span class="inline-highlight">Shade.translation</span>
-and <span class="inline-highlight">Shade.rotation</span> behave like
-functions, just like <span class="inline-highlight">camera</span>
+that <tt>Shade.translation</tt>
+and <tt>Shade.rotation</tt> behave like
+functions, just like <tt>camera</tt>
 does. In the following
-example, <span class="inline-highlight">Shade.rotation(angle,
-Shade.vec(1, 0, 0))</span> denotes a transformation, that when applied
+example, <tt>Shade.rotation(angle,
+Shade.vec(1, 0, 0))</tt> denotes a transformation, that when applied
 to a vertex <em>v</em>, will return an expression denoting a vertex
 rotated <em>angle</em> radians around the vector <em>[1,0,0]</em>:</p>
 
 <pre class="highlight">
-Lux.Scene.add(Lux.bake(square, {
-    position: camera(Shade.translation( 1.5, 0, -6))
-                    (Shade.rotation(angle, Shade.vec(1, 0, 0)))
-                    (square.vertex),
-    color: Shade.color('#88f')
-}));
+Lux.Scene.add(Lux.actor({
+    model: square, 
+    appearance: {
+        position: camera(
+            Shade.translation( 1.5, 0, -6)(
+                Shade.rotation(angle, Shade.vec(1, 0, 0))(
+                    square.vertex),
+        color: Shade.vec(now.sin().add(1).div(2), 0, 0, 1)}}));
 </pre>
 
 <p>As you can see, Lux expressions are built either by taking a known
 expression and calling some method on it, or by building it from
-scratch from the <span class="inline-highlight">Shade</span>
+scratch from the <tt>Shade</tt>
 object.</p>
 
-<p>Lux currently has no way of realizing that your scene is
-dynamic and should be regularly updated. So you tell it explicitly,
+<p>Lux currently has no way of knowing that your scene is
+dynamic and should be regularly redrawn. So you tell it explicitly,
 like so:</p>
 
 <pre class="highlight">
@@ -133,7 +135,7 @@ Lux.Scene.animate();
 <p>Back to the <a href="../index.html">index</a>.</p>
 <script>
 $('.highlight').each(function(i, v) { Highlighter.highlight(v); });
-$('.inline-highlight').each(function(i, v) { Highlighter.highlight(v); });
+$('tt').each(function(i, v) { Highlighter.highlight(v); });
 </script>
 </div>
 </body>

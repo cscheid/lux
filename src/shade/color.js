@@ -2,7 +2,7 @@
 
 (function() {
 
-var css_colors = {
+var cssColors = {
     "aliceblue":            "#F0F8FF",
     "antiquewhite":         "#FAEBD7",
     "aqua":                 "#00FFFF",
@@ -152,7 +152,7 @@ var css_colors = {
     "yellowgreen":          "#9ACD32"
 };
 
-var rgb_re = / *rgb *\( *(\d+) *, *(\d+) *, *(\d+) *\) */;
+var rgbRe = / *rgb *\( *(\d+) *, *(\d+) *, *(\d+) *\) */;
 Shade.color = function(spec, alpha)
 {
     if (_.isUndefined(alpha))
@@ -169,14 +169,14 @@ Shade.color = function(spec, alpha)
         } else
             throw new Error("hex specifier must be either #rgb or #rrggbb");
     }
-    var m = rgb_re.exec(spec);
+    var m = rgbRe.exec(spec);
     if (m) {
         return Shade.vec(parseInt(m[1], 10) / 255,
                          parseInt(m[2], 10) / 255,
                          parseInt(m[3], 10) / 255, alpha);
     }
-    if (spec in css_colors)
-        return Shade.color(css_colors[spec], alpha);
+    if (spec in cssColors)
+        return Shade.color(cssColors[spec], alpha);
     throw new Error("unrecognized color specifier " + spec);
 };
 }());

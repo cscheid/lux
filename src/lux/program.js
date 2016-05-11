@@ -1,9 +1,9 @@
-Lux.program = function(vs_src, fs_src)
+Lux.program = function(vsSrc, fsSrc)
 {
     var ctx = Lux._globals.ctx;
-    function getShader(shader_type, str)
+    function getShader(shaderType, str)
     {
-        var shader = ctx.createShader(shader_type);
+        var shader = ctx.createShader(shaderType);
         ctx.shaderSource(shader, str);
         ctx.compileShader(shader);
         if (!ctx.getShaderParameter(shader, ctx.COMPILE_STATUS)) {
@@ -17,12 +17,12 @@ Lux.program = function(vs_src, fs_src)
         return shader;
     }
 
-    var vertex_shader = getShader(ctx.VERTEX_SHADER, vs_src), 
-        fragment_shader = getShader(ctx.FRAGMENT_SHADER, fs_src);
+    var vertexShader = getShader(ctx.VERTEX_SHADER, vsSrc), 
+        fragmentShader = getShader(ctx.FRAGMENT_SHADER, fsSrc);
 
     var shaderProgram = ctx.createProgram();
-    ctx.attachShader(shaderProgram, vertex_shader);
-    ctx.attachShader(shaderProgram, fragment_shader);
+    ctx.attachShader(shaderProgram, vertexShader);
+    ctx.attachShader(shaderProgram, fragmentShader);
     ctx.linkProgram(shaderProgram);
     
     if (!ctx.getProgramParameter(shaderProgram, ctx.LINK_STATUS)) {
@@ -31,26 +31,26 @@ Lux.program = function(vs_src, fs_src)
         console.log(ctx.getProgramInfoLog(shaderProgram));
         console.log("Failing shader pair:");
         console.log("Vertex shader");
-        console.log(vs_src);
+        console.log(vsSrc);
         console.log("Fragment shader");
-        console.log(fs_src);
+        console.log(fsSrc);
         throw new Error("failed link");
     }
 
-    var active_parameters = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
-    var array_name_regexp = /.*\[0\]/;
+    var activeParameters = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_UNIFORMS);
+    var arrayNameRegexp = /.*\[0\]/;
     var info;
-    for (var i=0; i<active_parameters; ++i) {
+    for (var i=0; i<activeParameters; ++i) {
         info = ctx.getActiveUniform(shaderProgram, i);
-        if (array_name_regexp.test(info.name)) {
-            var array_name = info.name.substr(0, info.name.length-3);
-            shaderProgram[array_name] = ctx.getUniformLocation(shaderProgram, array_name);
+        if (arrayNameRegexp.test(info.name)) {
+            var arrayName = info.name.substr(0, info.name.length-3);
+            shaderProgram[arrayName] = ctx.getUniformLocation(shaderProgram, arrayName);
         } else {
             shaderProgram[info.name] = ctx.getUniformLocation(shaderProgram, info.name);
         }
     }
-    var active_attributes = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_ATTRIBUTES);
-    for (i=0; i<active_attributes; ++i) {
+    var activeAttributes = ctx.getProgramParameter(shaderProgram, ctx.ACTIVE_ATTRIBUTES);
+    for (i=0; i<activeAttributes; ++i) {
         info = ctx.getActiveAttrib(shaderProgram, i);
         shaderProgram[info.name] = ctx.getAttribLocation(shaderProgram, info.name);
     }

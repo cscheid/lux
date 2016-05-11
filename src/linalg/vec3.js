@@ -19,7 +19,7 @@ vec3.copy = function(vec)
 
 vec3.make = vec3.copy;
 
-vec3.equal_eps = function(v1, v2)
+vec3.equalEps = function(v1, v2)
 {
     return Math.abs(v1[0] - v2[0]) < vec.eps &&
            Math.abs(v1[1] - v2[1]) < vec.eps &&
@@ -117,7 +117,7 @@ vec3.scale = function(dest, val)
     return dest;
 };
 
-vec3.schur_product = function(v1, v2)
+vec3.schurProduct = function(v1, v2)
 {
     var result = new Float32Array(3);
     result.buffer._type = 'vec3';
@@ -127,7 +127,7 @@ vec3.schur_product = function(v1, v2)
     return result;
 };
 
-vec3.schur_multiply = function(dest, other)
+vec3.schurMultiply = function(dest, other)
 {
     dest[0] *= other[0];
     dest[1] *= other[1];

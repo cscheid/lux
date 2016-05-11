@@ -1,1 +1,3 @@
-Lux = {};
+!(function() {
+
+var Lux = {};

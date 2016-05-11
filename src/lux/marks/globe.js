@@ -1,6 +1,6 @@
 (function() {
 
-function spherical_mercator_patch(tess)
+function sphericalMercatorPatch(tess)
 {
     var uv = [];
     var elements = [];
@@ -22,15 +22,15 @@ function spherical_mercator_patch(tess)
         elements: elements,
         vertex: function(min, max) {
             var xf = this.uv.mul(max.sub(min)).add(min);
-            return Shade.Scale.Geo.mercator_to_spherical(xf.at(0), xf.at(1));
+            return Shade.Scale.Geo.mercatorToSpherical(xf.at(0), xf.at(1));
         },
-        transformed_uv: function(min, max) {
+        transformedUv: function(min, max) {
             return Shade.mix(min, max, this.uv).div(Math.PI * 2).add(Shade.vec(0, 0.5));
         }
     });
 }
 
-function latlong_to_mercator(lat, lon)
+function latlongToMercator(lat, lon)
 {
     lat = lat / (180 / Math.PI);
     lon = lon / (180 / Math.PI);
@@ -40,37 +40,37 @@ function latlong_to_mercator(lat, lon)
 Lux.Marks.globe = function(opts)
 {
     opts = _.defaults(opts || {}, {
-        longitude_center: -98,
-        latitude_center: 38,
+        longitudeCenter: -98,
+        latitudeCenter: 38,
         zoom: 3,
-        resolution_bias: 0,
-        patch_size: 10,
-        cache_size: 3,
-        tile_pattern: function(zoom, x, y) {
+        resolutionBias: 0,
+        patchSize: 10,
+        cacheSize: 3,
+        tilePattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         }
     });
     var model = Shade.parameter("mat4");
-    var patch = spherical_mercator_patch(opts.patch_size);
-    var cache_size = 1 << (2 * opts.cache_size); // cache size must be (2^n)^2
-    var tile_size = 256;
-    var tiles_per_line  = 1 << (~~Math.round(Math.log(Math.sqrt(cache_size))/Math.log(2)));
-    var super_tile_size = tile_size * tiles_per_line;
+    var patch = sphericalMercatorPatch(opts.patchSize);
+    var cacheSize = 1 << (2 * opts.cacheSize); // cache size must be (2^n)^2
+    var tileSize = 256;
+    var tilesPerLine  = 1 << (~~Math.round(Math.log(Math.sqrt(cacheSize))/Math.log(2)));
+    var superTileSize = tileSize * tilesPerLine;
 
     var ctx = Lux._globals.ctx;
     var texture = Lux.texture({
-        width: super_tile_size,
-        height: super_tile_size,
+        width: superTileSize,
+        height: superTileSize,
         mipmaps: false
     });
 
-    function new_tile(i) {
-        var x = i % tiles_per_line;
-        var y = ~~(i / tiles_per_line);
+    function newTile(i) {
+        var x = i % tilesPerLine;
+        var y = ~~(i / tilesPerLine);
         return {
             texture: texture,
-            offset_x: x,
-            offset_y: y,
+            offsetX: x,
+            offsetY: y,
             // 0: inactive,
             // 1: mid-request,
             // 2: ready to draw.
@@ -78,77 +78,77 @@ Lux.Marks.globe = function(opts)
             x: -1,
             y: -1,
             zoom: -1,
-            last_touched: 0
+            lastTouched: 0
         };
     };
 
     var tiles = [];
-    for (var i=0; i<cache_size; ++i) {
-        tiles.push(new_tile(i));
+    for (var i=0; i<cacheSize; ++i) {
+        tiles.push(newTile(i));
     };
 
     var zooming = false, panning = false;
     var prev = [0,0];
     var inertia = 1;
-    var move_vec = [0,0];
+    var moveVec = [0,0];
 
     // FIXME for some reason, sometimes mouseup is preceded by a quick mousemove,
     // even when apparently no mouse movement was detected. This extra tick
     // throws my inertial browsing off. We work around by keeping the
     // second-to-last tick.
 
-    var last_moves = [0,0];
-    function log_move() {
-        last_moves[1] = last_moves[0];
-        last_moves[0] = new Date().getTime();
+    var lastMoves = [0,0];
+    function logMove() {
+        lastMoves[1] = lastMoves[0];
+        lastMoves[0] = new Date().getTime();
     }
 
-    var min_x = Shade.parameter("float");
-    var max_x = Shade.parameter("float");
-    var min_y = Shade.parameter("float");
-    var max_y = Shade.parameter("float");
-    var offset_x = Shade.parameter("float");
-    var offset_y = Shade.parameter("float");
-    var texture_scale = 1.0 / tiles_per_line;
+    var minX = Shade.parameter("float");
+    var maxX = Shade.parameter("float");
+    var minY = Shade.parameter("float");
+    var maxY = Shade.parameter("float");
+    var offsetX = Shade.parameter("float");
+    var offsetY = Shade.parameter("float");
+    var textureScale = 1.0 / tilesPerLine;
     var sampler = Shade.parameter("sampler2D");
 
-    var v = patch.vertex(Shade.vec(min_x, min_y), 
-                         Shade.vec(max_x, max_y));
+    var v = patch.vertex(Shade.vec(minX, minY), 
+                         Shade.vec(maxX, maxY));
 
-    var xformed_patch = patch.uv 
+    var xformedPatch = patch.uv 
     // These two lines work around the texture seams on the texture atlas
-        .mul((tile_size-1.0)/tile_size)
-        .add(0.5/tile_size)
+        .mul((tileSize-1.0)/tileSize)
+        .add(0.5/tileSize)
     //
-        .add(Shade.vec(offset_x, offset_y))
-        .mul(texture_scale)
+        .add(Shade.vec(offsetX, offsetY))
+        .mul(textureScale)
     ;
 
-    var sphere_actor = Lux.actor({
+    var sphereActor = Lux.actor({
         model: patch, 
         appearance: {
             position: model(v),
-            color: Shade.texture2D(sampler, xformed_patch).discard_if(model.mul(v).z().lt(0)),
-            polygon_offset: opts.polygon_offset
+            color: Shade.texture2D(sampler, xformedPatch).discardIf(model.mul(v).z().lt(0)),
+            polygonOffset: opts.polygonOffset
         }});
 
-    function inertia_tick() {
+    function inertiaTick() {
         var f = function() {
             Lux.Scene.invalidate();
-            result.longitude_center += move_vec[0] * inertia;
-            result.latitude_center  += move_vec[1] * inertia;
-            result.latitude_center  = Math.max(Math.min(80, result.latitude_center), -80);
-            result.update_model_matrix();
+            result.longitudeCenter += moveVec[0] * inertia;
+            result.latitudeCenter  += moveVec[1] * inertia;
+            result.latitudeCenter  = Math.max(Math.min(80, result.latitudeCenter), -80);
+            result.updateModelMatrix();
             if (inertia > 0.01)
-                window.requestAnimFrame(f, result.canvas);
+                window.requestAnimationFrame(f, result.canvas);
             inertia *= 0.95;
         };
         f();
     }
 
-    if (lux_typeOf(opts.zoom) === "number") {
+    if (Lux.typeOf(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
-    } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
+    } else if (Lux.isShadeExpression(opts.zoom) !== "parameter") {
         throw new Error("zoom must be either a number or a parameter");
     }
     var foo = Shade.parameter("vec4");
@@ -156,23 +156,23 @@ Lux.Marks.globe = function(opts)
     var result = {
         tiles: tiles,
         queue: [],
-        current_osm_zoom: 3,
-        longitude_center: opts.longitude_center,
-        latitude_center: opts.latitude_center,
+        currentOsmZoom: 3,
+        longitudeCenter: opts.longitudeCenter,
+        latitudeCenter: opts.latitudeCenter,
         zoom: opts.zoom,
-        model_matrix: model,
-        // lat_lon_position: function(lat, lon) {
-        //     return model(Shade.Scale.Geo.latlong_to_spherical(lat, lon));
+        modelMatrix: model,
+        // latLonPosition: function(lat, lon) {
+        //     return model(Shade.Scale.Geo.latlongToSpherical(lat, lon));
         // },
-        resolution_bias: opts.resolution_bias,
-        update_model_matrix: function() {
-            while (this.longitude_center < 0)
-                this.longitude_center += 360;
-            while (this.longitude_center > 360)
-                this.longitude_center -= 360;
-            var r1 = Lux.rotation(this.latitude_center * (Math.PI/180), [ 1, 0, 0]);
-            var r2 = Lux.rotation(this.longitude_center * (Math.PI/180), [ 0,-1, 0]);
-            this.model_matrix.set(mat4.product(r1, r2));
+        resolutionBias: opts.resolutionBias,
+        updateModelMatrix: function() {
+            while (this.longitudeCenter < 0)
+                this.longitudeCenter += 360;
+            while (this.longitudeCenter > 360)
+                this.longitudeCenter -= 360;
+            var r1 = Lux.rotation(this.latitudeCenter * (Math.PI/180), [ 1, 0, 0]);
+            var r2 = Lux.rotation(this.longitudeCenter * (Math.PI/180), [ 0,-1, 0]);
+            this.modelMatrix.set(mat4.product(r1, r2));
         },
         mousedown: function(event) {
             prev[0] = event.offsetX;
@@ -183,58 +183,58 @@ Lux.Marks.globe = function(opts)
         mousemove: function(event) {
             var w = ctx.viewportWidth;
             var h = ctx.viewportHeight;
-            var w_divider = 218.18;
-            var h_divider = 109.09;
+            var wDivider = 218.18;
+            var hDivider = 109.09;
             var zoom = this.zoom.get();
 
             if ((event.which & 1) && !event.shiftKey) {
                 panning = true;
-                move_vec[0] = -(event.offsetX - prev[0]) / (w * zoom / w_divider);
-                move_vec[1] =  (event.offsetY - prev[1]) / (h * zoom / h_divider);
+                moveVec[0] = -(event.offsetX - prev[0]) / (w * zoom / wDivider);
+                moveVec[1] =  (event.offsetY - prev[1]) / (h * zoom / hDivider);
                 prev[0] = event.offsetX;
                 prev[1] = event.offsetY;
-                log_move();
-                this.longitude_center += move_vec[0];
-                this.latitude_center += move_vec[1];
-                this.latitude_center = Math.max(Math.min(80, this.latitude_center), -80);
-                this.update_model_matrix();
+                logMove();
+                this.longitudeCenter += moveVec[0];
+                this.latitudeCenter += moveVec[1];
+                this.latitudeCenter = Math.max(Math.min(80, this.latitudeCenter), -80);
+                this.updateModelMatrix();
                 Lux.Scene.invalidate();
             }
             if (event.which & 1 && event.shiftKey) {
                 zooming = true;
-                var new_zoom = this.zoom.get() * (1.0 + (event.offsetY - prev[1]) / 240);
-                this.zoom.set(Math.max(new_zoom, 0.5));
+                var newZoom = this.zoom.get() * (1.0 + (event.offsetY - prev[1]) / 240);
+                this.zoom.set(Math.max(newZoom, 0.5));
                 Lux.Scene.invalidate();
             }
-            this.new_center(this.latitude_center, this.longitude_center, this.zoom.get());
+            this.newCenter(this.latitudeCenter, this.longitudeCenter, this.zoom.get());
             prev[0] = event.offsetX;
             prev[1] = event.offsetY;
         },
         mouseup: function(event) {
             var w = ctx.viewportWidth;
             var h = ctx.viewportHeight;
-            var w_divider = 218.18;
-            var h_divider = 109.09;
+            var wDivider = 218.18;
+            var hDivider = 109.09;
             var now = Date.now();
             // assume 16.66 ms per tick,
-            inertia = Math.pow(0.95, (now - last_moves[1]) / 16.666);
+            inertia = Math.pow(0.95, (now - lastMoves[1]) / 16.666);
             if (panning)
-                inertia_tick();
+                inertiaTick();
             panning = zooming = false;
         },
-        new_center: function(center_lat, center_lon, center_zoom) {
+        newCenter: function(centerLat, centerLon, centerZoom) {
             var w = ctx.viewportWidth;
-            var zoom_divider = 63.6396;
-            var base_zoom = Math.log(w / zoom_divider) / Math.log(2);
+            var zoomDivider = 63.6396;
+            var baseZoom = Math.log(w / zoomDivider) / Math.log(2);
 
-            var zoom = this.resolution_bias + base_zoom + (Math.log(center_zoom / 2.6) / Math.log(2));
+            var zoom = this.resolutionBias + baseZoom + (Math.log(centerZoom / 2.6) / Math.log(2));
             zoom = ~~zoom;
-            this.current_osm_zoom = zoom;
-            var lst = latlong_to_mercator(center_lat, center_lon);
+            this.currentOsmZoom = zoom;
+            var lst = latlongToMercator(centerLat, centerLon);
             var y = (lst[1] / (Math.PI * 2) + 0.5) * (1 << zoom);
             var x = lst[0] / (Math.PI * 2) * (1 << zoom);
-            // var y = (center_lat + 90) / 180 * (1 << zoom);
-            // var x = center_lon / 360 * (1 << zoom);
+            // var y = (centerLat + 90) / 180 * (1 << zoom);
+            // var x = centerLon / 360 * (1 << zoom);
             y = (1 << zoom) - y - 1;
             x = (x + (1 << (zoom - 1))) & ((1 << zoom) - 1);
 
@@ -252,50 +252,50 @@ Lux.Marks.globe = function(opts)
                 }
             }
         },
-        get_available_id: function(x, y, zoom) {
+        getAvailableId: function(x, y, zoom) {
             // easy cases first: return available tile or a cache hit
             var now = Date.now();
-            for (var i=0; i<cache_size; ++i) {
+            for (var i=0; i<cacheSize; ++i) {
                 if (this.tiles[i].x == x &&
                     this.tiles[i].y == y &&
                     this.tiles[i].zoom == zoom &&
                     this.tiles[i].active != 0) {
-                    this.tiles[i].last_touched = now;
+                    this.tiles[i].lastTouched = now;
                     return i;
                 }
             }
-            for (i=0; i<cache_size; ++i) {
+            for (i=0; i<cacheSize; ++i) {
                 if (!this.tiles[i].active) {
-                    this.tiles[i].last_touched = now;
+                    this.tiles[i].lastTouched = now;
                     return i;
                 }
             }
             // now we need to bump someone out. who?
-            var worst_index = -1;
-            var worst_time = 1e30;
-            for (i=0; i<cache_size; ++i) {
+            var worstIndex = -1;
+            var worstTime = 1e30;
+            for (i=0; i<cacheSize; ++i) {
                 if (this.tiles[i].active == 1)
                     // don't use this one, it's getting bumped out
                     continue;
-                var score = this.tiles[i].last_touched;
-                if (score < worst_time) {
-                    worst_time = score;
-                    worst_index = i;
+                var score = this.tiles[i].lastTouched;
+                if (score < worstTime) {
+                    worstTime = score;
+                    worstIndex = i;
                 }
             }
-            return worst_index;
+            return worstIndex;
         },
         init: function() {
             for (var z=0; z<3; ++z)
                 for (var i=0; i<(1 << z); ++i)
                     for (var j=0; j<(1 << z); ++j)
                         this.request(i, j, z);
-            this.new_center(this.latitude_center, this.longitude_center, this.zoom.get());
-            this.update_model_matrix();
+            this.newCenter(this.latitudeCenter, this.longitudeCenter, this.zoom.get());
+            this.updateModelMatrix();
         },
-        sanity_check: function() {
+        sanityCheck: function() {
             var d = {};
-            for (var i=0; i<cache_size; ++i) {
+            for (var i=0; i<cacheSize; ++i) {
                 $("#x" + i).text(this.tiles[i].x);
                 $("#y" + i).text(this.tiles[i].y);
                 $("#z" + i).text(this.tiles[i].zoom);
@@ -316,7 +316,7 @@ Lux.Marks.globe = function(opts)
         },
         request: function(x, y, zoom) {
             var that = this;
-            var id = this.get_available_id(x, y, zoom);
+            var id = this.getAvailableId(x, y, zoom);
             if (id === -1) {
                 alert("Could not fulfill request " + x + " " + y + " " + zoom);
                 return;
@@ -334,17 +334,17 @@ Lux.Marks.globe = function(opts)
             var f = function(x, y, zoom, id) {
                 return function() {
                     that.tiles[id].active = 2;
-                    that.tiles[id].last_touched = new Date().getTime();
+                    that.tiles[id].lastTouched = new Date().getTime();
                     // uncomment this during debugging
-                    // that.sanity_check();
+                    // that.sanityCheck();
                     Lux.Scene.invalidate();
                 };
             };
             texture: tiles[id].texture.load({
-                src: opts.tile_pattern(zoom, x, y),
+                src: opts.tilePattern(zoom, x, y),
                 crossOrigin: "anonymous",
-                x_offset: tiles[id].offset_x * tile_size,
-                y_offset: tiles[id].offset_y * tile_size,
+                xOffset: tiles[id].offsetX * tileSize,
+                yOffset: tiles[id].offsetY * tileSize,
                 onload: f(x, y, zoom, id)
             });
         },
@@ -356,35 +356,35 @@ Lux.Marks.globe = function(opts)
                 appearance = _.clone(appearance);
                 var lat = appearance.position.x();
                 var lon = appearance.position.y();
-                appearance.position = model(Shade.Scale.Geo.latlong_to_spherical(lat, lon));
+                appearance.position = model(Shade.Scale.Geo.latlongToSpherical(lat, lon));
                 return appearance;
             };
             return Lux.scene(opts);
         },
         dress: function(scene) {
-            var sphere_batch = sphere_actor.dress(scene);
+            var sphereBatch = sphereActor.dress(scene);
             return {
                 draw: function() {
-                    var lst = _.range(cache_size);
+                    var lst = _.range(cacheSize);
                     var that = this;
                     lst.sort(function(id1, id2) { 
-                        var g1 = Math.abs(tiles[id1].zoom - that.current_osm_zoom);
-                        var g2 = Math.abs(tiles[id2].zoom - that.current_osm_zoom);
+                        var g1 = Math.abs(tiles[id1].zoom - that.currentOsmZoom);
+                        var g2 = Math.abs(tiles[id2].zoom - that.currentOsmZoom);
                         return g2 - g1;
                     });
 
                     sampler.set(texture);
-                    for (var i=0; i<cache_size; ++i) {
+                    for (var i=0; i<cacheSize; ++i) {
                         var t = tiles[lst[i]];
                         if (t.active !== 2)
                             continue;
-                        min_x.set((t.x / (1 << t.zoom))           * Math.PI*2 + Math.PI);
-                        min_y.set((1 - (t.y + 1) / (1 << t.zoom)) * Math.PI*2 - Math.PI);
-                        max_x.set(((t.x + 1) / (1 << t.zoom))     * Math.PI*2 + Math.PI);
-                        max_y.set((1 - t.y / (1 << t.zoom))       * Math.PI*2 - Math.PI);
-                        offset_x.set(t.offset_x);
-                        offset_y.set(t.offset_y);
-                        sphere_batch.draw();
+                        minX.set((t.x / (1 << t.zoom))           * Math.PI*2 + Math.PI);
+                        minY.set((1 - (t.y + 1) / (1 << t.zoom)) * Math.PI*2 - Math.PI);
+                        maxX.set(((t.x + 1) / (1 << t.zoom))     * Math.PI*2 + Math.PI);
+                        maxY.set((1 - t.y / (1 << t.zoom))       * Math.PI*2 - Math.PI);
+                        offsetX.set(t.offsetX);
+                        offsetY.set(t.offsetY);
+                        sphereBatch.draw();
                     }
                 }
             };

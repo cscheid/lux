@@ -1,111 +1,111 @@
 var gl;
-var angle_y = Shade.parameter("float", 0.0);
-var angle_x = Shade.parameter("float", 0.0);
-var camera, model_xform, view_xform;
-var u_parameter, v_parameter, t_parameter;
+var angleY = Shade.parameter("float", 0.0);
+var angleX = Shade.parameter("float", 0.0);
+var camera, modelXform, viewXform;
+var uParameter, vParameter, tParameter;
 var mesh;
 
 $().ready(function () {
-    var prev_mouse_pos;
+    var prevMousePos;
     gl = Lux.init({
         clearColor: [0,0,0,0.2],
         mousedown: function(event) {
-            prev_mouse_pos = [event.offsetX, event.offsetY];
+            prevMousePos = [event.offsetX, event.offsetY];
         }, mousemove: function(event) {
             if ((event.which & 1) && !event.shiftKey) {
-                var delta_x =  (event.offsetX - prev_mouse_pos[0]) / gl.viewportHeight;
-                var delta_y =  (event.offsetY - prev_mouse_pos[1]) / gl.viewportHeight;
-                angle_x.set(angle_x.get() + delta_x); 
-                angle_y.set(angle_y.get() + delta_y); 
-                prev_mouse_pos = [event.offsetX, event.offsetY];
+                var deltaX =  (event.offsetX - prevMousePos[0]) / gl.viewportHeight;
+                var deltaY =  (event.offsetY - prevMousePos[1]) / gl.viewportHeight;
+                angleX.set(angleX.get() + deltaX); 
+                angleY.set(angleY.get() + deltaY); 
+                prevMousePos = [event.offsetX, event.offsetY];
                 Lux.Scene.invalidate();
             }
         }
     });
 
     camera = Shade.Camera.perspective();
-    model_xform = 
-        Shade.rotation(angle_x, Shade.vec(0,1,0))
-       (Shade.rotation(angle_y, Shade.vec(1,0,0)));
-    view_xform = Shade.translation(0, 0, -10);
+    modelXform = 
+        Shade.rotation(angleX, Shade.vec(0,1,0))
+       (Shade.rotation(angleY, Shade.vec(1,0,0)));
+    viewXform = Shade.translation(0, 0, -10);
 
     mesh = Lux.Models.mesh(100, 100);
-    t_parameter = Shade.parameter("float", 0);
+    tParameter = Shade.parameter("float", 0);
 
-    update_mesh();
+    updateMesh();
 
-    var start_time = (new Date().getTime()) / 1000;
+    var startTime = (new Date().getTime()) / 1000;
     Lux.Scene.animate(function() {
-        var this_time = (new Date().getTime()) / 1000;
-        var elapsed = this_time - start_time;
-        t_parameter.set(elapsed);
+        var thisTime = (new Date().getTime()) / 1000;
+        var elapsed = thisTime - startTime;
+        tParameter.set(elapsed);
     });
 });
 
-var current_actor;
-function create_mesh(position, normal, color)
+var currentActor;
+function createMesh(position, normal, color)
 {
-    if (current_actor) {
-        Lux.Scene.remove(current_actor);
+    if (currentActor) {
+        Lux.Scene.remove(currentActor);
     }
 
-    var final_color = Shade.gl_light({
-        light_position: Shade.vec(0,0,2),
-        material_color: color,
-        light_ambient: Shade.vec(0.1, 0.1, 0.1, 1.0),
-        light_diffuse: Shade.color("white"),
-        vertex: model_xform(position),
-        normal: model_xform(normal),
-        two_sided: true
+    var finalColor = Shade.glLight({
+        lightPosition: Shade.vec(0,0,2),
+        materialColor: color,
+        lightAmbient: Shade.vec(0.1, 0.1, 0.1, 1.0),
+        lightDiffuse: Shade.color("white"),
+        vertex: modelXform(position),
+        normal: modelXform(normal),
+        twoSided: true
     });
-    current_actor = Lux.actor({
+    currentActor = Lux.actor({
         model: mesh, 
         appearance: {
-            position: camera(view_xform)(model_xform)(position),
-            color: final_color
+            position: camera(viewXform)(modelXform)(position),
+            color: finalColor
         }});
-    Lux.Scene.add(current_actor);
+    Lux.Scene.add(currentActor);
 }
 
-function parse_expression(v)
+function parseExpression(v)
 {
     return peg_parser.parse(v);
 }
 
 
-function update_mesh()
+function updateMesh()
 {
     // wow, this is ugly.
 
-    u_parameter = mesh.tex_coord.x();
-    v_parameter = mesh.tex_coord.y();
-    var x = parse_expression($("#x").val());
-    var y = parse_expression($("#y").val());
-    var z = parse_expression($("#z").val());
-    var color = parse_expression($("#color").val());
+    uParameter = mesh.texCoord.x();
+    vParameter = mesh.texCoord.y();
+    var x = parseExpression($("#x").val());
+    var y = parseExpression($("#y").val());
+    var z = parseExpression($("#z").val());
+    var color = parseExpression($("#color").val());
     if (_.isUndefined(x) ||
         _.isUndefined(y) ||
         _.isUndefined(z) ||
         _.isUndefined(color))
         return;
 
-    u_parameter = mesh.tex_coord.x().add(0.01);
-    var xu = parse_expression($("#x").val());
-    var yu = parse_expression($("#y").val());
-    var zu = parse_expression($("#z").val());
+    uParameter = mesh.texCoord.x().add(0.01);
+    var xu = parseExpression($("#x").val());
+    var yu = parseExpression($("#y").val());
+    var zu = parseExpression($("#z").val());
 
-    u_parameter = mesh.tex_coord.x();
-    v_parameter = mesh.tex_coord.y().add(0.01);
-    var xv = parse_expression($("#x").val());
-    var yv = parse_expression($("#y").val());
-    var zv = parse_expression($("#z").val());
+    uParameter = mesh.texCoord.x();
+    vParameter = mesh.texCoord.y().add(0.01);
+    var xv = parseExpression($("#x").val());
+    var yv = parseExpression($("#y").val());
+    var zv = parseExpression($("#z").val());
 
-    u_parameter = mesh.tex_coord.x();
-    v_parameter = mesh.tex_coord.y();
+    uParameter = mesh.texCoord.x();
+    vParameter = mesh.texCoord.y();
 
     var position = Shade.vec(x, y, z);
     var du = Shade.vec(xu,yu,zu).sub(Shade.vec(position)).div(0.01);
     var dv = Shade.vec(xv,yv,zv).sub(Shade.vec(position)).div(0.01);
     var normal = du.cross(dv).normalize();
-    create_mesh(position, normal, color);
+    createMesh(position, normal, color);
 }

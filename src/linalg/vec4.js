@@ -25,7 +25,7 @@ vec4.random = function() {
     return vec4.make(lst);
 };
 
-vec4.equal_eps = function(v1, v2)
+vec4.equalEps = function(v1, v2)
 {
     return Math.abs(v1[0] - v2[0]) < vec.eps &&
         Math.abs(v1[1] - v2[1]) < vec.eps &&
@@ -127,7 +127,7 @@ vec4.scale = function(dest, val)
     return dest;
 };
 
-vec4.schur_product = function(v1, v2)
+vec4.schurProduct = function(v1, v2)
 {
     var result = new Float32Array(4);
     result.buffer._type = 'vec4';
@@ -138,7 +138,7 @@ vec4.schur_product = function(v1, v2)
     return result;
 };
 
-vec4.schur_multiply = function(dest, other)
+vec4.schurMultiply = function(dest, other)
 {
     dest[0] *= other[0];
     dest[1] *= other[1];

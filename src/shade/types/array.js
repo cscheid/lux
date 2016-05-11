@@ -1,17 +1,17 @@
-Shade.Types.array = function(base_type, size) {
-    return Shade._create(Shade.Types.base_t, {
-        is_array: function() { return true; },
-        declare: function(glsl_name) {
-            return base_type.declare(glsl_name) + "[" + size + "]";
+Shade.Types.array = function(baseType, size) {
+    return Shade._create(Shade.Types.baseT, {
+        isArray: function() { return true; },
+        declare: function(glslName) {
+            return baseType.declare(glslName) + "[" + size + "]";
         },
         repr: function() {
-            return base_type.repr() + "[" + size + "]";
+            return baseType.repr() + "[" + size + "]";
         },
-        array_size: function() {
+        arraySize: function() {
             return size;
         },
-        array_base: function() {
-            return base_type;
+        arrayBase: function() {
+            return baseType;
         }
     });
 };

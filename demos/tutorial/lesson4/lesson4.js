@@ -15,7 +15,7 @@ $().ready(function () {
     // only 8 vertices in a cube, we end up with 24 vertices in the
     // model, since we need three colors per corner.
 
-    var cube_model = Lux.model({
+    var cubeModel = Lux.model({
         type: "triangles",
         elements: [0,  1,  2,  0,  2,  3,
                    4,  5,  6,  4,  6,  7,
@@ -36,7 +36,7 @@ $().ready(function () {
     // For the pyramid, however, each vertex has only one color 
     // associated with it, so we can reuse the information.
 
-    var pyramid_model = Lux.model({
+    var pyramidModel = Lux.model({
         type: "triangles",
         elements: [0, 1, 2,
                    0, 2, 3,
@@ -54,25 +54,25 @@ $().ready(function () {
     // rotate the objects at 50 degrees/second.
     var angle = gl.parameters.now.mul(50).radians();
 
-    var cube_xformed_vertex = Shade.translation(1.5, 0, -6)
+    var cubeXformedVertex = Shade.translation(1.5, 0, -6)
         (Shade.rotation(angle, Shade.vec(1,1,1)))
-        (cube_model.vertex);
+        (cubeModel.vertex);
 
-    var pyramid_xformed_vertex = Shade.translation(-1.5, 0, -6)
+    var pyramidXformedVertex = Shade.translation(-1.5, 0, -6)
         (Shade.rotation(angle, Shade.vec(0,1,0)))
-        (pyramid_model.vertex);
+        (pyramidModel.vertex);
 
     Lux.Scene.add(Lux.actor({
-        model: cube_model, 
+        model: cubeModel, 
         appearance: {
-            position: camera(cube_xformed_vertex),
-            color: cube_model.color
+            position: camera(cubeXformedVertex),
+            color: cubeModel.color
         }}));
     Lux.Scene.add(Lux.actor({
-        model: pyramid_model, 
+        model: pyramidModel, 
         appearance: {
-            position: camera(pyramid_xformed_vertex),
-            color: pyramid_model.color
+            position: camera(pyramidXformedVertex),
+            color: pyramidModel.color
         }}));
 
     // Start scene animation

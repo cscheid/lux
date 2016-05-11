@@ -5,7 +5,7 @@ var angle;
 
 //////////////////////////////////////////////////////////////////////////////
 
-function draw_it()
+function drawIt()
 {
     cube.draw();
     pyramid.draw();
@@ -14,24 +14,24 @@ function draw_it()
 $().ready(function () {
     var canvas = document.getElementById("webgl");
     var camera = Shade.Camera.perspective({
-        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
-        field_of_view_y: 45,
-        aspect_ratio: 720/480,
-        near_distance: 4,
-        far_distance: 10
+        lookAt: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
+        fieldOfViewY: 45,
+        aspectRatio: 720/480,
+        nearDistance: 4,
+        farDistance: 10
     });
     angle = Shade.parameter("float");
     gl = Lux.init({
         clearDepth: 1.0,
         clearColor: [0,0,0,0.2],
-        display: draw_it,
+        display: drawIt,
         attributes: {
             alpha: true,
             depth: true,
             preserveDrawingBuffer: true
         },
         mousedown: function(event) {
-            Lux.Unprojector.draw_unproject_scene();
+            Lux.Unprojector.drawUnprojectScene();
             var r = Lux.Unprojector.unproject(event.luxX, event.luxY);
             $("#pickresult").html(String(r));
         }
@@ -49,7 +49,7 @@ $().ready(function () {
     // only 8 vertices in a cube, we end up with 24 of them, since we
     // need three colors per corner.
 
-    var cube_model = Lux.model({
+    var cubeModel = Lux.model({
         type: "triangles",
         elements: [0,  1,  2,  0,  2,  3,
                    4,  5,  6,  4,  6,  7,
@@ -70,7 +70,7 @@ $().ready(function () {
     // For the pyramid, however, each vertex has only one color 
     // associated with it, so we can reuse the information.
 
-    var pyramid_model = Lux.model({
+    var pyramidModel = Lux.model({
         type: "triangles",
         elements: [0, 1, 2,
                    0, 2, 3,
@@ -85,34 +85,53 @@ $().ready(function () {
     });
 
     // one id per face of the cube
-    var ids = Lux.id_buffer([1,1,1,1,2,2,2,2,3,3,3,3,
+    var ids = Lux.idBuffer([1,1,1,1,2,2,2,2,3,3,3,3,
                                4,4,4,4,5,5,5,5,6,6,6,6]);
-    var cube_xformed_vertex = Shade.translation(Shade.vec(1.5, 0, 0))
+    var cubeXformedVertex = Shade.translation(Shade.vec(1.5, 0, 0))
         .mul(Shade.rotation(angle, Shade.vec(1,1,1)))
-        .mul(cube_model.vertex);
+        .mul(cubeModel.vertex);
 
-    var pyramid_xformed_vertex = Shade.translation(Shade.vec(-1.5, 0, 0))
+    var pyramidXformedVertex = Shade.translation(Shade.vec(-1.5, 0, 0))
         .mul(Shade.rotation(angle, Shade.vec(0,1,0)))
-        .mul(pyramid_model.vertex);
+        .mul(pyramidModel.vertex);
 
-    cube = Lux.bake(cube_model, {
-        position: camera(cube_xformed_vertex),
-        color: cube_model.color,
-        pick_id: ids
-    });
+    Lux.Scene.add(Lux.actor({
+        appearance: {
+            position: camera(cubeXformedVertex),
+            color: cubeModel.color,
+            pickId: ids
+        }, model: cubeModel
+    }));
 
-    pyramid = Lux.bake(pyramid_model, {
-        position: camera(pyramid_xformed_vertex),
-        color: pyramid_model.color,
-        pick_id: Shade.id(7)
-    });
+    Lux.Scene.add(Lux.actor({
+        appearance: {
+            position: camera(pyramidXformedVertex),
+            color: pyramidModel.color,
+            pickId: Shade.id(7)
+        }, model: pyramidModel
+    }));
 
     var start = new Date().getTime();
-    var f = function() {
-        window.requestAnimFrame(f, canvas);
+    Lux.Scene.animate(function() {
         var elapsed = new Date().getTime() - start;
         angle.set((elapsed / 20) * (Math.PI / 180));
-        gl.display();
-    };
-    f();
+    });
+    
+    // cube = Lux.bake(cubeModel, {
+    // });
+
+    // pyramid = Lux.bake(pyramidModel, {
+    //     position: camera(pyramidXformedVertex),
+    //     color: pyramidModel.color,
+    //     pickId: Shade.id(7)
+    // });
+
+    // var start = new Date().getTime();
+    // var f = function() {
+    //     window.requestAnimationFrame(f, canvas);
+    //     var elapsed = new Date().getTime() - start;
+    //     angle.set((elapsed / 20) * (Math.PI / 180));
+    //     gl.display();
+    // };
+    // f();
 });

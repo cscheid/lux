@@ -2,54 +2,54 @@ var S = Shade;
 
 var gl;
 var data;
-var bars_batch;
+var barsBatch;
 var alive = false;
 var histo;
 
 //////////////////////////////////////////////////////////////////////////////
 
-function histo_buffer(opts)
+function histoBuffer(opts)
 {
     opts = _.defaults(opts || {}, {
-        bin_count: 64,
+        binCount: 64,
         weight: Shade.vec(1,1,1,1)
     });
     if (_.isUndefined(opts.bin)) {
-        throw "histo_buffer requires 'bin' field";
+        throw "histoBuffer requires 'bin' field";
     }
     opts.bin = Shade(opts.bin);
 
-    var sz = Math.ceil(Math.sqrt(opts.bin_count));
+    var sz = Math.ceil(Math.sqrt(opts.binCount));
 
     var ctx = Lux._globals.ctx;
-    var render_buffer = Lux.render_buffer({
+    var renderBuffer = Lux.renderBuffer({
         clearColor: [0,0,0,0],
         width: sz,
         height: sz,
         type: ctx.FLOAT // enable render to floating-point texture
     });
-    var read_render_buffer = Lux.render_buffer({
+    var readRenderBuffer = Lux.renderBuffer({
         width: sz,
         height: sz
     });
 
-    function bin_to_texcoord(pos) {
+    function binToTexcoord(pos) {
         // the call to floor() prevents spillage when pos is fractional
         return Shade.vec(pos.mod(sz), pos.div(sz)).floor().add(0.5).div(sz);
     }
-    function bin_to_screen(pos) {
+    function binToScreen(pos) {
         // the call to floor() prevents spillage when pos is fractional
         var xy = Shade.vec(pos.mod(sz), pos.div(sz)).floor().add(0.5);
         var map = Shade.Scale.linear({ domain: [0, sz], range: [-1, 1] });
         return Shade.vec(map(xy), 0, 1);
     }
 
-    var convert_actor = render_buffer.screen_actor({
-        texel_function: function(texel_accessor) {
-            return Shade.Bits.encode_float(texel_accessor().r());
+    var convertActor = renderBuffer.screenActor({
+        texelFunction: function(texelAccessor) {
+            return Shade.Bits.encodeFloat(texelAccessor().r());
         }});
     
-    var draw_actor = Lux.actor({
+    var drawActor = Lux.actor({
         model: {
             type: "points",
             elements: opts.elements
@@ -57,24 +57,24 @@ function histo_buffer(opts)
         appearance: {
             mode: Lux.DrawingMode.additive,
             color: opts.weight,
-            screen_position: bin_to_screen(opts.bin)
+            screenPosition: binToScreen(opts.bin)
         }});
-    render_buffer.scene.add(draw_actor);
-    read_render_buffer.scene.add(convert_actor);
+    renderBuffer.scene.add(drawActor);
+    readRenderBuffer.scene.add(convertActor);
 
     return {
-        buffer: render_buffer,
-        read_buffer: read_render_buffer,
-        bin_count: opts.bin_count,
-        bin_address: bin_to_texcoord,
-        bin_value: Shade(function(pos) {
-            return Shade.texture2D(this.buffer, this.bin_address(pos)).r();
+        buffer: renderBuffer,
+        readBuffer: readRenderBuffer,
+        binCount: opts.binCount,
+        binAddress: binToTexcoord,
+        binValue: Shade(function(pos) {
+            return Shade.texture2D(this.buffer, this.binAddress(pos)).r();
         }),
         compute: function() {
-            render_buffer.scene.draw();
+            renderBuffer.scene.draw();
         },
         read: function() {
-            read_render_buffer.scene.draw();
+            readRenderBuffer.scene.draw();
             /* In a sane world, we would do this:
 
              var floatb = new Float32Array(sz * sz);
@@ -90,59 +90,58 @@ function histo_buffer(opts)
              This upgrades GPGPU from mere torture to a
              particularly exquisite form of torture.
 
-             So we're reduced to doing silly things like Shade.Bits.convert_to_float
+             So we're reduced to doing silly things like Shade.Bits.convertToFloat
              and casting to Float32Array, one channel at a time. Le sigh.
 
             */
-            return read_render_buffer.with_bound_buffer(function() {
+            return readRenderBuffer.withBoundBuffer(function() {
                 var ctx = Lux._globals.ctx;
                 var buffer = new ArrayBuffer(4*sz*sz);
                 var uint8 = new Uint8Array(buffer);
                 ctx.readPixels(0, 0, sz, sz,
-                               ctx.RGBA, ctx.UNSIGNED_BYTE, uint8);
+                               ctx.RGBA, ctx.unsignedByte, uint8);
                 return new Float32Array(buffer);
             });
         }
     };
 }
 
-function data_buffers()
+function dataBuffers()
 {
     var d = Data.flowers();
-    var tt = Lux.Data.texture_table(d);
+    var tt = Lux.Data.textureTable(d);
 
-    var point_index = Lux.attribute_buffer({ vertex_array: _.range(tt.n_rows), item_size: 1});
+    var pointIndex = Lux.attributeBuffer({ vertexArray: _.range(tt.nRows), itemSize: 1});
     
     return {
-        sepalLength: tt.at(point_index, 0),
-        sepalWidth:  tt.at(point_index, 1),
-        petalLength: tt.at(point_index, 2),
-        petalWidth:  tt.at(point_index, 3),
-        species:     tt.at(point_index, 4),
+        sepalLength: tt.at(pointIndex, 0),
+        sepalWidth:  tt.at(pointIndex, 1),
+        petalLength: tt.at(pointIndex, 2),
+        petalWidth:  tt.at(pointIndex, 3),
+        species:     tt.at(pointIndex, 4),
         columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species'],
-        n_rows: d.data.length,
-        n_columns: 5
+        nRows: d.data.length,
+        nColumns: 5
     };
 }
 
-function init_webgl()
+function initWebgl()
 {
     var canvas = document.getElementById("scatterplot");
     gl = Lux.init({ attributes: { alpha: true,
                                   depth: true
                                 },
                     display: function() {
-                        bars_batch.draw();
+                        barsBatch.draw();
                     },
                     clearColor: [0, 0, 0, 0.2]
                   });
-    Lux.set_context(gl);
-    data = data_buffers();
-    var bin_count = 24;
-    histo = histo_buffer({
-        bin_count: bin_count,
-        bin: Shade.Scale.linear({domain: [4, 8], range: [0, bin_count]})(data.sepalLength),
-        elements: data.n_rows
+    data = dataBuffers();
+    var binCount = 24;
+    histo = histoBuffer({
+        binCount: binCount,
+        bin: Shade.Scale.linear({domain: [4, 8], range: [0, binCount]})(data.sepalLength),
+        elements: data.nRows
     });
     histo.compute();
 
@@ -151,18 +150,18 @@ function init_webgl()
 
     var project = Shade(function(x) { return x.mul(2).sub(1); });
 
-    Lux.Scene.add(Lux.Marks.aligned_rects({
-        elements: bin_count,
+    Lux.Scene.add(Lux.Marks.alignedRects({
+        elements: binCount,
         bottom: _.compose(project, function(i) { return 0; }),
-        top:    _.compose(project, function(i) { return histo.bin_value(i).div(30); }),
-        left:   _.compose(project, function(i) { return i.div(bin_count); }),
-        right:  _.compose(project, function(i) { return i.add(1).div(bin_count); }),
+        top:    _.compose(project, function(i) { return histo.binValue(i).div(30); }),
+        left:   _.compose(project, function(i) { return i.div(binCount); }),
+        right:  _.compose(project, function(i) { return i.add(1).div(binCount); }),
         color:  function(i) {
-            return Shade.Colors.shadetable.hcl.create(0, 50, histo.bin_value(i).mul(3)).as_shade();
+            return Shade.Colors.shadetable.hcl.create(0, 50, histo.binValue(i).mul(3)).asShade();
         }
     }));
 }
 
 $().ready(function() {
-    init_webgl();
+    initWebgl();
 });

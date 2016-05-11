@@ -1,30 +1,30 @@
-Lux.Marks.globe_2d = function(opts)
+Lux.Marks.globe2d = function(opts)
 {
     opts = _.defaults(opts || {}, {
         zoom: 3,
-        resolution_bias: -1,
-        patch_size: 10,
-        cache_size: 3, // 3: 64 images; 4: 256 images.
-        tile_pattern: function(zoom, x, y) {
+        resolutionBias: -1,
+        patchSize: 10,
+        cacheSize: 3, // 3: 64 images; 4: 256 images.
+        tilePattern: function(zoom, x, y) {
             return "http://tile.openstreetmap.org/"+zoom+"/"+x+"/"+y+".png";
         },
         camera: function(v) { return v; },
         debug: false, // if true, add outline and x-y-zoom marker to every tile
-        no_network: false, // if true, tile is always blank white and does no HTTP requests.
-        post_process: function(c) { return c; }
+        noNetwork: false, // if true, tile is always blank white and does no HTTP requests.
+        postProcess: function(c) { return c; }
     });
 
-    var has_interactor = false, get_center_zoom;
+    var hasInteractor = false, getCenterZoom;
     if (opts.interactor) {
-        has_interactor = true;
-        get_center_zoom = function() {
+        hasInteractor = true;
+        getCenterZoom = function() {
             return [opts.interactor.center.get()[0], 
                     opts.interactor.center.get()[1], 
                     opts.interactor.zoom.get()];
         };
     }
-    if (opts.no_network) {
-        opts.debug = true; // no_network implies debug;
+    if (opts.noNetwork) {
+        opts.debug = true; // noNetwork implies debug;
     }
 
     var patch = Lux.model({
@@ -34,25 +34,25 @@ Lux.Marks.globe_2d = function(opts)
             return this.uv.mul(max.sub(min)).add(min);
         }
     });
-    var cache_size = 1 << (2 * opts.cache_size);
-    var tile_size = 256;
-    var tiles_per_line  = 1 << (~~Math.round(Math.log(Math.sqrt(cache_size))/Math.log(2)));
-    var super_tile_size = tile_size * tiles_per_line;
+    var cacheSize = 1 << (2 * opts.cacheSize);
+    var tileSize = 256;
+    var tilesPerLine  = 1 << (~~Math.round(Math.log(Math.sqrt(cacheSize))/Math.log(2)));
+    var superTileSize = tileSize * tilesPerLine;
 
     var ctx = Lux._globals.ctx;
     var texture = Lux.texture({
         mipmaps: false,
-        width: super_tile_size,
-        height: super_tile_size
+        width: superTileSize,
+        height: superTileSize
     });
 
-    function new_tile(i) {
-        var x = i % tiles_per_line;
-        var y = ~~(i / tiles_per_line);
+    function newTile(i) {
+        var x = i % tilesPerLine;
+        var y = ~~(i / tilesPerLine);
         return {
             texture: texture,
-            offset_x: x,
-            offset_y: y,
+            offsetX: x,
+            offsetY: y,
             // 0: inactive,
             // 1: mid-request,
             // 2: ready to draw.
@@ -60,45 +60,45 @@ Lux.Marks.globe_2d = function(opts)
             x: -1,
             y: -1,
             zoom: -1,
-            last_touched: 0
+            lastTouched: 0
         };
     };
 
     var tiles = [];
-    for (var i=0; i<cache_size; ++i) {
-        tiles.push(new_tile(i));
+    for (var i=0; i<cacheSize; ++i) {
+        tiles.push(newTile(i));
     };
 
-    var min_x = Shade.parameter("float");
-    var max_x = Shade.parameter("float");
-    var min_y = Shade.parameter("float");
-    var max_y = Shade.parameter("float");
-    var offset_x = Shade.parameter("float");
-    var offset_y = Shade.parameter("float");
-    var texture_scale = 1.0 / tiles_per_line;
+    var minX = Shade.parameter("float");
+    var maxX = Shade.parameter("float");
+    var minY = Shade.parameter("float");
+    var maxY = Shade.parameter("float");
+    var offsetX = Shade.parameter("float");
+    var offsetY = Shade.parameter("float");
+    var textureScale = 1.0 / tilesPerLine;
     var sampler = Shade.parameter("sampler2D");
 
-    var v = patch.vertex(Shade.vec(min_x, min_y), Shade.vec(max_x, max_y));
+    var v = patch.vertex(Shade.vec(minX, minY), Shade.vec(maxX, maxY));
 
-    var xformed_patch = patch.uv 
+    var xformedPatch = patch.uv 
     // These two lines work around the texture seams on the texture atlas
-        .mul((tile_size-1.0)/tile_size)
-        .add(0.5/tile_size)
+        .mul((tileSize-1.0)/tileSize)
+        .add(0.5/tileSize)
     //
-        .add(Shade.vec(offset_x, offset_y))
-        .mul(texture_scale)
+        .add(Shade.vec(offsetX, offsetY))
+        .mul(textureScale)
     ;
 
-    var tile_actor = Lux.actor({
+    var tileActor = Lux.actor({
         model: patch, 
         appearance: {
             position: opts.camera(v),
-            color: opts.post_process(Shade.texture2D(sampler, xformed_patch)),
+            color: opts.postProcess(Shade.texture2D(sampler, xformedPatch)),
             mode: Lux.DrawingMode.pass }});
 
-    if (lux_typeOf(opts.zoom) === "number") {
+    if (Lux.typeOf(opts.zoom) === "number") {
         opts.zoom = Shade.parameter("float", opts.zoom);
-    } else if (Lux.is_shade_expression(opts.zoom) !== "parameter") {
+    } else if (Lux.isShadeExpression(opts.zoom) !== "parameter") {
         throw new Error("zoom must be either a number or a parameter");
     }
 
@@ -107,24 +107,24 @@ Lux.Marks.globe_2d = function(opts)
     var result = {
         tiles: tiles,
         queue: [],
-        current_osm_zoom: 0,
-        lat_lon_position: Lux.Marks.globe_2d.lat_lon_to_tile_mercator,
-        resolution_bias: opts.resolution_bias,
-        new_center: function() {
+        currentOsmZoom: 0,
+        latLonPosition: Lux.Marks.globe2d.latLonToTileMercator,
+        resolutionBias: opts.resolutionBias,
+        newCenter: function() {
             // ctx.viewport* here is bad...
             // var mn = unproject(vec.make([0, 0]));
             // var mx = unproject(vec.make([ctx.viewportWidth, ctx.viewportHeight]));
-            var t = get_center_zoom();
-            var center_x = t[0];
-            var center_y = t[1];
-            var center_zoom = t[2]; // opts.zoom.get();
+            var t = getCenterZoom();
+            var centerX = t[0];
+            var centerY = t[1];
+            var centerZoom = t[2]; // opts.zoom.get();
 
-            var screen_resolution_bias = Math.log(ctx.viewportHeight / 256) / Math.log(2);
-            var zoom = this.resolution_bias + screen_resolution_bias + (Math.log(center_zoom) / Math.log(2));
+            var screenResolutionBias = Math.log(ctx.viewportHeight / 256) / Math.log(2);
+            var zoom = this.resolutionBias + screenResolutionBias + (Math.log(centerZoom) / Math.log(2));
             zoom = ~~zoom;
-            this.current_osm_zoom = zoom;
-            var y = center_y * (1 << zoom);
-            var x = center_x * (1 << zoom);
+            this.currentOsmZoom = zoom;
+            var y = centerY * (1 << zoom);
+            var x = centerX * (1 << zoom);
             y = (1 << zoom) - y - 1;
 
             for (var i=-2; i<=2; ++i) {
@@ -141,38 +141,38 @@ Lux.Marks.globe_2d = function(opts)
                 }
             }
         },
-        get_available_id: function(x, y, zoom) {
+        getAvailableId: function(x, y, zoom) {
             // easy cases first: return available tile or a cache hit
             var now = Date.now();
-            for (var i=0; i<cache_size; ++i) {
+            for (var i=0; i<cacheSize; ++i) {
                 if (this.tiles[i].x == x &&
                     this.tiles[i].y == y &&
                     this.tiles[i].zoom == zoom &&
                     this.tiles[i].active != 0) {
-                    this.tiles[i].last_touched = now;
+                    this.tiles[i].lastTouched = now;
                     return i;
                 }
             }
-            for (i=0; i<cache_size; ++i) {
+            for (i=0; i<cacheSize; ++i) {
                 if (!this.tiles[i].active) {
-                    this.tiles[i].last_touched = now;
+                    this.tiles[i].lastTouched = now;
                     return i;
                 }
             }
             // now we need to bump someone out. who?
-            var worst_index = -1;
-            var worst_time = 1e30;
-            for (i=0; i<cache_size; ++i) {
+            var worstIndex = -1;
+            var worstTime = 1e30;
+            for (i=0; i<cacheSize; ++i) {
                 if (this.tiles[i].active == 1)
                     // don't use this one, it's getting bumped out
                     continue;
-                var score = this.tiles[i].last_touched;
-                if (score < worst_time) {
-                    worst_time = score;
-                    worst_index = i;
+                var score = this.tiles[i].lastTouched;
+                if (score < worstTime) {
+                    worstTime = score;
+                    worstIndex = i;
                 }
             }
-            return worst_index;
+            return worstIndex;
         },
         init: function() {
             for (var z=0; z<3; ++z)
@@ -180,9 +180,9 @@ Lux.Marks.globe_2d = function(opts)
                     for (var j=0; j<(1 << z); ++j)
                         this.request(i, j, z);
         },
-        sanity_check: function() {
+        sanityCheck: function() {
             var d = {};
-            for (var i=0; i<cache_size; ++i) {
+            for (var i=0; i<cacheSize; ++i) {
                 $("#x" + i).text(this.tiles[i].x);
                 $("#y" + i).text(this.tiles[i].y);
                 $("#z" + i).text(this.tiles[i].zoom);
@@ -196,14 +196,14 @@ Lux.Marks.globe_2d = function(opts)
                                 this.tiles[i].x, this.tiles[i].y, this.tiles[i].zoom, 
                                 this.tiles[i].active,
                                 k);                    
-                    throw new Error("Internal Error in globe_2d");
+                    throw new Error("Internal Error in globe2d");
                 }
                 d[k] = true;
             }
         },
         request: function(x, y, zoom) {
             var that = this;
-            var id = this.get_available_id(x, y, zoom);
+            var id = this.getAvailableId(x, y, zoom);
             if (id === -1) {
                 console.log("Could not fulfill request " + x + " " + y + " " + zoom);
                 return;
@@ -221,9 +221,9 @@ Lux.Marks.globe_2d = function(opts)
             var f = function(x, y, zoom, id) {
                 return function() {
                     that.tiles[id].active = 2;
-                    that.tiles[id].last_touched = Date.now();
+                    that.tiles[id].lastTouched = Date.now();
                     // uncomment this during debugging
-                    // that.sanity_check();
+                    // that.sanityCheck();
                     Lux.Scene.invalidate();
                 };
             };
@@ -242,33 +242,33 @@ Lux.Marks.globe_2d = function(opts)
                 return c;
             } : function(image) { return image; };
             var obj = {
-                transform_image: xform,
+                transformImage: xform,
                 crossOrigin: "anonymous",
-                x_offset: tiles[id].offset_x * tile_size,
-                y_offset: tiles[id].offset_y * tile_size,
+                xOffset: tiles[id].offsetX * tileSize,
+                yOffset: tiles[id].offsetY * tileSize,
                 onload: f(x, y, zoom, id)
             };
-            if (opts.no_network) {
-                if (!Lux._globals.blank_globe_2d_image) {
+            if (opts.noNetwork) {
+                if (!Lux._globals.blankGlobe2dImage) {
                     var c = document.createElement("canvas");
                     c.setAttribute("width", 256);
                     c.setAttribute("height", 256);
                     var ctx = c.getContext('2d');
                     ctx.fillStyle = "white";
                     ctx.fillRect(0, 0, 256, 256);
-                    Lux._globals.blank_globe_2d_image = c;
+                    Lux._globals.blankGlobe2dImage = c;
                 }
-                obj.canvas = Lux._globals.blank_globe_2d_image;
+                obj.canvas = Lux._globals.blankGlobe2dImage;
             } else {
-                obj.src = opts.tile_pattern(zoom, x, y);
+                obj.src = opts.tilePattern(zoom, x, y);
             }
             tiles[id].texture.load(obj);
         },
         dress: function(scene) {
-            var tile_batch = tile_actor.dress(scene);
-            var xf = scene.get_transform().inverse;
-            if (!has_interactor) {
-                get_center_zoom = function() {
+            var tileBatch = tileActor.dress(scene);
+            var xf = scene.getTransform().inverse;
+            if (!hasInteractor) {
+                getCenterZoom = function() {
                     var p1 = unproject(vec.make([0, 0]));
                     var p2 = unproject(vec.make([1, 1]));
                     var zoom = 1.0/(p2[1] - p1[1]);
@@ -276,32 +276,32 @@ Lux.Marks.globe_2d = function(opts)
                 };
                 unproject = Shade(function(p) {
                     return xf({position: p}).position;
-                }).js_evaluate;
+                }).jsEvaluate;
             }
             var that = this;
             return {
                 draw: function() {
-                    that.new_center();
-                    var lst = _.range(cache_size);
+                    that.newCenter();
+                    var lst = _.range(cacheSize);
                     lst.sort(function(id1, id2) { 
-                        var g1 = Math.abs(tiles[id1].zoom - that.current_osm_zoom);
-                        var g2 = Math.abs(tiles[id2].zoom - that.current_osm_zoom);
+                        var g1 = Math.abs(tiles[id1].zoom - that.currentOsmZoom);
+                        var g2 = Math.abs(tiles[id2].zoom - that.currentOsmZoom);
                         return g2 - g1;
                     });
 
                     sampler.set(texture);
-                    for (var i=0; i<cache_size; ++i) {
+                    for (var i=0; i<cacheSize; ++i) {
                         var t = tiles[lst[i]];
                         if (t.active !== 2)
                             continue;
                         var z = (1 << t.zoom);
-                        min_x.set(t.x / z);
-                        min_y.set(1 - (t.y + 1) / z);
-                        max_x.set((t.x + 1) / z);
-                        max_y.set(1 - t.y / z);
-                        offset_x.set(t.offset_x);
-                        offset_y.set(t.offset_y);
-                        tile_batch.draw();
+                        minX.set(t.x / z);
+                        minY.set(1 - (t.y + 1) / z);
+                        maxX.set((t.x + 1) / z);
+                        maxY.set(1 - t.y / z);
+                        offsetX.set(t.offsetX);
+                        offsetY.set(t.offsetY);
+                        tileBatch.draw();
                     }
                 }
             };
@@ -313,7 +313,7 @@ Lux.Marks.globe_2d = function(opts)
     return result;
 };
 
-Lux.Marks.globe_2d.scene = function(opts)
+Lux.Marks.globe2d.scene = function(opts)
 {
     opts = _.clone(opts || {});
     opts.transform = function(appearance) {
@@ -322,22 +322,22 @@ Lux.Marks.globe_2d.scene = function(opts)
         appearance = _.clone(appearance);
         var lat = appearance.position.x();
         var lon = appearance.position.y();
-        appearance.position = Lux.Marks.globe_2d.lat_lon_to_tile_mercator(lat, lon);
+        appearance.position = Lux.Marks.globe2d.latLonToTileMercator(lat, lon);
         return appearance;
     };
     return Lux.scene(opts);
 };
 
-Lux.Marks.globe_2d.lat_lon_to_tile_mercator = Shade(function(lat, lon) {
-    return Shade.Scale.Geo.latlong_to_mercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
+Lux.Marks.globe2d.latLonToTileMercator = Shade(function(lat, lon) {
+    return Shade.Scale.Geo.latlongToMercator(lat, lon).div(Math.PI * 2).add(Shade.vec(0.5,0.5));
 });
 
-// Lux.Marks.globe_2d.transform = function(appearance) {
-//     var new_appearance = _.clone(appearance);
-//     new_appearance.position = Shade.vec(Lux.Marks.globe_2d.lat_lon_to_tile_mercator(
+// Lux.Marks.globe2d.transform = function(appearance) {
+//     var newAppearance = _.clone(appearance);
+//     newAppearance.position = Shade.vec(Lux.Marks.globe2d.latLonToTileMercator(
 //         appearance.position.x(),
 //         appearance.position.y()), appearance.position.swizzle("xw"));
-//     return new_appearance;
+//     return newAppearance;
 // };
 
-// Lux.Marks.globe_2d.transform.inverse = function() { throw new Error("unimplemented"); };
+// Lux.Marks.globe2d.transform.inverse = function() { throw new Error("unimplemented"); };

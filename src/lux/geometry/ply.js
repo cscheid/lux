@@ -2,7 +2,7 @@ Lux.Geometry.PLY = {};
 
 Lux.Geometry.PLY.load = function(url, k) {
 
-    function property_size(prop) {
+    function propertySize(prop) {
         // char       character                 1
         // uchar      unsigned character        1
         // short      short integer             2
@@ -20,7 +20,7 @@ Lux.Geometry.PLY.load = function(url, k) {
                 'float': 4,
                 'double': 8}[prop.type];
     }
-    function property_dataview_setter(prop) {
+    function propertyDataviewSetter(prop) {
         return {'char': 'setInt8',
                 'uchar': 'setUint8',
                 'short': 'setInt16',
@@ -33,137 +33,137 @@ Lux.Geometry.PLY.load = function(url, k) {
 
     Lux.Net.ajax(url, function(result) {
         var lines = result.split('\n');
-        var current_line = 0;
+        var currentLine = 0;
 
-        var header_res = [
+        var headerRes = [
                 /^element.*/,
                 /^comment.*/,
                 /^format.*/
         ];
 
-        function parse_header() {
+        function parseHeader() {
             var header = { 
                 elements: [],
                 comments: []
             };
             function fail() {
-                throw new Error("parse error on line " + (current_line+1) + ": '" + lines[current_line] + "'");
+                throw new Error("parse error on line " + (currentLine+1) + ": '" + lines[currentLine] + "'");
             }
-            if (lines[current_line] !== 'ply') {
+            if (lines[currentLine] !== 'ply') {
                 fail();
             }
-            ++current_line;
-            function parse_element_header() {
-                var line = lines[current_line].trim().split(' ');
-                ++current_line;
+            ++currentLine;
+            function parseElementHeader() {
+                var line = lines[currentLine].trim().split(' ');
+                ++currentLine;
                 var result = { name: line[1], count: Number(line[2]), 
                                properties: [] };
-                line = lines[current_line].trim().split(' ');
+                line = lines[currentLine].trim().split(' ');
                 while (line[0] === 'property') {
                     if (line[1] === 'list') {
                         result.properties.push({ type: line[1], 
                                                  name: line[4],
-                                                 element_type: line[3] });
+                                                 elementType: line[3] });
                     } else {
                         result.properties.push({ type: line[1], name: line[2] });
                     }
-                    ++current_line;
-                    line = lines[current_line].trim().split(' ');
+                    ++currentLine;
+                    line = lines[currentLine].trim().split(' ');
                 }
                 return result;
             }
-            while (lines[current_line] !== 'end_header') {
-                if (lines[current_line].match(/^element.*/)) {
-                    header.elements.push(parse_element_header());
-                } else if (lines[current_line].match(/^comment.*/)) {
-                    header.comments.push(lines[current_line].trim().split(' ').slice(1).join(" "));
-                    ++current_line;
-                } else if (lines[current_line].match(/^format.*/)) {
-                    header.format = lines[current_line].trim().split(' ').slice(1);
-                    ++current_line;
+            while (lines[currentLine] !== 'end_header') {
+                if (lines[currentLine].match(/^element.*/)) {
+                    header.elements.push(parseElementHeader());
+                } else if (lines[currentLine].match(/^comment.*/)) {
+                    header.comments.push(lines[currentLine].trim().split(' ').slice(1).join(" "));
+                    ++currentLine;
+                } else if (lines[currentLine].match(/^format.*/)) {
+                    header.format = lines[currentLine].trim().split(' ').slice(1);
+                    ++currentLine;
                 } else
                     fail();
             }
-            current_line++;
+            currentLine++;
             return header;
         };
 
         // element list parsing is currently very very primitive, and
         // limited to polygonal faces one typically sees in PLY files.
 
-        function parse_element_list(element_header) {
-            if (element_header.name !== 'face' ||
-                element_header.properties.length !== 1 ||
-                element_header.properties[0].element_type !== 'int') {
+        function parseElementList(elementHeader) {
+            if (elementHeader.name !== 'face' ||
+                elementHeader.properties.length !== 1 ||
+                elementHeader.properties[0].elementType !== 'int') {
                 throw new Error("element lists are only currently supported for 'face' element and a single property if type 'int'");
             }
             var result = [];
-            var max_v = 0;
-            for (var i=0; i<element_header.count; ++i) {
-                var row = _.map(lines[current_line].trim().split(' '), Number);
-                current_line++;
+            var maxV = 0;
+            for (var i=0; i<elementHeader.count; ++i) {
+                var row = _.map(lines[currentLine].trim().split(' '), Number);
+                currentLine++;
                 if (row.length < 4)
                     continue;
                 var vertex1 = row[1];
-                max_v = Math.max(max_v, row[1], row[2]);
+                maxV = Math.max(maxV, row[1], row[2]);
                 for (var j=2; j<row.length-1; ++j) {
                     result.push(vertex1, row[j], row[j+1]);
-                    max_v = Math.max(max_v, row[j+1]);
+                    maxV = Math.max(maxV, row[j+1]);
                 }
             }
-            if (max_v > 65535)
+            if (maxV > 65535)
                 return new Uint32Array(result);
             else
                 return new Uint16Array(result);
         }
 
-        function parse_element(element_header) {
+        function parseElement(elementHeader) {
             // are we parsing list properties?
-            if (_.any(element_header.properties, function(prop) { return prop.type === 'list'; })) {
-                if (_.any(element_header.properties, function(prop) { return prop.type !== 'list'; })) {
+            if (_.any(elementHeader.properties, function(prop) { return prop.type === 'list'; })) {
+                if (_.any(elementHeader.properties, function(prop) { return prop.type !== 'list'; })) {
                     throw new Error("this PLY parser does not currently support mixed property types");
                 }
-                return parse_element_list(element_header);
+                return parseElementList(elementHeader);
             }
             // no, this is a plain property array
             // 
             // we always use a single arraybuffer and stride into it for performance.
-            var row_size = _.reduce(_.map(element_header.properties, property_size),
-                                    function(a,b) { return a+b; }, 0);
-            var result_buffer = new ArrayBuffer(element_header.count * row_size);
-            var view = new DataView(result_buffer);
-            var row_offset = 0;
-            var row_offsets = [];
-            var property_setters = _.map(element_header.properties, function(prop) {
-                return view[property_dataview_setter(prop)];
+            var rowSize = _.reduce(_.map(elementHeader.properties, propertySize),
+                                   function(a,b) { return a+b; }, 0);
+            var resultBuffer = new ArrayBuffer(elementHeader.count * rowSize);
+            var view = new DataView(resultBuffer);
+            var rowOffset = 0;
+            var rowOffsets = [];
+            var propertySetters = _.map(elementHeader.properties, function(prop) {
+                return view[propertyDataviewSetter(prop)];
             });
-            _.each(element_header.properties, function(prop) {
-                row_offsets.push(row_offset);
-                row_offset += property_size(prop);
+            _.each(elementHeader.properties, function(prop) {
+                rowOffsets.push(rowOffset);
+                rowOffset += propertySize(prop);
             });
-            var n_props = row_offsets.length;
-            var endian = Lux._globals.ctx._lux_globals.little_endian;
-            for (var i=0; i<element_header.count; ++i) {
-                var row = _.map(lines[current_line].trim().split(' '), Number);
-                current_line++;
-                for (var j=0; j<row_offsets.length; ++j) {
-                    property_setters[j].call(view, i * row_size + row_offsets[j], row[j], endian);
+            var nProps = rowOffsets.length;
+            var endian = Lux._globals.ctx._luxGlobals.littleEndian;
+            for (var i=0; i<elementHeader.count; ++i) {
+                var row = _.map(lines[currentLine].trim().split(' '), Number);
+                currentLine++;
+                for (var j=0; j<rowOffsets.length; ++j) {
+                    propertySetters[j].call(view, i * rowSize + rowOffsets[j], row[j], endian);
                 };
             }
-            return result_buffer;
+            return resultBuffer;
         }
 
-        function parse_content() {
+        function parseContent() {
             if (header.format[0] !== 'ascii' ||
                 header.format[1] !== '1.0')
                 throw new Error("format is unsupported: " + header.format.join(' '));
             return _.object(_.map(header.elements, function(element) {
-                return [element.name, parse_element(element)];
+                return [element.name, parseElement(element)];
             }));
         }
 
-        var header = parse_header();
-        var content = parse_content();
+        var header = parseHeader();
+        var content = parseContent();
         k({ header: header, content: content });
     });
 };

@@ -1,14 +1,13 @@
 <html>
 <head><title>Attributes 1: Defining attribute buffers</title>
-  <link rel="stylesheet" href="/lux/demos/css/bootstrap.css"/>
-  <link rel="stylesheet" href="/lux/demos/css/style.css"/>
-  <link rel="stylesheet" href="/lux/demos/css/mchighlight-javascript.css"/>
-  <script src="/lux/lib/jquery-1.6.2.min.js"></script>
-  <script src="/lux/lux.js"></script>
-  <script src="/lux/demos/js/mclexer.js"></script>
-  <script src="/lux/demos/js/mchighlight.js"></script>
-  <script src="/lux/demos/js/mchighlight-javascript.js"></script>
-  <script src="lesson1.js"></script>
+  <link rel="stylesheet" href="../../css/bootstrap.css"/>
+  <link rel="stylesheet" href="../../css/style.css"/>
+  <link rel="stylesheet" href="../../css/mchighlight-javascript.css"/>
+  <script src="../../../lib/jquery-2.1.0.min.js"></script>
+  <script src="../../../lux.js"></script>
+  <script src="../../js/mclexer.js"></script>
+  <script src="../../js/mchighlight.js"></script>
+  <script src="../../js/mchighlight-javascript.js"></script>
 </head>
 <body>
   <div class="body">
@@ -17,11 +16,16 @@
       <canvas id="webgl" width="720" height="480"></canvas>
       <p>Attribute buffers are Lux objects that encapsulate a stream
       of values that will be combined a few at a time to make WebGL
-      primitives. For example, 3 contiguous attribute values would
-      make a triangle, or each value would make a separate point. In
+      primitives. For example, 3 consecutive values in an attribute buffer would
+	make a triangle, or each value would make a separate point. </p>
+      <p>In
       cases where your data doesn't change very often, you don't need
       to worry about attributes, since Lux will typically create one
-      for you automatically. </p>
+      for you automatically. In fact, this is exactly
+      what <tt>Lux.model</tt> has been
+      doing for you behind the scenes when interpreting
+      the <tt>vertex</tt> field.</p>
+
       <p>However, if you have dynamic data, you
       don't want to have to create a new actor every time, since
       creating an actor is slow (due to creating GPU programs
@@ -66,5 +70,6 @@ Lux.Scene.invalidate();
   </div>
 <script>
 $('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+$('tt').each(function(i, v) { Highlighter.highlight(v); });
 </script>
 </body>

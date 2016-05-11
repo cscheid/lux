@@ -6,7 +6,7 @@ Shade.ThreeD.normal = function(position)
 {
     if (position.type.equals(Shade.Types.vec4))
         position = position.swizzle("xyz").div(position.w());
-    var dPos_dpixelx = Shade.dFdx(position);
-    var dPos_dpixely = Shade.dFdy(position);
-    return Shade.normalize(Shade.cross(dPos_dpixelx, dPos_dpixely));
+    var dposDpixelx = Shade.dFdx(position);
+    var dposDpixely = Shade.dFdy(position);
+    return Shade.normalize(Shade.cross(dposDpixelx, dposDpixely));
 };

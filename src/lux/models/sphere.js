@@ -1,47 +1,51 @@
-Lux.Models.sphere = function(lat_secs, long_secs) {
-    if (_.isUndefined(lat_secs)) {
-        lat_secs = 5;
-        long_secs = 5;
+Lux.Models.sphere = function(latSecs, longSecs) {
+    if (_.isUndefined(latSecs)) {
+        latSecs = 5;
+        longSecs = 5;
     }
     var verts = [];
     var elements = [];
-    if (_.isUndefined(long_secs)) long_secs = lat_secs;
-    if (lat_secs <= 0) throw new Error("lat_secs must be positive");
-    if (long_secs <= 0) throw new Error("long_secs must be positive");
-    lat_secs = Math.floor(lat_secs);
-    long_secs = Math.floor(long_secs);
-    var i, j, phi, theta;    
-    for (i=0; i<=lat_secs; ++i) {
-        phi = (i / lat_secs);
-        for (j=0; j<long_secs; ++j) {
-            theta = (j / long_secs);
+    if (_.isUndefined(longSecs)) longSecs = latSecs;
+    if (latSecs <= 0) throw new Error("latSecs must be positive");
+    if (longSecs <= 0) throw new Error("longSecs must be positive");
+    latSecs = Math.floor(latSecs);
+    longSecs = Math.floor(longSecs);
+    var i, j, phi, theta;
+    for (i=0; i<=latSecs; ++i) {
+        phi = (i / latSecs);
+        for (j=0; j<=longSecs; ++j) {
+            theta = (j / longSecs);
             verts.push(theta, phi);
         }
     }
-    for (i=0; i<lat_secs; ++i) {
-        for (j=0; j<long_secs; ++j) {
-            elements.push(i * long_secs + j,
-                          i * long_secs + ((j + 1) % long_secs),
-                          (i + 1) * long_secs + j,
-                          i * long_secs + ((j + 1) % long_secs),
-                          (i + 1) * long_secs + ((j + 1) % long_secs),
-                          (i + 1) * long_secs + j);
+    for (i=0; i<latSecs; ++i) {
+        for (j=0; j<longSecs; ++j) {
+            var thisX = j;
+            var nextX = j+1;
+            var thisY = i;
+            var nextY = i+1;
+            elements.push(thisY * (longSecs + 1) + thisX,
+                          thisY * (longSecs + 1) + nextX,
+                          nextY * (longSecs + 1) + thisX,
+                          thisY * (longSecs + 1) + nextX,
+                          nextY * (longSecs + 1) + nextX,
+                          nextY * (longSecs + 1) + thisX);
         }
     }
 
     var S = Shade;
-    var uv_attr = Lux.attribute_buffer({ vertex_array: verts, item_size: 2});
-    phi = S.sub(S.mul(Math.PI, S.swizzle(uv_attr, "r")), Math.PI/2);
-    theta = S.mul(2 * Math.PI, S.swizzle(uv_attr, "g"));
+    var uvAttr = Lux.attributeBuffer({ vertexArray: verts, itemSize: 2});
+    theta = S.mul(2 * Math.PI, S.swizzle(uvAttr, "r"));
+    phi = S.sub(S.mul(Math.PI, S.swizzle(uvAttr, "g")), Math.PI/2);
     var cosphi = S.cos(phi);
     var position = S.vec(S.sin(theta).mul(cosphi),
                          S.sin(phi),
                          S.cos(theta).mul(cosphi), 1);
     return Lux.model({
         type: "triangles",
-        elements: Lux.element_buffer(elements),
+        elements: Lux.elementBuffer(elements),
         vertex: position,
-        tex_coord: uv_attr,
+        texCoord: uvAttr,
         normal: position
     });
 };

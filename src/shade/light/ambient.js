@@ -1,22 +1,22 @@
 // The most basic lighting component, ambient lighting simply multiplies
 // the light color by the material color.
-Shade.Light.ambient = function(light_opts)
+Shade.Light.ambient = function(lightOpts)
 {
     var color;
-    if (light_opts.color.type.equals(Shade.Types.vec4)) {
-        color = light_opts.color.swizzle("rgb");
-    } else if (light_opts.color.type.equals(Shade.Types.vec3)) {
-        color = light_opts.color;
+    if (lightOpts.color.type.equals(Shade.Types.vec4)) {
+        color = lightOpts.color.swizzle("rgb");
+    } else if (lightOpts.color.type.equals(Shade.Types.vec3)) {
+        color = lightOpts.color;
     } else throw new Error("expected color of type vec3 or vec4, got " +
-                           light_opts.color.type.repr() + " instead");
-    return function(material_opts) {
-        if (material_opts.color.type.equals(Shade.Types.vec4)) {
+                           lightOpts.color.type.repr() + " instead");
+    return Shade(function(materialOpts) {
+        if (materialOpts("color").type.equals(Shade.Types.vec4)) {
             return Shade.vec(
-                material_opts.color.swizzle("xyz").mul(color),
-                material_opts.color.swizzle("a")
+                materialOpts("color").swizzle("xyz").mul(color),
+                materialOpts("color").swizzle("a")
             );
         } else {
-            return material_opts.color.mul(color);
+            return materialOpts("color").mul(color);
         }
-    };
+    });
 };

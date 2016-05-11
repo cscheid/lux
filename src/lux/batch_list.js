@@ -1,4 +1,4 @@
-Lux.batch_list = function(lst)
+Lux.batchList = function(lst)
 {
     lst = lst.slice().reverse();
     return {

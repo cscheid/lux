@@ -1,9 +1,9 @@
-Shade.sampler2D_from_texture = function(texture)
+Shade.sampler2dFromTexture = function(texture)
 {
-    return texture._shade_expression || function() {
+    return texture._shadeExpression || function() {
         var result = Shade.parameter("sampler2D");
         result.set(texture);
-        texture._shade_expression = result;
+        texture._shadeExpression = result;
         // FIXME: What if the same texture is bound to many samplers?!
         return result;
     }();

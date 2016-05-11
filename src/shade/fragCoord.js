@@ -1,9 +1,9 @@
 Shade.fragCoord = function() {
-    return Shade._create_concrete_exp({
-        expression_type: "builtin_input{gl_FragCoord}",
+    return Shade._createConcreteExp({
+        expressionType: "builtinInput{gl_FragCoord}",
         parents: [],
         type: Shade.Types.vec4,
-        glsl_expression: function() { return "gl_FragCoord"; },
+        glslExpression: function() { return "gl_FragCoord"; },
         evaluate: function() {
             throw new Error("evaluate undefined for fragCoord");
         },
@@ -12,6 +12,6 @@ Shade.fragCoord = function() {
         },
         compile: function(ctx) {
         },
-        _json_key: function() { return 'fragCoord'; }
+        _jsonKey: function() { return 'fragCoord'; }
     });
 };

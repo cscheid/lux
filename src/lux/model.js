@@ -2,10 +2,10 @@
 // than the code which calls it be ugly.
 Lux.model = function(input)
 {
-    var n_elements;
-    function push_into(array, dimension) {
+    var nElements;
+    function pushInto(array, dimension) {
         return function(el) {
-            var v = el.constant_value();
+            var v = el.constantValue();
             for (var i=0; i<dimension; ++i)
                 array.push(v[i]);
         };
@@ -18,54 +18,54 @@ Lux.model = function(input)
                 // example: 'type: "triangles"'
                 result.type = v;
             else if (k === 'elements') {
-                if (v._shade_type === 'element_buffer') {
-                    // example: 'elements: Lux.element_buffer(...)'
+                if (v._shadeType === 'elementBuffer') {
+                    // example: 'elements: Lux.elementBuffer(...)'
                     result.elements = v;
-                } else if (lux_typeOf(v) === 'number') {
+                } else if (Lux.typeOf(v) === 'number') {
                     // example: 'elements: 4'
                     result.elements = v;
-                } else { // if (lux_typeOf(v) === 'array') {
+                } else { // if (Lux.typeOf(v) === 'array') {
                     // example: 'elements: [0, 1, 2, 3]'
                     // example: 'elements: new Int16Array([0, 1, 2, 3])'
                     // example: 'elements: new Int32Array([0, 1, 2, 3])' (WebGL only supports 16-bit elements, so Lux converts this to a 16-bit element array)
-                    result.elements = Lux.element_buffer(v);
+                    result.elements = Lux.elementBuffer(v);
                 } 
             }
             // Then we handle the model attributes. They can be ...
-            else if (v._shade_type === 'attribute_buffer') { // ... attribute buffers,
-                // example: 'vertex: Lux.attribute_buffer(...)'
+            else if (v._shadeType === 'attributeBuffer') { // ... attribute buffers,
+                // example: 'vertex: Lux.attributeBuffer(...)'
                 result[k] = Shade(v);
                 result.attributes[k] = result[k];
-                n_elements = v.numItems;
-            } else if (lux_typeOf(v) === "array") { // ... or a list of per-vertex things
+                nElements = v.numItems;
+            } else if (Lux.typeOf(v) === "array") { // ... or a list of per-vertex things
                 var buffer;
                 // These things can be shade vecs
-                if (lux_typeOf(v[0]) !== "array" && v[0]._lux_expression) {
+                if (Lux.typeOf(v[0]) !== "array" && v[0]._luxExpression) {
                     // example: 'color: [Shade.color('white'), Shade.color('blue'), ...]
                     // assume it's a list of shade vecs, assume they all have the same dimension
                     // FIXME: check this
-                    var dimension = v[0].type.vec_dimension();
-                    var new_v = [];
-                    _.each(v, push_into(new_v, dimension));
-                    buffer = Lux.attribute_buffer({
-                        vertex_array: new_v, 
-                        item_size: dimension
+                    var dimension = v[0].type.vecDimension();
+                    var newV = [];
+                    _.each(v, pushInto(newV, dimension));
+                    buffer = Lux.attributeBuffer({
+                        vertexArray: newV, 
+                        itemSize: dimension
                     });
                     result[k] = Shade(buffer);
                     result.attributes[k] = result[k];
-                    n_elements = buffer.numItems;
+                    nElements = buffer.numItems;
                 } else {
                     // Or they can be a single list of plain numbers, in which case we're passed 
                     // a pair, the first element being the list, the second 
                     // being the per-element size
                     // example: 'color: [[1,0,0, 0,1,0, 0,0,1], 3]'
-                    buffer = Lux.attribute_buffer({
-                        vertex_array: v[0], 
-                        item_size: v[1]
+                    buffer = Lux.attributeBuffer({
+                        vertexArray: v[0], 
+                        itemSize: v[1]
                     });
                     result[k] = Shade(buffer);
                     result.attributes[k] = result[k];
-                    n_elements = buffer.numItems;
+                    nElements = buffer.numItems;
                 }
             } else {
                 // if it's not any of the above things, then it's either a single shade expression
@@ -83,11 +83,11 @@ Lux.model = function(input)
     }
     if (!("elements" in result)) {
         // populate automatically using some sensible guess inferred from the attributes above
-        if (_.isUndefined(n_elements)) {
+        if (_.isUndefined(nElements)) {
             throw new Error("could not figure out how many elements are in this model; "
                 + "consider passing an 'elements' field");
         } else {
-            result.elements = n_elements;
+            result.elements = nElements;
         }
     }
     if (!("type" in result)) {

@@ -1,14 +1,14 @@
 /*
- * Lux.on_context returns a wrapped callback that guarantees that the passed
+ * Lux.onContext returns a wrapped callback that guarantees that the passed
  * callback will be invoked with the given current context. 
  * 
  * This is primarily used to safeguard pieces of code that need to work under
  * multiple active WebGL contexts.
  */
-Lux.on_context = function(the_ctx, f)
+Lux.onContext = function(theCtx, f)
 {
     return function() {
-        Lux.set_context(the_ctx);
+        Lux.setContext(theCtx);
         f.apply(this, arguments);
     };
 };

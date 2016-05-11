@@ -1,76 +1,76 @@
 var S = Shade;
 
-var stroke_width;
-var point_diameter;
-var point_alpha;
+var strokeWidth;
+var pointDiameter;
+var pointAlpha;
 var alive = false;
 var gl;
 
 //////////////////////////////////////////////////////////////////////////////
 
-function data_buffers()
+function dataBuffers()
 {
     var d = Data.flowers();
     return {
-        sepalLength: Lux.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalLength; }), item_size: 1, keep_array: true }),
-        sepalWidth:  Lux.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.sepalWidth; }), item_size: 1, keep_array: true}),
-        petalLength: Lux.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalLength; }), item_size: 1, keep_array: true}),
-        petalWidth:  Lux.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.petalWidth; }), item_size: 1, keep_array: true}),
-        species:     Lux.attribute_buffer({ vertex_array: d.data.map(function(v) { return v.species; }), item_size: 1, item_type: 'ubyte', keep_array: true}),
+        sepalLength: Lux.attributeBuffer({ vertexArray: d.data.map(function(v) { return v.sepalLength; }), itemSize: 1, keepArray: true }),
+        sepalWidth:  Lux.attributeBuffer({ vertexArray: d.data.map(function(v) { return v.sepalWidth; }), itemSize: 1, keepArray: true}),
+        petalLength: Lux.attributeBuffer({ vertexArray: d.data.map(function(v) { return v.petalLength; }), itemSize: 1, keepArray: true}),
+        petalWidth:  Lux.attributeBuffer({ vertexArray: d.data.map(function(v) { return v.petalWidth; }), itemSize: 1, keepArray: true}),
+        species:     Lux.attributeBuffer({ vertexArray: d.data.map(function(v) { return v.species; }), itemSize: 1, itemType: 'ubyte', keepArray: true}),
         columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species']
     };
 }
 
 $().ready(function() {
 
-    point_diameter = S.parameter("float", 10);
-    stroke_width   = S.parameter("float", 2.5);
-    point_alpha    = S.parameter("float", 1.0);
-    Lux.UI.parameter_slider({
+    pointDiameter = S.parameter("float", 10);
+    strokeWidth   = S.parameter("float", 2.5);
+    pointAlpha    = S.parameter("float", 1.0);
+    Lux.UI.parameterSlider({
         element: "#pointsize",
-        parameter: point_diameter,
+        parameter: pointDiameter,
         min: 0, 
         max: 100
     });
-    Lux.UI.parameter_slider({
+    Lux.UI.parameterSlider({
         element: "#pointalpha",
-        parameter: point_alpha,
+        parameter: pointAlpha,
         min: 0,
         max: 1
     });
-    Lux.UI.parameter_slider({
+    Lux.UI.parameterSlider({
         element: "#strokewidth",
-        parameter: stroke_width,
+        parameter: strokeWidth,
         min: 0,
         max: 100
     });
 
     gl = Lux.init({
-        interactor: Lux.UI.center_zoom_interactor({width: 400, height: 400}),
+        interactor: Lux.UI.centerZoomInteractor({width: 400, height: 400}),
         clearColor: [0, 0, 0, 0.2]
     });
 
-    var data = data_buffers();
+    var data = dataBuffers();
 
-    var species_color = Shade.Colors.Brewer.qualitative({
+    var speciesColor = Shade.Colors.Brewer.qualitative({
         name: "Set1",
-        alpha: point_alpha
+        alpha: pointAlpha
     })(data.species);
 
     Lux.Scene.add(Lux.Marks.scatterplot({
         elements: data.sepalWidth.numItems,
         x: data.sepalLength,
         y: data.petalLength,
-        x_scale: S.Utils.fit(data.sepalLength),
-        y_scale: S.Utils.fit(data.petalLength),
-        fill_color: species_color,
-        stroke_color: Shade.Colors.darken(0.8)(species_color),
-        stroke_width: stroke_width,
-        point_diameter: point_diameter,
+        xScale: S.Utils.fit(data.sepalLength),
+        yScale: S.Utils.fit(data.petalLength),
+        fillColor: speciesColor,
+        strokeColor: Shade.Colors.darken(0.8)(speciesColor),
+        strokeWidth: strokeWidth,
+        pointDiameter: pointDiameter,
         mode: Lux.DrawingMode.over
     }));
-    Lux.Scene.add(Lux.Marks.rectangle_brush({
-        accept_event: function(event) {
+    Lux.Scene.add(Lux.Marks.rectangleBrush({
+        acceptEvent: function(event) {
             return event.button === 2 || (event.shiftKey && (event.button === 0));
         }
     }));

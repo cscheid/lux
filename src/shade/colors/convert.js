@@ -19,15 +19,15 @@ _.each(colorspaces, function(space) {
         // color space names. if those change, this probably changes
         // too.
         var l = space.length;
-        var field_0 = space[l-3],
-            field_1 = space[l-2],
-            field_2 = space[l-1];
+        var field0 = space[l-3],
+            field1 = space[l-2],
+            field2 = space[l-1];
         var result = {
             space: space,
             values: function() {
-                return [this[field_0], this[field_1], this[field_2]];
+                return [this[field0], this[field1], this[field2]];
             },
-            as_shade: function(alpha) {
+            asShade: function(alpha) {
                 if (_.isUndefined(alpha))
                     alpha = 1;
                 var srgb = table[space].rgb(this);
@@ -35,17 +35,17 @@ _.each(colorspaces, function(space) {
             }
         };
         
-        result[field_0] = v0;
-        result[field_1] = v1;
-        result[field_2] = v2;
-        _.each(colorspaces, function(other_space) {
-            result[other_space] = function() { return table[space][other_space](result); };
+        result[field0] = v0;
+        result[field1] = v1;
+        result[field2] = v2;
+        _.each(colorspaces, function(otherSpace) {
+            result[otherSpace] = function() { return table[space][otherSpace](result); };
         });
         return result;
     };
 });
 
-function xyz_to_uv(xyz)
+function xyzToUv(xyz)
 {
     var t, x, y;
     t = xyz.x + xyz.y + xyz.z;
@@ -141,7 +141,7 @@ table.rgb.hls = function(rgb)
 
 table.rgb.xyz = function(rgb)
 {
-    var yn = white_point.y;
+    var yn = whitePoint.y;
     return table.xyz.create(
         yn * (0.412453 * rgb.r + 0.357580 * rgb.g + 0.180423 * rgb.b),
         yn * (0.212671 * rgb.r + 0.715160 * rgb.g + 0.072169 * rgb.b),
@@ -163,7 +163,7 @@ table.rgb.srgb = function(rgb)
 
 table.srgb.xyz = function(srgb)
 {
-    var yn = white_point.y;
+    var yn = whitePoint.y;
     var r = ftrans(srgb.r, 2.4),
         g = ftrans(srgb.g, 2.4),
         b = ftrans(srgb.b, 2.4);
@@ -192,14 +192,14 @@ table.srgb.hsv = compose(table.rgb.hsv, table.srgb.rgb);
 table.xyz.luv = function(xyz)
 {
     var y;
-    var t1 = xyz_to_uv(xyz);
-    y = xyz.y / white_point.y;
+    var t1 = xyzToUv(xyz);
+    y = xyz.y / whitePoint.y;
     var l = (y > 0.008856 ? 
              116 * Math.pow(y, 1.0/3.0) - 16 :
              903.3 * y);
     return table.luv.create(l, 
-                            13 * l * (t1[0] - white_point_uv[0]),
-                            13 * l * (t1[1] - white_point_uv[1]));
+                            13 * l * (t1[0] - whitePointUv[0]),
+                            13 * l * (t1[1] - whitePointUv[1]));
 };
 // now I can define these
 table.rgb.luv = compose(table.xyz.luv, table.rgb.xyz);
@@ -207,7 +207,7 @@ table.srgb.luv = compose(table.rgb.luv, table.srgb.rgb);
 
 table.xyz.rgb = function(xyz)
 {
-    var yn = white_point.y;
+    var yn = whitePoint.y;
     return table.rgb.create(
         ( 3.240479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn,
         (-0.969256 * xyz.x + 1.875992 * xyz.y + 0.041556 * xyz.z) / yn,
@@ -219,7 +219,7 @@ table.xyz.hsv = compose(table.rgb.hsv, table.xyz.rgb);
 
 table.xyz.srgb = function(xyz)
 {
-    var yn = white_point.y;
+    var yn = whitePoint.y;
     return table.srgb.create(
         gtrans(( 3.240479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z) / yn, 2.4),
         gtrans((-0.969256 * xyz.x + 1.875992 * xyz.y + 0.041556 * xyz.z) / yn, 2.4),
@@ -248,15 +248,15 @@ table.luv.xyz = function(luv)
 {
     var x = 0, y = 0, z = 0;
     if (!(luv.l <= 0 && luv.u == 0 && luv.v == 0)) {
-        y = white_point.y * ((luv.l > 7.999592) ? 
+        y = whitePoint.y * ((luv.l > 7.999592) ? 
                              Math.pow((luv.l + 16)/116, 3) : 
                              luv.l / 903.3);
-        // var t = xyz_to_uv(xn, yn, zn);
+        // var t = xyzToUv(xn, yn, zn);
         // var un = t[0], vn = t[1];
-        var result_u = luv.u / (13 * luv.l) + white_point_uv[0];
-        var result_v = luv.v / (13 * luv.l) + white_point_uv[1];
-        x = 9 * y * result_u / (4 * result_v);
-        z = -x / 3 - 5 * y + 3 * y / result_v;
+        var resultU = luv.u / (13 * luv.l) + whitePointUv[0];
+        var resultV = luv.v / (13 * luv.l) + whitePointUv[1];
+        x = 9 * y * resultU / (4 * resultV);
+        z = -x / 3 - 5 * y + 3 * y / resultV;
     }
     return table.xyz.create(x, y, z);
 };
@@ -345,8 +345,8 @@ table.hsv.luv  = compose(table.rgb.luv,  table.hsv.rgb);
 table.hsv.hcl  = compose(table.rgb.hcl,  table.hsv.rgb);
 
 // currently we assume a D65 white point, but this could be configurable
-var white_point = table.xyz.create(95.047, 100.000, 108.883);
-var white_point_uv = xyz_to_uv(white_point);
+var whitePoint = table.xyz.create(95.047, 100.000, 108.883);
+var whitePointUv = xyzToUv(whitePoint);
 
 Shade.Colors.jstable = table;
 

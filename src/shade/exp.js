@@ -1,62 +1,62 @@
 Shade.Exp = {
-    glsl_expression: function() {
-        return this.glsl_name + "()";
+    glslExpression: function() {
+        return this.glslName + "()";
     },
-    parent_is_unconditional: function(i) {
+    parentIsUnconditional: function(i) {
         return true;
     },
-    propagate_conditions: function() {
+    propagateConditions: function() {
         // the condition for an execution of a node is the
         // disjunction of the conjunction of all its children and their respective
         // edge conditions
         for (var i=0; i<this.parents.length; ++i)
-            this.parents[i].is_unconditional = (
-                this.parents[i].is_unconditional ||
-                    (this.is_unconditional && 
-                     this.parent_is_unconditional(i)));
+            this.parents[i].isUnconditional = (
+                this.parents[i].isUnconditional ||
+                    (this.isUnconditional && 
+                     this.parentIsUnconditional(i)));
 
     },
-    set_requirements: function() {},
+    setRequirements: function() {},
 
     // returns all sub-expressions in topologically-sorted order
-    sorted_sub_expressions: Shade.memoize_on_field("_sorted_sub_expressions", function() {
-        var so_far = [];
-        var visited_guids = [];
-        var topological_sort_internal = function(exp) {
+    sortedSubExpressions: Shade.memoizeOnField("_sortedSubExpressions", function() {
+        var soFar = [];
+        var visitedGuids = [];
+        var topologicalSortInternal = function(exp) {
             var guid = exp.guid;
-            if (visited_guids[guid]) {
+            if (visitedGuids[guid]) {
                 return;
             }
             var parents = exp.parents;
             var i = parents.length;
             while (i--) {
-                topological_sort_internal(parents[i]);
+                topologicalSortInternal(parents[i]);
             }
-            so_far.push(exp);
-            visited_guids[guid] = true;
+            soFar.push(exp);
+            visitedGuids[guid] = true;
         };
-        topological_sort_internal(this);
-        return so_far;
+        topologicalSortInternal(this);
+        return soFar;
     }),
 
     //////////////////////////////////////////////////////////////////////////
     // javascript-side evaluation of Shade expressions
 
     evaluate: function() {
-        throw new Error("internal error: evaluate undefined for " + this.expression_type);
+        throw new Error("internal error: evaluate undefined for " + this.expressionType);
     },
-    is_constant: function() {
+    isConstant: function() {
         return false;
     },
-    constant_value: Shade.memoize_on_field("_constant_value", function() {
-        if (!this.is_constant())
-            throw new Error("constant_value called on non-constant expression");
+    constantValue: Shade.memoizeOnField("_constantValue", function() {
+        if (!this.isConstant())
+            throw new Error("constantValue called on non-constant expression");
         return this.evaluate();
     }),
-    element_is_constant: function(i) {
+    elementIsConstant: function(i) {
         return false;
     },
-    element_constant_value: function(i) {
+    elementConstantValue: function(i) {
         throw new Error("invalid call: no constant elements");
     },
 
@@ -64,7 +64,7 @@ Shade.Exp = {
     // element access for compound expressions
 
     element: function(i) {
-        // FIXME. Why doesn't this check for is_pod and use this.at()?
+        // FIXME. Why doesn't this check for isPod and use this.at()?
         throw new Error("invalid call: atomic expression");
     },
 
@@ -120,76 +120,79 @@ Shade.Exp = {
         return Shade.max(this, other);
     },
 
-    per_vertex: function() {
-        return Shade.per_vertex(this);
+    perVertex: function() {
+        return Shade.perVertex(this);
     },
-    discard_if: function(condition) {
-        return Shade.discard_if(this, condition);
+    discardIf: function(condition) {
+        return Shade.discardIf(this, condition);
     },
 
     // overload this to overload exp(foo)
-    call_operator: function() {
-        if (this.type.is_struct()) {
+    callOperator: function() {
+        if (this.type.isStruct()) {
             return this.field(arguments[0]);
+        }
+        if (this.type.isFunction()) {
+            return this.evaluate().apply(this, arguments);
         }
         return this.mul.apply(this, arguments);
     },
 
-    // all sugar for funcs_1op is defined later on in the source
+    // all sugar for funcs1op is defined later on in the source
 
     //////////////////////////////////////////////////////////////////////////
 
-    as_int: function() {
-        if (this.type.equals(Shade.Types.int_t))
+    asInt: function() {
+        if (this.type.equals(Shade.Types.intT))
             return this;
         var parent = this;
-        return Shade._create_concrete_value_exp({
+        return Shade._createConcreteValueExp({
             parents: [parent],
-            type: Shade.Types.int_t,
-            value: function() { return "int(" + this.parents[0].glsl_expression() + ")"; },
-            is_constant: function() { return this.parents[0].is_constant(); },
-            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            type: Shade.Types.intT,
+            value: function() { return "int(" + this.parents[0].glslExpression() + ")"; },
+            isConstant: function() { return this.parents[0].isConstant(); },
+            evaluate: Shade.memoizeOnGuidDict(function(cache) {
                 var v = this.parents[0].evaluate(cache);
                 return Math.floor(v);
             }),
-            expression_type: "cast(int)"
+            expressionType: "cast(int)"
         });
     },
-    as_bool: function() {
-        if (this.type.equals(Shade.Types.bool_t))
+    asBool: function() {
+        if (this.type.equals(Shade.Types.boolT))
             return this;
         var parent = this;
-        return Shade._create_concrete_value_exp({
+        return Shade._createConcreteValueExp({
             parents: [parent],
-            type: Shade.Types.bool_t,
-            value: function() { return "bool(" + this.parents[0].glsl_expression() + ")"; },
-            is_constant: function() { return this.parents[0].is_constant(); },
-            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            type: Shade.Types.boolT,
+            value: function() { return "bool(" + this.parents[0].glslExpression() + ")"; },
+            isConstant: function() { return this.parents[0].isConstant(); },
+            evaluate: Shade.memoizeOnGuidDict(function(cache) {
                 var v = this.parents[0].evaluate(cache);
                 return ~~v;
             }),
-            expression_type: "cast(bool)"
+            expressionType: "cast(bool)"
         });
     },
-    as_float: function() {
-        if (this.type.equals(Shade.Types.float_t))
+    asFloat: function() {
+        if (this.type.equals(Shade.Types.floatT))
             return this;
         var parent = this;
-        return Shade._create_concrete_value_exp({
+        return Shade._createConcreteValueExp({
             parents: [parent],
-            type: Shade.Types.float_t,
-            value: function() { return "float(" + this.parents[0].glsl_expression() + ")"; },
-            is_constant: function() { return this.parents[0].is_constant(); },
-            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            type: Shade.Types.floatT,
+            value: function() { return "float(" + this.parents[0].glslExpression() + ")"; },
+            isConstant: function() { return this.parents[0].isConstant(); },
+            evaluate: Shade.memoizeOnGuidDict(function(cache) {
                 var v = this.parents[0].evaluate(cache);
                 return Number(v);
             }),
-            expression_type: "cast(float)"
+            expressionType: "cast(float)"
         });
     },
     swizzle: function(pattern) {
-        function swizzle_pattern_to_indices(pattern) {
-            function to_index(v) {
+        function swizzlePatternToIndices(pattern) {
+            function toIndex(v) {
                 switch (v.toLowerCase()) {
                 case 'r': return 0;
                 case 'g': return 1;
@@ -208,53 +211,53 @@ Shade.Exp = {
             }
             var result = [];
             for (var i=0; i<pattern.length; ++i) {
-                result.push(to_index(pattern[i]));
+                result.push(toIndex(pattern[i]));
             }
             return result;
         }
         
         var parent = this;
-        var indices = swizzle_pattern_to_indices(pattern);
-        return Shade._create_concrete_exp( {
+        var indices = swizzlePatternToIndices(pattern);
+        return Shade._createConcreteExp( {
             parents: [parent],
             type: parent.type.swizzle(pattern),
-            expression_type: "swizzle{" + pattern + "}",
-            glsl_expression: function() {
-                if (this._must_be_function_call)
-                    return this.glsl_name + "()";
+            expressionType: "swizzle{" + pattern + "}",
+            glslExpression: function() {
+                if (this._mustBeFunctionCall)
+                    return this.glslName + "()";
                 else
-                    return this.parents[0].glsl_expression() + "." + pattern; 
+                    return this.parents[0].glslExpression() + "." + pattern; 
             },
-            is_constant: Shade.memoize_on_field("_is_constant", function () {
+            isConstant: Shade.memoizeOnField("_isConstant", function () {
                 var that = this;
                 return _.all(indices, function(i) {
-                    return that.parents[0].element_is_constant(i);
+                    return that.parents[0].elementIsConstant(i);
                 });
             }),
-            constant_value: Shade.memoize_on_field("_constant_value", function() {
+            constantValue: Shade.memoizeOnField("_constantValue", function() {
                 var that = this;
                 var ar = _.map(indices, function(i) {
-                    return that.parents[0].element_constant_value(i);
+                    return that.parents[0].elementConstantValue(i);
                 });
                 if (ar.length === 1)
                     return ar[0];
-                var d = this.type.vec_dimension();
+                var d = this.type.vecDimension();
                 var ctor = vec[d];
                 if (_.isUndefined(ctor))
                     throw new Error("bad vec dimension " + d);
                 return ctor.make(ar);
             }),
-            evaluate: Shade.memoize_on_guid_dict(function(cache) {
-                if (this.is_constant())
-                    return this.constant_value();
-                if (this.type.is_pod()) {
+            evaluate: Shade.memoizeOnGuidDict(function(cache) {
+                if (this.isConstant())
+                    return this.constantValue();
+                if (this.type.isPod()) {
                     return this.parents[0].element(indices[0]).evaluate(cache);
                 } else {
                     var that = this;
                     var ar = _.map(indices, function(index) {
                         return that.parents[0].element(index).evaluate(cache);
                     });
-                    var d = this.type.vec_dimension();
+                    var d = this.type.vecDimension();
                     var ctor = vec[d];
                     if (_.isUndefined(ctor))
                         throw new Error("bad vec dimension " + d);
@@ -264,19 +267,19 @@ Shade.Exp = {
             element: function(i) {
                 return this.parents[0].element(indices[i]);
             },
-            element_is_constant: Shade.memoize_on_field("_element_is_constant", function(i) {
-                return this.parents[0].element_is_constant(indices[i]);
+            elementIsConstant: Shade.memoizeOnField("_elementIsConstant", function(i) {
+                return this.parents[0].elementIsConstant(indices[i]);
             }),
-            element_constant_value: Shade.memoize_on_field("_element_constant_value", function(i) {
-                return this.parents[0].element_constant_value(indices[i]);
+            elementConstantValue: Shade.memoizeOnField("_elementConstantValue", function(i) {
+                return this.parents[0].elementConstantValue(indices[i]);
             }),
             compile: function(ctx) {
-                if (this._must_be_function_call) {
-                    this.precomputed_value_glsl_name = ctx.request_fresh_glsl_name();
-                    ctx.strings.push(this.type.declare(this.precomputed_value_glsl_name), ";\n");
-                    ctx.add_initialization(this.precomputed_value_glsl_name + " = " + 
-                                           this.parents[0].glsl_expression() + "." + pattern);
-                    ctx.value_function(this, this.precomputed_value_glsl_name);
+                if (this._mustBeFunctionCall) {
+                    this.precomputedValueGlslName = ctx.requestFreshGlslName();
+                    ctx.strings.push(this.type.declare(this.precomputedValueGlslName), ";\n");
+                    ctx.addInitialization(this.precomputedValueGlslName + " = " + 
+                                           this.parents[0].glslExpression() + "." + pattern);
+                    ctx.valueFunction(this, this.precomputedValueGlslName);
                 }
             }
         });
@@ -286,40 +289,40 @@ Shade.Exp = {
         index = Shade.make(index);
         // this "works around" current constant index restrictions in webgl
         // look for it to get broken in the future as this hole is plugged.
-        index._must_be_function_call = true;
-        if (!index.type.equals(Shade.Types.float_t) &&
-            !index.type.equals(Shade.Types.int_t)) {
+        index._mustBeFunctionCall = true;
+        if (!index.type.equals(Shade.Types.floatT) &&
+            !index.type.equals(Shade.Types.intT)) {
             throw new Error("at expects int or float, got '" + 
                             index.type.repr() + "' instead");
         }
-        return Shade._create_concrete_exp( {
+        return Shade._createConcreteExp( {
             parents: [parent, index],
-            type: parent.type.array_base(),
-            expression_type: "index",
-            glsl_expression: function() {
-                if (this.parents[1].type.is_integral()) {
-                    return this.parents[0].glsl_expression() + 
-                        "[" + this.parents[1].glsl_expression() + "]"; 
+            type: parent.type.arrayBase(),
+            expressionType: "index",
+            glslExpression: function() {
+                if (this.parents[1].type.isIntegral()) {
+                    return this.parents[0].glslExpression() + 
+                        "[" + this.parents[1].glslExpression() + "]"; 
                 } else {
-                    return this.parents[0].glsl_expression() + 
-                        "[int(" + this.parents[1].glsl_expression() + ")]"; 
+                    return this.parents[0].glslExpression() + 
+                        "[int(" + this.parents[1].glslExpression() + ")]"; 
                 }
             },
-            is_constant: function() {
-                if (!this.parents[1].is_constant())
+            isConstant: function() {
+                if (!this.parents[1].isConstant())
                     return false;
-                var ix = Math.floor(this.parents[1].constant_value());
-                return (this.parents[1].is_constant() &&
-                        this.parents[0].element_is_constant(ix));
+                var ix = Math.floor(this.parents[1].constantValue());
+                return (this.parents[1].isConstant() &&
+                        this.parents[0].elementIsConstant(ix));
             },
-            evaluate: Shade.memoize_on_guid_dict(function(cache) {
+            evaluate: Shade.memoizeOnGuidDict(function(cache) {
                 var ix = Math.floor(this.parents[1].evaluate(cache));
-                var parent_value = this.parents[0].evaluate();
-                return parent_value[ix];
+                var parentValue = this.parents[0].evaluate();
+                return parentValue[ix];
                 // return this.parents[0].element(ix).evaluate(cache);
             }),
 
-            element: Shade.memoize_on_field("_element", function(i) {
+            element: Shade.memoizeOnField("_element", function(i) {
                 // FIXME I suspect that a bug here might still arise
                 // out of some interaction between the two conditions
                 // described below. The right fix will require rewriting the whole
@@ -328,17 +331,17 @@ Shade.Exp = {
                 var array = this.parents[0], 
                     index = this.parents[1];
 
-                if (!index.is_constant()) {
+                if (!index.isConstant()) {
                     // If index is not constant, then we use the following equation:
-                    // element(Array(a_1 .. a_n).at(ix), i) ==
-                    // Array(element(a_1, i) .. element(a_n, i)).at(ix)
+                    // element(Array(a1 .. aN).at(ix), i) ==
+                    // Array(element(a1, i) .. element(aN, i)).at(ix)
                     var elts = _.map(array.parents, function(parent) {
                         return parent.element(i);
                     });
                     return Shade.array(elts).at(index);
                 }
-                var index_value = this.parents[1].constant_value();
-                var x = this.parents[0].element(index_value);
+                var indexValue = this.parents[1].constantValue();
+                var x = this.parents[0].element(indexValue);
 
                 // the reason for the (if x === this) checks here is that sometimes
                 // the only appropriate description of an element() of an
@@ -350,70 +353,70 @@ Shade.Exp = {
                 } else
                     return x.element(i);
             }),
-            element_is_constant: Shade.memoize_on_field("_element_is_constant", function(i) {
-                if (!this.parents[1].is_constant()) {
+            elementIsConstant: Shade.memoizeOnField("_elementIsConstant", function(i) {
+                if (!this.parents[1].isConstant()) {
                     return false;
                 }
-                var ix = this.parents[1].constant_value();
+                var ix = this.parents[1].constantValue();
                 var x = this.parents[0].element(ix);
                 if (x === this) {
                     return false;
                 } else
-                    return x.element_is_constant(i);
+                    return x.elementIsConstant(i);
             }),
-            element_constant_value: Shade.memoize_on_field("_element_constant_value", function(i) {
-                var ix = this.parents[1].constant_value();
+            elementConstantValue: Shade.memoizeOnField("_elementConstantValue", function(i) {
+                var ix = this.parents[1].constantValue();
                 var x = this.parents[0].element(ix);
                 if (x === this) {
                     throw new Error("internal error: would have gone into an infinite loop here.");
                 }
-                return x.element_constant_value(i);
+                return x.elementConstantValue(i);
             }),
             compile: function() {}
         });
     },
-    field: function(field_name) {
-        if (!this.type.is_struct()) {
+    field: function(fieldName) {
+        if (!this.type.isStruct()) {
             throw new Error("field() only valid on struct types");
         }
-        var index = this.type.field_index[field_name];
+        var index = this.type.fieldIndex[fieldName];
         if (_.isUndefined(index)) {
-            throw new Error("field " + field_name + " not existent");
+            throw new Error("field " + fieldName + " not existent");
         }
 
-        return Shade._create_concrete_value_exp({
+        return Shade._createConcreteValueExp({
             parents: [this],
-            type: this.type.fields[field_name],
-            expression_type: "struct-accessor{" + field_name + "}",
+            type: this.type.fields[fieldName],
+            expressionType: "struct-accessor{" + fieldName + "}",
             value: function() {
-                return "(" + this.parents[0].glsl_expression() + "." + field_name + ")";
+                return "(" + this.parents[0].glslExpression() + "." + fieldName + ")";
             },
-            evaluate: Shade.memoize_on_guid_dict(function(cache) {
-                var struct_value = this.parents[0].evaluate(cache);
-                return struct_value[field_name];
+            evaluate: Shade.memoizeOnGuidDict(function(cache) {
+                var structValue = this.parents[0].evaluate(cache);
+                return structValue[fieldName];
             }),
-            is_constant: Shade.memoize_on_field("_is_constant", function() {
+            isConstant: Shade.memoizeOnField("_isConstant", function() {
                 // this is conservative for many situations, but hey.
-                return this.parents[0].is_constant();
+                return this.parents[0].isConstant();
             }),
             element: function(i) {
                 return this.at(i);
             }
         });
     },
-    _lux_expression: true, // used by lux_typeOf
-    expression_type: "other",
+    _luxExpression: true, // used by Lux.typeOf
+    expressionType: "other",
     _uniforms: [],
 
     //////////////////////////////////////////////////////////////////////////
 
-    attribute_buffers: function() {
-        return _.flatten(this.sorted_sub_expressions().map(function(v) { 
-            return v.expression_type === 'attribute' ? [v] : [];
+    attributeBuffers: function() {
+        return _.flatten(this.sortedSubExpressions().map(function(v) { 
+            return v.expressionType === 'attribute' ? [v] : [];
         }));
     },
     uniforms: function() {
-        return _.flatten(this.sorted_sub_expressions().map(function(v) { 
+        return _.flatten(this.sortedSubExpressions().map(function(v) { 
             return v._uniforms; 
         }));
     },
@@ -427,97 +430,97 @@ Shade.Exp = {
     //
     // The general rule is that types should be preserved (although
     // that might not *always* be the case)
-    find_if: function(check) {
-        return _.select(this.sorted_sub_expressions(), check);
+    findIf: function(check) {
+        return _.select(this.sortedSubExpressions(), check);
     },
 
-    replace_if: function(check, replacement) {
+    replaceIf: function(check, replacement) {
         // this code is not particularly clear, but this is a compiler
         // hot-path, bear with me.
-        var subexprs = this.sorted_sub_expressions();
-        var replaced_pairs = {};
-        function parent_replacement(x) {
-            if (!(x.guid in replaced_pairs)) {
+        var subexprs = this.sortedSubExpressions();
+        var replacedPairs = {};
+        function parentReplacement(x) {
+            if (!(x.guid in replacedPairs)) {
                 return x;
             } else
-                return replaced_pairs[x.guid];
+                return replacedPairs[x.guid];
         }
-        var latest_replacement, replaced;
+        var latestReplacement, replaced;
         for (var i=0; i<subexprs.length; ++i) {
             var exp = subexprs[i];
             if (check(exp)) {
-                latest_replacement = replacement(exp);
-                replaced_pairs[exp.guid] = latest_replacement;
+                latestReplacement = replacement(exp);
+                replacedPairs[exp.guid] = latestReplacement;
             } else {
                 replaced = false;
                 for (var j=0; j<exp.parents.length; ++j) {
-                    if (exp.parents[j].guid in replaced_pairs) {
-                        latest_replacement = Shade._create(exp, {
-                            parents: _.map(exp.parents, parent_replacement)
+                    if (exp.parents[j].guid in replacedPairs) {
+                        latestReplacement = Shade._create(exp, {
+                            parents: _.map(exp.parents, parentReplacement)
                         });
-                        replaced_pairs[exp.guid] = latest_replacement;
+                        replacedPairs[exp.guid] = latestReplacement;
                         replaced = true;
                         break;
                     }
                 }
                 if (!replaced) {
-                    latest_replacement = exp;
+                    latestReplacement = exp;
                 }
             }
         }
-        return latest_replacement;
+        return latestReplacement;
     },
 
     //////////////////////////////////////////////////////////////////////////
     // debugging infrastructure
 
     json: function() {
-        function helper_f(node, parents, refs) { return node._json_helper(parents, refs); };
-        var refs = Shade.Debug.walk(this, helper_f, helper_f);
+        function helperF(node, parents, refs) { return node._jsonHelper(parents, refs); };
+        var refs = Shade.Debug.walk(this, helperF, helperF);
         return refs[this.guid];
     },
-    _json_helper: Shade.Debug._json_builder(),    
-    _json_key: function() { return this.expression_type; },
+    _jsonHelper: Shade.Debug._jsonBuilder(),    
+    _jsonKey: function() { return this.expressionType; },
     
-    debug_print: function(do_what) {
+    debugPrint: function(doWhat) {
         var lst = [];
         var refs = {};
-        function _debug_print(which, indent) {
+        function _debugPrint(which, indent) {
             var i;
             var str = new Array(indent+2).join(" "); // This is python's '" " * indent'
             // var str = "";
             // for (var i=0; i<indent; ++i) { str = str + ' '; }
             if (which.parents.length === 0) 
-                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
-                            // + "[is_constant: " + which.is_constant() + "]"
+                lst.push(str + "[" + which.expressionType + ":" + which.guid + "]"
+                            // + "[isConstant: " + which.isConstant() + "]"
                             + " ()");
             else {
-                lst.push(str + "[" + which.expression_type + ":" + which.guid + "]"
-                            // + "[is_constant: " + which.is_constant() + "]"
+                lst.push(str + "[" + which.expressionType + ":" + which.guid + "]"
+                            // + "[isConstant: " + which.isConstant() + "]"
                             + " (");
                 for (i=0; i<which.parents.length; ++i) {
                     if (refs[which.parents[i].guid])
                         lst.push(str + "  {{" + which.parents[i].guid + "}}");
                     else {
-                        _debug_print(which.parents[i], indent + 2);
+                        _debugPrint(which.parents[i], indent + 2);
                         refs[which.parents[i].guid] = 1;
                     }
                 }
                 lst.push(str + ')');
             }
         };
-        _debug_print(this, 0);
-        do_what = do_what || function(l) {
+        _debugPrint(this, 0);
+        doWhat = doWhat || function(l) {
             return l.join("\n");
         };
-        return do_what(lst);
+        return doWhat(lst);
     },
 
     locate: function(predicate) {
-        var sub_exprs = this.sorted_sub_expressions();
-        for (var i=0; i<sub_exprs.length; ++i) {
-            if (predicate(sub_exprs[i]))
-                return sub_exprs[i];
+        var subExprs = this.sortedSubExpressions();
+        for (var i=0; i<subExprs.length; ++i) {
+            if (predicate(subExprs[i]))
+                return subExprs[i];
         }
         return undefined;
     },
@@ -528,21 +531,21 @@ Shade.Exp = {
     // if stage is "vertex" then this expression will be hoisted to the vertex shader
     stage: null,
 
-    // if has_scope is true, then the expression has its own scope
+    // if hasScope is true, then the expression has its own scope
     // (like for-loops)
-    has_scope: false,
-    patch_scope: function () {},
-    loop_variable_dependencies: Shade.memoize_on_field("_loop_variable_dependencies", function () {
-        var parent_deps = _.map(this.parents, function(v) {
-            return v.loop_variable_dependencies();
+    hasScope: false,
+    patchScope: function () {},
+    loopVariableDependencies: Shade.memoizeOnField("_loopVariableDependencies", function () {
+        var parentDeps = _.map(this.parents, function(v) {
+            return v.loopVariableDependencies();
         });
-        if (parent_deps.length === 0)
+        if (parentDeps.length === 0)
             return [];
         else {
-            var result_with_duplicates = parent_deps[0].concat.apply(parent_deps[0], parent_deps.slice(1));
+            var resultWithDuplicates = parentDeps[0].concat.apply(parentDeps[0], parentDeps.slice(1));
             var guids = [];
             var result = [];
-            _.each(result_with_duplicates, function(n) {
+            _.each(resultWithDuplicates, function(n) {
                 if (!guids[n.guid]) {
                     guids[n.guid] = true;
                     result.push(n);
@@ -561,4 +564,4 @@ _.each(["r", "g", "b", "a",
             };
         });
 
-Shade._create_concrete_exp = Shade._create_concrete(Shade.Exp, ["parents", "compile", "type"]);
+Shade._createConcreteExp = Shade._createConcrete(Shade.Exp, ["parents", "compile", "type"]);

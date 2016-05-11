@@ -1,13 +1,13 @@
 <html>
 <head><title>Lux tutorial, Lesson 5: Textures</title>
-  <link rel="stylesheet" href="/lux/demos/css/bootstrap.css"/>
-  <link rel="stylesheet" href="/lux/demos/css/style.css"/>
-  <link rel="stylesheet" href="/lux/demos/css/mchighlight-javascript.css"/>
-  <script src="/lux/lib/jquery-1.6.2.min.js"></script>
-  <script src="/lux/lux.js"></script>
-  <script src="/lux/demos/js/mclexer.js"></script>
-  <script src="/lux/demos/js/mchighlight.js"></script>
-  <script src="/lux/demos/js/mchighlight-javascript.js"></script>
+  <link rel="stylesheet" href="../../css/bootstrap.css"/>
+  <link rel="stylesheet" href="../../css/style.css"/>
+  <link rel="stylesheet" href="../../css/mchighlight-javascript.css"/>
+  <script src="../../../lib/jquery-2.1.0.min.js"></script>
+  <script src="../../../lux.js"></script>
+  <script src="../../js/mclexer.js"></script>
+  <script src="../../js/mchighlight.js"></script>
+  <script src="../../js/mchighlight-javascript.js"></script>
   <script src="lesson5.js"></script>
 </head>
 <body>
@@ -56,18 +56,18 @@ var angle = ctx.parameters.now.mul(50).radians();
 var cube = Lux.Models.flat_cube();
 </pre>
 
-<p><span class="inline-highlight">cube</span> has texture coordinates stored
-in <span class="inline-highlight">cube.tex_coord</span>. In order to
+<p><tt>cube</tt> has texture coordinates stored
+in <tt>cube.tex_coord</tt>. In order to
 use texture mapping, we will need to learn about two new
-calls: <span class="inline-highlight">Lux.texture</span>
-and <span class="inline-highlight">Shade.texture2D</span>.
+calls: <tt>Lux.texture</tt>
+and <tt>Shade.texture2D</tt>.
 
 <h2>Lux.texture</h2>
 
-<p>The <span class="inline-highlight">Lux.texture</span> call creates
+<p>The <tt>Lux.texture</tt> call creates
 the texture object that can be used in texture mapping. It can load an
 image from a URL, from
-an <span class="inline-highlight">&lt;img/&gt;</span> element in your
+an <tt>img</tt> element in your
 DOM, or from a canvas. Here, we'll open an URL:
 </p>
 
@@ -79,8 +79,9 @@ Lux.texture({
 <p>The important thing to know when loading images from URLs is that this is an
 </em>asynchronous</em> process. The javascript interpreter does not
 wait for the image to finish loading before continuing the
-execution. Instead, you give the image loader a function, and tell it
-to call that function when the image has finally loaded. For <span class="inline-highlight">Lux.texture</span>, you use the <span class="inline-highlight">onload</span> field:
+execution. Instead, you give Lux a function, and it
+to call that function when the image has finally loaded. 
+For <tt>Lux.texture</tt>, you use the <tt>onload</tt> field:
 
 <pre class="highlight">
     onload: function() {
@@ -88,16 +89,17 @@ to call that function when the image has finally loaded. For <span class="inline
 
 <h2>Shade.texture2D</h2>
 
-<p>Now turn your attention to how the Lux batch is specified. Most of the code will be familiar to you, but the <span class="inline-highlight">color</span> field of <span class="inline-highlight">Lux.bake</span> contains a reference to <span class="inline-highlight">Shade.texture2D</span>:</p>
+<p>Now turn your attention to how the Lux actor is specified. Most of the code will be familiar to you, but the <tt>color</tt> field of <tt>appearance</tt> contains a reference to <tt>Shade.texture2D</tt>:</p>
 
 <pre class="highlight">
-        Lux.Scene.add(Lux.bake(cube, {
-            position: camera(Shade.rotation(angle, Shade.vec(1,1,1))(cube.vertex)),
-            color: Shade.texture2D(this, cube.tex_coord)
-        }));
+        Lux.Scene.add(Lux.actor({ 
+            model: cube,
+            appearance: {
+                position: camera(Shade.rotation(angle, Shade.vec(1,1,1))(cube.vertex)),
+                color: Shade.texture2D(this, cube.tex_coord)}}));
 </pre>
 
-<p>The call builds a Lux expression that represents a texture being <em>sampled</em> at a particular location. It takes two parameters: a texture object, and a texture coordinate. The texture object, in our case, is simply <span class="inline-highlight">this</span>; the result of <span class="inline-highlight">Lux.texture</span> is given as the <span class="inline-highlight">this</span> object for the <span class="inline-highlight">onload</span> handler. The texture coordinate, on the other hand, comes from <span class="inline-highlight">cube</span>, in the same way that vertex positions do. The texture coordinates for <span class="inline-highlight">cube</span> repeat themselves on each face; so you see a copy of the image on every face.</p>
+<p>The call builds a Lux expression that represents a texture being <em>sampled</em> at a particular location. It takes two parameters: a texture object, and a texture coordinate. The texture object, in our case, is simply <tt>this</tt>; the result of <tt>Lux.texture</tt> is given as the <tt>this</tt> object for the <tt>onload</tt> handler. The texture coordinate, on the other hand, comes from <tt>cube</tt>, in the same way that vertex positions do. The texture coordinates for <tt>cube</tt> repeat themselves on each face; so you see a copy of the image on every face.</p>
 
 <p>The rest of the code is uninteresting:</p>
 
@@ -107,9 +109,10 @@ to call that function when the image has finally loaded. For <span class="inline
 });
 </pre>
 
-<p>Back to the <a href="index.html">index</a>.</p>
+<p>Back to the <a href="../index.html">index</a>.</p>
 <script>
 $('.highlight').each(function(i, v) { Highlighter.highlight(v); });
+$('tt').each(function(i, v) { Highlighter.highlight(v); });
 </script>
 </div>
 </body>

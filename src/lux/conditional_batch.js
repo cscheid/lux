@@ -1,4 +1,4 @@
-Lux.conditional_batch = function(batch, condition)
+Lux.conditionalBatch = function(batch, condition)
 {
     return {
         draw: function() {
@@ -7,11 +7,11 @@ Lux.conditional_batch = function(batch, condition)
     };
 };
 
-Lux.conditional_actor = function(opts)
+Lux.conditionalActor = function(opts)
 {
     opts = _.clone(opts);
-    opts.bake = function(model, changed_appearance) {
-        return Lux.conditional_batch(Lux.bake(model, changed_appearance), opts.condition);
+    opts.bake = function(model, changedAppearance) {
+        return Lux.conditionalBatch(Lux.bake(model, changedAppearance), opts.condition);
     };
     return Lux.actor(opts);
 };

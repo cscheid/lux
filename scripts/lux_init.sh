@@ -52,9 +52,10 @@ mkdir -p $TARGET_DIR/lib
 
 cp $LUX_DIR/lux.min.js $TARGET_DIR/src
 cp $LUX_DIR/lux.js $TARGET_DIR/src
-cp $LUX_DIR/lib/jquery-1.6.2.min.js $TARGET_DIR/lib
+cp $LUX_DIR/lib/jquery-2.1.0.min.js $TARGET_DIR/lib
+cp $LUX_DIR/lib/underscore-min.js $TARGET_DIR/lib
 cp $LUX_DIR/lib/jquery.mousewheel.js $TARGET_DIR/lib
-cp $LUX_DIR/lib/jquery-ui-1.8.16.custom.min.js $TARGET_DIR/lib
+cp $LUX_DIR/lib/jquery-ui-1.10.4.custom.min.js $TARGET_DIR/lib
 cp -r $LUX_DIR/demos/css $TARGET_DIR
 cp -r $LUX_DIR/lib/ui-lightness $TARGET_DIR/css
 
@@ -64,10 +65,11 @@ cat > $TARGET_DIR/index.html <<EOF
   <link rel="stylesheet" href="css/bootstrap.css"/>
   <link rel="stylesheet" href="css/style.css"/>
   <link rel="stylesheet" href="css/mchighlight-javascript.css"/>
-  <link type="text/css" href="css/ui-lightness/jquery-ui-1.8.21.custom.css" rel="stylesheet" />
-  <script src="lib/jquery-1.6.2.min.js"></script>
+  <link type="text/css" href="css/ui-lightness/jquery-ui-1.10.4.custom.css" rel="stylesheet" />
+  <script src="lib/jquery-2.1.0.min.js"></script>
+  <script src="lib/underscore-min.js"></script>
   <script src="lib/jquery.mousewheel.js"></script>
-  <script src="lib/jquery-ui-1.8.16.custom.min.js"></script>
+  <script src="lib/jquery-ui-1.10.4.custom.min.js"></script>
   <script src="src/lux.js"></script> <!-- replace with lux.min.js when you're done debugging -->
   <script src="main.js"></script>
 </head>

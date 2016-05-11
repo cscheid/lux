@@ -10,31 +10,31 @@ Shade.struct = function(obj)
     _.each(ks, function(k, i) {
         t[k] = types[i];
     });
-    var struct_type = Shade.Types.struct(t), new_vs = [], new_ks = [];
+    var structType = Shade.Types.struct(t), newVs = [], newKs = [];
 
     // javascript object order is arbitrary;
     // make sure structs follow the type field order, which is unique
-    _.each(struct_type.field_index, function(index, key) {
-        var old_index = ks.indexOf(key);
-        new_vs[index] = vs[old_index];
-        new_ks[index] = key;
+    _.each(structType.fieldIndex, function(index, key) {
+        var oldIndex = ks.indexOf(key);
+        newVs[index] = vs[oldIndex];
+        newKs[index] = key;
     });
-    vs = new_vs;
-    ks = new_ks;
+    vs = newVs;
+    ks = newKs;
     
-    var result = Shade._create_concrete_value_exp({
+    var result = Shade._createConcreteValueExp({
         parents: vs,
         fields: ks,
-        type: struct_type,
-        expression_type: "struct",
+        type: structType,
+        expressionType: "struct",
         value: function() {
-            return [this.type.internal_type_name, "(",
+            return [this.type.internalTypeName, "(",
                     this.parents.map(function(t) {
-                        return t.glsl_expression();
+                        return t.glslExpression();
                     }).join(", "),
                     ")"].join(" ");
         },
-        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+        evaluate: Shade.memoizeOnGuidDict(function(cache) {
             var result = {};
             var that = this;
             _.each(this.parents, function(v, i) {
@@ -42,13 +42,17 @@ Shade.struct = function(obj)
             });
             return result;
         }),
-        field: function(field_name) {
-            var index = this.type.field_index[field_name];
+        hasField: function(fieldName) {
+            var index = this.type.fieldIndex[fieldName];
+            return !_.isUndefined(index);
+        },
+        field: function(fieldName) {
+            var index = this.type.fieldIndex[fieldName];
             if (_.isUndefined(index)) {
-                throw new Error("field " + field_name + " not existent");
+                throw new Error("field " + fieldName + " not existent");
             }
 
-            /* Since field_name is always an immediate string, 
+            /* Since fieldName is always an immediate string, 
              it will never need to be "computed" on a shader.            
              This means that in this case, its value can always
              be resolved in compile time and 
@@ -57,10 +61,13 @@ Shade.struct = function(obj)
 
             return this.parents[index];
         },
-        call_operator: function(v) {
+        callOperator: function(v) {
             return this.field(v);
         },
-        _json_helper: Shade.Debug._json_builder("struct", function(obj) {
+        element: function(i) {
+            throw new Error("element() not supported for structs");
+        },
+        _jsonHelper: Shade.Debug._jsonBuilder("struct", function(obj) {
             obj.fields = ks;
             return obj;
         })

@@ -1,144 +1,144 @@
 var S = Shade;
 
 var gl;
-var stroke_width;
-var point_diameter;
-var point_alpha;
+var strokeWidth;
+var pointDiameter;
+var pointAlpha;
 var data;
-var splom_row, splom_col;
+var splomRow, splomCol;
 var alive = false;
-var has_selection;
-var selection_col, selection_row, selection_u1, selection_v1, selection_u2, selection_v2;
+var hasSelection;
+var selectionCol, selectionRow, selectionU1, selectionV1, selectionU2, selectionV2;
 
 var padding = 0.05;
-var is_selecting = false;
+var isSelecting = false;
 
 //////////////////////////////////////////////////////////////////////////////
 
-function data_buffers()
+function dataBuffers()
 {
     var d = Data.flowers();
-    var tt = Lux.Data.texture_table(d);
-    var point_index = Lux.attribute_buffer({ vertex_array: _.range(tt.n_rows), item_size: 1 });
+    var tt = Lux.Data.textureTable(d);
+    var pointIndex = Lux.attributeBuffer({ vertexArray: _.range(tt.nRows), itemSize: 1 });
     
     return {
-        sepalLength: tt.at(point_index, 0),
-        sepalWidth:  tt.at(point_index, 1),
-        petalLength: tt.at(point_index, 2),
-        petalWidth:  tt.at(point_index, 3),
-        species:     tt.at(point_index, 4),
+        sepalLength: tt.at(pointIndex, 0),
+        sepalWidth:  tt.at(pointIndex, 1),
+        petalLength: tt.at(pointIndex, 2),
+        petalWidth:  tt.at(pointIndex, 3),
+        species:     tt.at(pointIndex, 4),
         columns: ['sepalLength', 'sepalWidth', 'petalLength', 'petalWidth', 'species'],
         at: tt.at,
-        n_rows: d.data.length,
-        index: point_index,
-        n_columns: 5
+        nRows: d.data.length,
+        index: pointIndex,
+        nColumns: 5
     };
 }
 
-function init_webgl()
+function initWebgl()
 {
-    data = data_buffers();
+    data = dataBuffers();
 
-    var species_color = Shade.Colors.Brewer.qualitative({
+    var speciesColor = Shade.Colors.Brewer.qualitative({
         name: "Set1",
         alpha: 0.5
     })(data.species);
-    var min_range = Shade.array([4.3, 2.0, 1.0, 0.1]);
-    var max_range = Shade.array([7.9, 4.4, 6.9, 2.5]);
+    var minRange = Shade.array([4.3, 2.0, 1.0, 0.1]);
+    var maxRange = Shade.array([7.9, 4.4, 6.9, 2.5]);
 
-    has_selection = Shade.parameter("float", 0);
-    selection_u1  = Shade.parameter("float", 0);
-    selection_u2  = Shade.parameter("float", 0);
-    selection_v1  = Shade.parameter("float", 0);
-    selection_v2  = Shade.parameter("float", 0);
-    selection_row = Shade.parameter("float", 0);
-    selection_col = Shade.parameter("float", 0);
+    hasSelection = Shade.parameter("float", 0);
+    selectionU1  = Shade.parameter("float", 0);
+    selectionU2  = Shade.parameter("float", 0);
+    selectionV1  = Shade.parameter("float", 0);
+    selectionV2  = Shade.parameter("float", 0);
+    selectionRow = Shade.parameter("float", 0);
+    selectionCol = Shade.parameter("float", 0);
 
-    splom_col     = Shade.parameter("float", 0);
-    splom_row     = Shade.parameter("float", 0);
+    splomCol     = Shade.parameter("float", 0);
+    splomRow     = Shade.parameter("float", 0);
 
-    var min_x = splom_col.add(  2*padding).div(4);
-    var max_x = splom_col.add(1-2*padding).div(4);
-    var min_y = splom_row.add(  2*padding).div(4);
-    var max_y = splom_row.add(1-2*padding).div(4);
+    var minX = splomCol.add(  2*padding).div(4);
+    var maxX = splomCol.add(1-2*padding).div(4);
+    var minY = splomRow.add(  2*padding).div(4);
+    var maxY = splomRow.add(1-2*padding).div(4);
 
-    var first_pick_id = Lux.fresh_pick_id(data.n_rows);
+    var firstPickId = Lux.freshPickId(data.nRows);
 
-    var picked_color = Shade.mix(species_color, Shade.vec(1,1,1,1), 0.8);
-    var dot_pick_id  = Shade.add(first_pick_id, data.index);
+    var pickedColor = Shade.mix(speciesColor, Shade.vec(1,1,1,1), 0.8);
+    var dotPickId  = Shade.add(firstPickId, data.index);
 
-    var inside_interval = Shade(function(i, v1, v2) {
-        var m = S.Scale.linear({ domain: [min_range.at(i), max_range.at(i)], 
+    var insideInterval = Shade(function(i, v1, v2) {
+        var m = S.Scale.linear({ domain: [minRange.at(i), maxRange.at(i)], 
                                  range: [2*padding, 1-2*padding] });
         var d = m(data.at(data.index, i));
         return d.ge(v1.min(v2)).and(d.le(v1.max(v2)));
     });
 
-    var inside_box = 
-             inside_interval(selection_col, selection_u1, selection_u2)
-        .and(inside_interval(selection_row, selection_v1, selection_v2));
+    var insideBox = 
+             insideInterval(selectionCol, selectionU1, selectionU2)
+        .and(insideInterval(selectionRow, selectionV1, selectionV2));
 
-    var selection_color = inside_box.ifelse(species_color, Shade.color("gray", 0.3));
-    var dot_color = has_selection.ne(0).ifelse(selection_color, species_color);
+    var selectionColor = insideBox.ifelse(speciesColor, Shade.color("gray", 0.3));
+    var dotColor = hasSelection.ne(0).ifelse(selectionColor, speciesColor);
 
-    var scatterplot_actor = Lux.Marks.scatterplot({
-        elements: data.n_rows,
-        x: data.at(data.index, splom_col),
-        y: data.at(data.index, splom_row),
-        x_scale: S.Scale.linear({ domain: [ min_range.at(splom_col), max_range.at(splom_col) ], 
-                                  range: [ min_x, max_x ]}),
-        y_scale: S.Scale.linear({ domain: [ min_range.at(splom_row), max_range.at(splom_row) ], 
-                                  range: [ min_y, max_y ]}),
-        fill_color: dot_color,
-        stroke_color: dot_color,
-        point_diameter: 10,
+    var scatterplotActor = Lux.Marks.scatterplot({
+        elements: data.nRows,
+        x: data.at(data.index, splomCol),
+        y: data.at(data.index, splomRow),
+        xScale: S.Scale.linear({ domain: [ minRange.at(splomCol), maxRange.at(splomCol) ], 
+                                  range: [ minX, maxX ]}),
+        yScale: S.Scale.linear({ domain: [ minRange.at(splomRow), maxRange.at(splomRow) ], 
+                                  range: [ minY, maxY ]}),
+        fillColor: dotColor,
+        strokeColor: dotColor,
+        pointDiameter: 10,
         mode: Lux.DrawingMode.over,
-        pick_id: Shade.shade_id(dot_pick_id)
+        pickId: Shade.shadeId(dotPickId)
     });
 
     var scale = S.Scale.linear({ range: [-1, 1] });
-    var el_row = function(index) { return index.mod(4); };
-    var el_col = function(index) { return index.div(4).floor(); };
-    var aligned_rects = Lux.Marks.aligned_rects({
+    var elRow = function(index) { return index.mod(4); };
+    var elCol = function(index) { return index.div(4).floor(); };
+    var alignedRects = Lux.Marks.alignedRects({
         elements: 16,
-        left:    function(index) { return scale(el_col(index).add(padding).div(4)); },
-        right:   function(index) { return scale(el_col(index).add(1-padding).div(4)); },
-        top:     function(index) { return scale(el_row(index).add(1-padding).div(4)); },
-        bottom:  function(index) { return scale(el_row(index).add(padding).div(4)); },
+        left:    function(index) { return scale(elCol(index).add(padding).div(4)); },
+        right:   function(index) { return scale(elCol(index).add(1-padding).div(4)); },
+        top:     function(index) { return scale(elRow(index).add(1-padding).div(4)); },
+        bottom:  function(index) { return scale(elRow(index).add(padding).div(4)); },
         color:   Shade.vec(0,0,0,0.3),
         z:       0.1,
-        pick_id: Shade.shade_id(0),
+        pickId:  Shade.shadeId(0),
         mode:    Lux.DrawingMode.over
     });
 
-    var selection_rect = Lux.Marks.aligned_rects({
-        left:   scale(selection_u1.add(selection_col).div(4)),
-        right:  scale(selection_u2.add(selection_col).div(4)),
-        top:    scale(selection_v1.add(selection_row).div(4)),
-        bottom: scale(selection_v2.add(selection_row).div(4)),
+    var selectionRect = Lux.Marks.alignedRects({
+        left:   scale(selectionU1.add(selectionCol).div(4)),
+        right:  scale(selectionU2.add(selectionCol).div(4)),
+        top:    scale(selectionV1.add(selectionRow).div(4)),
+        bottom: scale(selectionV2.add(selectionRow).div(4)),
         color:  Shade.vec(1,1,1,0.2),
         elements: 1,
         mode: Lux.DrawingMode.over
     });
 
-    var scatterplot_batch, aligned_rects_batch, selection_rect_batch;
+    var scatterplotBatch, alignedRectsBatch, selectionRectBatch;
     Lux.Scene.add({
         dress: function(scene) {
-            scatterplot_batch = scatterplot_actor.dress(scene);
-            aligned_rects_batch = aligned_rects.dress(scene);
-            selection_rect_batch = selection_rect.dress(scene);
+            scatterplotBatch = scatterplotActor.dress(scene);
+            alignedRectsBatch = alignedRects.dress(scene);
+            selectionRectBatch = selectionRect.dress(scene);
             return {
                 draw: function() {
-                    aligned_rects_batch.draw();
+                    alignedRectsBatch.draw();
                     for (var i=0; i<4; ++i) {
                         for (var j=0; j<4; ++j) {
-                            splom_row.set(i);
-                            splom_col.set(j);
-                            scatterplot_batch.draw();
+                            splomRow.set(i);
+                            splomCol.set(j);
+                            scatterplotBatch.draw();
                         }
                     }
-                    if (has_selection.get()) {
-                        selection_rect_batch.draw();
+                    if (hasSelection.get()) {
+                        selectionRectBatch.draw();
                     }
                 }
             };
@@ -152,7 +152,7 @@ $().ready(function() {
     gl = Lux.init({ 
         clearColor: [0, 0, 0, 0],
         mousemove: function(event) {
-            if (is_selecting) {
+            if (isSelecting) {
                 var u = (event.luxX / gl.viewportWidth * 4);
                 var v = (event.luxY / gl.viewportHeight * 4);
                 var col = Math.floor(u);
@@ -161,11 +161,11 @@ $().ready(function() {
                 u = u % 1;
                 v = v % 1;
                 
-                if (col !== selection_col.get() ||
-                    row !== selection_row.get())
+                if (col !== selectionCol.get() ||
+                    row !== selectionRow.get())
                     return;
-                selection_u2.set(u);
-                selection_v2.set(v);
+                selectionU2.set(u);
+                selectionV2.set(v);
             }
             Lux.Scene.invalidate();
         },
@@ -179,26 +179,26 @@ $().ready(function() {
             u = u % 1;
             v = v % 1;
             
-            has_selection.set(true);
-            is_selecting = true;
-            selection_col.set(col);
-            selection_row.set(row);
-            selection_u1.set(u);
-            selection_v1.set(v);
-            selection_u2.set(u);
-            selection_v2.set(v);
+            hasSelection.set(true);
+            isSelecting = true;
+            selectionCol.set(col);
+            selectionRow.set(row);
+            selectionU1.set(u);
+            selectionV1.set(v);
+            selectionU2.set(u);
+            selectionV2.set(v);
             
             Lux.Scene.invalidate();
         }, mouseup: function(event) {
             canvas.style.cursor = "default";
-            if (selection_u1.get() === selection_u2.get() ||
-                selection_v1.get() === selection_v2.get()) {
-                has_selection.set(false);
+            if (selectionU1.get() === selectionU2.get() ||
+                selectionV1.get() === selectionV2.get()) {
+                hasSelection.set(false);
                 Lux.Scene.invalidate();
             }
-            is_selecting = false;
+            isSelecting = false;
         }
     });
-    init_webgl();
-    Lux.Picker.draw_pick_scene();
+    initWebgl();
+    Lux.Picker.drawPickScene();
 });

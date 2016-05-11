@@ -1,0 +1,23 @@
+<html>
+<head>
+<script>
+var d = {};
+(function () {
+    var l = Object.getOwnPropertyNames(window);
+    for (var i=0; i<l.length; ++i) d[l[i]] = true;
+    console.log("Before:", l.length, "globals");
+})();
+</script>
+<script src="../lux.js"></script>
+<script>
+(function () {
+    var l = Object.getOwnPropertyNames(window);
+    for (var i=0; i<l.length; ++i)
+        if (!d[l[i]])
+            console.log("polluted", l[i]);
+    console.log("After:", l.length, "globals");
+})();
+</script>
+</head>
+<body></body>
+</html>

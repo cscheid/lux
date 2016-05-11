@@ -1,18 +1,18 @@
-/* Shade.Bits.extract_bits returns a certain bit substring of the
+/* Shade.Bits.extractBits returns a certain bit substring of the
    original number using no bitwise operations, which are not available in WebGL.
 
-   if they were, then the definition of extract_bits would be:
+   if they were, then the definition of extractBits would be:
 
-     extract_bits(num, from, to) = (num >> from) & ((1 << (to - from)) - 1)
+     extractBits(num, from, to) = (num >> from) & ((1 << (to - from)) - 1)
 
-   Shade.Bits.extract_bits assumes:
+   Shade.Bits.extractBits assumes:
 
      num > 0
      from < to
 */
 
-Shade.Bits.extract_bits = Shade.make(function(num, from, to) {
+Shade.Bits.extractBits = Shade.make(function(num, from, to) {
     from = from.add(0.5).floor();
     to = to.add(0.5).floor();
-    return Shade.Bits.mask_last(Shade.Bits.shift_right(num, from), to.sub(from));
+    return Shade.Bits.maskLast(Shade.Bits.shiftRight(num, from), to.sub(from));
 });

@@ -21,15 +21,15 @@
 
 Lux.Net.binary = function(url, handler)
 {
-    var current_context = Lux._globals.ctx;
+    var currentContext = Lux._globals.ctx;
 
-    if (lux_typeOf(url) === "array")
-        return handle_many(url, handler, Lux.Net.binary);
+    if (Lux.typeOf(url) === "array")
+        return handleMany(url, handler, Lux.Net.binary);
 
     var xhr = new window.XMLHttpRequest();
     var ready = false;
     xhr.onreadystatechange = function() {
-        Lux.set_context(current_context);
+        Lux.setContext(currentContext);
         if (xhr.readyState === 4 && xhr.status === 200
             && ready !== true) {
             if (xhr.responseType === "arraybuffer") {

@@ -2,19 +2,19 @@
 
 (function() {
 
-var default_color = Shade.vec(0,0,0,0);
+var defaultColor = Shade.vec(0,0,0,0);
 
-Shade.gl_fog = function(opts)
+Shade.glFog = function(opts)
 {
     opts = _.defaults(opts, { mode: "exp",
                               density: 1,
                               start: 0,
                               end: 1,
-                              fog_color: default_color,
-                              per_vertex: false
+                              fogColor: defaultColor,
+                              perVertex: false
                             });
     var mode = opts.mode || "exp";
-    var fog_color = Shade.make(opts.fog_color);
+    var fogColor = Shade.make(opts.fogColor);
     var color = opts.color;
     var z = Shade.make(opts.z);
     var f, density, start;
@@ -37,9 +37,9 @@ Shade.gl_fog = function(opts)
         f = end.sub(z).div(end.sub(start));
     }
     f = f.clamp(0, 1);
-    if (opts.per_vertex)
-        f = f.per_vertex();
-    return Shade.mix(fog_color, color, f);
+    if (opts.perVertex)
+        f = f.perVertex();
+    return Shade.mix(fogColor, color, f);
 };
 
 })();

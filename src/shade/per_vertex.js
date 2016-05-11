@@ -1,14 +1,14 @@
-// per_vertex is an identity operation value-wise, but it tags the AST
+// perVertex is an identity operation value-wise, but it tags the AST
 // so the optimizer can do its thing.
-Shade.per_vertex = function(exp)
+Shade.perVertex = function(exp)
 {
     exp = Shade.make(exp);
-    return Shade._create_concrete_exp({
-        expression_name: "per_vertex",
+    return Shade._createConcreteExp({
+        expressionName: "perVertex",
         parents: [exp],
         type: exp.type,
         stage: "vertex",
-        glsl_expression: function() { return this.parents[0].glsl_expression(); },
+        glslExpression: function() { return this.parents[0].glslExpression(); },
         evaluate: function () { return this.parents[0].evaluate(); },
         compile: function () {}
     });

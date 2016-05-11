@@ -11,31 +11,35 @@ Lux.Marks.lines = function(opts)
         (_.isUndefined(opts.x) || _.isUndefined(opts.y))) {
         throw new Error("either position or x and y are required fields");
     }
+    if (Lux.isShadeExpression(opts.color)) {
+        var ccolor = opts.color;
+        opts.color = function() { return ccolor; };
+    }
 
-    var vertex_index        = Lux.attribute_buffer({
-        vertex_array: _.range(opts.elements * 2), 
-        item_size: 1
+    var vertexIndex  = Lux.attributeBuffer({
+        vertexArray: _.range(opts.elements * 2), 
+        itemSize: 1
     });
-    var primitive_index     = Shade.div(vertex_index, 2).floor();
-    var vertex_in_primitive = Shade.mod(vertex_index, 2).floor();
+    var primitiveIndex    = Shade.div(vertexIndex, 2).floor();
+    var vertexInPrimitive = Shade.mod(vertexIndex, 2).floor();
 
     var position = opts.position 
-        ? opts.position(primitive_index, vertex_in_primitive)
-        : Shade.vec(opts.x(primitive_index, vertex_in_primitive),
-                    opts.y(primitive_index, vertex_in_primitive),
-                    opts.z(primitive_index, vertex_in_primitive));
+        ? opts.position(primitiveIndex, vertexInPrimitive)
+        : Shade.vec(opts.x(primitiveIndex, vertexInPrimitive),
+                    opts.y(primitiveIndex, vertexInPrimitive),
+                    opts.z(primitiveIndex, vertexInPrimitive));
 
     var appearance = {
         mode: opts.mode,
         position: position,
-        color: opts.color(primitive_index, vertex_in_primitive)
+        color: opts.color(primitiveIndex, vertexInPrimitive)
     };
-    if (opts.line_width) {
-        appearance.line_width = opts.line_width;
+    if (opts.lineWidth) {
+        appearance.lineWidth = opts.lineWidth;
     }
     var model = {
         type: "lines",
-        elements: vertex_index
+        elements: vertexIndex
     };
     return Lux.actor({ model: model, appearance: appearance });
 };

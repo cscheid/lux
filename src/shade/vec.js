@@ -1,79 +1,79 @@
 Shade.vec = function()
 {
     var parents = [];
-    var parent_offsets = [];
-    var total_size = 0;
-    var vec_type;
+    var parentOffsets = [];
+    var totalSize = 0;
+    var vecType;
     for (var i=0; i<arguments.length; ++i) {
         var arg = Shade.make(arguments[i]);
         parents.push(arg);
-        parent_offsets.push(total_size);
-        if (_.isUndefined(vec_type))
-            vec_type = arg.type.element_type(0);
-        else if (!vec_type.equals(arg.type.element_type(0)))
+        parentOffsets.push(totalSize);
+        if (_.isUndefined(vecType))
+            vecType = arg.type.elementType(0);
+        else if (!vecType.equals(arg.type.elementType(0)))
             throw new Error("vec requires equal types");
-        total_size += arg.type.size_for_vec_constructor();
+        totalSize += arg.type.sizeForVecConstructor();
     }
-    parent_offsets.push(total_size);
-    if (total_size < 1 || total_size > 4) {
+    parentOffsets.push(totalSize);
+    if (totalSize < 1 || totalSize > 4) {
         throw new Error("vec constructor requires resulting width to be between "
-            + "1 and 4, got " + total_size + " instead");
+            + "1 and 4, got " + totalSize + " instead");
     }
     var type;
-    if (vec_type.equals(Shade.Types.float_t)) {
-        type = Shade.Types["vec" + total_size];
-    } else if (vec_type.equals(Shade.Types.int_t)) {
-        type = Shade.Types["ivec" + total_size];
-    } else if (vec_type.equals(Shade.Types.bool_t)) {
-        type = Shade.Types["bvec" + total_size];
+    if (vecType.equals(Shade.Types.floatT)) {
+        type = Shade.Types["vec" + totalSize];
+    } else if (vecType.equals(Shade.Types.intT)) {
+        type = Shade.Types["ivec" + totalSize];
+    } else if (vecType.equals(Shade.Types.boolT)) {
+        type = Shade.Types["bvec" + totalSize];
     } else {
         throw new Error("vec type must be bool, int, or float");
     }
     
-    return Shade._create_concrete_value_exp({
+    return Shade._createConcreteValueExp({
         parents: parents,
-        parent_offsets: parent_offsets,
+        parentOffsets: parentOffsets,
         type: type,
-        expression_type: 'vec',
-        size: total_size,
+        expressionType: 'vec',
+        size: totalSize,
         element: function(i) {
-            var old_i = i;
+            var oldI = i;
             for (var j=0; j<this.parents.length; ++j) {
-                var sz = this.parent_offsets[j+1] - this.parent_offsets[j];
+                var sz = this.parentOffsets[j+1] - this.parentOffsets[j];
                 if (i < sz)
                     return this.parents[j].element(i);
                 i = i - sz;
             }
-            throw new Error("element " + old_i + " out of bounds (size=" 
-                + total_size + ")");
+            throw new Error("element " + oldI + " out of bounds (size=" 
+                + totalSize + ")");
         },
-        element_is_constant: function(i) {
-            var old_i = i;
+        elementIsConstant: function(i) {
+            var oldI = i;
             for (var j=0; j<this.parents.length; ++j) {
-                var sz = this.parent_offsets[j+1] - this.parent_offsets[j];
+                var sz = this.parentOffsets[j+1] - this.parentOffsets[j];
                 if (i < sz)
-                    return this.parents[j].element_is_constant(i);
+                    return this.parents[j].elementIsConstant(i);
                 i = i - sz;
             }
-            throw new Error("element " + old_i + " out of bounds (size=" 
-                + total_size + ")");
+            throw new Error("element " + oldI + " out of bounds (size=" 
+                + totalSize + ")");
         },
-        element_constant_value: function(i) {
-            var old_i = i;
+        elementConstantValue: function(i) {
+            var oldI = i;
             for (var j=0; j<this.parents.length; ++j) {
-                var sz = this.parent_offsets[j+1] - this.parent_offsets[j];
+                var sz = this.parentOffsets[j+1] - this.parentOffsets[j];
                 if (i < sz)
-                    return this.parents[j].element_constant_value(i);
+                    return this.parents[j].elementConstantValue(i);
                 i = i - sz;
             }
-            throw new Error("element " + old_i + " out of bounds (size=" 
-                + total_size + ")");
+            throw new Error("element " + oldI + " out of bounds (size=" 
+                + totalSize + ")");
         },
-        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+        evaluate: Shade.memoizeOnGuidDict(function(cache) {
             var result = [];
-            var parent_values = _.each(this.parents, function(v) {
+            var parentValues = _.each(this.parents, function(v) {
                 var c = v.evaluate(cache);
-                if (lux_typeOf(c) === 'number')
+                if (Lux.typeOf(c) === 'number')
                     result.push(c);
                 else
                     for (var i=0; i<c.length; ++i)
@@ -84,7 +84,7 @@ Shade.vec = function()
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) {
-                    return t.glsl_expression();
+                    return t.glslExpression();
                 }).join(", ") + ")";
         }
     });

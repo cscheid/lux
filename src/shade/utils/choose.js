@@ -4,10 +4,10 @@
 // box function reconstruction
 
 Shade.Utils.choose = function(lst) {
-    var new_lst = _.toArray(lst);
-    var vals_exp = Shade.array(new_lst);
+    var newLst = _.toArray(lst);
+    var valsExp = Shade.array(newLst);
     return function(v) {
-        v = Shade.clamp(v, 0, new_lst.length-1).floor().as_int();
-        return vals_exp.at(v);
+        v = Shade.clamp(v, 0, newLst.length-1).floor().asInt();
+        return valsExp.at(v);
     };
 };

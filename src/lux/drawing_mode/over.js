@@ -17,10 +17,10 @@
 // objects get)
 //
 // These two behaviors correspond respectively to 
-// Lux.DrawingMode.over_with_depth and Lux.DrawingMode.over
+// Lux.DrawingMode.overWithDepth and Lux.DrawingMode.over
 
 Lux.DrawingMode.over = {
-    set_draw_caps: function()
+    setDrawCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.enable(ctx.BLEND);
@@ -30,14 +30,14 @@ Lux.DrawingMode.over = {
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
     },
-    set_pick_caps: function()
+    setPickCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LESS);
         ctx.depthMask(false);
     },
-    set_unproject_caps: function()
+    setUnprojectCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
@@ -46,8 +46,8 @@ Lux.DrawingMode.over = {
     }
 };
 
-Lux.DrawingMode.over_with_depth = {
-    set_draw_caps: function()
+Lux.DrawingMode.overWithDepth = {
+    setDrawCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.enable(ctx.BLEND);
@@ -56,13 +56,13 @@ Lux.DrawingMode.over_with_depth = {
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LEQUAL);
     },
-    set_pick_caps: function()
+    setPickCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
         ctx.depthFunc(ctx.LEQUAL);
     },
-    set_unproject_caps: function()
+    setUnprojectCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.enable(ctx.DEPTH_TEST);
@@ -70,8 +70,8 @@ Lux.DrawingMode.over_with_depth = {
     }
 };
 
-Lux.DrawingMode.over_no_depth = {
-    set_draw_caps: function()
+Lux.DrawingMode.overNoDepth = {
+    setDrawCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.enable(ctx.BLEND);
@@ -80,13 +80,13 @@ Lux.DrawingMode.over_no_depth = {
         ctx.disable(ctx.DEPTH_TEST);
         ctx.depthMask(false);
     },
-    set_pick_caps: function()
+    setPickCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.disable(ctx.DEPTH_TEST);
         ctx.depthMask(false);
     },
-    set_unproject_caps: function()
+    setUnprojectCaps: function()
     {
         var ctx = Lux._globals.ctx;
         ctx.disable(ctx.DEPTH_TEST);

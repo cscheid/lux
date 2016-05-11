@@ -7,18 +7,18 @@ $().ready(function () {
         mouseup:   function(event) { return globe.mouseup(event); }
     });
 
-    var globe_zoom = Shade.parameter("float", 1.0);
-    var perspective_scene = Lux.Scene.Transform.Camera.perspective({
-        look_at: [Shade.vec(0, 0,  6),
-                  Shade.vec(0, 0, -1),
-                  Shade.vec(0, 1,  0)],
-        field_of_view_y: Shade.div(20, globe_zoom)
+    var globeZoom = Shade.parameter("float", 1.0);
+    var perspectiveScene = Lux.Scene.Transform.Camera.perspective({
+        lookAt: [Shade.vec(0, 0,  6),
+                 Shade.vec(0, 0, -1),
+                 Shade.vec(0, 1,  0)],
+        fieldOfViewY: Shade.div(20, globeZoom)
     });
 
     var globe = Lux.Marks.globe({ 
-        zoom: globe_zoom
+        zoom: globeZoom
     });
 
-    Lux.Scene.add(perspective_scene);
-    perspective_scene.add(globe);
+    Lux.Scene.add(perspectiveScene);
+    perspectiveScene.add(globe);
 });

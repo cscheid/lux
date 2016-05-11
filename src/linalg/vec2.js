@@ -18,7 +18,7 @@ vec2.copy = function(vec)
 
 vec2.make = vec2.copy;
 
-vec2.equal_eps = function(v1, v2)
+vec2.equalEps = function(v1, v2)
 {
     return Math.abs(v1[0] - v2[0]) < vec.eps &&
         Math.abs(v1[1] - v2[1]) < vec.eps;
@@ -106,7 +106,7 @@ vec2.scale = function(dest, val)
     return dest;
 };
 
-vec2.schur_product = function(v1, v2)
+vec2.schurProduct = function(v1, v2)
 {
     var result = new Float32Array(2);
     result.buffer._type = 'vec2';
@@ -115,7 +115,7 @@ vec2.schur_product = function(v1, v2)
     return result;
 };
 
-vec2.schur_multiply = function(dest, other)
+vec2.schurMultiply = function(dest, other)
 {
     dest[0] *= other[0];
     dest[1] *= other[1];

@@ -14,29 +14,29 @@
 
 Shade.Debug.walk = function(exp, visit, revisit) {
     var refs = {};
-    function internal_walk_no_revisit(node) {
+    function internalWalkNoRevisit(node) {
         if (!_.isUndefined(refs[node.guid])) {
             return refs[node.guid];
         }
-        var parent_results = _.map(node.parents, internal_walk_no_revisit);
-        var result = visit(node, parent_results, refs);
+        var parentResults = _.map(node.parents, internalWalkNoRevisit);
+        var result = visit(node, parentResults, refs);
         refs[node.guid] = result;
         return result;
     };
-    function internal_walk_revisit(node) {
+    function internalWalkRevisit(node) {
         if (!_.isUndefined(refs[node.guid])) {
             return revisit(node, _.map(node.parents, function(exp) {
                 return refs[exp.guid];
             }), refs);
         }
-        var parent_results = _.map(node.parents, internal_walk_revisit);
-        var result = visit(node, parent_results, refs);
+        var parentResults = _.map(node.parents, internalWalkRevisit);
+        var result = visit(node, parentResults, refs);
         refs[node.guid] = result;
         return result;
     }
     if (!_.isUndefined(revisit))
-        internal_walk_revisit(exp);
+        internalWalkRevisit(exp);
     else
-        internal_walk_no_revisit(exp);
+        internalWalkNoRevisit(exp);
     return refs;
 };

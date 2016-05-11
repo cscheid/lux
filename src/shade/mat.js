@@ -5,13 +5,13 @@ Shade.mat = function()
 
     for (var i=0; i<arguments.length; ++i) {
         var arg = arguments[i];
-        // if (!(arg.expression_type === 'vec')) {
+        // if (!(arg.expressionType === 'vec')) {
         //     throw new Error("mat only takes vecs as parameters");
         // }
         parents.push(arg);
         if (i === 0)
-            cols = arg.type.size_for_vec_constructor();
-        else if (cols !== arg.type.size_for_vec_constructor())
+            cols = arg.type.sizeForVecConstructor();
+        else if (cols !== arg.type.sizeForVecConstructor())
             throw new Error("mat: all vecs must have same dimension");
     }
 
@@ -24,21 +24,21 @@ Shade.mat = function()
             + "2 and 4");
     }
     var type = Shade.Types["mat" + rows];
-    return Shade._create_concrete_value_exp( {
+    return Shade._createConcreteValueExp( {
         parents: parents,
         type: type,
-        expression_type: 'mat',
+        expressionType: 'mat',
         size: rows,
         element: function(i) {
             return this.parents[i];
         },
-        element_is_constant: function(i) {
-            return this.parents[i].is_constant();
+        elementIsConstant: function(i) {
+            return this.parents[i].isConstant();
         },
-        element_constant_value: function(i) {
-            return this.parents[i].constant_value();
+        elementConstantValue: function(i) {
+            return this.parents[i].constantValue();
         },
-        evaluate: Shade.memoize_on_guid_dict(function(cache) {
+        evaluate: Shade.memoizeOnGuidDict(function(cache) {
             var result = [];
             var ll = _.each(this.parents, function(v) {
                 v = v.evaluate(cache);
@@ -46,12 +46,12 @@ Shade.mat = function()
                     result.push(v[i]);
                 }
             });
-            return mat[this.type.array_size()].make(result);
+            return mat[this.type.arraySize()].make(result);
         }),
         value: function() {
             return this.type.repr() + "(" +
                 this.parents.map(function (t) { 
-                    return t.glsl_expression(); 
+                    return t.glslExpression(); 
                 }).join(", ") + ")";
         }
     });

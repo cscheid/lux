@@ -14,12 +14,12 @@ vec.make = function(v)
     return vec[v.length].make(v);
 };
 
-vec.equal_eps = function(v1, v2)
+vec.equalEps = function(v1, v2)
 {
     if (v1.length != v2.length) {
         throw new Error("mismatched lengths");
     }
-    return vec[v1.length].equal_eps(v1, v2);
+    return vec[v1.length].equalEps(v1, v2);
 };
 
 vec.equal = function(v1, v2)
@@ -56,12 +56,12 @@ vec.scaling = function(v, val)
     return vec[v.length].scaling(v, val);
 };
 
-vec.schur_product = function(v1, v2)
+vec.schurProduct = function(v1, v2)
 {
     if (v1.length != v2.length) {
         throw new Error("mismatched lengths");
     }
-    return vec[v1.length].schur_product(v1, v2);
+    return vec[v1.length].schurProduct(v1, v2);
 };
 
 vec.normalized = function(v)
@@ -93,7 +93,7 @@ vec.map = function(c, f)
 };
 
 /*
-// strictly speaking, this is unnecessary, since only vec3.cross exists.
+// strictly speaking, this is unnecessary, since only vec2.cross and vec3.cross exist.
 // However, to force vec3.* to be written alongside vec.* would mean that
 // some code would be written
 // x = vec.normalized(foo);

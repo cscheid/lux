@@ -1,4 +1,4 @@
-function build_navigation()
+function buildNavigation()
 {
     // yeah, yeah, I know, this is horrible.
     var which = window.location.href.match(/.*lesson([^.]+).html/)[1];

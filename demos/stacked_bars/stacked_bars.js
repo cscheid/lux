@@ -1,14 +1,14 @@
 var gl;
 var t;
 
-function data_buffers()
+function dataBuffers()
 {
     /* Inspired by Lee Byron's test data generator, from
      * 
-     * http://mbostock.github.com/d3/ex/stream_layers.js
+     * http://mbostock.github.com/d3/ex/streamLayers.js
      *
      */
-    function stream_layers(n, m, o) {
+    function streamLayers(n, m, o) {
         if (arguments.length < 3) o = 0;
         function bump(a) {
             var x = 1 / (.1 + Math.random()),
@@ -23,15 +23,15 @@ function data_buffers()
             var a = [], i;
             for (i = 0; i < m; i++) a[i] = o + o * Math.random();
             for (i = 0; i < 5; i++) bump(a);
-            return a.map(stream_index);
+            return a.map(streamIndex);
         });
     }
 
-    function stream_index(d, i) {
+    function streamIndex(d, i) {
         return {x: i, y: Math.max(0, d)};
     }
 
-    var buffers = stream_layers(4, 64, 0.1);
+    var buffers = streamLayers(4, 64, 0.1);
     var xs = buffers.map(function(buffer) {
         return buffer.map(function(obj) { return obj.x; });
     });
@@ -49,41 +49,40 @@ function data_buffers()
     return [xs, ys, mx];
 }
 
-function init_webgl()
+function initWebgl()
 {
     gl = Lux.init({ 
         clearColor: [0, 0, 0, 0.2]
     });
-    Lux.set_context(gl);
-    var data = data_buffers();
+    var data = dataBuffers();
     var mx = data[2];
 
     var project = Shade(function(x) { return x.mul(2).sub(1); });
 
     t = Shade.parameter("float", 0.0);
-    var this_t = t.mul(64);
+    var thisT = t.mul(64);
 
     for (var i=0; i<data[0].length; ++i) {
-        var left = Lux.Data.array_1d(data[0][i]);
-        var top = Lux.Data.array_1d(data[1][i]);
-        Lux.Scene.add(Lux.Marks.aligned_rects({
+        var left = Lux.Data.array1d(data[0][i]);
+        var top = Lux.Data.array1d(data[1][i]);
+        Lux.Scene.add(Lux.Marks.alignedRects({
             elements: left.length,
             bottom: _.compose(project, function(i) { return 0; }),
             top:    _.compose(project, function(i) { 
                 return Shade.Scale.linear({
                     domain: [i, i.add(1)],
                     range:  [0, top.at(i).div(mx)]
-                })(Shade.clamp(this_t, i, i.add(1)));
+                })(Shade.clamp(thisT, i, i.add(1)));
             }),
             left:   _.compose(project, function(i) { return left.at(i).div(left.length); }),
             right:  _.compose(project, function(i) { return left.at(i).add(0.9).div(left.length); }),
-            color:  Shade.Colors.shadetable.hcl.create(3, 50 + i * 5, 50 + i * 10).as_shade()
+            color:  Shade.Colors.shadetable.hcl.create(3, 50 + i * 5, 50 + i * 10).asShade()
         }));
     }
 }
 
 $().ready(function() {
-    init_webgl();
+    initWebgl();
     var start = new Date().getTime();
     Lux.Scene.animate(function() {
         var elapsed = (new Date().getTime() - start) / 1000;

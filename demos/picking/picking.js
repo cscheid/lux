@@ -7,11 +7,11 @@ var angle;
 $().ready(function () {
     var canvas = document.getElementById("webgl");
     var camera = Shade.Camera.perspective({
-        look_at: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
-        field_of_view_y: 45,
-        aspect_ratio: 720/480,
-        near_distance: 0.1,
-        far_distance: 100
+        lookAt: [Shade.vec(0, 0, 6), Shade.vec(0, 0, -1), Shade.vec(0, 1, 0)],
+        fieldOfViewY: 45,
+        aspectRatio: 720/480,
+        nearDistance: 0.1,
+        farDistance: 100
     });
     angle = Shade.parameter("float");
     var strings = ["Nothing",
@@ -28,7 +28,7 @@ $().ready(function () {
             preserveDrawingBuffer: true
         },
         mousedown: function(event) {
-            Lux.Picker.draw_pick_scene();
+            Lux.Picker.drawPickScene();
             var r = Lux.Picker.pick(event.luxX, event.luxY);
             $("#pickresult").html(strings[r]);
         }
@@ -46,7 +46,7 @@ $().ready(function () {
     // only 8 vertices in a cube, we end up with 24 of them, since we
     // need three colors per corner.
 
-    var cube_model = Lux.model({
+    var cubeModel = Lux.model({
         type: "triangles",
         elements: [0,  1,  2,  0,  2,  3,
                    4,  5,  6,  4,  6,  7,
@@ -67,7 +67,7 @@ $().ready(function () {
     // For the pyramid, however, each vertex has only one color 
     // associated with it, so we can reuse the information.
 
-    var pyramid_model = Lux.model({
+    var pyramidModel = Lux.model({
         type: "triangles",
         elements: [0, 1, 2,
                    0, 2, 3,
@@ -82,30 +82,30 @@ $().ready(function () {
     });
 
     // one id per face of the cube
-    var ids = Lux.id_buffer([1,1,1,1,2,2,2,2,3,3,3,3,
-                             4,4,4,4,5,5,5,5,6,6,6,6]);
+    var ids = Lux.idBuffer([1,1,1,1,2,2,2,2,3,3,3,3,
+                            4,4,4,4,5,5,5,5,6,6,6,6]);
 
-    var cube_xformed_vertex = Shade.translation(Shade.vec(1.5, 0, 0))
+    var cubeXformedVertex = Shade.translation(Shade.vec(1.5, 0, 0))
         .mul(Shade.rotation(angle, Shade.vec(1,1,1)))
-        .mul(cube_model.vertex);
+        .mul(cubeModel.vertex);
 
-    var pyramid_xformed_vertex = Shade.translation(Shade.vec(-1.5, 0, 0))
+    var pyramidXformedVertex = Shade.translation(Shade.vec(-1.5, 0, 0))
         .mul(Shade.rotation(angle, Shade.vec(0,1,0)))
-        .mul(pyramid_model.vertex);
+        .mul(pyramidModel.vertex);
 
     cube = Lux.actor({
-        model: cube_model, 
+        model: cubeModel, 
         appearance: {
-            position: camera(cube_xformed_vertex),
-            color: cube_model.color,
-            pick_id: ids }});
+            position: camera(cubeXformedVertex),
+            color: cubeModel.color,
+            pickId: ids }});
 
     pyramid = Lux.actor({
-        model: pyramid_model, 
+        model: pyramidModel, 
         appearance: {
-            position: camera(pyramid_xformed_vertex),
-            color: pyramid_model.color,
-            pick_id: Shade.id(7)}});
+            position: camera(pyramidXformedVertex),
+            color: pyramidModel.color,
+            pickId: Shade.id(7)}});
 
     Lux.Scene.add(cube);
     Lux.Scene.add(pyramid);

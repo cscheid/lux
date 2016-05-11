@@ -1,5 +1,5 @@
 /*
- * Shade.discard_if: conditionally discard fragments from the pipeline
+ * Shade.discardIf: conditionally discard fragments from the pipeline
  * 
 
 *********************************************************************************
@@ -44,7 +44,7 @@ like so:
 {
   gl_Position: foo
   gl_FragColor: bar
-  discard_if: baz
+  discardIf: baz
 }
 
 The main disadvantage here is that one application of discard is to
@@ -57,44 +57,44 @@ computes those in the correct order.
 
 This discard interacts with the initializer code.
 
-**** new expression called discard_if
+**** new expression called discardIf
 
-We add a discard_when(condition, value_if_not) expression, which
+We add a discardWhen(condition, valueIfNot) expression, which
 issues the discard statement if condition is true. 
 
-But what about discard_when being executed inside conditional
-expressions? Worse: discard_when would turn case D above from a
+But what about discardWhen being executed inside conditional
+expressions? Worse: discardWhen would turn case D above from a
 performance problem into an actual bug.
 
  * 
  */
 
-Shade.discard_if = function(exp, condition)
+Shade.discardIf = function(exp, condition)
 {
     if (_.isUndefined(exp) ||
         _.isUndefined(condition))
-        throw new Error("discard_if expects two parameters");
+        throw new Error("discardIf expects two parameters");
     exp = Shade.make(exp);
     condition = Shade.make(condition);
 
-    var result = Shade._create_concrete_exp({
-        is_constant: Shade.memoize_on_field("_is_constant", function() {
+    var result = Shade._createConcreteExp({
+        isConstant: Shade.memoizeOnField("_isConstant", function() {
             var cond = _.all(this.parents, function(v) {
-                return v.is_constant();
+                return v.isConstant();
             });
-            return (cond && !this.parents[1].constant_value());
+            return (cond && !this.parents[1].constantValue());
         }),
-        _must_be_function_call: true,
+        _mustBeFunctionCall: true,
         type: exp.type,
-        expression_type: "discard_if",
+        expressionType: "discardIf",
         parents: [exp, condition],
-        parent_is_unconditional: function(i) {
+        parentIsUnconditional: function(i) {
             return i === 0;
         },
         compile: function(ctx) {
-            ctx.strings.push(this.parents[0].type.repr(), this.glsl_name, "(void) {\n",
-                             "    if (",this.parents[1].glsl_expression(),") discard;\n",
-                             "    return ", this.parents[0].glsl_expression(), ";\n}\n");
+            ctx.strings.push(this.parents[0].type.repr(), this.glslName, "(void) {\n",
+                             "    if (",this.parents[1].glslExpression(),") discard;\n",
+                             "    return ", this.parents[0].glslExpression(), ";\n}\n");
         },
         // FIXME How does evaluate interact with fragment discarding?
         // I still need to define the value of a discarded fragment. Currently evaluate

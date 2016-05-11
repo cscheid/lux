@@ -2,15 +2,15 @@ Lux.Net = {};
 
 (function() {
 
-var handle_many = function(url, handler, self_call) {
+var handleMany = function(url, handler, selfCall) {
     var obj = {};
     var done = _.after(url.length, handler);
-    function piecemeal_handler(result, internal_url) {
-        obj[internal_url] = result;
+    function piecemealHandler(result, internalUrl) {
+        obj[internalUrl] = result;
         done(obj);
     }
-    _.each(url, function(internal_url) {
-        self_call(internal_url, piecemeal_handler);
+    _.each(url, function(internalUrl) {
+        selfCall(internalUrl, piecemealHandler);
     });
 };
 

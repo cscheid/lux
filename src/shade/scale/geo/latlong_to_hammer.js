@@ -1,8 +1,8 @@
-Shade.Scale.Geo.latlong_to_hammer = Shade(function(lat, lon, B)
+Shade.Scale.Geo.latlongToHammer = Shade(function(lat, lon, B)
 {
     if (_.isUndefined(B))
         B = Shade(2);
-    else if (!B.type.equals(Shade.Types.float_t))
+    else if (!B.type.equals(Shade.Types.floatT))
         throw new Error("B should have type float");
     var phi = lat,
         lambda = lon;

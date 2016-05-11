@@ -1,15 +1,15 @@
 /*
    texture array takes an object with fields:
 
-     n_cols (integer): number of columns in the 2D array of data
-     n_rows (integer): number of rows in the 2D array of data
+     nCols (integer): number of columns in the 2D array of data
+     nRows (integer): number of rows in the 2D array of data
      elements (array, Float32Array): list of elements in the array
 
    and returns an object with four fields:
 
-   n_cols (integer): number of columns in the data
+   nCols (integer): number of columns in the data
 
-   n_rows (integer): number of rows in the data
+   nRows (integer): number of rows in the data
 
    at (function(Shade(int), Shade(int)) -> Shade(float)): returns the
    value stored at given row and column
@@ -26,50 +26,50 @@
 
  */
 
-Lux.Data.texture_array = function(opts)
+Lux.Data.textureArray = function(opts)
 {
     var ctx = Lux._globals.ctx;
     var elements = opts.elements;
-    var n_cols = opts.n_cols;
-    var n_rows = opts.n_rows;
+    var nCols = opts.nCols;
+    var nRows = opts.nRows;
 
-    var texture_width = 1;
-    while (4 * texture_width * texture_width < elements.length) {
-        texture_width = texture_width * 2;
+    var textureWidth = 1;
+    while (4 * textureWidth * textureWidth < elements.length) {
+        textureWidth = textureWidth * 2;
     }
-    var texture_height = Math.ceil(elements.length / (4 * texture_width));
+    var textureHeight = Math.ceil(elements.length / (4 * textureWidth));
 
-    var new_elements;
-    if (texture_width * texture_height === elements.length) {
+    var newElements;
+    if (textureWidth * textureHeight === elements.length) {
         // no chance this will ever happen in practice, but hey, 
         // a man can dream
-        if (lux_typeOf(elements) === "array") {
-            new_elements = new Float32Array(elements);
+        if (Lux.typeOf(elements) === "array") {
+            newElements = new Float32Array(elements);
         } else
-            new_elements = elements;
+            newElements = elements;
     } else {
-        new_elements = new Float32Array(texture_width * texture_height * 4);
+        newElements = new Float32Array(textureWidth * textureHeight * 4);
         for (var i=0; i<elements.length; ++i)
-            new_elements[i] = elements[i];
+            newElements[i] = elements[i];
     }
 
     var texture = Lux.texture({
-        width: texture_width,
-        height: texture_height,
-        buffer: new_elements,
+        width: textureWidth,
+        height: textureHeight,
+        buffer: newElements,
         type: ctx.FLOAT,
         format: ctx.RGBA,
-        min_filter: ctx.NEAREST,
-        mag_filter: ctx.NEAREST
+        minFilter: ctx.NEAREST,
+        magFilter: ctx.NEAREST
     });
 
     var index = Shade(function(row, col) {
-        var linear_index    = row.mul(n_cols).add(col);
-        var in_texel_offset = linear_index.mod(4);
-        var texel_index     = linear_index.div(4).floor();
-        var x               = texel_index.mod(texture_width);
-        var y               = texel_index.div(texture_width).floor();
-        var result          = Shade.vec(x, y, in_texel_offset);
+        var linearIndex   = row.mul(nCols).add(col);
+        var inTexelOffset = linearIndex.mod(4);
+        var texelIndex    = linearIndex.div(4).floor();
+        var x             = texelIndex.mod(textureWidth);
+        var y             = texelIndex.div(textureWidth).floor();
+        var result        = Shade.vec(x, y, inTexelOffset);
         return result;
     });
     var at = Shade(function(row, col) {
@@ -77,14 +77,14 @@ Lux.Data.texture_array = function(opts)
         var ix = index(row, col);
         var uv = ix.swizzle("xy")
             .add(Shade.vec(0.5, 0.5))
-            .div(Shade.vec(texture_width, texture_height))
+            .div(Shade.vec(textureWidth, textureHeight))
             ;
         return Shade.texture2D(texture, uv).at(ix.z());
     });
 
     return {
-        n_rows: n_rows,
-        n_cols: n_cols,
+        nRows: nRows,
+        nCols: nCols,
         at: at,
         index: index
     };
