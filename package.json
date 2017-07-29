@@ -1,0 +1,44 @@
+{
+  "name": "synteny-vis",
+  "version": "0.0.1",
+  "description": "synteny visualization things",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "hdc-arizona.github.io/synteny-vis"
+  },
+  "dependencies": {
+    "babel-core": "6.9.1",
+    "babel-loader": "6.2.4",
+    "babel-plugin-transform-object-rest-spread": "6.8.0",
+    "babel-polyfill": "6.13.0",
+    "babel-preset-es2015": "6.9.0",
+    "benchmark": "1.0.0",
+    "crossfilter": "1.3.12",
+    "css-loader": "0.21.0",
+    "d3": "3.5.6",
+    "d3-queue": "2.0.3",
+    "eslint": "1.9.0",
+    "ignore-styles": "2.0.0",
+    "javascript-natural-sort": "0.7.1",
+    "jsdom": "9.5.0",
+    "mocha": "2.3.2",
+    "mocha-jsdom": "1.1.0",
+    "should": "7.1.0",
+    "sinon": "1.17.4",
+    "style-loader": "0.13.0",
+    "svg-transform": "0.0.3",
+    "webpack": "1.13.2"
+  },
+  "scripts": {
+    "lint": "node_modules/.bin/eslint src/*.js",
+    "test": "find src -name \\*.test.js | xargs node_modules/.bin/mocha --require ignore-styles --compilers js:babel-core/register",
+    "all": "npm run lint && npm run test",
+    "build": "npm run all && node_modules/.bin/webpack --progress",
+    "build-production": "PRODUCTION=1 npm run all && node_modules/.bin/webpack --progress -p",
+    "build-gh-pages": "npm run build-production && cp -r build/* gh-pages",
+    "build-release": "npm run build && cp build/synteny-dotplot-builder.* release && npm run build-production && cp -r build/synteny-dotplot-builder.js release/synteny-dotplot-builder.min.js",
+    "test-watch": "node_modules/.bin/mocha --compilers js:babel-core/register --watch",
+    "build-watch": "node_modules/.bin/webpack --watch"
+  }
+}
