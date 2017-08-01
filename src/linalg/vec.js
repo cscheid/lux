@@ -20,110 +20,115 @@ vec.eps = 1e-6;
 
 vec.make = function(v)
 {
-    return vec[v.length].make(v);
+  return vec[v.length].make(v);
 };
 
 vec.equalEps = function(v1, v2)
 {
-    if (v1.length != v2.length) {
-        throw new Error("mismatched lengths");
-    }
-    return vec[v1.length].equalEps(v1, v2);
+  if (v1.length != v2.length) {
+    throw new Error("mismatched lengths");
+  }
+  return vec[v1.length].equalEps(v1, v2);
 };
 
 vec.equal = function(v1, v2)
 {
-    if (v1.length != v2.length) {
-        throw new Error("mismatched lengths");
-    }
-    return vec[v1.length].equal(v1, v2);
+  if (v1.length != v2.length) {
+    throw new Error("mismatched lengths");
+  }
+  return vec[v1.length].equal(v1, v2);
 };
 
 vec.plus = function(v1, v2)
 {
-    if (v1.length != v2.length) {
-        throw new Error("mismatched lengths");
-    }
-    return vec[v1.length].plus(v1, v2);
+  if (v1.length != v2.length) {
+    throw new Error("mismatched lengths");
+  }
+  return vec[v1.length].plus(v1, v2);
 };
 
 vec.minus = function(v1, v2)
 {
-    if (v1.length != v2.length) {
-        throw new Error("mismatched lengths");
-    }
-    return vec[v1.length].minus(v1, v2);
+  if (v1.length != v2.length) {
+    throw new Error("mismatched lengths");
+  }
+  return vec[v1.length].minus(v1, v2);
 };
 
 vec.negative = function(v)
 {
-    return vec[v.length].negative(v);
+  return vec[v.length].negative(v);
 };
 
 vec.scaling = function(v, val)
 {
-    return vec[v.length].scaling(v, val);
+  return vec[v.length].scaling(v, val);
 };
 
 vec.schurProduct = function(v1, v2)
 {
-    if (v1.length != v2.length) {
-        throw new Error("mismatched lengths");
-    }
-    return vec[v1.length].schurProduct(v1, v2);
+  if (v1.length != v2.length) {
+    throw new Error("mismatched lengths");
+  }
+  return vec[v1.length].schurProduct(v1, v2);
 };
 
 vec.normalized = function(v)
 {
-    return vec[v.length].normalized(v);
+  return vec[v.length].normalized(v);
 };
 
 vec.length = function(v)
 {
-    return vec[v.length].length(v);
+  return vec[v.length].length(v);
 };
 
 vec.length2 = function(v)
 {
-    return vec[v.length].length2(v);
+  return vec[v.length].length2(v);
 };
 
 vec.dot = function(v1, v2)
 {
-    if (v1.length != v2.length) {
-        throw new Error("mismatched lengths");
-    }
-    return vec[v1.length].dot(v1, v2);
+  if (v1.length != v2.length) {
+    throw new Error("mismatched lengths");
+  }
+  return vec[v1.length].dot(v1, v2);
 };
 
 vec.map = function(c, f)
 {
-    return vec[c.length].map(c, f);
+  return vec[c.length].map(c, f);
 };
 
 /*
-// strictly speaking, this is unnecessary, since only vec2.cross and vec3.cross exist.
-// However, to force vec3.* to be written alongside vec.* would mean that
-// some code would be written
-// x = vec.normalized(foo);
-// y = vec.normalized(bar);
-// z = vec3.cross(x, y);
+ // strictly speaking, this is unnecessary, since only vec2.cross and vec3.cross exist.
+ // However, to force vec3.* to be written alongside vec.* would mean that
+ // some code would be written
+ // x = vec.normalized(foo);
+ // y = vec.normalized(bar);
+ // z = vec3.cross(x, y);
 
-// instead of
+ // instead of
 
-// z = vec.cross(x, y);
+ // z = vec.cross(x, y);
 
-// The notational uniformity of the latter wins
-*/
+ // The notational uniformity of the latter wins
+ */
 
 vec.cross = function(v1, v2)
 {
-    return vec[v1.length].cross(v1, v2);
+  return vec[v1.length].cross(v1, v2);
 };
 
 vec.str = function(v)
 {
-    return vec[v.length].str(v);
+  return vec[v.length].str(v);
 };
 
 exports.vec = vec;
+
+/* Local Variables:  */
+/* mode: js2         */
+/* js2-basic-offset: 2 */
+/* End:              */

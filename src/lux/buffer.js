@@ -1,4 +1,4 @@
-import { Lux } from '../lux';
+import { Lux } from '../lux.js';
 import _ from 'lodash';
 
 exports.buffer = function(opts)

@@ -1,194 +1,194 @@
 function create()
 {
-    var result = new Float32Array(2);
-    result.buffer._type = 'vec2';
-    return result;
+  var result = new Float32Array(2);
+  result.buffer._type = 'vec2';
+  return result;
 };
 exports.create = create;
 
 function copy(vec)
 {
-    var result = new Float32Array(2);
-    result.buffer._type = 'vec2';
-    result[0] = vec[0];
-    result[1] = vec[1];
-    return result;
+  var result = new Float32Array(2);
+  result.buffer._type = 'vec2';
+  result[0] = vec[0];
+  result[1] = vec[1];
+  return result;
 };
 exports.make = copy;
 exports.copy = copy;
 
 function equalEps(v1, v2)
 {
-    return Math.abs(v1[0] - v2[0]) < vec.eps &&
-        Math.abs(v1[1] - v2[1]) < vec.eps;
+  return Math.abs(v1[0] - v2[0]) < vec.eps &&
+    Math.abs(v1[1] - v2[1]) < vec.eps;
 };
 exports.equalEps = equalEps;
 
 function equal(v1, v2)
 {
-    return v1[0] === v2[0] && v1[1] === v2[1];
+  return v1[0] === v2[0] && v1[1] === v2[1];
 };
 exports.equal = equal;
 
 function random()
 {
-    var result = vec2.make([Math.random(), Math.random()]);
-    return result;
+  var result = vec2.make([Math.random(), Math.random()]);
+  return result;
 };
 exports.random = random;
 
 function set(dest, vec)
 {
-    dest[0] = vec[0];
-    dest[1] = vec[1];
-    return dest;
+  dest[0] = vec[0];
+  dest[1] = vec[1];
+  return dest;
 };
 exports.set = set;
 
 function plus(v1, v2)
 {
-    var result = new Float32Array(2);
-    result.buffer._type = 'vec2';
-    result[0] = v1[0] + v2[0];
-    result[1] = v1[1] + v2[1];
-    return result;
+  var result = new Float32Array(2);
+  result.buffer._type = 'vec2';
+  result[0] = v1[0] + v2[0];
+  result[1] = v1[1] + v2[1];
+  return result;
 };
 exports.plus = plus;
 
 function add(dest, other)
 {
-    dest[0] += other[0];
-    dest[1] += other[1];
-    return dest;
+  dest[0] += other[0];
+  dest[1] += other[1];
+  return dest;
 };
 exports.add = add;
 
 function minus(v1, v2)
 {
-    var result = new Float32Array(2);
-    result.buffer._type = 'vec2';
-    result[0] = v1[0] - v2[0];
-    result[1] = v1[1] - v2[1];
-    return result;
+  var result = new Float32Array(2);
+  result.buffer._type = 'vec2';
+  result[0] = v1[0] - v2[0];
+  result[1] = v1[1] - v2[1];
+  return result;
 };
 exports.minus = minus;
 
 function subtract(dest, other)
 {
-    dest[0] -= other[0];
-    dest[1] -= other[1];
-    return dest;
+  dest[0] -= other[0];
+  dest[1] -= other[1];
+  return dest;
 };
 exports.subtract = subtract;
 
 function negative(v)
 {
-    var result = new Float32Array(2);
-    result.buffer._type = 'vec2';
-    result[0] = -v[0];
-    result[1] = -v[1];
-    return result;
+  var result = new Float32Array(2);
+  result.buffer._type = 'vec2';
+  result[0] = -v[0];
+  result[1] = -v[1];
+  return result;
 };
 exports.negative = negative;
 
 function negate(dest)
 {
-    dest[0] = -dest[0];
-    dest[1] = -dest[1];
-    return dest;
+  dest[0] = -dest[0];
+  dest[1] = -dest[1];
+  return dest;
 };
 exports.negate = negate;
 
 function scaling(vec, val)
 {
-    var result = new Float32Array(2);
-    result.buffer._type = 'vec2';
-    result[0] = vec[0]*val;
-    result[1] = vec[1]*val;
-    return result;
+  var result = new Float32Array(2);
+  result.buffer._type = 'vec2';
+  result[0] = vec[0]*val;
+  result[1] = vec[1]*val;
+  return result;
 };
 exports.scaling = scaling;
 
 function scale(dest, val)
 {
-    dest[0] *= val;
-    dest[1] *= val;
-    return dest;
+  dest[0] *= val;
+  dest[1] *= val;
+  return dest;
 };
 exports.scale = scale;
 
 function schurProduct(v1, v2)
 {
-    var result = new Float32Array(2);
-    result.buffer._type = 'vec2';
-    result[0] = v1[0] * v2[0];
-    result[1] = v1[1] * v2[1];
-    return result;
+  var result = new Float32Array(2);
+  result.buffer._type = 'vec2';
+  result[0] = v1[0] * v2[0];
+  result[1] = v1[1] * v2[1];
+  return result;
 };
 exports.schurProduct = schurProduct;
 
 function schurMultiply(dest, other)
 {
-    dest[0] *= other[0];
-    dest[1] *= other[1];
-    return dest;
+  dest[0] *= other[0];
+  dest[1] *= other[1];
+  return dest;
 };
 exports.schurMultiply = schurMultiply;
 
 function normalized(vec)
 {
-    var result = new Float32Array(2);
-    result.buffer._type = 'vec2';
-    var x = vec[0], y = vec[1];
-    var len = Math.sqrt(x*x + y*y);
-    if (!len)
-        return result;
-    if (len == 1) {
-        result[0] = x;
-        result[1] = y;
-        return result;
-    }
-    result[0] = x / len;
-    result[1] = y / len;
+  var result = new Float32Array(2);
+  result.buffer._type = 'vec2';
+  var x = vec[0], y = vec[1];
+  var len = Math.sqrt(x*x + y*y);
+  if (!len)
     return result;
+  if (len == 1) {
+    result[0] = x;
+    result[1] = y;
+    return result;
+  }
+  result[0] = x / len;
+  result[1] = y / len;
+  return result;
 };
 exports.normalized = normalized;
 
 function normalize(dest)
 {
-    var x = dest[0], y = dest[1];
-    var len = Math.sqrt(x*x + y*y);
-    if (!len) {
-        dest[0] = dest[1] = 0;
-        return dest;
-    }
-    dest[0] /= len;
-    dest[1] /= len;
+  var x = dest[0], y = dest[1];
+  var len = Math.sqrt(x*x + y*y);
+  if (!len) {
+    dest[0] = dest[1] = 0;
     return dest;
+  }
+  dest[0] /= len;
+  dest[1] /= len;
+  return dest;
 };
 exports.normalize = normalize;
 
 function length(vec)
 {
-    var x = vec[0], y = vec[1];
-    return Math.sqrt(x*x + y*y);
+  var x = vec[0], y = vec[1];
+  return Math.sqrt(x*x + y*y);
 };
 exports.length = length;
 
 function length2(vec)
 {
-    return vec[0] * vec[0] + vec[1] * vec[1];
+  return vec[0] * vec[0] + vec[1] * vec[1];
 };
 exports.length2 = length2;
 
 function dot(v1, v2)
 {
-    return v1[0] * v2[0] + v1[1] * v2[1];
+  return v1[0] * v2[0] + v1[1] * v2[1];
 };
 exports.dot = dot;
 
 function map(vec, f) {
-    return vec2.make(_.map(vec, f));
+  return vec2.make(_.map(vec, f));
 };
 exports.map = map;
 
@@ -196,6 +196,11 @@ function str(v) { return "[" + v[0] + ", " + v[1] + "]"; };
 exports.str = str;
 
 function cross(v0, v1) {
-    return v0[0] * v1[1] - v0[1] * v1[0];
+  return v0[0] * v1[1] - v0[1] * v1[0];
 };
 exports.cross = cross;
+
+/* Local Variables:  */
+/* mode: js2         */
+/* js2-basic-offset: 2 */
+/* End:              */
