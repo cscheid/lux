@@ -2,8 +2,13 @@
   "name": "lux",
   "version": "0.0.1",
   "description": "Lux is a DSEL for WebGL graphics",
-  "keywords": [ "webgl", "graphics", "visualization", "edsl" ],
+  "keywords": [
+    "webgl",
+    "graphics",
+    "visualization",
+    "edsl"
+  ],
   "dependencies": {
-    "uglify-js": "2.2.4"
+    "uglify-js": "2.8.29"
   }
 }
