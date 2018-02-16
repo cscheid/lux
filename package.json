@@ -1,0 +1,38 @@
+{
+		"name": "lux",
+		"version": "0.0.1",
+		"description": "A WebGL 2.0 DSEL",
+		"private": true,
+		"repository": {
+				"type": "git",
+				"url": "cscheid.github.io/lux"
+		},
+		"dependencies": {
+				"acorn": "5.4.1",
+				"babel-core": "6.9.1",
+				"babel-loader": "6.2.4",
+				"babel-plugin-transform-object-rest-spread": "6.8.0",
+				"babel-polyfill": "6.13.0",
+				"babel-preset-env": "1.6.1",
+				"benchmark": "1.0.0",
+				"eslint": "1.9.0",
+				"ignore-styles": "2.0.0",
+				"jsdom": "9.5.0",
+				"lodash": "4.17.4",
+				"mocha": "2.3.2",
+				"mocha-jsdom": "1.1.0",
+				"should": "7.1.0",
+				"sinon": "1.17.4",
+				"style-loader": "0.13.0",
+				"webpack": "1.13.2"
+		},
+		"scripts": {
+				"lint": "node_modules/.bin/eslint src/*.js",
+				"test": "find src -name \\*.test.js | xargs node_modules/.bin/mocha --require ignore-styles --compilers js:babel-core/register",
+				"all": "npm run lint && npm run test",
+				"build": "npm run all && node_modules/.bin/webpack --progress",
+				"build-production": "PRODUCTION=1 npm run all && node_modules/.bin/webpack --progress -p",
+				"test-watch": "node_modules/.bin/mocha --compilers js:babel-core/register --watch",
+				"build-watch": "node_modules/.bin/webpack --watch"
+		}
+}
