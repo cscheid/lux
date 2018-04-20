@@ -87,8 +87,8 @@ Lux.init = function(opts)
 
     if (opts.highDPS) {
         devicePixelRatio = window.devicePixelRatio || 1;
-        canvas.style.width = canvas.width;
-        canvas.style.height = canvas.height;
+        canvas.style.width = canvas.width + "px";
+        canvas.style.height = canvas.height + "px";
         canvas.width = (canvas.clientWidth || canvas.width) * devicePixelRatio;
         canvas.height = (canvas.clientHeight || canvas.height) * devicePixelRatio;
     }
