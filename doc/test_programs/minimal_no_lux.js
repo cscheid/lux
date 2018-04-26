@@ -40,10 +40,10 @@ function main()
   var fs = gl.createShader(gl.FRAGMENT_SHADER);
 
   function compileShader(shader, source) {
-    gl.shaderSource(vs, vSource);
-    gl.compileShader(vs);
-    if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
-      console.error(gl.getShaderInfoLog(vs));
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(shader));
       return false;
     } else {
       return true;

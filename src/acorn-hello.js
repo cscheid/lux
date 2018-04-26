@@ -33,7 +33,7 @@ function frustum(left, right, bottom, top, near, far) {
 
 function parseFunction(f) {
   var comments = [], tokens = [];
-  var ast = acorn.parse(frustum.toString(), {
+  var ast = acorn.parseExpressionAt(f.toString(), 0, {
     ranges: true,
     onComment: comments,
     onToken: tokens
@@ -42,8 +42,15 @@ function parseFunction(f) {
 }
 
 function test2() {
-  var ast = parseFunction(frustum);
   debugger;
+  var ast = parseFunction(frustum);
+  ast = parseFunction(function(m) {
+    return {
+      position: m.position,
+      color: Lux.vec(1, 0, 0, 1)
+    };
+  });
+  console.log(ast);
 }
 
 exports.testIt = testIt;
