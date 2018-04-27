@@ -70,7 +70,11 @@
  *   })
  */
 
+import _ from 'lodash';
+import Lux from './lux.js';
 import { LuxError } from './luxError.js';
+import { attributeBufferView } from './attributeBufferView.js';
+import { buffer } from './buffer.js';
 
 function attribute(opts)
 {
@@ -129,14 +133,14 @@ function attribute(opts)
   }
 
   var array = convertArray(opts.vertexArray);
-  var buffer = Lux.buffer({
+  var theBuffer = buffer({
     usage: opts.usage,
     array: array,
     keepArray: opts.keepArray
   });
 
-  return Lux.attributeBufferView(_.defaults(opts, {
-    buffer: buffer
+  return attributeBufferView(_.defaults(opts, {
+    buffer: theBuffer
   }));
 };
 

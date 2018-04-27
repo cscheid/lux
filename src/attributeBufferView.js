@@ -11,6 +11,9 @@
  *
  */
 
+import _ from 'lodash';
+import Lux from './lux.js';
+
 import { LuxError } from './luxError.js';
 import { setContext } from './setContext.js';
 

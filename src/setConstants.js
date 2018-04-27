@@ -1,3 +1,5 @@
+import Lux from './lux.js';
+
 function setConstants(gl)
 {
   // primitives
@@ -8,5 +10,6 @@ function setConstants(gl)
   Lux.triangles = gl.TRIANGLES;
   Lux.triangleStrip = gl.TRIANGLE_STRIP;
   Lux.triangleFan = gl.TRIANGLE_FAN;
-
 }
+
+exports.setConstants = setConstants;

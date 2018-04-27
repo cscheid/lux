@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { LuxError } from './luxError.js';
+import { setContext } from './setContext.js';
 
 var luxContexts = {};
 
@@ -133,8 +134,7 @@ function init(opts)
     gl._luxGlobals.webglExtensions.OES_element_index_uint = true;
   }
 
-  Lux.setContext(gl);
-
+  setContext(gl);
 }
 
 exports.init = init;

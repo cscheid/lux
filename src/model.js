@@ -1,6 +1,8 @@
 import { attribute } from './attribute.js';
 import { elementBuffer } from './elementBuffer.js';
 import { LuxError } from './luxError.js';
+import Lux from './lux.js';
+import _ from 'lodash';
 
 function model(opts)
 {

@@ -2,6 +2,7 @@
 
 import { LuxError } from './luxError.js';
 import { setContext } from './setContext.js';
+import Lux from './lux.js';
 
 function elementBuffer(vertexArray)
 {
