@@ -124,15 +124,15 @@ function attribute(opts)
         throw new Error("set: attribute expected length to be a multiple of " +
                         itemSize + ", got " + array.length + " instead.");
       }
-    } else if (opts.vertexArray.constructor === ArrayBuffer) {
-      array = opts.vertexArray;
+    } else if (opts.array.constructor === ArrayBuffer) {
+      array = opts.array;
     } else {
       throw new Error("Unrecognized array type for attributeBuffer");
     }
     return array;
   }
 
-  var array = convertArray(opts.vertexArray);
+  var array = convertArray(opts.array);
   var theBuffer = buffer({
     usage: opts.usage,
     array: array,

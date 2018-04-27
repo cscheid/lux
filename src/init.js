@@ -1,6 +1,8 @@
 import _ from 'lodash';
+import Lux from './lux.js';
 import { LuxError } from './luxError.js';
 import { setContext } from './setContext.js';
+import { defaultScene } from './scene.js';
 
 var luxContexts = {};
 
@@ -135,6 +137,26 @@ function init(opts)
   }
 
   setContext(gl);
+
+  gl._luxGlobals.scene = defaultScene({
+    context: gl,
+    clearColor: opts.clearColor,
+    clearDepth: opts.clearDepth,
+    preDraw: () => {
+      var rawT = new Date().getTime() / 1000;
+      var newT = rawT - gl._luxGlobals.epoch;
+      // var oldT = gl.parameters.now.get();
+      // gl.parameters.frameDuration.set(newT - oldT);
+      // gl.parameters.now.set(newT);
+      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+      //      var oldT =
+
+    }
+  });
+
+  Lux.Scene = gl._luxGlobals.scene;
+
+  return gl;
 }
 
 exports.init = init;

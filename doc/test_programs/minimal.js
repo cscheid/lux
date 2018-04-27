@@ -21,4 +21,5 @@ function main()
   Lux.Scene.add(actor);
 }
 
+debugger;
 main();

@@ -28,13 +28,13 @@ function actor(opts)
   var appearance = opts.appearance;
   var model = opts.model;
   var on = opts.on;
-  var bake = opts.bake;
+  var actorBake = opts.bake;
   var batch;
   return {
     dress: function(scene) {
       var xform = scene.getTransform();
       var thisAppearance = xform(appearance);
-      return bake(model, thisAppearance);
+      return actorBake(model, thisAppearance);
     },
     on: function(eventName, event) {
       return opts.on(eventName, event);
@@ -115,3 +115,5 @@ exports.actor = actor;
 //         }
 //     };
 // };
+
+exports.actor = actor;
