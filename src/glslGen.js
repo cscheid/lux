@@ -211,6 +211,23 @@ function vertexShader(stmts)
   };
 }
 
+function fragmentShader(stmts)
+{
+  return {
+    astNodeType: "fragment-shader",
+    statements: stmts,
+    astGenerate: function(astCtx) {
+      astCtx.emitList(this.statements, undefined,
+                      item => {
+                        if (wantsSemiColon(item)) {
+                          astCtx.emit(";");
+                        }
+                        astCtx.break();
+                      });
+    }
+  };
+}
+
 function versionDeclaration(version)
 {
   return {
@@ -226,27 +243,47 @@ function versionDeclaration(version)
 function basicTest()
 {
   debugger;
-  var f = functionDefinition(
-    "vec4", "_luxCompiled_f1",
-    [parameterDeclaration("vec4", "v")],
-    [returnStatement(variableRef("v"))]);
 
-  var m = functionDefinition(
-    "void", "main", [],
-    [variableDeclaration("vec4", "vout", functionCall("_luxCompiled_f1",
-                                                      [variableRef("attribute1")])),
-     assignment("gl_Position", variableRef("vout")),
-     assignment("varying1", variableRef("vout"))]);
+  function vs1() {
+    var f = functionDefinition(
+      "vec4", "_luxCompiled_f1",
+      [parameterDeclaration("vec4", "v")],
+      [returnStatement(variableRef("v"))]);
 
-  var vs = vertexShader([
-    versionDeclaration("300 es"),
-    inDeclaration(variableDeclaration("vec4", "attribute1")),
-    outDeclaration(variableDeclaration("vec4", "varying1")),
-    f,
-    m
-  ]);
+    var m = functionDefinition(
+      "void", "main", [],
+      [variableDeclaration("vec4", "vout", functionCall("_luxCompiled_f1",
+                                                        [variableRef("attribute1")])),
+       assignment("gl_Position", variableRef("vout")),
+       assignment("varying1", variableRef("vout"))]);
 
-  console.log(generateGLSL(vs));
+    return vertexShader([
+      versionDeclaration("300 es"),
+      inDeclaration(variableDeclaration("vec4", "attribute1")),
+      outDeclaration(variableDeclaration("vec4", "varying1")),
+      f,
+      m
+    ]);
+  }
+
+  console.log(generateGLSL(vs1()));
 }
 
 exports.basicTest = basicTest;
+
+exports.createAstContext = createAstContext;
+exports.wantsSemiColon = wantsSemiColon;
+exports.functionDefinition = functionDefinition;
+exports.generateGLSL = generateGLSL;
+exports.parameterDeclaration = parameterDeclaration;
+exports.inDeclaration = inDeclaration;
+exports.outDeclaration = outDeclaration;
+exports.uniformDeclaration = uniformDeclaration;
+exports.returnStatement = returnStatement;
+exports.variableRef = variableRef;
+exports.functionCall = functionCall;
+exports.variableDeclaration = variableDeclaration;
+exports.assignment = assignment;
+exports.vertexShader = vertexShader;
+exports.fragmentShader = fragmentShader;
+exports.versionDeclaration = versionDeclaration;
