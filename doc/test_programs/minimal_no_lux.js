@@ -1,37 +1,36 @@
-var vSource = "                              \
-attribute vec4 attribute1;                   \
-varying   vec4 varying1;                     \
-vec4 _luxCompiled_f1(vec4 v)                 \
-{                                            \
-  return v;                                  \
-}                                            \
-                                             \
-void main() {                                \
-  vec4 vout = _luxCompiled_f1(attribute1);   \
-  gl_Position = vout;                        \
-  varying1 = vout;                           \
-}                                            \
-";
+var vSource = `#version 300 es
+in vec4 attribute1;
+out   vec4 varying1;
+vec4 _luxCompiled_f1(vec4 v)
+{
+  return v;
+}
+void main() {
+  vec4 vout = _luxCompiled_f1(attribute1);
+  gl_Position = vout;
+  varying1 = vout;
+}
+`;
 
-var fSource = "                               \
-precision highp float;                        \
-varying vec4 varying1;                        \
-vec4 _luxCompiled_f2(vec4 v)                  \
-{                                             \
-  return vec4(1.0, 0.0, 0.0, 1.0);            \
-}                                             \
-                                              \
-void main() {                                 \
-  gl_FragColor = _luxCompiled_f2(varying1);   \
-}                                             \
-";
+var fSource = `#version 300 es
+precision highp float;
+in vec4 varying1;
+out vec4 fragColor;
+vec4 _luxCompiled_f2(vec4 v)
+{
+  return vec4(1.0, 0.0, 0.0, 1.0);
+}
+void main() {
+  fragColor = _luxCompiled_f2(varying1);
+}
+`;
 
 function main()
 {
   var canvas = document.getElementById("webgl");
-  var gl = canvas.getContext("webgl");
+  var gl = canvas.getContext("webgl2");
   if (!gl) {
-    console.error("failed to initialize webgl context");
+    console.error("failed to initialize webgl2 context");
     return;
   }
   gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);

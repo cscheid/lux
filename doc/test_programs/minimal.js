@@ -22,4 +22,5 @@ function main()
 }
 
 debugger;
+Lux.glslGen.basicTest();
 main();
