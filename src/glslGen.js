@@ -130,6 +130,18 @@ function uniformDeclaration(parameter)
   };
 }
 
+function precisionDeclaration(precision, type)
+{
+  return {
+    astNodeType: "precision-declaration",
+    precision: precision,
+    type: type,
+    astGenerate: function(astCtx) {
+      astCtx.emit("precision", this.precision, this.type);
+    }
+  };
+}
+
 function returnStatement(expression)
 {
   return {
@@ -137,6 +149,32 @@ function returnStatement(expression)
     expression: expression,
     astGenerate: function(astCtx) {
       astCtx.emit("return", this.expression);
+    }
+  };
+}
+
+function floatLiteral(val)
+{
+  return {
+    astNodeType: "float-literal",
+    value: val,
+    astGenerate: function(astCtx) {
+      if (this.value === ~~this.value) {
+        astCtx.emit(this.value.toFixed(1));
+      } else {
+        astCtx.emit(this.value);
+      }
+    }
+  };
+}
+
+function intLiteral(val)
+{
+  return {
+    astNodeType: "float-literal",
+    value: val,
+    astGenerate: function(astCtx) {
+      astCtx.emit(this.value.toFixed());
     }
   };
 }
@@ -271,19 +309,22 @@ function basicTest()
 
 exports.basicTest = basicTest;
 
+exports.assignment = assignment;
 exports.createAstContext = createAstContext;
-exports.wantsSemiColon = wantsSemiColon;
+exports.floatLiteral = floatLiteral;
+exports.fragmentShader = fragmentShader;
+exports.functionCall = functionCall;
 exports.functionDefinition = functionDefinition;
 exports.generateGLSL = generateGLSL;
-exports.parameterDeclaration = parameterDeclaration;
 exports.inDeclaration = inDeclaration;
+exports.intLiteral = intLiteral;
 exports.outDeclaration = outDeclaration;
-exports.uniformDeclaration = uniformDeclaration;
+exports.parameterDeclaration = parameterDeclaration;
+exports.precisionDeclaration = precisionDeclaration;
 exports.returnStatement = returnStatement;
-exports.variableRef = variableRef;
-exports.functionCall = functionCall;
+exports.uniformDeclaration = uniformDeclaration;
 exports.variableDeclaration = variableDeclaration;
-exports.assignment = assignment;
-exports.vertexShader = vertexShader;
-exports.fragmentShader = fragmentShader;
+exports.variableRef = variableRef;
 exports.versionDeclaration = versionDeclaration;
+exports.vertexShader = vertexShader;
+exports.wantsSemiColon = wantsSemiColon;

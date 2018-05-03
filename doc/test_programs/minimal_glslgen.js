@@ -16,18 +16,23 @@ var vSource = G.generateGLSL(G.vertexShader([
      G.assignment("gl_Position", G.variableRef("vout")),
      G.assignment("varying1", G.variableRef("vout"))])]));
 
-var fSource = `#version 300 es
-precision highp float;
-in vec4 varying1;
-out vec4 fragColor;
-vec4 _luxCompiled_f2(vec4 v)
-{
-  return vec4(1.0, 0.0, 0.0, 1.0);
-}
-void main() {
-  fragColor = _luxCompiled_f2(varying1);
-}
-`;
+var fSource = G.generateGLSL(G.fragmentShader([
+  G.versionDeclaration("300 es"),
+  G.precisionDeclaration("highp", "float"),
+  G.inDeclaration(G.variableDeclaration("vec4", "varying1")),
+  G.outDeclaration(G.variableDeclaration("vec4", "fragColor")),
+  G.functionDefinition(
+    "vec4", "_luxCompiled_f2",
+    [G.parameterDeclaration("vec4", "v")],
+    [G.returnStatement(G.functionCall("vec4",
+                                      [G.floatLiteral(1),
+                                       G.floatLiteral(0),
+                                       G.floatLiteral(0),
+                                       G.floatLiteral(1)]))]),
+  G.functionDefinition(
+    "void", "main", [],
+    [G.assignment("fragColor", G.functionCall("_luxCompiled_f2",
+                                              [G.variableRef("varying1")]))])]));
 
 function main()
 {
